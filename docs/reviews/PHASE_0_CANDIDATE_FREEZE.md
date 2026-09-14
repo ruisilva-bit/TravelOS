@@ -1,0 +1,36 @@
+# TravelOS Phase 0 Candidate Freeze
+
+- **Frozen at:** 2026-08-13T16:50:10+01:00
+- **Purpose:** immutable input bundle for independent adversarial review
+- **Root AGENTS.md:** absent because protected write approval did not complete; review copy included as `docs/reviews/AGENTS_CANDIDATE.md`
+
+## SHA-256 manifest
+
+```text
+2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524  IDEA.md
+019e94109776f381d8f6f670ea2ae4865efd075bd3f5102d8b370cfbacde0215  docs/README.md
+a1a26c199e3b513813cc4b3966ae876b4f4991c0f4d8c90baabe10566a4fa2c4  docs/PRODUCT_BLUEPRINT.md
+ac4291df8e7ee9310204938f72c65fd494786d6d861987618903738e3fe92775  docs/DOMAIN_MODEL.md
+4be4221072a963944ed19c221a6a5391e8cd1858bd0db63ea5ad5e8fd57f247a  docs/ARCHITECTURE.md
+24f9f5f5402361589dc99ed7b31b779e5ffe6dec0f4a72c99302cc86ce005761  docs/DEPLOYMENT_MODEL.md
+cea971172e25a4de838c853638650b5b6be955285a7b948ccea484b8dd98f07a  docs/DATA_MODEL.md
+db489a6555a356c4f38556172637781d81c862c27cc52e73c254b524792f25b0  docs/PUBLISHING_MODEL.md
+30a90759c78e5b5cd330551eac2cdc3522f2956656ce269c9445562e6af43dd9  docs/PERMISSIONS.md
+8920e3bd177c1caddc755568694a84b7693eeba6101c33b39851ca57cd38904b  docs/DESIGN_SYSTEM.md
+58a1a70dddcb0eff5fd765dc6112100e8ecd9a1a56a370ec41eccb903913028b  docs/SECURITY_MODEL.md
+e52330a9175827b532f0dfe243e856c0cf7f735c37a3e1e98e9a59ad542df28b  docs/adr/README.md
+9f443b52b835d6b1eb7178311fb6d04c743def64c2f0d02a680febdb9338af71  docs/adr/ADR-001-modular-monolith.md
+887af4836f11958ba36a66e4a7e6635817e0c38c869d15c0a9399a132dce5e8f  docs/adr/ADR-002-dedicated-single-tenant-deployment.md
+2d7144c2b5cd3c9acdba21505d73c6494d77cba8d535b959ac7c57c1cf6ee3d4  docs/adr/ADR-003-independent-database-per-instance.md
+496b3ba877479e9d7c24aa66071ed644e3fff9c653c262383f29766f563d65e9  docs/adr/ADR-004-immutable-publishing-snapshots.md
+045a3f621044701d86a539a32e170157ee5cedd8b36452f2d522fe2aadf425fa  docs/adr/ADR-005-structured-itinerary-model.md
+4a9aacdc0f0a0c46d8a28b3532069a81b235f205832b0add8c3dbd5051b7f5b4  docs/adr/ADR-006-provider-based-integration-architecture.md
+cbe85673b731872e55779f5158e8ec35c1bc0930f7524e99a3b339a886e00ea8  docs/adr/ADR-007-separate-staff-and-portal-identity-realms.md
+25e9283cd5ab20a985dfce8897a18b3e82f3924d8627718d66c8a2e82a0851a7  docs/adr/ADR-008-rbac-with-explicit-resource-scopes.md
+36cde85d152d8fe75b10192488c588f9e7bdb80afc5f524102d7424896eb0896  docs/adr/ADR-009-transactional-outbox-and-postgresql-jobs.md
+3a3cd8141869f72ceaad27a5696e8bba1fbe2d31460e12feb75783873f4a9988  docs/adr/ADR-010-exact-money-and-currency-representation.md
+436480deac1acda62856a08a789725c61d30efa7277890103e6b78eda34b8bf9  docs/adr/ADR-011-document-storage-and-explicit-access-grants.md
+b93a61728cec7a73225a783452127f972b2f97517dd764cfb6f87707bbf15db5  docs/adr/ADR-012-persistence-boundary-and-fleet-safe-migrations.md
+1ab7b076081758dcce6b58f8183f50ff2b67b4a08fdbdd79273f5afbe542ba09  docs/adr/ADR-013-monorepo-web-runtime-and-build-orchestration.md
+3461abeed42fd365137a512ebb21ecbb2cdf6b7a5342adbac29b01400d0b6393  docs/reviews/AGENTS_CANDIDATE.md
+```

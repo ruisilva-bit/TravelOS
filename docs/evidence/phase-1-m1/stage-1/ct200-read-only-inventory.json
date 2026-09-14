@@ -1,0 +1,97 @@
+{
+  "artifact_id": "S1-ART-CT200-READ-ONLY",
+  "check_ids": [
+    "S1-EV-024",
+    "S1-EV-025"
+  ],
+  "freeze_validation": {
+    "guest_ssh_used": false,
+    "matches_retained_after_hash": true,
+    "mutating_guest_or_configuration_requests": 0,
+    "redaction": "Authentication credential/ticket existed only in process memory and is not retained or printed.",
+    "resource_requests": [
+      "GET /nodes/pxmx2/lxc/200/config",
+      "GET /nodes/pxmx2/lxc/200/status/current"
+    ],
+    "result": "PASS",
+    "selected_config_sha256": "1dec136d046e1f08c13f7a2de634cd3663a04210551e4b2cffadb3f7132c7d36",
+    "selected_hash_algorithm": "sha256(sorted JSON, compact encoding)",
+    "status": "running",
+    "timestamp": "2026-08-14T17:23:56.916468+00:00",
+    "tool": "Proxmox HTTPS API resource GET after in-memory ticket authentication"
+  },
+  "generated_at": "2026-08-14T17:23:56.916486+00:00",
+  "inventory": {
+    "check_id": "S1-EV-024",
+    "command_description": "Read CT 200 Proxmox configuration, status, interfaces and recent task metadata before and after the correction probes.",
+    "config": {
+      "arch": "amd64",
+      "cores": 4,
+      "features": "nesting=1",
+      "hostname": "travelos-dev",
+      "memory": 7629,
+      "net0": "name=eth0,bridge=vmbr0,firewall=1,hwaddr=BC:24:11:E9:85:A9,ip=dhcp,type=veth",
+      "ostype": "debian",
+      "rootfs": "local:200/vm-200-disk-0.raw,acl=1,mountoptions=discard,size=20G",
+      "swap": 7629,
+      "unprivileged": 1
+    },
+    "exit_code": 0,
+    "guest_interface": {
+      "inet": "192.168.1.33/24",
+      "inet6": "fe80::be24:11ff:fee9:85a9/64",
+      "name": "eth0"
+    },
+    "result": "PASS",
+    "status_after": "running",
+    "status_before": "running",
+    "target": {
+      "node": "pxmx2",
+      "node_address": "192.168.1.200",
+      "vmid": 200
+    },
+    "timestamp_after": "2026-08-14T17:14:02.524054+00:00",
+    "timestamp_before": "2026-08-14T16:54:09.608839+00:00",
+    "tool": "Proxmox HTTPS API using hermes@pve with GET requests only"
+  },
+  "operator_non_mutation": {
+    "access_after": {
+      "api_identity": "hermes@pve",
+      "credential_retained": false,
+      "guest_ssh_used": false,
+      "method": "Proxmox HTTPS API GET only",
+      "mutating_requests_issued": 0
+    },
+    "access_before": {
+      "api_identity": "hermes@pve",
+      "credential_retained": false,
+      "guest_ssh_used": false,
+      "method": "Proxmox HTTPS API GET only",
+      "mutating_requests_issued": 0
+    },
+    "assessment": "The correction session issued only Proxmox API GET requests and no guest SSH. Selected stable Proxmox configuration fields were equal before/after. A vncproxy task owned by root@pam was visible during the interval and is not attributed to this read-only API identity.",
+    "check_id": "S1-EV-025",
+    "exit_code": 0,
+    "limitations": [
+      "No byte-for-byte guest filesystem comparison was performed.",
+      "Runtime counters are excluded because they change without operator mutation.",
+      "This evidence does not claim that no other operator or guest process was active."
+    ],
+    "new_recent_tasks_visible_at_after_capture": [
+      {
+        "endtime": 1786727018,
+        "starttime": 1786708829,
+        "status": "OK",
+        "type": "vncproxy",
+        "user": "root@pam"
+      }
+    ],
+    "result": "PASS",
+    "selected_config_equal": true,
+    "selected_config_sha256_after": "1dec136d046e1f08c13f7a2de634cd3663a04210551e4b2cffadb3f7132c7d36",
+    "selected_config_sha256_before": "1dec136d046e1f08c13f7a2de634cd3663a04210551e4b2cffadb3f7132c7d36"
+  },
+  "redaction": "The Proxmox password and session ticket existed only in process memory. UPIDs and authentication material are omitted; retained fields contain no credentials or PII.",
+  "result": "PASS",
+  "schema_version": 1
+}

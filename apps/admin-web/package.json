@@ -1,0 +1,19 @@
+{
+  "name": "@travelos/admin-web",
+  "version": "0.0.0-stage2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@travelos/design-system": "workspace:*",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@vitejs/plugin-react": "6.0.5",
+    "vite": "8.2.1"
+  }
+}

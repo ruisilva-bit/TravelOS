@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "TOS-S2-EV-004",
+  "timestamp": "2026-08-28T11:57:27.268Z",
+  "command": "node tooling/ci/verify-pins.mjs",
+  "toolVersions": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "exitCode": 0,
+  "result": "PASS",
+  "execution": {
+    "startedAt": "2026-08-28T11:57:25.062Z",
+    "finishedAt": "2026-08-28T11:57:27.268Z",
+    "outputBytes": 946,
+    "outputSha256": "ae47c9c98af33591953a6e0fa07f6aa81ce72efef897c6bb773c1670f9f05ef6"
+  },
+  "details": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "toolchain": {
+      "node": "24.19.0",
+      "corepack": "0.35.0",
+      "pnpm": "11.21.0"
+    },
+    "directPins": {
+      "count": 46,
+      "matchStage1": true,
+      "resolvedMatch": true
+    },
+    "workspace": {
+      "projectCount": 15,
+      "externalDeclarationsUseStage1Pins": true
+    },
+    "policies": {
+      "engineStrict": true,
+      "strictPeers": true,
+      "saveExact": true,
+      "minimumReleaseAgeMinutes": 1440,
+      "minimumReleaseAgeExclusions": [],
+      "approvedBuildScripts": [
+        "esbuild"
+      ],
+      "lodashOverride": "4.18.1",
+      "structuralChecks": {
+        "packagesExact": true,
+        "minimumReleaseAgeExact": true,
+        "minimumReleaseAgeExclusionsExact": true,
+        "overridesExact": true,
+        "approvedBuildsExact": true,
+        "npmrcExact": true
+      }
+    },
+    "lockfile": {
+      "sha256": "c2b872478a60675300e83d8d45d70ec42e4bc272d16a17a7519e46f525d2cec9",
+      "frozenCandidate": true
+    }
+  },
+  "redaction": "Bounded evidence only. No credentials, tokens, cookies, environment values, temporary secrets, dependency caches, node_modules, or dist contents are stored."
+}

@@ -1,0 +1,135 @@
+{
+  "artifact_id": "S1-ART-POSTGRESQL-RUNTIME",
+  "check_ids": [
+    "S1-EV-017",
+    "S1-EV-018",
+    "S1-EV-019",
+    "S1-EV-020",
+    "S1-EV-021"
+  ],
+  "dump_restore": {
+    "check_id": "S1-EV-021",
+    "command_description": "Create custom-format dump, restore into a fresh synthetic database, and compare sorted schema-qualified table inventories.",
+    "dump_sha256": "9bfc24fd4c7b8bc1b2870eeea833f2e7f764effd2ecc5c4a956af6d47e377a4e",
+    "exit_code": 0,
+    "inventories_equal": true,
+    "redaction": "Schema/table identifiers only; databases contained no PII or credentials.",
+    "restored_tables": [
+      "portal_access.portal_account",
+      "portal_access.portal_session",
+      "portal_access.portal_user",
+      "portal_access.portal_verification",
+      "public.pgmigrations",
+      "staff_access.staff_account",
+      "staff_access.staff_session",
+      "staff_access.staff_user",
+      "staff_access.staff_verification",
+      "staff_access.twoFactor"
+    ],
+    "result": "PASS",
+    "schema_version": 1,
+    "source_tables": [
+      "portal_access.portal_account",
+      "portal_access.portal_session",
+      "portal_access.portal_user",
+      "portal_access.portal_verification",
+      "public.pgmigrations",
+      "staff_access.staff_account",
+      "staff_access.staff_session",
+      "staff_access.staff_user",
+      "staff_access.staff_verification",
+      "staff_access.twoFactor"
+    ],
+    "timestamp": "2026-08-14T17:10:22.255156+00:00",
+    "tool_versions": {
+      "pg_dump": "18.6",
+      "pg_restore": "18.6"
+    }
+  },
+  "generated_at": "2026-08-14T17:13:53.362298+00:00",
+  "kysely_smoke": {
+    "check_id": "S1-EV-019",
+    "command": {
+      "check_id": "S1-EV-018-019",
+      "command_description": "Run pg driver connectivity/exact numeric probe and Kysely SQL smoke against the disposable database.",
+      "duration_seconds": 0.24,
+      "exit_code": 0,
+      "redaction": "Only a loopback disposable PostgreSQL instance with trust authentication and no password was used; no secret-bearing connection string is retained.",
+      "result": "PASS",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "06cfb36ea58986443bbf5a7555f554c313b913454a849fcc38b7c57b1dbc5e04",
+      "timestamp_finished": "2026-08-14T17:10:16.321237+00:00",
+      "timestamp_started": "2026-08-14T17:10:16.081533+00:00"
+    },
+    "observed": {
+      "answer": 42
+    },
+    "result": "PASS"
+  },
+  "migration_up_down": {
+    "check_id": "S1-EV-020",
+    "command_description": "Apply one synthetic migration, verify ledger 1/table present, revert one migration, verify ledger 0/table absent.",
+    "down_state": "0|t",
+    "exit_code": 0,
+    "redaction": "The retained record omits the loopback trust-auth database URL; no password was used.",
+    "result": "PASS",
+    "schema_version": 1,
+    "timestamp": "2026-08-14T17:10:17.930698+00:00",
+    "tool_versions": {
+      "node-pg-migrate": "9.0.0",
+      "postgresql": "18.6"
+    },
+    "up_state": "1|t"
+  },
+  "pg_connectivity": {
+    "check_id": "S1-EV-018",
+    "command": {
+      "check_id": "S1-EV-018-019",
+      "command_description": "Run pg driver connectivity/exact numeric probe and Kysely SQL smoke against the disposable database.",
+      "duration_seconds": 0.24,
+      "exit_code": 0,
+      "redaction": "Only a loopback disposable PostgreSQL instance with trust authentication and no password was used; no secret-bearing connection string is retained.",
+      "result": "PASS",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "06cfb36ea58986443bbf5a7555f554c313b913454a849fcc38b7c57b1dbc5e04",
+      "timestamp_finished": "2026-08-14T17:10:16.321237+00:00",
+      "timestamp_started": "2026-08-14T17:10:16.081533+00:00"
+    },
+    "observed": {
+      "exact": "0.3",
+      "version": "180006"
+    },
+    "result": "PASS"
+  },
+  "redaction": "Loopback-only trust authentication in a synthetic disposable cluster; no password, protected data or secret connection string was used or retained.",
+  "result": "PASS",
+  "schema_version": 1,
+  "shutdown": {
+    "check_id": "RAW-POSTGRES-SHUTDOWN-SUMMARY",
+    "dedicated_port": 55433,
+    "pg_ctl_exit_code": 0,
+    "pg_isready_exit_code": 2,
+    "redaction": "No secrets present.",
+    "result": "PASS",
+    "schema_version": 1,
+    "timestamp": "2026-08-14T17:10:22.366705+00:00"
+  },
+  "startup_version": {
+    "check_id": "S1-EV-017",
+    "command_description": "Verify PostgreSQL executable version, readiness, server version number, checksums and loopback listener.",
+    "duration_seconds": 0.012,
+    "exit_code": 0,
+    "redaction": "Only a loopback disposable PostgreSQL instance with trust authentication and no password was used; no secret-bearing connection string is retained.",
+    "result": "PASS",
+    "stderr": "",
+    "stdout": "18.6 (Debian 18.6-1.pgdg13+2)|180006|on|127.0.0.1/32|55433\n",
+    "timestamp_finished": "2026-08-14T17:10:16.013274+00:00",
+    "timestamp_started": "2026-08-14T17:10:16.001725+00:00"
+  },
+  "tool_versions": {
+    "kysely": "0.29.5",
+    "node-pg-migrate": "9.0.0",
+    "pg": "8.23.0",
+    "postgresql": "18.6 (Debian 18.6-1.pgdg13+2)"
+  }
+}

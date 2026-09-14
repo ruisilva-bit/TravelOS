@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "TOS-S2-EV-010",
+  "timestamp": "2026-08-28T11:58:13.622Z",
+  "command": "Derived from final Vitest JSON report",
+  "toolVersions": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "exitCode": 0,
+  "result": "PASS",
+  "execution": null,
+  "details": {
+    "cases": {
+      "validDevelopmentManifestAccepted": true,
+      "unknownRootKeyRejected": true,
+      "unknownNestedKeyRejected": true,
+      "secretLikeFieldRejected": true,
+      "sameAdminPortalHostRejected": true,
+      "apiListenerCollisionRejected": true,
+      "distinctAddressEqualPortAccepted": true,
+      "incoherentHostAllowlistRejected": true,
+      "runtimeAndJsonSchemaValidAccepted": true,
+      "runtimeAndJsonSchemaRepresentedInvalidKeysRejected": true,
+      "runtimeAndJsonSchemaInvalidListenerHostsRejected": true,
+      "runtimeAndJsonSchemaHostCardinalityRejected": true,
+      "runtimeAndJsonSchemaInvalidPortsRejected": true,
+      "runtimeOnlyCollisionIdentified": true,
+      "runtimeOnlyHostAllowlistRelationshipIdentified": true,
+      "invariantRegistryCurrent": true
+    },
+    "runtimeSecretManagementClaimed": false
+  },
+  "redaction": "Bounded evidence only. No credentials, tokens, cookies, environment values, temporary secrets, dependency caches, node_modules, or dist contents are stored."
+}

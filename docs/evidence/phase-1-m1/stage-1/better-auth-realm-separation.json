@@ -1,0 +1,139 @@
+{
+  "artifact_id": "S1-ART-BETTER-AUTH-REALMS",
+  "check_ids": [
+    "S1-EV-014",
+    "S1-EV-015",
+    "S1-EV-016"
+  ],
+  "generated_at": "2026-08-14T17:13:53.361891+00:00",
+  "portal": {
+    "check_id": "S1-EV-015",
+    "command_description": "Generate Portal realm SQL separately with auth@1.6.27; hash the disposable SQL and record generated/physical table metadata.",
+    "exit_code": 0,
+    "generated_tables": [
+      "portal_account",
+      "portal_session",
+      "portal_user",
+      "portal_verification"
+    ],
+    "physical_tables": [
+      {
+        "identity": "portal_access.portal_account",
+        "oid": 16540,
+        "schema": "portal_access",
+        "table": "portal_account"
+      },
+      {
+        "identity": "portal_access.portal_session",
+        "oid": 16519,
+        "schema": "portal_access",
+        "table": "portal_session"
+      },
+      {
+        "identity": "portal_access.portal_user",
+        "oid": 16502,
+        "schema": "portal_access",
+        "table": "portal_user"
+      },
+      {
+        "identity": "portal_access.portal_verification",
+        "oid": 16559,
+        "schema": "portal_access",
+        "table": "portal_verification"
+      }
+    ],
+    "redaction": "Generated SQL and temporary configs used only loopback trust authentication and were removed after summary hashes/table metadata were retained; no secret is present.",
+    "result": "PASS",
+    "schema_version": 1,
+    "source_provenance": [
+      "https://registry.npmjs.org/auth/1.6.27",
+      "https://registry.npmjs.org/better-auth/1.6.27",
+      "https://www.better-auth.com/docs/concepts/cli"
+    ],
+    "sql_bytes": 1577,
+    "sql_sha256": "ce2562b3d8ff1fcc2282be1c1977de54d228265ad7f2107c4c54ac6a5f194762",
+    "timestamp": "2026-08-14T17:10:22.134522+00:00",
+    "tool_versions": {
+      "auth": "1.6.27",
+      "better-auth": "1.6.27",
+      "postgresql": "18.6"
+    }
+  },
+  "redaction": "Generated SQL itself was deleted after hashing; only schema/table names, synthetic catalog OIDs, versions and hashes are retained.",
+  "result": "PASS",
+  "schema_version": 1,
+  "separation": {
+    "check_id": "S1-EV-016",
+    "command_description": "Compare generated unqualified table names and schema-qualified physical table identities between Staff and Portal realms.",
+    "exit_code": 0,
+    "generated_name_overlap": [],
+    "physical_identity_overlap": [],
+    "portal_physical_count": 4,
+    "redaction": "Table identifiers and synthetic catalog OIDs only; no rows or identity data queried.",
+    "result": "PASS",
+    "schema_version": 1,
+    "staff_physical_count": 5,
+    "timestamp": "2026-08-14T17:10:22.134583+00:00",
+    "tool": "pg_catalog + deterministic set comparison"
+  },
+  "staff": {
+    "check_id": "S1-EV-014",
+    "command_description": "Generate Staff realm SQL separately with auth@1.6.27; hash the disposable SQL and record generated/physical table metadata.",
+    "exit_code": 0,
+    "generated_tables": [
+      "staff_account",
+      "staff_session",
+      "staff_user",
+      "staff_verification",
+      "twoFactor"
+    ],
+    "physical_tables": [
+      {
+        "identity": "staff_access.staff_account",
+        "oid": 16446,
+        "schema": "staff_access",
+        "table": "staff_account"
+      },
+      {
+        "identity": "staff_access.staff_session",
+        "oid": 16425,
+        "schema": "staff_access",
+        "table": "staff_session"
+      },
+      {
+        "identity": "staff_access.staff_user",
+        "oid": 16408,
+        "schema": "staff_access",
+        "table": "staff_user"
+      },
+      {
+        "identity": "staff_access.staff_verification",
+        "oid": 16465,
+        "schema": "staff_access",
+        "table": "staff_verification"
+      },
+      {
+        "identity": "staff_access.twoFactor",
+        "oid": 16480,
+        "schema": "staff_access",
+        "table": "twoFactor"
+      }
+    ],
+    "redaction": "Generated SQL and temporary configs used only loopback trust authentication and were removed after summary hashes/table metadata were retained; no secret is present.",
+    "result": "PASS",
+    "schema_version": 1,
+    "source_provenance": [
+      "https://registry.npmjs.org/auth/1.6.27",
+      "https://registry.npmjs.org/better-auth/1.6.27",
+      "https://www.better-auth.com/docs/concepts/cli"
+    ],
+    "sql_bytes": 1989,
+    "sql_sha256": "f65a85654e3d21f0ab1f9361757f6198639166fde9794194e93d0fb225531e6f",
+    "timestamp": "2026-08-14T17:10:22.134388+00:00",
+    "tool_versions": {
+      "auth": "1.6.27",
+      "better-auth": "1.6.27",
+      "postgresql": "18.6"
+    }
+  }
+}

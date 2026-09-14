@@ -1,0 +1,12 @@
+{
+  "name": "@travelos/worker",
+  "version": "0.0.0-stage2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@travelos/config": "workspace:*"
+  }
+}

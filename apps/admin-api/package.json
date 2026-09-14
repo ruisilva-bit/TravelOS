@@ -1,0 +1,18 @@
+{
+  "name": "@travelos/admin-api",
+  "version": "0.0.0-stage2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "11.1.29",
+    "@nestjs/core": "11.1.29",
+    "@nestjs/platform-express": "11.1.29",
+    "@travelos/config": "workspace:*",
+    "@travelos/contracts": "workspace:*",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  }
+}

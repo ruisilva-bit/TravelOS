@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "TOS-S2-EV-017",
+  "timestamp": "2026-08-28T11:58:51.268Z",
+  "command": "Repository-owned Stage 2 source/tree inspection",
+  "toolVersions": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "exitCode": 0,
+  "result": "PASS",
+  "execution": null,
+  "details": {
+    "result": "PASS",
+    "sourceFilesChecked": 35,
+    "forbiddenDatabaseOrAuthRuntimeImports": [],
+    "migrationOrSqlFiles": [],
+    "databaseRoleDefinitionFiles": [],
+    "databaseImplementationFiles": [],
+    "authImplementationFiles": [],
+    "backendDomainImplementationFiles": [],
+    "ctDeploymentActivationFiles": [],
+    "ctDeploymentConfigurationActivated": false,
+    "boundaryMarkers": {
+      "packages/backend-core/src/index.ts": true,
+      "packages/database/src/index.ts": true,
+      "packages/auth-adapters/src/index.ts": true
+    },
+    "apiControllerRoutes": [
+      {
+        "file": "apps/admin-api/src/health.controller.ts",
+        "controller": "health",
+        "gets": [
+          "live"
+        ]
+      },
+      {
+        "file": "apps/portal-api/src/health.controller.ts",
+        "controller": "health",
+        "gets": [
+          "live"
+        ]
+      }
+    ],
+    "allowedApiSurface": [
+      "GET /health/live"
+    ],
+    "absentBehavior": [
+      "PostgreSQL runtime database or bootstrap",
+      "database migrations",
+      "database connections",
+      "database roles",
+      "authentication implementation",
+      "Better Auth runtime wiring",
+      "Trip behavior",
+      "Customer behavior",
+      "Publishing behavior",
+      "Portal business-data endpoints",
+      "CT deployment configuration activation"
+    ],
+    "ct200ActionsPerformed": 0
+  },
+  "redaction": "Bounded evidence only. No credentials, tokens, cookies, environment values, temporary secrets, dependency caches, node_modules, or dist contents are stored."
+}

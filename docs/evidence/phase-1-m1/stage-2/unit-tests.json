@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "TOS-S2-EV-009",
+  "timestamp": "2026-08-28T11:58:13.620Z",
+  "command": "pnpm exec vitest run --config tooling/testing/vitest.config.ts --reporter=json",
+  "toolVersions": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "exitCode": 0,
+  "result": "PASS",
+  "execution": {
+    "startedAt": "2026-08-28T11:58:10.121Z",
+    "finishedAt": "2026-08-28T11:58:13.620Z",
+    "outputBytes": 12772,
+    "outputSha256": "d0345f32e1e8c31987d08ac8c10d9f52d95a69251b8b2f132236502d1ebe9b69"
+  },
+  "details": {
+    "testFiles": 7,
+    "passedTestFiles": 7,
+    "reporterSuiteCount": 14,
+    "tests": 34,
+    "passedTests": 34,
+    "assertions": [
+      {
+        "title": "Admin API liveness boots and exposes only the DEVELOPMENT-safe liveness response",
+        "status": "passed"
+      },
+      {
+        "title": "Portal API liveness boots and exposes only the DEVELOPMENT-safe liveness response",
+        "status": "passed"
+      },
+      {
+        "title": "Admin Web foundation has its own Admin routing root and minimal content",
+        "status": "passed"
+      },
+      {
+        "title": "Portal Web foundation has its own Portal routing root and minimal content",
+        "status": "passed"
+      },
+      {
+        "title": "Worker process lifecycle boots and shuts down without claiming or executing work",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance accepts the representative valid manifest in runtime and JSON Schema",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance rejects unknown root and represented nested keys in runtime and JSON Schema",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance rejects invalid listener host localhost consistently",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance rejects invalid listener host 0.0.0.0 consistently",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance rejects invalid listener host 127.0.0.256 consistently",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance rejects invalid listener host 127.00.0.1 consistently",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance represents exact host surface cardinality",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance represents invalid API port 1023",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance represents invalid API port 65536",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance represents invalid API port 3101.5",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance represents invalid API port 3101",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance identifies listener collision as runtime-only without weakening runtime validation",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance allows equal port numbers on clearly distinct loopback bind addresses",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance identifies host and allowlist relationships as runtime-only",
+        "status": "passed"
+      },
+      {
+        "title": "development manifest JSON Schema and runtime conformance keeps the generated schema and machine-readable invariant registry current",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest accepts the safe repository example",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects an unknown root key",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects an unknown nested key",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects an Admin and Portal API listener collision",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest accepts equal API port numbers on clearly distinct loopback bind addresses",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects secret-like field password before schema parsing",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects secret-like field apiKey before schema parsing",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects secret-like field token before schema parsing",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects secret-like field databaseUrl before schema parsing",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects secret-like field privateKey before schema parsing",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects a secret-like nested field",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects wildcard, URL, port, and non-normalized hosts",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects a host allowlist that does not match the surface hosts",
+        "status": "passed"
+      },
+      {
+        "title": "development instance manifest rejects equal Admin and Portal hosts",
+        "status": "passed"
+      }
+    ]
+  },
+  "redaction": "Bounded evidence only. No credentials, tokens, cookies, environment values, temporary secrets, dependency caches, node_modules, or dist contents are stored."
+}

@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
+  },
+  "include": [
+    "../../apps/**/*.ts",
+    "../../apps/**/*.tsx",
+    "../../packages/**/*.ts",
+    "../../packages/**/*.tsx",
+    "../../tooling/**/*.ts",
+    "../../*.ts"
+  ],
+  "exclude": ["../../**/dist/**", "../../**/node_modules/**"]
+}

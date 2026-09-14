@@ -1,0 +1,60 @@
+{
+  "manifestSchemaVersion": 1,
+  "environment": "DEVELOPMENT",
+  "instanceId": "travelos-dev-local",
+  "compatibility": {
+    "releaseVersion": "0.0.0-stage2",
+    "releaseTarget": "development:stage-2",
+    "configSchemaVersion": 1,
+    "databaseSchema": {
+      "minimum": 0,
+      "maximum": 0
+    },
+    "postgresqlMajor": 18
+  },
+  "hosts": {
+    "admin": "admin.travelos.test",
+    "portal": "portal.travelos.test"
+  },
+  "hostAllowlist": [
+    {
+      "host": "admin.travelos.test",
+      "surface": "ADMIN"
+    },
+    {
+      "host": "portal.travelos.test",
+      "surface": "PORTAL"
+    }
+  ],
+  "agencyBootstrap": {
+    "reference": "agency-bootstrap:development",
+    "slug": "travelos-development"
+  },
+  "database": {
+    "name": "travelos_development",
+    "roleCredentialReferences": {
+      "adminApi": "systemd-credential:admin-api-db",
+      "portalApi": "systemd-credential:portal-api-db",
+      "worker": "systemd-credential:worker-db"
+    }
+  },
+  "runtime": {
+    "listeners": {
+      "adminApi": {
+        "host": "127.0.0.1",
+        "port": 3101
+      },
+      "portalApi": {
+        "host": "127.0.0.1",
+        "port": 3102
+      }
+    },
+    "shutdownGracePeriodMs": 5000
+  },
+  "features": {
+    "foundationHealthEndpoints": true
+  },
+  "safeLimits": {
+    "maxRequestBodyBytes": 1048576
+  }
+}

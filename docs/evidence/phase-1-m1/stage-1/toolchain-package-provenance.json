@@ -1,0 +1,176 @@
+{
+  "artifact_id": "S1-ART-PROVENANCE",
+  "check_ids": [
+    "S1-EV-022",
+    "S1-EV-023",
+    "S1-EV-026",
+    "S1-EV-027",
+    "S1-EV-028",
+    "S1-EV-029"
+  ],
+  "generated_at": "2026-08-14T17:13:53.362726+00:00",
+  "node": {
+    "actual_sha256": "14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647",
+    "artifact": "node-v24.19.0-linux-x64.tar.xz",
+    "check_id": "S1-EV-022",
+    "command_description": "Download the official Node.js v24.19.0 Linux x64 archive and SHASUMS256.txt over HTTPS, then compare SHA-256.",
+    "exit_code": 0,
+    "expected_sha256": "14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647",
+    "official_shasums_row": "14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647  node-v24.19.0-linux-x64.tar.xz",
+    "redaction": "Public release metadata only; no secret material present.",
+    "result": "PASS",
+    "schema_version": 1,
+    "sources": [
+      "https://nodejs.org/dist/v24.19.0/SHASUMS256.txt",
+      "https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz"
+    ],
+    "timestamp": "2026-08-14T17:02:55.788869+00:00",
+    "tool": "Python urllib + hashlib.sha256",
+    "version": "24.19.0"
+  },
+  "pgbackrest_runtime": {
+    "check_id": "RAW-PGBACKREST-VERSION",
+    "command_description": "Execute the checksum-verified extracted pgBackRest package.",
+    "duration_seconds": 0.005,
+    "exit_code": 0,
+    "redaction": "Only a loopback disposable PostgreSQL instance with trust authentication and no password was used; no secret-bearing connection string is retained.",
+    "result": "PASS",
+    "stderr": "",
+    "stdout": "pgBackRest 2.59.0\n",
+    "timestamp_finished": "2026-08-14T17:10:22.260347+00:00",
+    "timestamp_started": "2026-08-14T17:10:22.255397+00:00"
+  },
+  "postgresql_packages": {
+    "check_id": "S1-EV-023",
+    "command_description": "Resolve exact PostgreSQL 18.6, client, libpq, pgBackRest and required liburing2 package metadata from official Debian/PGDG indexes; download, verify SHA-256, and extract only into the disposable probe root.",
+    "exit_code": 0,
+    "packages": [
+      {
+        "actual_sha256": "bf4062a44757c3f7a207a1b9e20c2bf93f9847257516c2ce0befc1257d3dcf8e",
+        "architecture": "amd64",
+        "artifact_url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-18_18.6-1.pgdg13+2_amd64.deb",
+        "expected_sha256": "bf4062a44757c3f7a207a1b9e20c2bf93f9847257516c2ce0befc1257d3dcf8e",
+        "filename": "pool/main/p/postgresql-18/postgresql-18_18.6-1.pgdg13+2_amd64.deb",
+        "index": "PGDG trixie-pgdg Packages.gz",
+        "index_url": "https://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/main/binary-amd64/Packages.gz",
+        "package": "postgresql-18",
+        "version": "18.6-1.pgdg13+2"
+      },
+      {
+        "actual_sha256": "9af40c99f7074f8ff3798155af2f07f1a4e1e3bd4edce44ef928c1e03aea620e",
+        "architecture": "amd64",
+        "artifact_url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-client-18_18.6-1.pgdg13+2_amd64.deb",
+        "expected_sha256": "9af40c99f7074f8ff3798155af2f07f1a4e1e3bd4edce44ef928c1e03aea620e",
+        "filename": "pool/main/p/postgresql-18/postgresql-client-18_18.6-1.pgdg13+2_amd64.deb",
+        "index": "PGDG trixie-pgdg Packages.gz",
+        "index_url": "https://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/main/binary-amd64/Packages.gz",
+        "package": "postgresql-client-18",
+        "version": "18.6-1.pgdg13+2"
+      },
+      {
+        "actual_sha256": "c6cc459bb499db4697686533e50bf5943f7e7d6929c04ef55eec184d5436859b",
+        "architecture": "amd64",
+        "artifact_url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/libpq5_18.6-1.pgdg13+2_amd64.deb",
+        "expected_sha256": "c6cc459bb499db4697686533e50bf5943f7e7d6929c04ef55eec184d5436859b",
+        "filename": "pool/main/p/postgresql-18/libpq5_18.6-1.pgdg13+2_amd64.deb",
+        "index": "PGDG trixie-pgdg Packages.gz",
+        "index_url": "https://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/main/binary-amd64/Packages.gz",
+        "package": "libpq5",
+        "version": "18.6-1.pgdg13+2"
+      },
+      {
+        "actual_sha256": "2ff822645a132ce71f215ae4355d050c6c542143ea6a267cb433acf6413b1a3e",
+        "architecture": "amd64",
+        "artifact_url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/pgbackrest/pgbackrest_2.59.0-1.pgdg13+1_amd64.deb",
+        "expected_sha256": "2ff822645a132ce71f215ae4355d050c6c542143ea6a267cb433acf6413b1a3e",
+        "filename": "pool/main/p/pgbackrest/pgbackrest_2.59.0-1.pgdg13+1_amd64.deb",
+        "index": "PGDG trixie-pgdg Packages.gz",
+        "index_url": "https://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/main/binary-amd64/Packages.gz",
+        "package": "pgbackrest",
+        "version": "2.59.0-1.pgdg13+1"
+      },
+      {
+        "actual_sha256": "4b589c00c7a51172aace2cb2fb3d3ff32daf86c644023126dcfcaa840cc941ea",
+        "architecture": "amd64",
+        "artifact_url": "https://deb.debian.org/debian/pool/main/libu/liburing/liburing2_2.9-1_amd64.deb",
+        "expected_sha256": "4b589c00c7a51172aace2cb2fb3d3ff32daf86c644023126dcfcaa840cc941ea",
+        "filename": "pool/main/libu/liburing/liburing2_2.9-1_amd64.deb",
+        "index": "Debian trixie Packages.xz",
+        "index_url": "https://deb.debian.org/debian/dists/trixie/main/binary-amd64/Packages.xz",
+        "package": "liburing2",
+        "version": "2.9-1"
+      }
+    ],
+    "redaction": "Public package metadata only; no credentials or package-manager configuration retained.",
+    "result": "PASS",
+    "schema_version": 1,
+    "timestamp": "2026-08-14T17:10:12.453698+00:00",
+    "tool": "Python urllib/hashlib + dpkg-deb"
+  },
+  "redaction": "Official public release/package metadata and executable version output only; no signing, deployment or credential use occurred.",
+  "release_tools": {
+    "command_description": "Download official Linux amd64 release artifacts, verify frozen checksums, and execute version commands outside CT 200.",
+    "exit_code": 0,
+    "redaction": "Public release artifacts/metadata only; no credentials or signing operation used.",
+    "result": "PASS",
+    "schema_version": 1,
+    "timestamp": "2026-08-14T17:10:57.230065+00:00",
+    "tools": [
+      {
+        "actual": "4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71",
+        "algorithm": "sha256",
+        "artifact": "cosign-linux-amd64",
+        "check_id": "S1-EV-026",
+        "checksum_match": true,
+        "expected": "4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71",
+        "result": "PASS",
+        "tool": "Cosign",
+        "url": "https://github.com/sigstore/cosign/releases/download/v3.1.3/cosign-linux-amd64",
+        "version": "3.1.3",
+        "version_args": [
+          "version"
+        ],
+        "version_exit_code": 0,
+        "version_output": "______   ______        _______. __    _______ .__   __.\n /      | /  __  \\      /       ||  |  /  _____||  \\ |  |\n|  ,----'|  |  |  |    |   (----`|  | |  |  __  |   \\|  |\n|  |     |  |  |  |     \\   \\    |  | |  | |_ | |  . `  |\n|  `----.|  `--'  | .----)   |   |  | |  |__| | |  |\\   |\n \\______| \\______/  |_______/    |__|  \\______| |__| \\__|\ncosign: A tool for Container Signing, Verification and Storage in an OCI registry\n\nGitVersion:    v3.1.3\nGitCommit:     11926fa5bbbbde47e88fc006b625a17769b743b2\nGitTreeState:  clean\nBuildDate:     2026-08-05T23:43:27Z\nGoVersion:     go1.26.4\nCompiler:      gc\nPlatform:      linux/amd64"
+      },
+      {
+        "actual": "2a2e837a2c8d59ec9af5472ee22d3b04ee463c4e44476ecf993fd1e5ab6ebc7f",
+        "algorithm": "sha256",
+        "artifact": "syft_1.51.0_linux_amd64.tar.gz",
+        "check_id": "S1-EV-027",
+        "checksum_match": true,
+        "expected": "2a2e837a2c8d59ec9af5472ee22d3b04ee463c4e44476ecf993fd1e5ab6ebc7f",
+        "member": "syft",
+        "result": "PASS",
+        "tool": "Syft",
+        "url": "https://github.com/anchore/syft/releases/download/v1.51.0/syft_1.51.0_linux_amd64.tar.gz",
+        "version": "1.51.0",
+        "version_args": [
+          "version"
+        ],
+        "version_exit_code": 0,
+        "version_output": "Application:   syft\nVersion:       1.51.0\nBuildDate:     2026-08-10T14:48:50Z\nGitCommit:     2293641e3bd628a01bb37639318d62c0ebe89b39\nGitDescription: v1.51.0\nPlatform:      linux/amd64\nGoVersion:     go1.26.3\nCompiler:      gc\nSchemaVersion: 16.1.10"
+      },
+      {
+        "actual": "8220d1f013b6f27510247b2360c9e0ca9f018feebd82515f07635318b34ff9777ccc8fd0b6e6f2486ce3a33fe389fbb7db12d05baa474f4587509fb4f5ebf1c9",
+        "algorithm": "sha512",
+        "artifact": "caddy_2.11.4_linux_amd64.tar.gz",
+        "check_id": "S1-EV-028",
+        "checksum_match": true,
+        "expected": "8220d1f013b6f27510247b2360c9e0ca9f018feebd82515f07635318b34ff9777ccc8fd0b6e6f2486ce3a33fe389fbb7db12d05baa474f4587509fb4f5ebf1c9",
+        "member": "caddy",
+        "result": "PASS",
+        "tool": "Caddy",
+        "url": "https://github.com/caddyserver/caddy/releases/download/v2.11.4/caddy_2.11.4_linux_amd64.tar.gz",
+        "version": "2.11.4",
+        "version_args": [
+          "version"
+        ],
+        "version_exit_code": 0,
+        "version_output": "v2.11.4 h1:XKxkMTgNSizEvKG6QHue6cAsFOteU2qA61w2tKkCWi0="
+      }
+    ]
+  },
+  "result": "PASS",
+  "schema_version": 1
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "TOS-S2-EV-002",
+  "timestamp": "2026-08-28T11:57:25.059Z",
+  "command": "pnpm run format:check",
+  "toolVersions": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "exitCode": 0,
+  "result": "PASS",
+  "execution": {
+    "startedAt": "2026-08-28T11:57:21.524Z",
+    "finishedAt": "2026-08-28T11:57:25.059Z",
+    "outputBytes": 1244,
+    "outputSha256": "18ad1e9c262b2893c9a454513e4518fe1a498690b95d7560381b44e0e4ef2024"
+  },
+  "details": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "mode": "--check",
+    "filesChecked": 144,
+    "protectedBaselineFiles": 40,
+    "protectedOverlap": []
+  },
+  "redaction": "Bounded evidence only. No credentials, tokens, cookies, environment values, temporary secrets, dependency caches, node_modules, or dist contents are stored."
+}

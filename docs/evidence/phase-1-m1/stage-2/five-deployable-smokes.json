@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "TOS-S2-EV-015",
+  "timestamp": "2026-08-28T11:58:50.289Z",
+  "command": "pnpm run test:smoke",
+  "toolVersions": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "exitCode": 0,
+  "result": "PASS",
+  "execution": {
+    "startedAt": "2026-08-28T11:58:48.339Z",
+    "finishedAt": "2026-08-28T11:58:50.289Z",
+    "outputBytes": 3988,
+    "outputSha256": "6be35a6c9785f30caac0f8c803b842d597931ce651ad9e545580f6ede9503715"
+  },
+  "details": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "deployablesBuilt": 5,
+    "webBuilds": [
+      {
+        "app": "admin-web",
+        "markerChecks": {
+          "ownMarker": "TravelOS",
+          "ownMarkerPresent": true,
+          "otherMarker": "TravelOS Portal",
+          "otherMarkerAbsent": true
+        },
+        "fileCount": 3,
+        "aggregateSha256": "c46711c780a337b1b966222df92328278b8d0134ceee1eddbc9c8ffdd882694c",
+        "files": [
+          {
+            "path": "apps/admin-web/dist/assets/index-BXrmIXvv.css",
+            "bytes": 5540,
+            "sha256": "c4f6f0befeace4dd9c68eb798327a87b902ef4f531fa0beb1863cb8f76fac304"
+          },
+          {
+            "path": "apps/admin-web/dist/assets/index-CSFu-y-u.js",
+            "bytes": 190840,
+            "sha256": "bd6cd1f04b3fc21310e95245136ef173b41bbedc07df17b01ab568380fe7349b"
+          },
+          {
+            "path": "apps/admin-web/dist/index.html",
+            "bytes": 483,
+            "sha256": "701ffe1eaa3bb3a13805cec864e905661e53f67620b01ccabf5b57bfe4137f98"
+          }
+        ]
+      },
+      {
+        "app": "portal-web",
+        "markerChecks": {
+          "ownMarker": "TravelOS Portal",
+          "ownMarkerPresent": true,
+          "otherMarker": "data-routing-root=\"admin\"",
+          "otherMarkerAbsent": true
+        },
+        "fileCount": 3,
+        "aggregateSha256": "f7224103371288374dcce6cb6d3420901ed0c246643355f7d4cc1a01e796a4ca",
+        "files": [
+          {
+            "path": "apps/portal-web/dist/assets/index-BXrmIXvv.css",
+            "bytes": 5540,
+            "sha256": "c4f6f0befeace4dd9c68eb798327a87b902ef4f531fa0beb1863cb8f76fac304"
+          },
+          {
+            "path": "apps/portal-web/dist/assets/index-U-F5_OOj.js",
+            "bytes": 190850,
+            "sha256": "16f776df5d925a301064ee32cbd27e101e946bff604e2f0bdb7a15a1b1f358ff"
+          },
+          {
+            "path": "apps/portal-web/dist/index.html",
+            "bytes": 491,
+            "sha256": "d465cad71bb1d44bd8e8988eec4a569442b60a9180b916391b34d70b65813516"
+          }
+        ]
+      }
+    ],
+    "processSmokes": [
+      {
+        "service": "admin-api",
+        "exitCode": 0,
+        "events": [
+          {
+            "event": "process_smoke",
+            "service": "admin-api",
+            "environment": "DEVELOPMENT",
+            "initialized": true,
+            "listening": true,
+            "binding": {
+              "requestedPort": 0,
+              "boundAddress": "127.0.0.1",
+              "boundPort": 46199,
+              "ephemeralPortRequested": true
+            },
+            "healthRequest": {
+              "method": "GET",
+              "path": "/health/live"
+            },
+            "healthStatus": 200,
+            "healthResponse": {
+              "status": "ok",
+              "service": "admin-api",
+              "environment": "DEVELOPMENT"
+            },
+            "cleanShutdown": true
+          }
+        ]
+      },
+      {
+        "service": "portal-api",
+        "exitCode": 0,
+        "events": [
+          {
+            "event": "process_smoke",
+            "service": "portal-api",
+            "environment": "DEVELOPMENT",
+            "initialized": true,
+            "listening": true,
+            "binding": {
+              "requestedPort": 0,
+              "boundAddress": "127.0.0.1",
+              "boundPort": 35163,
+              "ephemeralPortRequested": true
+            },
+            "healthRequest": {
+              "method": "GET",
+              "path": "/health/live"
+            },
+            "healthStatus": 200,
+            "healthResponse": {
+              "status": "ok",
+              "service": "portal-api",
+              "environment": "DEVELOPMENT"
+            },
+            "cleanShutdown": true
+          }
+        ]
+      },
+      {
+        "service": "worker",
+        "exitCode": 0,
+        "events": [
+          {
+            "event": "process_bootstrap",
+            "service": "worker",
+            "environment": "DEVELOPMENT",
+            "state": "RUNNING"
+          },
+          {
+            "event": "process_shutdown",
+            "service": "worker",
+            "state": "STOPPED"
+          }
+        ]
+      }
+    ]
+  },
+  "redaction": "Bounded evidence only. No credentials, tokens, cookies, environment values, temporary secrets, dependency caches, node_modules, or dist contents are stored."
+}

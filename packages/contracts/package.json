@@ -1,0 +1,26 @@
+{
+  "name": "@travelos/contracts",
+  "version": "0.0.0-stage2",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "exports": {
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "import": "./dist/admin/index.js"
+    },
+    "./portal": {
+      "types": "./dist/portal/index.d.ts",
+      "import": "./dist/portal/index.js"
+    }
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  }
+}

@@ -1,0 +1,11 @@
+.git/
+.hermes/
+docs/
+AGENTS.md
+IDEA.md
+node_modules/
+**/dist/
+deploy/manifests/schema/
+coverage/
+.vite/
+pnpm-lock.yaml

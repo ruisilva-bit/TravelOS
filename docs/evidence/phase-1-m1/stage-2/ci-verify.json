@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "TOS-S2-EV-018",
+  "timestamp": "2026-08-28T12:00:30.292Z",
+  "command": "pnpm run ci:verify",
+  "toolVersions": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "exitCode": 0,
+  "result": "PASS",
+  "execution": {
+    "startedAt": "2026-08-28T11:58:51.268Z",
+    "finishedAt": "2026-08-28T12:00:30.292Z",
+    "outputBytes": 111792,
+    "outputSha256": "68ed25fe9b9d2782f0b4182c648a577a8310da0ab69f879efd9468dff701e7f3"
+  },
+  "details": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "completed": [
+      "protected-baseline:pre",
+      "verify:pins",
+      "test:lifecycle-policy",
+      "format:check",
+      "lint",
+      "typecheck",
+      "architecture:check",
+      "test:unit",
+      "config:schema:check",
+      "test:freeze-inputs",
+      "test:security-scanner",
+      "test:rejected-technologies",
+      "verify:rejected-technologies",
+      "security:scan:source",
+      "build",
+      "test:smoke",
+      "security:scan:bundles",
+      "protected-baseline:post"
+    ]
+  },
+  "redaction": "Bounded evidence only. No credentials, tokens, cookies, environment values, temporary secrets, dependency caches, node_modules, or dist contents are stored."
+}

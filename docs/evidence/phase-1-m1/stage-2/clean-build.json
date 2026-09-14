@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "TOS-S2-EV-014",
+  "timestamp": "2026-08-28T11:58:48.338Z",
+  "command": "pnpm run build",
+  "toolVersions": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "exitCode": 0,
+  "result": "PASS",
+  "execution": {
+    "startedAt": "2026-08-28T11:58:39.353Z",
+    "finishedAt": "2026-08-28T11:58:48.338Z",
+    "outputBytes": 2806,
+    "outputSha256": "259ce26e1afebeb8829401d2f6ae506ac6e1aa9ca5866117f0efd7a32485ee4f"
+  },
+  "details": {
+    "cleanOutputRemovalExecuted": true,
+    "workspaceProjectsWithBuild": 14,
+    "workspaceProjectCount": 15,
+    "deployableCompositionRoots": 5
+  },
+  "redaction": "Bounded evidence only. No credentials, tokens, cookies, environment values, temporary secrets, dependency caches, node_modules, or dist contents are stored."
+}

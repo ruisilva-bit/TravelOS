@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "TOS-S2-EV-024",
+  "timestamp": "2026-08-28T11:58:50.289Z",
+  "command": "Final Vitest JSON report, composition-root inspection, and pnpm run test:smoke",
+  "toolVersions": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "exitCode": 0,
+  "result": "PASS",
+  "execution": {
+    "startedAt": "2026-08-28T11:58:48.339Z",
+    "finishedAt": "2026-08-28T11:58:50.289Z",
+    "outputBytes": 3988,
+    "outputSha256": "6be35a6c9785f30caac0f8c803b842d597931ce651ad9e545580f6ede9503715"
+  },
+  "details": {
+    "finding": "TOS-S2-005",
+    "status": "CORRECTED — PENDING INDEPENDENT CLOSURE",
+    "runtimeContractCases": {
+      "distinctHostPortCombinations": true,
+      "sameHostAndSameNumericPortRejected": true,
+      "sameNumericPortOnDistinctExplicitBindAddressesAccepted": true
+    },
+    "compositionRootListenerConsumption": {
+      "adminApiConsumesOnlyAdminListener": true,
+      "portalApiConsumesOnlyPortalListener": true
+    },
+    "realEphemeralLoopbackHttpSmokes": {
+      "admin-api": {
+        "event": "process_smoke",
+        "service": "admin-api",
+        "environment": "DEVELOPMENT",
+        "initialized": true,
+        "listening": true,
+        "binding": {
+          "requestedPort": 0,
+          "boundAddress": "127.0.0.1",
+          "boundPort": 46199,
+          "ephemeralPortRequested": true
+        },
+        "healthRequest": {
+          "method": "GET",
+          "path": "/health/live"
+        },
+        "healthStatus": 200,
+        "healthResponse": {
+          "status": "ok",
+          "service": "admin-api",
+          "environment": "DEVELOPMENT"
+        },
+        "cleanShutdown": true
+      },
+      "portal-api": {
+        "event": "process_smoke",
+        "service": "portal-api",
+        "environment": "DEVELOPMENT",
+        "initialized": true,
+        "listening": true,
+        "binding": {
+          "requestedPort": 0,
+          "boundAddress": "127.0.0.1",
+          "boundPort": 35163,
+          "ephemeralPortRequested": true
+        },
+        "healthRequest": {
+          "method": "GET",
+          "path": "/health/live"
+        },
+        "healthStatus": 200,
+        "healthResponse": {
+          "status": "ok",
+          "service": "portal-api",
+          "environment": "DEVELOPMENT"
+        },
+        "cleanShutdown": true
+      }
+    }
+  },
+  "redaction": "Bounded evidence only. No credentials, tokens, cookies, environment values, temporary secrets, dependency caches, node_modules, or dist contents are stored."
+}

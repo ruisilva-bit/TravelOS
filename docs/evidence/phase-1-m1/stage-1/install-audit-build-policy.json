@@ -1,0 +1,118 @@
+{
+  "artifact_id": "S1-ART-INSTALL-AUDIT-POLICY",
+  "build_policy": {
+    "allow_builds": {
+      "esbuild": true
+    },
+    "check_id": "S1-EV-007",
+    "effective_config": {
+      "minimumReleaseAge": 1440,
+      "minimumReleaseAgeExclude": [],
+      "overrides": {
+        "lodash": "4.18.1"
+      },
+      "registry": "https://registry.npmjs.org/",
+      "userAgent": "pnpm/11.21.0 npm/? node/v24.19.0 linux x64"
+    },
+    "ignored_builds_output": "Automatically ignored builds during installation:\n  None",
+    "result": "PASS"
+  },
+  "check_ids": [
+    "S1-EV-003",
+    "S1-EV-004",
+    "S1-EV-005",
+    "S1-EV-006",
+    "S1-EV-007"
+  ],
+  "clean_strict_install": {
+    "check_id": "S1-EV-003",
+    "command_description": "Clean exact dependency install with no lockfile or node_modules, engine-strict and strict peer validation, a 1440-minute release-age gate, and a probe-specific store.",
+    "duration_seconds": 10.525,
+    "exit_code": 0,
+    "redaction": "No credentials, tokens, cookies, private keys, or secret-bearing connection strings were passed to or retained by this command record.",
+    "result": "PASS",
+    "stderr": "",
+    "stdout": "Progress: resolved 1, reused 0, downloaded 0, added 0\nProgress: resolved 45, reused 0, downloaded 3, added 0\nProgress: resolved 121, reused 0, downloaded 51, added 0\nProgress: resolved 232, reused 0, downloaded 207, added 0\nProgress: resolved 334, reused 0, downloaded 278, added 0\nProgress: resolved 436, reused 0, downloaded 303, added 0\nProgress: resolved 491, reused 0, downloaded 352, added 0\nProgress: resolved 632, reused 0, downloaded 559, added 0\nPackages: +561\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\nPackages are hard linked from the content-addressable store to the virtual store.\n  Content-addressable store is at: /tmp/travelos-stage1-correction-store/v11\n  Virtual store is at:             node_modules/.pnpm\nProgress: resolved 632, reused 0, downloaded 561, added 561, done\n.../esbuild@0.28.2/node_modules/esbuild postinstall$ node install.js\n.../esbuild@0.28.2/node_modules/esbuild postinstall: Done\n\ndependencies:\n+ @asteasolutions/zod-to-openapi 9.1.0\n+ @nestjs/common 11.1.29\n+ @nestjs/core 11.1.29\n+ @nestjs/platform-express 11.1.29\n+ better-auth 1.6.27\n+ decimal.js 10.6.0\n+ kysely 0.29.5\n+ nestjs-pino 4.6.1\n+ pg 8.23.0\n+ pino 10.3.1\n+ pino-http 11.0.0\n+ react 19.2.8\n+ react-dom 19.2.8\n+ reflect-metadata 0.2.2\n+ rxjs 7.8.2\n+ zod 4.4.3\n\ndevDependencies:\n+ @axe-core/playwright 4.13.0\n+ @eslint/js 10.0.1\n+ @nestjs/testing 11.1.29\n+ @playwright/test 1.62.1\n+ @tailwindcss/vite 4.3.3\n+ @testing-library/dom 10.4.1\n+ @testing-library/jest-dom 7.0.1\n+ @testing-library/react 16.3.2\n+ @types/node 24.13.3 (26.2.0 is available)\n+ @types/pg 8.21.0\n+ @types/react 19.2.18\n+ @types/react-dom 19.2.4\n+ @types/supertest 7.2.1\n+ @vitejs/plugin-react 6.0.5\n+ @vitest/coverage-v8 4.1.10\n+ auth 1.6.27\n+ dependency-cruiser 18.2.0\n+ eslint 10.8.1\n+ eslint-plugin-boundaries 7.2.0\n+ fast-check 4.9.0\n+ jsdom 30.0.1\n+ node-pg-migrate 9.0.0\n+ prettier 3.9.6\n+ supertest 7.2.2\n+ tailwindcss 4.3.3\n+ tsx 4.23.12\n+ typescript 6.0.3 (7.0.2 is available)\n+ typescript-eslint 8.67.0\n+ vite 8.2.1\n+ vitest 4.1.10\n\nDone in 10.3s using pnpm v11.21.0\n",
+    "timestamp_finished": "2026-08-14T17:03:13.049883+00:00",
+    "timestamp_started": "2026-08-14T17:03:02.524768+00:00"
+  },
+  "dependency_input_sha256": "e3e96c8c687901ce2f02c0a6150854b92e62d4c63b338b62f99e41d0dd279f82",
+  "frozen_reinstall": {
+    "check_id": "S1-EV-004",
+    "command_description": "Reinstall from the generated lockfile with --frozen-lockfile, strict peers, and the same isolated store.",
+    "duration_seconds": 1.969,
+    "exit_code": 0,
+    "redaction": "No credentials, tokens, cookies, private keys, or secret-bearing connection strings were passed to or retained by this command record.",
+    "result": "PASS",
+    "stderr": "",
+    "stdout": "\u2713 Lockfile passes supply-chain policies (verified 1s ago)\nLockfile is up to date, resolution step is skipped\nProgress: resolved 1, reused 0, downloaded 0, added 0\nPackages: +561\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\nPackages are hard linked from the content-addressable store to the virtual store.\n  Content-addressable store is at: /tmp/travelos-stage1-correction-store/v11\n  Virtual store is at:             node_modules/.pnpm\nProgress: resolved 561, reused 561, downloaded 0, added 561, done\n.../esbuild@0.28.2/node_modules/esbuild postinstall$ node install.js\n.../esbuild@0.28.2/node_modules/esbuild postinstall: Done\n\ndependencies:\n+ @asteasolutions/zod-to-openapi 9.1.0\n+ @nestjs/common 11.1.29\n+ @nestjs/core 11.1.29\n+ @nestjs/platform-express 11.1.29\n+ better-auth 1.6.27\n+ decimal.js 10.6.0\n+ kysely 0.29.5\n+ nestjs-pino 4.6.1\n+ pg 8.23.0\n+ pino 10.3.1\n+ pino-http 11.0.0\n+ react 19.2.8\n+ react-dom 19.2.8\n+ reflect-metadata 0.2.2\n+ rxjs 7.8.2\n+ zod 4.4.3\n\ndevDependencies:\n+ @axe-core/playwright 4.13.0\n+ @eslint/js 10.0.1\n+ @nestjs/testing 11.1.29\n+ @playwright/test 1.62.1\n+ @tailwindcss/vite 4.3.3\n+ @testing-library/dom 10.4.1\n+ @testing-library/jest-dom 7.0.1\n+ @testing-library/react 16.3.2\n+ @types/node 24.13.3\n+ @types/pg 8.21.0\n+ @types/react 19.2.18\n+ @types/react-dom 19.2.4\n+ @types/supertest 7.2.1\n+ @vitejs/plugin-react 6.0.5\n+ @vitest/coverage-v8 4.1.10\n+ auth 1.6.27\n+ dependency-cruiser 18.2.0\n+ eslint 10.8.1\n+ eslint-plugin-boundaries 7.2.0\n+ fast-check 4.9.0\n+ jsdom 30.0.1\n+ node-pg-migrate 9.0.0\n+ prettier 3.9.6\n+ supertest 7.2.2\n+ tailwindcss 4.3.3\n+ tsx 4.23.12\n+ typescript 6.0.3\n+ typescript-eslint 8.67.0\n+ vite 8.2.1\n+ vitest 4.1.10\n\nDone in 1.8s using pnpm v11.21.0\n",
+    "timestamp_finished": "2026-08-14T17:03:15.250418+00:00",
+    "timestamp_started": "2026-08-14T17:03:13.281005+00:00"
+  },
+  "full_audit": {
+    "advisory_count": 0,
+    "command": {
+      "check_id": "S1-EV-005",
+      "command_description": "Run complete dependency advisory audit and emit JSON.",
+      "duration_seconds": 1.023,
+      "exit_code": 0,
+      "redaction": "No credentials, tokens, cookies, private keys, or secret-bearing connection strings were passed to or retained by this command record.",
+      "result": "PASS",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "8661a604121dbbb81b65d508e706d330c02e883bf53a8f7a628e3d55c8600c9b",
+      "timestamp_finished": "2026-08-14T17:03:18.199982+00:00",
+      "timestamp_started": "2026-08-14T17:03:17.177313+00:00"
+    },
+    "metadata": {
+      "dependencies": 262,
+      "devDependencies": 317,
+      "optionalDependencies": 78,
+      "totalDependencies": 632,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "info": 0,
+        "low": 0,
+        "moderate": 0
+      }
+    }
+  },
+  "generated_at": "2026-08-14T17:13:53.359731+00:00",
+  "pnpm_lock_sha256": "e86248639a5983765b3e11e3b7ac79d2e4e945fc4a022e368929832a86410a7b",
+  "production_audit": {
+    "advisory_count": 0,
+    "command": {
+      "check_id": "S1-EV-006",
+      "command_description": "Run production-only dependency advisory audit and emit JSON.",
+      "duration_seconds": 1.019,
+      "exit_code": 0,
+      "redaction": "No credentials, tokens, cookies, private keys, or secret-bearing connection strings were passed to or retained by this command record.",
+      "result": "PASS",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "dbbc99ddec4333a9938d5fe91a3b1c49808e985d4b23fa1904d28def5947fd4d",
+      "timestamp_finished": "2026-08-14T17:03:19.219603+00:00",
+      "timestamp_started": "2026-08-14T17:03:18.200186+00:00"
+    },
+    "metadata": {
+      "dependencies": 161,
+      "devDependencies": 0,
+      "optionalDependencies": 154,
+      "totalDependencies": 315,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "info": 0,
+        "low": 0,
+        "moderate": 0
+      }
+    }
+  },
+  "redaction": "Install output was reviewed for secret-bearing patterns; the retained probe used only public registries and an isolated store.",
+  "result": "PASS",
+  "schema_version": 1,
+  "tool_versions": {
+    "corepack": "0.35.0",
+    "node": "24.19.0",
+    "pnpm": "11.21.0"
+  }
+}

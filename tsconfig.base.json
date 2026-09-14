@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "paths": {
+      "@travelos/backend-core": ["./packages/backend-core/src/index.ts"],
+      "@travelos/contracts/admin": ["./packages/contracts/src/admin/index.ts"],
+      "@travelos/contracts/portal": ["./packages/contracts/src/portal/index.ts"],
+      "@travelos/config": ["./packages/config/src/index.ts"],
+      "@travelos/design-system": ["./packages/design-system/src/index.ts"],
+      "@travelos/portal-safe-core/portal-access": [
+        "./packages/portal-safe-core/src/portal-access/index.ts"
+      ],
+      "@travelos/portal-safe-core/customer-presentation": [
+        "./packages/portal-safe-core/src/customer-presentation/index.ts"
+      ],
+      "@travelos/portal-safe-core/documents": ["./packages/portal-safe-core/src/documents/index.ts"]
+    },
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
+    "jsx": "react-jsx"
+  }
+}

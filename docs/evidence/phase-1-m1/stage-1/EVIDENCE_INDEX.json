@@ -1,0 +1,244 @@
+{
+  "artifact_count": 9,
+  "artifact_id": "S1-ART-EVIDENCE-INDEX",
+  "artifacts": [
+    {
+      "artifact_id": "S1-ART-BETTER-AUTH-REALMS",
+      "bytes": 4581,
+      "check_ids": [
+        "S1-EV-014",
+        "S1-EV-015",
+        "S1-EV-016"
+      ],
+      "media_type": "application/json",
+      "path": "better-auth-realm-separation.json",
+      "result": "PASS",
+      "sha256": "74087b4519bc262980b764d5a2bfb3b2c73e906c4c4d08fe092b2e682b151c06"
+    },
+    {
+      "artifact_id": "S1-ART-CT200-READ-ONLY",
+      "bytes": 3810,
+      "check_ids": [
+        "S1-EV-024",
+        "S1-EV-025"
+      ],
+      "media_type": "application/json",
+      "path": "ct200-read-only-inventory.json",
+      "result": "PASS",
+      "sha256": "ca027dcd13a40f877f25c85b1c5a718ffbb3c4522bf6d95211dae41fde044cfc"
+    },
+    {
+      "artifact_id": "S1-ART-DEPENDENCY-MATRIX",
+      "bytes": 58048,
+      "check_ids": [
+        "S1-EV-001"
+      ],
+      "media_type": "application/json",
+      "path": "dependency-matrix.json",
+      "result": "PASS",
+      "sha256": "e7a6469635fda29f87e9318828bf395361dd968ce9847b5e944e9b4001b7f958"
+    },
+    {
+      "artifact_id": "S1-ART-DISPOSABLE-CLEANUP",
+      "bytes": 2178,
+      "check_ids": [
+        "S1-EV-030"
+      ],
+      "media_type": "application/json",
+      "path": "disposable-cleanup.json",
+      "result": "PASS",
+      "sha256": "bdb4941d01ebf2cd59d12d5dbd06e36096d88b4632074faa461129882fd86ee0"
+    },
+    {
+      "artifact_id": "S1-ART-INSTALL-AUDIT-POLICY",
+      "bytes": 8415,
+      "check_ids": [
+        "S1-EV-003",
+        "S1-EV-004",
+        "S1-EV-005",
+        "S1-EV-006",
+        "S1-EV-007"
+      ],
+      "media_type": "application/json",
+      "path": "install-audit-build-policy.json",
+      "result": "PASS",
+      "sha256": "5aadc38d36d169e81e65d44702a6af7b0bd719da0777f4f2511a1abc3f0c9bab"
+    },
+    {
+      "artifact_id": "S1-ART-POSTGRESQL-RUNTIME",
+      "bytes": 5252,
+      "check_ids": [
+        "S1-EV-017",
+        "S1-EV-018",
+        "S1-EV-019",
+        "S1-EV-020",
+        "S1-EV-021"
+      ],
+      "media_type": "application/json",
+      "path": "postgresql-runtime-results.json",
+      "result": "PASS",
+      "sha256": "154d3a3bdfa70b2e61a481b3cfb19dac4dca48a42149e30537ce42bf60019682"
+    },
+    {
+      "artifact_id": "S1-ART-QUALITY-BUILD",
+      "bytes": 13195,
+      "check_ids": [
+        "S1-EV-008",
+        "S1-EV-009",
+        "S1-EV-010",
+        "S1-EV-011",
+        "S1-EV-012",
+        "S1-EV-013"
+      ],
+      "media_type": "application/json",
+      "path": "quality-build-results.json",
+      "result": "PASS",
+      "sha256": "94ba8623a85a175ae8b4fd5fa8b695b6a1c9f879e3e3bfbd4a30ea4836f9f38f"
+    },
+    {
+      "artifact_id": "S1-ART-ENGINE-PEER",
+      "bytes": 172932,
+      "check_ids": [
+        "S1-EV-002"
+      ],
+      "media_type": "application/json",
+      "path": "resolved-engine-peer-graph.json",
+      "result": "PASS",
+      "sha256": "1e3d0971e5e378c42412b0256866a8d25382fc36774130c05ce42058cb2dcf17"
+    },
+    {
+      "artifact_id": "S1-ART-PROVENANCE",
+      "bytes": 9434,
+      "check_ids": [
+        "S1-EV-022",
+        "S1-EV-023",
+        "S1-EV-026",
+        "S1-EV-027",
+        "S1-EV-028",
+        "S1-EV-029"
+      ],
+      "media_type": "application/json",
+      "path": "toolchain-package-provenance.json",
+      "result": "PASS",
+      "sha256": "20838a66030a8d50144922440f644bd80dbcbe105bdaa8cf573b3efed767bebb"
+    }
+  ],
+  "check_coverage": {
+    "covered": [
+      "S1-EV-001",
+      "S1-EV-002",
+      "S1-EV-003",
+      "S1-EV-004",
+      "S1-EV-005",
+      "S1-EV-006",
+      "S1-EV-007",
+      "S1-EV-008",
+      "S1-EV-009",
+      "S1-EV-010",
+      "S1-EV-011",
+      "S1-EV-012",
+      "S1-EV-013",
+      "S1-EV-014",
+      "S1-EV-015",
+      "S1-EV-016",
+      "S1-EV-017",
+      "S1-EV-018",
+      "S1-EV-019",
+      "S1-EV-020",
+      "S1-EV-021",
+      "S1-EV-022",
+      "S1-EV-023",
+      "S1-EV-024",
+      "S1-EV-025",
+      "S1-EV-026",
+      "S1-EV-027",
+      "S1-EV-028",
+      "S1-EV-029",
+      "S1-EV-030"
+    ],
+    "duplicates": [],
+    "expected": [
+      "S1-EV-001",
+      "S1-EV-002",
+      "S1-EV-003",
+      "S1-EV-004",
+      "S1-EV-005",
+      "S1-EV-006",
+      "S1-EV-007",
+      "S1-EV-008",
+      "S1-EV-009",
+      "S1-EV-010",
+      "S1-EV-011",
+      "S1-EV-012",
+      "S1-EV-013",
+      "S1-EV-014",
+      "S1-EV-015",
+      "S1-EV-016",
+      "S1-EV-017",
+      "S1-EV-018",
+      "S1-EV-019",
+      "S1-EV-020",
+      "S1-EV-021",
+      "S1-EV-022",
+      "S1-EV-023",
+      "S1-EV-024",
+      "S1-EV-025",
+      "S1-EV-026",
+      "S1-EV-027",
+      "S1-EV-028",
+      "S1-EV-029",
+      "S1-EV-030"
+    ],
+    "extra": [],
+    "missing": [],
+    "result": "PASS"
+  },
+  "generated_at": "2026-08-14T17:24:25.667723+00:00",
+  "redaction": "All artifacts declare their evidence boundary; no credential material is retained.",
+  "retention_policy": {
+    "forbidden": [
+      "credentials",
+      "tokens",
+      "cookies",
+      "private keys",
+      "secret-bearing connection strings",
+      "unnecessary PII",
+      "package caches",
+      "binaries",
+      "PostgreSQL data directories",
+      "node_modules",
+      "generated SQL",
+      "database dumps"
+    ],
+    "retained": [
+      "bounded JSON evidence summaries and this index"
+    ]
+  },
+  "schema_version": 1,
+  "scope": "TravelOS Phase 1 M1 Stage 1 post-review correction evidence",
+  "security_scan": {
+    "regex_findings": [],
+    "regex_patterns": [
+      "aws_key",
+      "bearer",
+      "github_token",
+      "npm_token",
+      "password_url",
+      "private_key",
+      "pve_cookie"
+    ],
+    "result": "PASS",
+    "reviewed_false_positives": [
+      {
+        "path": "dependency-matrix.json.resolved_versions.cookie",
+        "reason": "npm package name used as a version-map key",
+        "versions": [
+          "0.7.2"
+        ]
+      }
+    ],
+    "scanned_artifact_count": 9,
+    "sensitive_json_key_findings": []
+  },
+  "self_hash_policy": "EVIDENCE_INDEX.json is excluded from its own rows to avoid recursive hashing; the corrected candidate freeze hashes this index."
+}

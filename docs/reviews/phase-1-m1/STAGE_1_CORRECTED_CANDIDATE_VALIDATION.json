@@ -1,0 +1,587 @@
+{
+  "checks": [
+    {
+      "check_id": "VAL-001",
+      "details": {
+        "artifact_count": 9,
+        "artifacts": [
+          {
+            "actual_sha256": "74087b4519bc262980b764d5a2bfb3b2c73e906c4c4d08fe092b2e682b151c06",
+            "bytes_actual": 4581,
+            "bytes_expected": 4581,
+            "expected_sha256": "74087b4519bc262980b764d5a2bfb3b2c73e906c4c4d08fe092b2e682b151c06",
+            "match": true,
+            "path": "better-auth-realm-separation.json"
+          },
+          {
+            "actual_sha256": "ca027dcd13a40f877f25c85b1c5a718ffbb3c4522bf6d95211dae41fde044cfc",
+            "bytes_actual": 3810,
+            "bytes_expected": 3810,
+            "expected_sha256": "ca027dcd13a40f877f25c85b1c5a718ffbb3c4522bf6d95211dae41fde044cfc",
+            "match": true,
+            "path": "ct200-read-only-inventory.json"
+          },
+          {
+            "actual_sha256": "e7a6469635fda29f87e9318828bf395361dd968ce9847b5e944e9b4001b7f958",
+            "bytes_actual": 58048,
+            "bytes_expected": 58048,
+            "expected_sha256": "e7a6469635fda29f87e9318828bf395361dd968ce9847b5e944e9b4001b7f958",
+            "match": true,
+            "path": "dependency-matrix.json"
+          },
+          {
+            "actual_sha256": "bdb4941d01ebf2cd59d12d5dbd06e36096d88b4632074faa461129882fd86ee0",
+            "bytes_actual": 2178,
+            "bytes_expected": 2178,
+            "expected_sha256": "bdb4941d01ebf2cd59d12d5dbd06e36096d88b4632074faa461129882fd86ee0",
+            "match": true,
+            "path": "disposable-cleanup.json"
+          },
+          {
+            "actual_sha256": "5aadc38d36d169e81e65d44702a6af7b0bd719da0777f4f2511a1abc3f0c9bab",
+            "bytes_actual": 8415,
+            "bytes_expected": 8415,
+            "expected_sha256": "5aadc38d36d169e81e65d44702a6af7b0bd719da0777f4f2511a1abc3f0c9bab",
+            "match": true,
+            "path": "install-audit-build-policy.json"
+          },
+          {
+            "actual_sha256": "154d3a3bdfa70b2e61a481b3cfb19dac4dca48a42149e30537ce42bf60019682",
+            "bytes_actual": 5252,
+            "bytes_expected": 5252,
+            "expected_sha256": "154d3a3bdfa70b2e61a481b3cfb19dac4dca48a42149e30537ce42bf60019682",
+            "match": true,
+            "path": "postgresql-runtime-results.json"
+          },
+          {
+            "actual_sha256": "94ba8623a85a175ae8b4fd5fa8b695b6a1c9f879e3e3bfbd4a30ea4836f9f38f",
+            "bytes_actual": 13195,
+            "bytes_expected": 13195,
+            "expected_sha256": "94ba8623a85a175ae8b4fd5fa8b695b6a1c9f879e3e3bfbd4a30ea4836f9f38f",
+            "match": true,
+            "path": "quality-build-results.json"
+          },
+          {
+            "actual_sha256": "1e3d0971e5e378c42412b0256866a8d25382fc36774130c05ce42058cb2dcf17",
+            "bytes_actual": 172932,
+            "bytes_expected": 172932,
+            "expected_sha256": "1e3d0971e5e378c42412b0256866a8d25382fc36774130c05ce42058cb2dcf17",
+            "match": true,
+            "path": "resolved-engine-peer-graph.json"
+          },
+          {
+            "actual_sha256": "20838a66030a8d50144922440f644bd80dbcbe105bdaa8cf573b3efed767bebb",
+            "bytes_actual": 9434,
+            "bytes_expected": 9434,
+            "expected_sha256": "20838a66030a8d50144922440f644bd80dbcbe105bdaa8cf573b3efed767bebb",
+            "match": true,
+            "path": "toolchain-package-provenance.json"
+          }
+        ],
+        "index_sha256": "c5dce2f9217d24b4a0e4d00e12e9a9e089a62ed5676238a2ca8411d37f2bce21"
+      },
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-002",
+      "details": {
+        "covered": [
+          "S1-EV-001",
+          "S1-EV-002",
+          "S1-EV-003",
+          "S1-EV-004",
+          "S1-EV-005",
+          "S1-EV-006",
+          "S1-EV-007",
+          "S1-EV-008",
+          "S1-EV-009",
+          "S1-EV-010",
+          "S1-EV-011",
+          "S1-EV-012",
+          "S1-EV-013",
+          "S1-EV-014",
+          "S1-EV-015",
+          "S1-EV-016",
+          "S1-EV-017",
+          "S1-EV-018",
+          "S1-EV-019",
+          "S1-EV-020",
+          "S1-EV-021",
+          "S1-EV-022",
+          "S1-EV-023",
+          "S1-EV-024",
+          "S1-EV-025",
+          "S1-EV-026",
+          "S1-EV-027",
+          "S1-EV-028",
+          "S1-EV-029",
+          "S1-EV-030"
+        ],
+        "duplicates": [],
+        "expected": [
+          "S1-EV-001",
+          "S1-EV-002",
+          "S1-EV-003",
+          "S1-EV-004",
+          "S1-EV-005",
+          "S1-EV-006",
+          "S1-EV-007",
+          "S1-EV-008",
+          "S1-EV-009",
+          "S1-EV-010",
+          "S1-EV-011",
+          "S1-EV-012",
+          "S1-EV-013",
+          "S1-EV-014",
+          "S1-EV-015",
+          "S1-EV-016",
+          "S1-EV-017",
+          "S1-EV-018",
+          "S1-EV-019",
+          "S1-EV-020",
+          "S1-EV-021",
+          "S1-EV-022",
+          "S1-EV-023",
+          "S1-EV-024",
+          "S1-EV-025",
+          "S1-EV-026",
+          "S1-EV-027",
+          "S1-EV-028",
+          "S1-EV-029",
+          "S1-EV-030"
+        ],
+        "extra": [],
+        "missing": [],
+        "result": "PASS"
+      },
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-003",
+      "details": [
+        {
+          "artifact_id": "S1-ART-EVIDENCE-INDEX",
+          "path": "EVIDENCE_INDEX.json",
+          "result": null,
+          "valid": true
+        },
+        {
+          "artifact_id": "S1-ART-BETTER-AUTH-REALMS",
+          "path": "better-auth-realm-separation.json",
+          "result": "PASS",
+          "valid": true
+        },
+        {
+          "artifact_id": "S1-ART-CT200-READ-ONLY",
+          "path": "ct200-read-only-inventory.json",
+          "result": "PASS",
+          "valid": true
+        },
+        {
+          "artifact_id": "S1-ART-DEPENDENCY-MATRIX",
+          "path": "dependency-matrix.json",
+          "result": "PASS",
+          "valid": true
+        },
+        {
+          "artifact_id": "S1-ART-DISPOSABLE-CLEANUP",
+          "path": "disposable-cleanup.json",
+          "result": "PASS",
+          "valid": true
+        },
+        {
+          "artifact_id": "S1-ART-INSTALL-AUDIT-POLICY",
+          "path": "install-audit-build-policy.json",
+          "result": "PASS",
+          "valid": true
+        },
+        {
+          "artifact_id": "S1-ART-POSTGRESQL-RUNTIME",
+          "path": "postgresql-runtime-results.json",
+          "result": "PASS",
+          "valid": true
+        },
+        {
+          "artifact_id": "S1-ART-QUALITY-BUILD",
+          "path": "quality-build-results.json",
+          "result": "PASS",
+          "valid": true
+        },
+        {
+          "artifact_id": "S1-ART-ENGINE-PEER",
+          "path": "resolved-engine-peer-graph.json",
+          "result": "PASS",
+          "valid": true
+        },
+        {
+          "artifact_id": "S1-ART-PROVENANCE",
+          "path": "toolchain-package-provenance.json",
+          "result": "PASS",
+          "valid": true
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-004",
+      "details": {
+        "findings": [],
+        "index_internal_scan": {
+          "regex_findings": [],
+          "regex_patterns": [
+            "aws_key",
+            "bearer",
+            "github_token",
+            "npm_token",
+            "password_url",
+            "private_key",
+            "pve_cookie"
+          ],
+          "result": "PASS",
+          "reviewed_false_positives": [
+            {
+              "path": "dependency-matrix.json.resolved_versions.cookie",
+              "reason": "npm package name used as a version-map key",
+              "versions": [
+                "0.7.2"
+              ]
+            }
+          ],
+          "scanned_artifact_count": 9,
+          "sensitive_json_key_findings": []
+        },
+        "patterns": [
+          "aws_key",
+          "bearer_value",
+          "email_pii",
+          "github_token",
+          "npm_token",
+          "password_url",
+          "pem_payload",
+          "private_key_header",
+          "pve_cookie_value"
+        ],
+        "scanned_files": 14
+      },
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-005",
+      "details": {
+        "files": [
+          {
+            "bytes": 6136,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "EVIDENCE_INDEX.json"
+          },
+          {
+            "bytes": 4581,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "better-auth-realm-separation.json"
+          },
+          {
+            "bytes": 3810,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "ct200-read-only-inventory.json"
+          },
+          {
+            "bytes": 58048,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "dependency-matrix.json"
+          },
+          {
+            "bytes": 2178,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "disposable-cleanup.json"
+          },
+          {
+            "bytes": 8415,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "install-audit-build-policy.json"
+          },
+          {
+            "bytes": 5252,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "postgresql-runtime-results.json"
+          },
+          {
+            "bytes": 13195,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "quality-build-results.json"
+          },
+          {
+            "bytes": 172932,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "resolved-engine-peer-graph.json"
+          },
+          {
+            "bytes": 9434,
+            "extension": ".json",
+            "null_bytes": 0,
+            "path": "toolchain-package-provenance.json"
+          }
+        ],
+        "forbidden_directory_names_present": []
+      },
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-006",
+      "details": {
+        "frozen_files": [
+          {
+            "actual_sha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+            "expected_sha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+            "match": true,
+            "path": "AGENTS.md"
+          },
+          {
+            "actual_sha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+            "expected_sha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+            "match": true,
+            "path": "docs/reviews/PHASE_0_ACCEPTED_BASELINE.md"
+          },
+          {
+            "actual_sha256": "210ab56b4d104b9ba8c5f825bd370c3c9056be172f8a2f6db00704ca91a58f71",
+            "expected_sha256": "210ab56b4d104b9ba8c5f825bd370c3c9056be172f8a2f6db00704ca91a58f71",
+            "match": true,
+            "path": ".hermes/plans/2026-08-14_105849-travelos-phase-1-m1-implementation.md"
+          },
+          {
+            "actual_sha256": "b605ae5dbe2082e7a1976f90f517c6cceecebedaffdc9305bc07f9b9f202afbc",
+            "expected_sha256": "b605ae5dbe2082e7a1976f90f517c6cceecebedaffdc9305bc07f9b9f202afbc",
+            "match": true,
+            "path": "docs/implementation/M1_STAGE_1_CT200_BASELINE.md"
+          },
+          {
+            "actual_sha256": "9ab1b68ce435033f2d5c6cf3e9cc15c27b0ea12867d0473b4af2053442ca1792",
+            "expected_sha256": "9ab1b68ce435033f2d5c6cf3e9cc15c27b0ea12867d0473b4af2053442ca1792",
+            "match": true,
+            "path": "docs/implementation/M1_VERSION_COMPATIBILITY_MATRIX.md"
+          },
+          {
+            "actual_sha256": "d342becbde4737d72ef3fb07cb5b0aa09b2e509701eae8bb68ed6651c8610158",
+            "expected_sha256": "d342becbde4737d72ef3fb07cb5b0aa09b2e509701eae8bb68ed6651c8610158",
+            "match": true,
+            "path": "docs/implementation/M1_BOOTSTRAP_DECISIONS.md"
+          }
+        ],
+        "prior_freeze_sha256": "1b6302ae14bec1733ae693d948191464c1672b03f9aa39b2eee11f9ccee6f31a",
+        "prior_review_sha256": "fb88c2fb6b1e02ec33e771f0a2de8b71d10efae18c400811250bcbf3296e710d"
+      },
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-007",
+      "details": [
+        {
+          "bytes": 2935,
+          "evidence_ids": [
+            "S1-EV-003",
+            "S1-EV-023",
+            "S1-EV-024",
+            "S1-EV-025",
+            "S1-EV-026",
+            "S1-EV-029"
+          ],
+          "path": "docs/implementation/M1_STAGE_1_CT200_BASELINE_CORRECTED.md",
+          "sha256": "beb5951f5a3353a39184d4f168af4e2a4866f06793d8fbee8b4a2ee46235978e",
+          "trailing_newline": true,
+          "unknown_ids": [],
+          "unresolved_placeholders": []
+        },
+        {
+          "bytes": 8525,
+          "evidence_ids": [
+            "S1-EV-001",
+            "S1-EV-002",
+            "S1-EV-003",
+            "S1-EV-004",
+            "S1-EV-005",
+            "S1-EV-006",
+            "S1-EV-007",
+            "S1-EV-008",
+            "S1-EV-009",
+            "S1-EV-010",
+            "S1-EV-011",
+            "S1-EV-012",
+            "S1-EV-013",
+            "S1-EV-014",
+            "S1-EV-015",
+            "S1-EV-016",
+            "S1-EV-017",
+            "S1-EV-018",
+            "S1-EV-019",
+            "S1-EV-020",
+            "S1-EV-021",
+            "S1-EV-022",
+            "S1-EV-023",
+            "S1-EV-026",
+            "S1-EV-027",
+            "S1-EV-028",
+            "S1-EV-029"
+          ],
+          "path": "docs/implementation/M1_VERSION_COMPATIBILITY_MATRIX_CORRECTED.md",
+          "sha256": "3ee47440d3304e92ab850db7865ff645b6e2fdf6172e5c071287e34db2ee6ad6",
+          "trailing_newline": true,
+          "unknown_ids": [],
+          "unresolved_placeholders": []
+        },
+        {
+          "bytes": 5930,
+          "evidence_ids": [
+            "S1-EV-001",
+            "S1-EV-007",
+            "S1-EV-008",
+            "S1-EV-011",
+            "S1-EV-012",
+            "S1-EV-013",
+            "S1-EV-014",
+            "S1-EV-016",
+            "S1-EV-017",
+            "S1-EV-018",
+            "S1-EV-020",
+            "S1-EV-022",
+            "S1-EV-023",
+            "S1-EV-026",
+            "S1-EV-027",
+            "S1-EV-028"
+          ],
+          "path": "docs/implementation/M1_BOOTSTRAP_DECISIONS_CORRECTED.md",
+          "sha256": "366816a9fda4c3c6fbccb26da3675832d8979b82c26714c65815146a0b11b6e2",
+          "trailing_newline": true,
+          "unknown_ids": [],
+          "unresolved_placeholders": []
+        },
+        {
+          "bytes": 7639,
+          "evidence_ids": [
+            "S1-EV-001",
+            "S1-EV-002",
+            "S1-EV-003",
+            "S1-EV-007",
+            "S1-EV-008",
+            "S1-EV-013",
+            "S1-EV-014",
+            "S1-EV-016",
+            "S1-EV-017",
+            "S1-EV-021",
+            "S1-EV-022",
+            "S1-EV-023",
+            "S1-EV-024",
+            "S1-EV-025",
+            "S1-EV-026",
+            "S1-EV-029",
+            "S1-EV-030"
+          ],
+          "path": "docs/reviews/phase-1-m1/STAGE_1_REVIEW_CORRECTIONS.md",
+          "sha256": "0aadcceec817718193535c19d9f4c53a6698b9fb933187f67acc215295c7dc5f",
+          "trailing_newline": true,
+          "unknown_ids": [],
+          "unresolved_placeholders": []
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-008",
+      "details": {
+        "missing": [],
+        "required_decisions": [
+          "GitHub",
+          "`ruisilva-bit`",
+          "`travelos`",
+          "Private",
+          "`https://github.com/ruisilva-bit/travelos`",
+          "`main`",
+          "Direct implementation changes to `main` are prohibited",
+          "GitHub Actions is enabled as the initial CI execution platform",
+          "Repository-owned scripts are authoritative",
+          "Cosign keyless signing with GitHub Actions OIDC",
+          "https://token.actions.githubusercontent.com",
+          "https://github.com/ruisilva-bit/travelos/.github/workflows/release.yml@refs/heads/main",
+          "Long-lived signing private key:** none",
+          "No workflow has been created"
+        ]
+      },
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-009",
+      "details": {
+        "allowed_preexisting_phase0_metadata": [
+          ".hermes/phase0-sources.json"
+        ],
+        "forbidden_roots_present": [],
+        "git_worktree_metadata_present": false,
+        "github_actions_directory_present": false,
+        "source_or_scaffold_files": [],
+        "unexpected_files": []
+      },
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-010",
+      "details": {
+        "freeze_validation": {
+          "guest_ssh_used": false,
+          "matches_retained_after_hash": true,
+          "mutating_guest_or_configuration_requests": 0,
+          "redaction": "Authentication credential/ticket existed only in process memory and is not retained or printed.",
+          "resource_requests": [
+            "GET /nodes/pxmx2/lxc/200/config",
+            "GET /nodes/pxmx2/lxc/200/status/current"
+          ],
+          "result": "PASS",
+          "selected_config_sha256": "1dec136d046e1f08c13f7a2de634cd3663a04210551e4b2cffadb3f7132c7d36",
+          "selected_hash_algorithm": "sha256(sorted JSON, compact encoding)",
+          "status": "running",
+          "timestamp": "2026-08-14T17:23:56.916468+00:00",
+          "tool": "Proxmox HTTPS API resource GET after in-memory ticket authentication"
+        },
+        "limitations": [
+          "No byte-for-byte guest filesystem comparison was performed.",
+          "Runtime counters are excluded because they change without operator mutation.",
+          "This evidence does not claim that no other operator or guest process was active."
+        ],
+        "selected_config_sha256": "1dec136d046e1f08c13f7a2de634cd3663a04210551e4b2cffadb3f7132c7d36"
+      },
+      "result": "PASS"
+    },
+    {
+      "check_id": "VAL-011",
+      "details": {
+        "cleanup_artifact_result": "PASS",
+        "live_process_references": [],
+        "port_55433_connect_ex": 111,
+        "remaining_paths": []
+      },
+      "result": "PASS"
+    }
+  ],
+  "document_id": "TOS-STAGE-1-CORRECTED-VALIDATION",
+  "generated_at": "2026-08-14T17:27:56.074590+00:00",
+  "redaction": "Validation stores hashes, paths, bounded metadata and scan results only; no credential material is retained.",
+  "schema_version": 1,
+  "scope": "Validate the post-review correction only; Stage 2 execution is forbidden.",
+  "stage_2_executed": false,
+  "summary": {
+    "check_count": 11,
+    "fail_count": 0,
+    "pass_count": 11,
+    "result": "PASS"
+  },
+  "tool_versions": {
+    "python": "Python 3.11.15",
+    "sha256": "Python hashlib SHA-256"
+  }
+}

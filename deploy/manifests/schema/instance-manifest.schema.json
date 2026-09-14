@@ -1,0 +1,391 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://travelos.local/schemas/development-instance-manifest.v1.json",
+  "title": "TravelOS DEVELOPMENT instance manifest — structural schema",
+  "$comment": "This JSON Schema includes all directly expressible constraints. It is not fully semantically equivalent to runtime validation. Consumers MUST also run the authoritative TravelOS runtime validator for the machine-readable runtimeOnly registry in x-travelos-invariant-registry.",
+  "type": "object",
+  "properties": {
+    "manifestSchemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "environment": {
+      "type": "string",
+      "const": "DEVELOPMENT"
+    },
+    "instanceId": {
+      "type": "string",
+      "pattern": "^travelos-dev-[a-z0-9][a-z0-9-]{2,47}$"
+    },
+    "compatibility": {
+      "type": "object",
+      "properties": {
+        "releaseVersion": {
+          "type": "string",
+          "pattern": "^0\\.0\\.0-stage2$"
+        },
+        "releaseTarget": {
+          "type": "string",
+          "pattern": "^development:[a-z0-9][a-z0-9.-]{2,63}$"
+        },
+        "configSchemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "databaseSchema": {
+          "type": "object",
+          "properties": {
+            "minimum": {
+              "type": "number",
+              "const": 0
+            },
+            "maximum": {
+              "type": "number",
+              "const": 0
+            }
+          },
+          "required": [
+            "minimum",
+            "maximum"
+          ],
+          "additionalProperties": false
+        },
+        "postgresqlMajor": {
+          "type": "number",
+          "const": 18
+        }
+      },
+      "required": [
+        "releaseVersion",
+        "releaseTarget",
+        "configSchemaVersion",
+        "databaseSchema",
+        "postgresqlMajor"
+      ],
+      "additionalProperties": false
+    },
+    "hosts": {
+      "type": "object",
+      "properties": {
+        "admin": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "portal": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        }
+      },
+      "required": [
+        "admin",
+        "portal"
+      ],
+      "additionalProperties": false
+    },
+    "hostAllowlist": {
+      "minItems": 2,
+      "maxItems": 2,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string",
+            "maxLength": 253,
+            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "PORTAL"
+            ]
+          }
+        },
+        "required": [
+          "host",
+          "surface"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true,
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "surface"
+            ],
+            "properties": {
+              "surface": {
+                "const": "ADMIN"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "surface"
+            ],
+            "properties": {
+              "surface": {
+                "const": "PORTAL"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "agencyBootstrap": {
+      "type": "object",
+      "properties": {
+        "reference": {
+          "type": "string",
+          "pattern": "^agency-bootstrap:[a-z0-9][a-z0-9-]{2,63}$"
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{2,47}$"
+        }
+      },
+      "required": [
+        "reference",
+        "slug"
+      ],
+      "additionalProperties": false
+    },
+    "database": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^travelos_[a-z0-9_]{3,47}$"
+        },
+        "roleCredentialReferences": {
+          "type": "object",
+          "properties": {
+            "adminApi": {
+              "type": "string",
+              "pattern": "^systemd-credential:[a-z][a-z0-9-]{2,63}$"
+            },
+            "portalApi": {
+              "type": "string",
+              "pattern": "^systemd-credential:[a-z][a-z0-9-]{2,63}$"
+            },
+            "worker": {
+              "type": "string",
+              "pattern": "^systemd-credential:[a-z][a-z0-9-]{2,63}$"
+            }
+          },
+          "required": [
+            "adminApi",
+            "portalApi",
+            "worker"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "name",
+        "roleCredentialReferences"
+      ],
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "listeners": {
+          "type": "object",
+          "properties": {
+            "adminApi": {
+              "type": "object",
+              "properties": {
+                "host": {
+                  "type": "string",
+                  "pattern": "^127(?:\\.(?:0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])){3}$"
+                },
+                "port": {
+                  "type": "integer",
+                  "minimum": 1024,
+                  "maximum": 65535
+                }
+              },
+              "required": [
+                "host",
+                "port"
+              ],
+              "additionalProperties": false
+            },
+            "portalApi": {
+              "type": "object",
+              "properties": {
+                "host": {
+                  "type": "string",
+                  "pattern": "^127(?:\\.(?:0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])){3}$"
+                },
+                "port": {
+                  "type": "integer",
+                  "minimum": 1024,
+                  "maximum": 65535
+                }
+              },
+              "required": [
+                "host",
+                "port"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "adminApi",
+            "portalApi"
+          ],
+          "additionalProperties": false
+        },
+        "shutdownGracePeriodMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 30000
+        }
+      },
+      "required": [
+        "listeners",
+        "shutdownGracePeriodMs"
+      ],
+      "additionalProperties": false
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "foundationHealthEndpoints": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "foundationHealthEndpoints"
+      ],
+      "additionalProperties": false
+    },
+    "safeLimits": {
+      "type": "object",
+      "properties": {
+        "maxRequestBodyBytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 10485760
+        }
+      },
+      "required": [
+        "maxRequestBodyBytes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "manifestSchemaVersion",
+    "environment",
+    "instanceId",
+    "compatibility",
+    "hosts",
+    "hostAllowlist",
+    "agencyBootstrap",
+    "database",
+    "runtime",
+    "features",
+    "safeLimits"
+  ],
+  "additionalProperties": false,
+  "x-travelos-invariant-registry": {
+    "schemaVersion": 1,
+    "jsonSchemaScope": "STRUCTURAL_WITH_DECLARED_RUNTIME_REFINEMENTS",
+    "authoritativeRuntimeValidator": "@travelos/config.parseDevelopmentInstanceManifest",
+    "generatedJsonSchema": "deploy/manifests/schema/instance-manifest.schema.json",
+    "jsonSchemaRepresentable": [
+      {
+        "id": "TOS-CONFIG-SCHEMA-001",
+        "path": "$",
+        "summary": "All represented objects reject unknown properties."
+      },
+      {
+        "id": "TOS-CONFIG-SCHEMA-002",
+        "path": "manifestSchemaVersion,environment,instanceId,compatibility",
+        "summary": "Manifest identity, release compatibility, database schema bounds, and PostgreSQL major are constrained."
+      },
+      {
+        "id": "TOS-CONFIG-SCHEMA-003",
+        "path": "hosts.*,hostAllowlist[*].host",
+        "summary": "Host values use the exact normalized lowercase FQDN grammar."
+      },
+      {
+        "id": "TOS-CONFIG-SCHEMA-004",
+        "path": "hostAllowlist",
+        "summary": "Exactly one ADMIN and one PORTAL surface entry is required."
+      },
+      {
+        "id": "TOS-CONFIG-SCHEMA-005",
+        "path": "runtime.listeners.*.host",
+        "summary": "DEVELOPMENT API listeners are explicit IPv4 loopback addresses in 127.0.0.0/8."
+      },
+      {
+        "id": "TOS-CONFIG-SCHEMA-006",
+        "path": "runtime.listeners.*.port",
+        "summary": "Configured API ports are integers from 1024 through 65535."
+      },
+      {
+        "id": "TOS-CONFIG-SCHEMA-007",
+        "path": "runtime.shutdownGracePeriodMs,safeLimits.maxRequestBodyBytes",
+        "summary": "Shutdown timing and request body limits are bounded integers."
+      },
+      {
+        "id": "TOS-CONFIG-SCHEMA-008",
+        "path": "agencyBootstrap",
+        "summary": "Agency bootstrap references and slugs use bounded DEVELOPMENT-safe identifiers."
+      },
+      {
+        "id": "TOS-CONFIG-SCHEMA-009",
+        "path": "database",
+        "summary": "Database name and exactly three opaque credential-reference identifiers are constrained."
+      },
+      {
+        "id": "TOS-CONFIG-SCHEMA-010",
+        "path": "features.foundationHealthEndpoints",
+        "summary": "The Stage 2 foundation health endpoint feature is required and enabled."
+      }
+    ],
+    "runtimeOnly": [
+      {
+        "id": "TOS-CONFIG-RUNTIME-001",
+        "path": "runtime.listeners.adminApi,runtime.listeners.portalApi",
+        "summary": "Admin and Portal API listeners must not use the same host and port pair.",
+        "reason": "Draft 2020-12 cannot compare two sibling property values for equality."
+      },
+      {
+        "id": "TOS-CONFIG-RUNTIME-002",
+        "path": "hosts.admin,hosts.portal",
+        "summary": "Admin and Portal canonical hosts must differ.",
+        "reason": "Draft 2020-12 cannot compare two sibling property values for equality."
+      },
+      {
+        "id": "TOS-CONFIG-RUNTIME-003",
+        "path": "hostAllowlist[*].host,hosts.*",
+        "summary": "Each allowlist host must equal the canonical host declared for its surface.",
+        "reason": "Draft 2020-12 cannot compare values in array entries with sibling object properties."
+      },
+      {
+        "id": "TOS-CONFIG-RUNTIME-004",
+        "path": "hostAllowlist[*].host",
+        "summary": "Host allowlist host values must be unique across surface objects.",
+        "reason": "Draft 2020-12 uniqueItems compares complete objects, not a projected host property."
+      }
+    ]
+  }
+}
