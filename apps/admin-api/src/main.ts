@@ -1,8 +1,18 @@
 import "reflect-metadata";
 
-import { loadDevelopmentInstanceManifest } from "@travelos/config";
+import { createStaffAuthRealm } from "@travelos/auth-adapters";
+import {
+  loadDevelopmentInstanceManifest,
+  readSystemdCredentialText,
+  type DevelopmentInstanceManifest,
+} from "@travelos/config";
+import {
+  createM1OperationalSliceRepository,
+  createPostgresPersistence,
+  createStaffAccessRepository,
+} from "@travelos/database";
 
-import { createAdminApi } from "./app.js";
+import { createAdminApi, type CreateAdminApiOptions } from "./app.js";
 
 const readRequiredArgument = (name: string): string => {
   const prefix = `${name}=`;
@@ -20,13 +30,69 @@ const readRequiredArgument = (name: string): string => {
   throw new Error(`Required argument is missing: ${name}`);
 };
 
+const createAdminAuthOptions = async (
+  manifest: DevelopmentInstanceManifest,
+): Promise<{
+  readonly options: CreateAdminApiOptions;
+  readonly destroy: () => Promise<void>;
+}> => {
+  const databaseCredential = await readSystemdCredentialText(
+    manifest.database.runtimeRoles.adminApi.credentialReference,
+  );
+  const realmKeyMaterial = await readSystemdCredentialText(
+    manifest.authentication.staffRealmCredentialReference,
+  );
+  const persistence = createPostgresPersistence<Record<string, never>>({
+    host: manifest.database.host,
+    port: manifest.database.port,
+    database: manifest.database.name,
+    user: manifest.database.runtimeRoles.adminApi.roleName,
+    password: databaseCredential,
+    tls: { mode: manifest.database.tlsPolicy },
+    applicationName: "travelos-admin-api",
+    maxConnections: 10,
+  });
+  try {
+    const realm = await persistence.withConnection(async (database) =>
+      createStaffAuthRealm({
+        database,
+        canonicalOrigin: `http://${manifest.hosts.admin}`,
+        realmKeyMaterial,
+        environment: manifest.environment,
+      }),
+    );
+    return {
+      options: {
+        auth: {
+          realm,
+          policy: {
+            canonicalOrigin: `http://${manifest.hosts.admin}`,
+            expectedHost: manifest.hosts.admin,
+          },
+          staffAccessRepository: createStaffAccessRepository(persistence),
+          m1Repository: createM1OperationalSliceRepository(persistence),
+        },
+      },
+      destroy: () => persistence.destroy(),
+    };
+  } catch (error) {
+    await persistence.destroy();
+    throw error;
+  }
+};
+
 const main = async (): Promise<void> => {
   const manifestPath = readRequiredArgument("--manifest");
   const manifest = await loadDevelopmentInstanceManifest(manifestPath);
-  const application = await createAdminApi();
   const listener = manifest.runtime.listeners.adminApi;
+  const smoke = process.argv.includes("--smoke");
+  const runtime = smoke ? null : await createAdminAuthOptions(manifest);
+  const application = await createAdminApi(runtime?.options ?? {}).catch(async (error: unknown) => {
+    await runtime?.destroy();
+    throw error;
+  });
 
-  if (process.argv.includes("--smoke")) {
+  if (smoke) {
     await application.listen(0, listener.host);
     const applicationUrl = new URL(await application.getUrl());
     const boundPort = Number.parseInt(applicationUrl.port, 10);
@@ -69,7 +135,11 @@ const main = async (): Promise<void> => {
     return;
   }
 
-  application.enableShutdownHooks(["SIGINT", "SIGTERM"]);
+  const shutdown = (): void => {
+    void application.close().finally(() => runtime?.destroy());
+  };
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
   await application.listen(listener.port, listener.host);
 };
 

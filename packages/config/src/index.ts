@@ -8,6 +8,11 @@ export {
 } from "./instance-manifest.js";
 export { instanceManifestInvariantRegistry } from "./instance-manifest-invariants.js";
 export {
+  readSystemdCredentialText,
+  systemdCredentialFileNameFor,
+  type SystemdCredentialReadOptions,
+} from "./systemd-credential.js";
+export {
   createDevelopmentInstanceManifestJsonSchemaDocument,
   developmentInstanceManifestRuntimeContract,
 } from "./instance-manifest-json-schema.js";

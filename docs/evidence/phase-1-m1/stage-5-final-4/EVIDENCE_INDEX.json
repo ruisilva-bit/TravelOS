@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "stage": "phase-1-m1/stage-5",
+  "result": "PASS",
+  "artifactCount": 11,
+  "aggregateSha256": "e85aa905b2034cf71f5276f98e773ff4adfa7bcae63af2aea27022656ab33eb2",
+  "serialization": "newline-terminated records: relative-path<TAB>bytes<TAB>sha256, sorted by relative path",
+  "artifacts": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/ci-verify.log",
+      "bytes": 145732,
+      "sha256": "9c79b98a1f8f4d3ea048d615641de5f516659fd093f51268205607d1696193b2"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/disposable-cleanup.json",
+      "bytes": 252,
+      "sha256": "6e159bfe3a19f492f573a23d53e28bec082f0eb799fd6402e6ad14e773dfddf9"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/focused-tests.log",
+      "bytes": 217,
+      "sha256": "06616b95636e0eebbad953882c1df0cce65f80e1a2480cf783042330b82f4f0f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/integration-test-execution.json",
+      "bytes": 457,
+      "sha256": "01fc3decaf376211f002415213cfd94aca48f5163c4cb3b71fad0d22908de1d0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/integration-tests.log",
+      "bytes": 2140,
+      "sha256": "7488515765c4e53a629c23fe4860478c9b289485b0618e2bf01580fb9af6aa58"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/migration-checksums.json",
+      "bytes": 1278,
+      "sha256": "93113929a314b1d7120d63d87ebb66f1980d7136d4222430d1178652a455d3b2"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/package-build.json",
+      "bytes": 219,
+      "sha256": "f1d4d0b17e1085793bf945ca1e2abb9cc4e3dd42e47c10a8cea1c4fdf34ef00e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/postgresql-runtime.json",
+      "bytes": 292,
+      "sha256": "690483dc28f7f67dac2545f08e60b0793ee5e7b56db9ae397bd91f5947dc7aea"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/qualification-summary.json",
+      "bytes": 763,
+      "sha256": "7c47be89271aae11d39994e184ee9ec65b9dbd42c4471a45d7402d52899c3233"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-4/source-safety.json",
+      "bytes": 815,
+      "sha256": "e50bdef14438bf084e4088e2b2c5ca741e6a599eb0e7e75b2adcc043c9300a61"
+    }
+  ]
+}

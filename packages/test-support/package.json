@@ -1,6 +1,6 @@
 {
   "name": "@travelos/test-support",
-  "version": "0.0.0-stage2",
+  "version": "0.0.0-stage4",
   "private": true,
   "type": "module",
   "sideEffects": false,

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "phase": "Phase 1 M1",
+  "stage": 4,
+  "generation": "corrected",
+  "result": "PASS",
+  "command": "pnpm test:stage4:postgres",
+  "execution": {
+    "testFiles": 1,
+    "tests": 6,
+    "ct200Actions": 0,
+    "cleanup": "PASS"
+  },
+  "coveredCorrections": [
+    "last-effective-Owner protection",
+    "append-only bootstrap audit ACL",
+    "schema migration chain through 0006",
+    "Staff and Portal realm isolation"
+  ],
+  "rawLog": {
+    "path": "docs/evidence/phase-1-m1/stage-4-corrected/disposable-correction-qualification.log",
+    "sha256": "0c5c0245f05e085b2f840a328489b531febf3cf448e1d86807e57ff398527fbe"
+  },
+  "credentialsCaptured": false
+}

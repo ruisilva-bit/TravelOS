@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "completedSections": [
+    "backup-restore.json",
+    "default-public-privileges.json",
+    "disposable-bootstrap.json",
+    "migration-chain.json",
+    "migration-concurrency.json",
+    "migration-failure-rollback.json",
+    "owner-migrator-privileges.json",
+    "privilege-matrix.json",
+    "role-topology.json",
+    "transaction-results.json"
+  ],
+  "expectedSections": [
+    "backup-restore.json",
+    "disposable-bootstrap.json",
+    "migration-chain.json",
+    "migration-concurrency.json",
+    "migration-failure-rollback.json",
+    "privilege-matrix.json",
+    "role-topology.json",
+    "transaction-results.json",
+    "default-public-privileges.json",
+    "owner-migrator-privileges.json"
+  ],
+  "ct200Actions": 0,
+  "stage4Executed": false
+}

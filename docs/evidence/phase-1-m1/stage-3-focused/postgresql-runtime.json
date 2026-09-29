@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "serverVersion": "postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)",
+  "clientVersion": "psql (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)",
+  "serverVersionNumber": 180006,
+  "dataChecksums": "on",
+  "listenAddresses": "127.0.0.1",
+  "bindScope": "loopback-only",
+  "tls": "disabled only inside disposable loopback qualification",
+  "globalHostInstallation": false,
+  "dockerOrPodman": false
+}

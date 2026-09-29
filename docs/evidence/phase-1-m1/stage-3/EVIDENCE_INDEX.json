@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "phase": "Phase 1 M1",
+  "stage": 3,
+  "scope": "corrected repository foundation, retained disposable and CT 200 PostgreSQL evidence, focused correction proofs, and final repository regression; Stage 4 excluded",
+  "result": "PASS",
+  "artifactCount": 33,
+  "aggregateAlgorithm": "sha256(path\\0bytes\\0sha256\\n ordered by path)",
+  "aggregateSha256": "fa283626f8e5d3c9bbe7cab312a589fb94be4f78ded19c4a5e3744941bc7cf26",
+  "artifacts": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/backup-restore.json",
+      "bytes": 3203,
+      "sha256": "cf4d85f4f2680e2c88b8576bc649d8b07616dd6974dde7c6d4b2488f6c0cd34f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/correction-ci-verify.json",
+      "bytes": 1016,
+      "sha256": "1a29bed6bbeadde6879e176629d3f696404a73f6b3d97c68051d109b7d9c8534"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/correction-ci-verify.log",
+      "bytes": 118769,
+      "sha256": "e0bc06a0fc5228de7dc3c2552647f6d64ac5972dc957862a8b8135e0eed027a4"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/correction-sensitive-data-pre-index.json",
+      "bytes": 993,
+      "sha256": "d90d10f3bbf5ac09253a55673c0811758cf54ce00f257107114d553b43e655cd"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/correction-tos-s3-001.json",
+      "bytes": 904,
+      "sha256": "42156e80bbf6ee9adabbb62bd9912b183c902735d65dac6cdee61cdf366faa6e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/correction-tos-s3-002.json",
+      "bytes": 2600,
+      "sha256": "13490bb4d48780cab26aaec7f4612799c1caac0cd448b25b1454589f1dd8dbec"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/ct-200-backup-restore.json",
+      "bytes": 942,
+      "sha256": "a83b93e21915cc820c64e8c4348f849de6ced477b77e6ce05a23fb692d99fd71"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/ct-200-bootstrap-migrations.json",
+      "bytes": 1294,
+      "sha256": "a17f605b20a86f35b9f7dd35cbfc47c802eacde229732f17d57627b0e816d49d"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/ct-200-final-state.json",
+      "bytes": 1596,
+      "sha256": "4468a549f7bb5bd7df68f5ca1844599b6ed5a7ac1d31e76e519b90f4cd824c90"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/ct-200-focused-access-cleanup.json",
+      "bytes": 676,
+      "sha256": "a6390e52fcf40b3be6b0f68e0115f358f2d2d0cd52147b819f5843daf8909392"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/ct-200-focused-role-topology.json",
+      "bytes": 1876,
+      "sha256": "5e6014804d91a511cc94f95bc6b669cfafd800747ba6a978d0007cbb0d3e7d59"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/ct-200-management-pre-state.json",
+      "bytes": 1298,
+      "sha256": "cda6e4261aa40afcc712b2210902d68070ee9a89425da9189a07f021e4e0c84f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/ct-200-postgresql-installation.json",
+      "bytes": 1968,
+      "sha256": "5e43e9d9b5b0e03f4833079f0eceb7974bbd40422ae5e670923f1c10f5b3bc9e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/ct-200-runtime-validation.json",
+      "bytes": 19496,
+      "sha256": "0624e6b78c359b3a7204ad047362b59824a393957c43438e67146b280deadea3"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/ct-200-scope-and-access-cleanup.json",
+      "bytes": 932,
+      "sha256": "9186e4e9648719136675144e61428463dcc09dc0b66d756ba10701dc5fdf6ff9"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/default-public-privileges.json",
+      "bytes": 11720,
+      "sha256": "5db70f50dc21d80467206ed4fae030f237a2454a74ab055c61045c17409549d6"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/disposable-bootstrap.json",
+      "bytes": 627,
+      "sha256": "ae1ff903676fd193fdfd91d9d3a0a98bb3431f9a087fb9c18fe85216b850e8dc"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/disposable-cleanup.json",
+      "bytes": 198,
+      "sha256": "dc9053b70934f41cd89009f7f0342f99c46ea5b41812b51c912871f36fa18b5f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/integration-test-execution.json",
+      "bytes": 433,
+      "sha256": "76b9afb94fe68f928849534c7d91068cafd4a6e1383a3c610001ae4b9e36cb6e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/integration-tests.log",
+      "bytes": 1504,
+      "sha256": "8a61fddb14320ac9b34f4ce00ed0c31901dcd2622988262d63ad0489fce9daaa"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/migration-chain.json",
+      "bytes": 3624,
+      "sha256": "1ae6af0a910aef385acd96cbf1f3243ab782eb12540abc7cb2a9846a3f27ed4c"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/migration-concurrency.json",
+      "bytes": 1935,
+      "sha256": "8773cc4c86cc01aa1dc1aa3cc2e8f36fc2c5e4f7f02f2f64c763f39fb5f55169"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/migration-failure-rollback.json",
+      "bytes": 3183,
+      "sha256": "1b21f2165b106d83746d7912bcfc3cce5d7541dd6b5464668e5ccc03cf18e107"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/owner-migrator-privileges.json",
+      "bytes": 491,
+      "sha256": "f1a1b5aea67417852af426476572dc55275cb8f7dffb3f6544350b392d075ee0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/persistence-build.json",
+      "bytes": 235,
+      "sha256": "436b4e3591d31826479e4d7dc90c1e510f8eddc338373998cd629b49f9ddb134"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/postgresql-runtime.json",
+      "bytes": 442,
+      "sha256": "a72b579e00769cc7eb6c5fbb35aab3df8e7e1484bec774363b1a913e50a349a1"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/privilege-matrix.json",
+      "bytes": 50723,
+      "sha256": "a73d3ea0aecfba076cfb30c0609d25b8f03ad3352326be4f1a92ff7ef710aff1"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/qualification-summary.json",
+      "bytes": 798,
+      "sha256": "d6365dadba968c2f0fdff9802ede4e98655fd01aab34e26e5ba86f837b5510b2"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/role-topology.json",
+      "bytes": 4720,
+      "sha256": "97198a6ed0ef6f18e64f7147707e79dc24fd7b57b0a7d37145d7f6b2852d598b"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/stage-2-regression.json",
+      "bytes": 788,
+      "sha256": "f87b6b99d4544b4fa176491d624b91c27cfadcf9f4f6fb4ee124b646285f5e9e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/stage-2-regression.log",
+      "bytes": 116230,
+      "sha256": "4a7a30b8ff2ba5e0d3cfe8985f94f6f3726ba468563f4267c1812af8911d0788"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-3/transaction-results.json",
+      "bytes": 420,
+      "sha256": "e9863c9120c39f03b42502d2677c1b6a4af60631762cbfeeb8f51d72b38b95fd"
+    }
+  ]
+}

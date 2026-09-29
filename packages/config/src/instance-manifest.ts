@@ -62,20 +62,28 @@ const DevelopmentApiListenerSchema = z
   })
   .strict();
 
+const databaseRuntimeRoleSchema = <RoleName extends string>(roleName: RoleName) =>
+  z
+    .object({
+      roleName: z.literal(roleName),
+      credentialReference: CredentialReferenceIdSchema,
+    })
+    .strict();
+
 export const DevelopmentInstanceManifestSchema = z
   .object({
-    manifestSchemaVersion: z.literal(1),
+    manifestSchemaVersion: z.literal(3),
     environment: z.literal("DEVELOPMENT"),
     instanceId: z.string().regex(/^travelos-dev-[a-z0-9][a-z0-9-]{2,47}$/),
     compatibility: z
       .object({
-        releaseVersion: z.string().regex(/^0\.0\.0-stage2$/),
+        releaseVersion: z.string().regex(/^0\.0\.0-stage4$/),
         releaseTarget: z.string().regex(/^development:[a-z0-9][a-z0-9.-]{2,63}$/),
-        configSchemaVersion: z.literal(1),
+        configSchemaVersion: z.literal(3),
         databaseSchema: z
           .object({
-            minimum: z.literal(0),
-            maximum: z.literal(0),
+            minimum: z.literal(6),
+            maximum: z.literal(6),
           })
           .strict(),
         postgresqlMajor: z.literal(18),
@@ -96,14 +104,23 @@ export const DevelopmentInstanceManifestSchema = z
       .strict(),
     database: z
       .object({
+        host: z.literal("127.0.0.1"),
+        port: z.number().int().min(1).max(65_535),
         name: z.string().regex(/^travelos_[a-z0-9_]{3,47}$/),
-        roleCredentialReferences: z
+        tlsPolicy: z.literal("DISABLED_LOOPBACK_ONLY"),
+        runtimeRoles: z
           .object({
-            adminApi: CredentialReferenceIdSchema,
-            portalApi: CredentialReferenceIdSchema,
-            worker: CredentialReferenceIdSchema,
+            adminApi: databaseRuntimeRoleSchema("travelos_admin_api"),
+            portalApi: databaseRuntimeRoleSchema("travelos_portal_api"),
+            worker: databaseRuntimeRoleSchema("travelos_worker"),
           })
           .strict(),
+      })
+      .strict(),
+    authentication: z
+      .object({
+        staffRealmCredentialReference: CredentialReferenceIdSchema,
+        portalRealmCredentialReference: CredentialReferenceIdSchema,
       })
       .strict(),
     runtime: z
@@ -179,6 +196,30 @@ export const DevelopmentInstanceManifestSchema = z
       seenSurfaces.add(entry.surface);
       seenHosts.add(entry.host);
     });
+
+    const credentialReferences = [
+      ["adminApi", manifest.database.runtimeRoles.adminApi.credentialReference],
+      ["portalApi", manifest.database.runtimeRoles.portalApi.credentialReference],
+      ["worker", manifest.database.runtimeRoles.worker.credentialReference],
+      ["staffRealm", manifest.authentication.staffRealmCredentialReference],
+      ["portalRealm", manifest.authentication.portalRealmCredentialReference],
+    ] as const;
+    const firstProcessByCredentialReference = new Map<string, string>();
+    for (const [processName, credentialReference] of credentialReferences) {
+      const firstProcess = firstProcessByCredentialReference.get(credentialReference);
+      if (firstProcess !== undefined) {
+        context.addIssue({
+          code: "custom",
+          path:
+            processName === "staffRealm" || processName === "portalRealm"
+              ? ["authentication", `${processName}CredentialReference`]
+              : ["database", "runtimeRoles", processName, "credentialReference"],
+          message: `Credential references must be pairwise distinct; ${processName} duplicates ${firstProcess}`,
+        });
+      } else {
+        firstProcessByCredentialReference.set(credentialReference, processName);
+      }
+    }
   });
 
 export type DevelopmentInstanceManifest = z.infer<typeof DevelopmentInstanceManifestSchema>;

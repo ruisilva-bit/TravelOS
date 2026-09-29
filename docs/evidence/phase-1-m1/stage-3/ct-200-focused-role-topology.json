@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "target": {
+    "proxmoxNode": "pxmx2",
+    "ct": 200,
+    "hostname": "travelos-dev",
+    "database": "travelos_development"
+  },
+  "scope": "focused read-only effective PostgreSQL role-membership graph verification",
+  "query": {
+    "readOnly": true,
+    "catalogues": [
+      "pg_catalog.pg_auth_members",
+      "pg_catalog.pg_roles"
+    ],
+    "direction": "BIDIRECTIONAL_EITHER_ENDPOINT_IS_TRAVELOS"
+  },
+  "exactGraph": {
+    "result": "PASS",
+    "scope": "BIDIRECTIONAL_EITHER_ENDPOINT_IS_TRAVELOS",
+    "expectedMode": "EXACT_GRAPH_AND_OPTIONS",
+    "expectedCount": 4,
+    "actualCount": 4,
+    "missing": [],
+    "unexpected": [],
+    "duplicateActual": []
+  },
+  "memberships": [
+    {
+      "member": "travelos_admin_api",
+      "granted_role": "travelos_admin_runtime",
+      "admin_option": false,
+      "inherit_option": true,
+      "set_option": false
+    },
+    {
+      "member": "travelos_migrator",
+      "granted_role": "travelos_owner",
+      "admin_option": false,
+      "inherit_option": false,
+      "set_option": true
+    },
+    {
+      "member": "travelos_portal_api",
+      "granted_role": "travelos_portal_runtime",
+      "admin_option": false,
+      "inherit_option": true,
+      "set_option": false
+    },
+    {
+      "member": "travelos_worker",
+      "granted_role": "travelos_worker_runtime",
+      "admin_option": false,
+      "inherit_option": true,
+      "set_option": false
+    }
+  ],
+  "access": {
+    "method": "Proxmox LXC console followed by ephemeral SSH key",
+    "databaseMutations": 0,
+    "roleOrMembershipMutations": 0,
+    "schemaMutations": 0,
+    "serviceChanges": 0,
+    "temporaryAccessCleanup": "PASS"
+  },
+  "repeatedQualificationWork": {
+    "bootstrapRuns": 0,
+    "migrationRuns": 0,
+    "backupOrRestoreRuns": 0,
+    "privilegeMatrixRuns": 0
+  },
+  "stage4Actions": 0
+}

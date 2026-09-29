@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "target": {
+    "ct": 200,
+    "hostname": "travelos-dev"
+  },
+  "sourceLock": "tooling/database/postgresql-18-packages.lock.json",
+  "platform": {
+    "distribution": "Debian 13 (trixie)",
+    "architecture": "amd64"
+  },
+  "postgresql": {
+    "major": 18,
+    "serverVersion": "18.6",
+    "packageVersion": "18.6-1.pgdg13+2"
+  },
+  "packages": [
+    {
+      "name": "postgresql-18",
+      "version": "18.6-1.pgdg13+2",
+      "url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-18_18.6-1.pgdg13+2_amd64.deb",
+      "sha256": "bf4062a44757c3f7a207a1b9e20c2bf93f9847257516c2ce0befc1257d3dcf8e"
+    },
+    {
+      "name": "postgresql-client-18",
+      "version": "18.6-1.pgdg13+2",
+      "url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-client-18_18.6-1.pgdg13+2_amd64.deb",
+      "sha256": "9af40c99f7074f8ff3798155af2f07f1a4e1e3bd4edce44ef928c1e03aea620e"
+    },
+    {
+      "name": "libpq5",
+      "version": "18.6-1.pgdg13+2",
+      "url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/libpq5_18.6-1.pgdg13+2_amd64.deb",
+      "sha256": "c6cc459bb499db4697686533e50bf5943f7e7d6929c04ef55eec184d5436859b"
+    },
+    {
+      "name": "liburing2",
+      "version": "2.9-1",
+      "url": "https://deb.debian.org/debian/pool/main/libu/liburing/liburing2_2.9-1_amd64.deb",
+      "sha256": "4b589c00c7a51172aace2cb2fb3d3ff32daf86c644023126dcfcaa840cc941ea"
+    }
+  ],
+  "packageSha256VerifiedBeforeInstallation": true,
+  "serverVersionNum": 180006,
+  "dataChecksums": "on",
+  "service": "active",
+  "cluster": "18/main online",
+  "configuration": {
+    "listenAddresses": [
+      "127.0.0.1",
+      "::1"
+    ],
+    "remotePostgresqlListenerCount": 0,
+    "passwordEncryption": "scram-sha-256",
+    "hbaParseErrorCount": 0,
+    "runtimeRemoteAuthentication": "SCRAM on loopback only",
+    "trustEnabledForRuntimeOrRemote": false
+  }
+}

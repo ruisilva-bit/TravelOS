@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 3,
+  "result": "PASS",
+  "scope": "deterministic-stage-2-freeze-inputs",
+  "freezeInputAggregateSha256": "ab0fc24dc56107e5bf3f705853d130c9a08d01df6b11a97652f02460dbe1a524",
+  "filesScanned": 335,
+  "coverage": {
+    "repositoryOwnedSource": 135,
+    "scriptsAndTooling": 86,
+    "githubWorkflows": 1,
+    "manifestsAndExampleConfiguration": 18,
+    "retainedEvidence": 36,
+    "reviewMarkdown": 27
+  },
+  "stage3EvidenceIndexIncluded": false,
+  "stage3CandidateValidationIncluded": false,
+  "stage3CandidateFreezeIncluded": false,
+  "stage3CorrectedCandidateValidationIncluded": false,
+  "stage3CorrectedCandidateFreezeIncluded": false,
+  "stage4EvidenceIndexIncluded": false,
+  "explicitAllowlistEntries": 0,
+  "allowlistedFindingCount": 0,
+  "findings": [],
+  "matchedValuesEmitted": false
+}

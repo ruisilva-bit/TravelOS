@@ -1,0 +1,21 @@
+
+ RUN  v4.1.10 /home/hermes/projects/TravelOS
+
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > applies the new migration head and preserves the predecessor isolation boundary 37ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > creates the complete scoped continuity, itinerary, reservation/link and internal Money slice 66ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > increments workspace revision exactly once for a publication-relevant edit and not for internal-only cost edits 69ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > enforces exactly one primary traveller at commit and during replacement 135ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > keeps the designated primary continuity rows when valid secondary rows exist 99ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > increments workspace revision for projected Person, Customer and CustomerPerson changes 121ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > increments both workspace revisions when a child moves between trips 109ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > maps a real repeatable-read SQLSTATE 40001 to an M1 optimistic conflict 43ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > increments both workspace revisions when a dependency-free reservation moves between trips 86ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > serializes concurrent opposite-direction child moves without a revision deadlock 132ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > proves Agency and same-Trip constraints, wrong-family rejection and no float columns 463ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > keeps the repository Agency-scoped on reads 2ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  11:43:42
+   Duration  5.31s (transform 386ms, setup 0ms, import 979ms, tests 4.03s, environment 0ms)
+

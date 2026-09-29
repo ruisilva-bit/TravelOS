@@ -83,11 +83,15 @@ const shannonEntropy = (value) => {
   }
   return entropy;
 };
-const isSafeReference = (rawValue) => {
+const isSafeReference = (rawValue, allowCodeReference) => {
   const value = rawValue.trim().replace(/[,;]$/, "").trim();
   return (
     value.length === 0 ||
     SAFE_REFERENCE_PREFIXES.some((prefix) => value.startsWith(prefix)) ||
+    (allowCodeReference &&
+      /^[A-Za-z_$][A-Za-z0-9_$]*(?:(?:[.][A-Za-z_$][A-Za-z0-9_$]*)|(?:\[[A-Za-z_$][A-Za-z0-9_$]*\]))*$/.test(
+        value,
+      )) ||
     /^<[-A-Z0-9_]+>$/.test(value) ||
     /^[$][{][^}]+[}]$/.test(value) ||
     /^\[(?:REDACTED|REMOVED)\]$/i.test(value) ||
@@ -121,19 +125,19 @@ const collectAssignmentFindings = (text, file) => {
   const quotedAssignment =
     /(?:^|[\s{,;])(?:const\s+|let\s+|var\s+)?["']?([A-Za-z_][A-Za-z0-9_-]{1,63})["']?\s*[:=]\s*(["'`])([^"'`\r\n]*)\2/gm;
   for (const match of text.matchAll(quotedAssignment)) {
-    assignments.push({ key: match[1], value: match[3], index: match.index ?? 0 });
+    assignments.push({ key: match[1], value: match[3], index: match.index ?? 0, quoted: true });
   }
   const unquotedAssignment =
     /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_-]{1,63})\s*(?::|=)\s*([^\s#][^#\r\n]*)$/gm;
   for (const match of text.matchAll(unquotedAssignment)) {
-    assignments.push({ key: match[1], value: match[2], index: match.index ?? 0 });
+    assignments.push({ key: match[1], value: match[2], index: match.index ?? 0, quoted: false });
   }
   for (const assignment of assignments) {
     const value = assignment.value.trim().replace(/[,;]$/, "").trim();
     if (
       !SUSPICIOUS_ASSIGNMENT_KEYS.has(normalizedAssignmentKey(assignment.key)) ||
       value.length < 8 ||
-      isSafeReference(value)
+      isSafeReference(value, !assignment.quoted)
     ) {
       continue;
     }

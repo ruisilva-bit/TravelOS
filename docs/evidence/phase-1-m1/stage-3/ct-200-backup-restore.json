@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "sourceDatabase": "travelos_development",
+  "temporaryRestoreDatabase": "travelos_stage3_restore_smoke",
+  "tools": {
+    "dump": "pg_dump (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)",
+    "restore": "pg_restore (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)"
+  },
+  "dump": {
+    "bytes": 18644,
+    "sha256": "1d982ab5f8de3898149e7eaaf5432ad462c4d545a42908ad46303a7f72006958",
+    "retained": false
+  },
+  "restore": {
+    "ledgerCount": 3,
+    "currentVersion": "0003_creator_default_privileges",
+    "schemaCount": 16,
+    "representativeSyntheticState": "PASS",
+    "invalidOwnerCount": 0,
+    "portalCustomerSafeRead": "PASS",
+    "portalWorkspaceRead": {
+      "result": "DENY",
+      "sqlstate": "42501"
+    },
+    "adminWorkspaceRead": "PASS",
+    "workerJobRead": "PASS"
+  },
+  "cleanup": {
+    "restoreDatabaseRemoved": true,
+    "dumpRemoved": true,
+    "bootstrapCopyRemoved": true
+  }
+}

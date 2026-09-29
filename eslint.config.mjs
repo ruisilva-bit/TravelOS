@@ -5,6 +5,7 @@ import tseslint from "typescript-eslint";
 const nodeGlobals = {
   Buffer: "readonly",
   console: "readonly",
+  fetch: "readonly",
   process: "readonly",
   setTimeout: "readonly",
   clearTimeout: "readonly",
@@ -28,6 +29,7 @@ export default tseslint.config(
     files: ["**/*.cjs"],
     languageOptions: {
       globals: {
+        exports: "readonly",
         module: "readonly",
       },
     },

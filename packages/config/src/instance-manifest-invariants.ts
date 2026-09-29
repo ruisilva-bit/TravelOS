@@ -49,12 +49,18 @@ export const instanceManifestInvariantRegistry = {
       id: "TOS-CONFIG-SCHEMA-009",
       path: "database",
       summary:
-        "Database name and exactly three opaque credential-reference identifiers are constrained.",
+        "Database name, exact Admin/Portal/Worker role identities, and exactly three opaque credential-reference identifiers are constrained.",
     },
     {
       id: "TOS-CONFIG-SCHEMA-010",
       path: "features.foundationHealthEndpoints",
       summary: "The Stage 2 foundation health endpoint feature is required and enabled.",
+    },
+    {
+      id: "TOS-CONFIG-SCHEMA-011",
+      path: "authentication",
+      summary:
+        "Staff and Portal realm key material is referenced only by distinct opaque systemd credential identifiers.",
     },
   ],
   runtimeOnly: [
@@ -82,6 +88,13 @@ export const instanceManifestInvariantRegistry = {
       path: "hostAllowlist[*].host",
       summary: "Host allowlist host values must be unique across surface objects.",
       reason: "Draft 2020-12 uniqueItems compares complete objects, not a projected host property.",
+    },
+    {
+      id: "TOS-CONFIG-RUNTIME-005",
+      path: "database.runtimeRoles.*.credentialReference,authentication.*CredentialReference",
+      summary:
+        "Admin, Portal, Worker, Staff-realm, and Portal-realm credential references must be pairwise distinct.",
+      reason: "Draft 2020-12 cannot compare five sibling string values for inequality.",
     },
   ],
 } as const;

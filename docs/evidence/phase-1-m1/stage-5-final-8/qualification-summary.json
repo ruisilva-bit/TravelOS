@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "candidate": "FINAL-8",
+  "toolchain": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "focused": {
+    "result": "PASS",
+    "files": 5,
+    "tests": 25
+  },
+  "authBridgeRegression": {
+    "result": "PASS",
+    "files": 1,
+    "tests": 4,
+    "coverage": [
+      "auth-surface rejection",
+      "unauthenticated session-context",
+      "unauthorized session-context",
+      "wrong-host and wrong-prefix routing"
+    ]
+  },
+  "postgresql": {
+    "result": "PASS",
+    "version": "18.6",
+    "files": 1,
+    "tests": 16,
+    "cleanup": "PASS",
+    "runtime": "loopback-only",
+    "ct200Actions": 0
+  },
+  "ci": {
+    "result": "PASS",
+    "completedGates": 24,
+    "expectedGates": 24
+  },
+  "migration": {
+    "head": "0007_stage5_m1_domain_slice.cjs",
+    "sha256": "e52672ef7d720488b7b274cef30f3c89d68d8dd88fc616dc8baf356ac5265ddf"
+  },
+  "sourceScope": {
+    "result": "PASS",
+    "filesScanned": 407,
+    "stage5EvidenceIndexes": 10,
+    "allIndexOmissionsRejected": true
+  },
+  "correctedFindings": [
+    "S5F7-PRIMARY-CONTINUITY-CONCURRENCY-001",
+    "S5F7-WORKSPACE-REVISION-MONOTONICITY-001",
+    "S5F7-WORKSPACE-REVISION-CHILD-FIRST-001",
+    "S5F7-APPLICATION-INPUT-COMPLETENESS-001",
+    "S5F7-TEMPORAL-RANGE-PARITY-001",
+    "S5F7-AUTH-CACHE-001"
+  ],
+  "stage6Actions": 0
+}

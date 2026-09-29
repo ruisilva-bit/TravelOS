@@ -10,7 +10,15 @@ if (mode !== "--write" && mode !== "--check") {
   throw new Error("Expected --write or --check");
 }
 
-const mutableDirectories = ["apps", "packages", "tooling", "deploy", ".github"];
+const mutableDirectories = [
+  "apps",
+  "packages",
+  "tooling",
+  "deploy",
+  "migrations",
+  "tests",
+  ".github",
+];
 const mutableRootFiles = [
   "eslint.config.mjs",
   "package.json",
@@ -21,7 +29,7 @@ const mutableRootFiles = [
   "tsconfig.json",
   "vitest.workspace.ts",
 ];
-const supportedExtensions = new Set([".css", ".html", ".json", ".yaml", ".yml"]);
+const supportedExtensions = new Set([".cjs", ".css", ".html", ".json", ".yaml", ".yml"]);
 const skippedDirectories = new Set(["coverage", "dist", "node_modules", ".vite"]);
 const skippedPaths = new Set(["deploy/manifests/schema"]);
 

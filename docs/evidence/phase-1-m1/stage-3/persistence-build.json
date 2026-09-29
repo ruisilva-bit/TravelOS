@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "exitCode": 0,
+  "command": "pnpm --filter @travelos/database... build",
+  "nodeVersion": "v24.19.0",
+  "stdoutSha256": "6e5a53010858f8938bf660d962bc453a6609265a04e6d8c0d1acffb7de447c3d"
+}

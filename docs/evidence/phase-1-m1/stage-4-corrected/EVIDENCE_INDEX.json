@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "phase": "Phase 1 M1",
+  "stage": 4,
+  "generation": "corrected",
+  "result": "PASS",
+  "scope": "Stage 4 corrective qualification: disposable PostgreSQL and controlled DEVELOPMENT CT 200 migration, restore probe, validation, and cleanup",
+  "artifactCount": 4,
+  "aggregateAlgorithm": "sha256(path\\0bytes\\0sha256\\n ordered by path)",
+  "aggregateSha256": "a3ebebf18d2d64e2149bfc0e2a6e33bfccbdbc1c53d4ca552f605ffe9d87d452",
+  "artifacts": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-4-corrected/ct-200-correction-migration.json",
+      "bytes": 870,
+      "sha256": "598307cef4175626d8748214142da7cf9fdf6f1a231dae884340169821518261"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-4-corrected/ct-200-correction-restore-cleanup.json",
+      "bytes": 858,
+      "sha256": "07e85cf77f13085c784c6cb678fd4faacb8dbf926b8f7fdaf0bc6bc103fa93df"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-4-corrected/disposable-correction-qualification.json",
+      "bytes": 679,
+      "sha256": "afdbd4e68f717c10b9a3dd6d54afdabd3e5adb2fe45b8fe4763d4b0566ccb6bd"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-4-corrected/disposable-correction-qualification.log",
+      "bytes": 1452,
+      "sha256": "0c5c0245f05e085b2f840a328489b531febf3cf448e1d86807e57ff398527fbe"
+    }
+  ]
+}

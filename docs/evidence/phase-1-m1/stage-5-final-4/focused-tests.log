@@ -1,0 +1,9 @@
+
+ RUN  v4.1.10 /home/hermes/projects/TravelOS
+
+
+ Test Files  5 passed (5)
+      Tests  20 passed (20)
+   Start at  17:21:37
+   Duration  1.71s (transform 597ms, setup 0ms, import 2.28s, tests 412ms, environment 1ms)
+

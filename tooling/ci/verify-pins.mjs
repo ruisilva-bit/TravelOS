@@ -21,6 +21,11 @@ const packageJson = await readJson(path.join(root, "package.json"));
 const expected = Object.fromEntries(
   matrix.direct_packages.map(({ name, expected_version: version }) => [name, version]),
 );
+const packageScopedExactPins = {
+  "@travelos/auth-adapters": {
+    "@better-auth/kysely-adapter": "1.6.27",
+  },
+};
 const actual = { ...packageJson.dependencies, ...packageJson.devDependencies };
 assert(matrix.direct_count === 46, "Stage 1 matrix must declare 46 direct package pins");
 assert(matrix.direct_packages.length === 46, "Stage 1 matrix must contain 46 direct package pins");
@@ -69,6 +74,10 @@ for (const directory of packageDirectories) {
 }
 for (const manifestPath of workspaceManifests) {
   const manifest = await readJson(manifestPath);
+  const permittedPackagePins = {
+    ...expected,
+    ...(packageScopedExactPins[manifest.name] ?? {}),
+  };
   for (const section of [
     "dependencies",
     "devDependencies",
@@ -84,10 +93,13 @@ for (const manifestPath of workspaceManifests) {
         continue;
       }
       assert(
-        expected[name] !== undefined,
+        permittedPackagePins[name] !== undefined,
         `${manifest.name} declares an unqualified external dependency: ${name}`,
       );
-      assert(version === expected[name], `${manifest.name} has a non-Stage-1 pin for ${name}`);
+      assert(
+        version === permittedPackagePins[name],
+        `${manifest.name} has a non-approved pin for ${name}`,
+      );
     }
   }
 }
@@ -126,7 +138,7 @@ console.log(
       directPins: { count: Object.keys(expected).length, matchStage1: true, resolvedMatch: true },
       workspace: {
         projectCount: workspaceManifests.length + 1,
-        externalDeclarationsUseStage1Pins: true,
+        externalDeclarationsUseApprovedPins: true,
       },
       policies: {
         engineStrict: workspacePolicy.actual.npmrc["engine-strict"] === "true",

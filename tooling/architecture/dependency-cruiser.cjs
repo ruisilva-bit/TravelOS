@@ -18,7 +18,7 @@ module.exports = {
       severity: "error",
       from: { path: "^apps/portal-api/src/" },
       to: {
-        path: "^(?:apps/(?:admin-api|admin-web|worker)|packages/(?:backend-core|database|auth-adapters))/",
+        path: "^(?:apps/(?:admin-api|admin-web|worker)|packages/(?:backend-core|database))/",
       },
     },
     {

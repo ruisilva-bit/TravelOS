@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "authorizedKey": {
+    "result": "PASS",
+    "temporaryAuthorizedKeyRemoved": true,
+    "removedEntries": 1,
+    "authorizedKeysMode": "0600"
+  },
+  "temporaryKeyReauthentication": "DENIED_AS_EXPECTED",
+  "sshTunnel": {
+    "removed": true,
+    "loopbackPort": 15432,
+    "listenerAfterCleanup": false
+  },
+  "remoteTemporaryArtifacts": {
+    "packageFilesRemoved": true,
+    "bootstrapCopyRemoved": true,
+    "dumpRemoved": true,
+    "restoreDatabaseRemoved": true,
+    "probeObjectsRemoved": true
+  },
+  "scope": {
+    "stage4Actions": 0,
+    "applicationDeployments": 0,
+    "firewallChanges": 0,
+    "postgresqlRemoteExposure": false,
+    "ctReboots": 0,
+    "primaryDatabaseDrops": 0,
+    "realCustomerDataIntroduced": false,
+    "commitsOrPushes": 0
+  },
+  "localClosureArtifactCleanup": {
+    "result": "PASS",
+    "verifiedPathCount": 14,
+    "tunnelListenerAbsent": true
+  }
+}

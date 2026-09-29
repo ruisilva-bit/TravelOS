@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 3,
+  "result": "PASS",
+  "scope": "repository-owned-source-plus-stage-4-evidence-before-index",
+  "freezeInputAggregateSha256": "a8c1af50867f330a146184654fd77ccbb1f5f6fdaa6cb4805b91a9885b6aad1e",
+  "filesScanned": 331,
+  "coverage": {
+    "repositoryOwnedSource": 111,
+    "scriptsAndTooling": 84,
+    "githubWorkflows": 1,
+    "manifestsAndExampleConfiguration": 18,
+    "retainedEvidence": 48,
+    "reviewMarkdown": 27,
+    "stage4Migrations": 6,
+    "stage4IntegrationTests": 1,
+    "stage4AuthAdapters": 7,
+    "stage4Evidence": 12,
+    "stage4ImplementationDocs": 1,
+    "stage4ReviewMarkdown": 0
+  },
+  "stage3EvidenceIndexIncluded": false,
+  "stage3CandidateValidationIncluded": false,
+  "stage3CandidateFreezeIncluded": false,
+  "stage3CorrectedCandidateValidationIncluded": false,
+  "stage3CorrectedCandidateFreezeIncluded": false,
+  "stage4EvidenceIndexIncluded": false,
+  "explicitAllowlistEntries": 10,
+  "allowlistedFindingCount": 10,
+  "findings": [],
+  "matchedValuesEmitted": false
+}

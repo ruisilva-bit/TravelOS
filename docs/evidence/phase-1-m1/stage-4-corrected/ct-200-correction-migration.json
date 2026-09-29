@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "phase": "Phase 1 M1",
+  "stage": 4,
+  "generation": "corrected",
+  "result": "PASS",
+  "target": {
+    "ct": 200,
+    "guest": "travelos-dev",
+    "environment": "DEVELOPMENT",
+    "database": "travelos_development"
+  },
+  "preMigrationVersion": "0005_root_agency_staff_authorization",
+  "appliedMigration": "0006_stage4_authorization_hardening",
+  "postMigrationVersion": "0006_stage4_authorization_hardening",
+  "executionContext": {
+    "sessionUser": "travelos_migrator",
+    "currentUser": "travelos_owner",
+    "transactional": true
+  },
+  "verified": {
+    "lastOwnerTriggerCount": 2,
+    "lastOwnerAssignmentFunctionPresent": true,
+    "lastOwnerMembershipFunctionPresent": true,
+    "adminAuditInsert": true,
+    "adminAuditUpdate": false,
+    "adminAuditDelete": false
+  },
+  "credentialsCaptured": false,
+  "productionActions": 0
+}

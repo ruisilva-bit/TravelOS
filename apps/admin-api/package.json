@@ -1,6 +1,6 @@
 {
   "name": "@travelos/admin-api",
-  "version": "0.0.0-stage2",
+  "version": "0.0.0-stage4",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,8 +10,11 @@
     "@nestjs/common": "11.1.29",
     "@nestjs/core": "11.1.29",
     "@nestjs/platform-express": "11.1.29",
+    "@travelos/auth-adapters": "workspace:*",
+    "@travelos/backend-core": "workspace:*",
     "@travelos/config": "workspace:*",
     "@travelos/contracts": "workspace:*",
+    "@travelos/database": "workspace:*",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
   }

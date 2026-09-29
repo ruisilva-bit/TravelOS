@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "clusterStopped": true,
+  "disposableRootAbsent": true,
+  "retainedPostgresqlDataDirectories": 0,
+  "retainedPackageArchives": 0,
+  "ct200Actions": 0
+}

@@ -1,0 +1,27 @@
+
+ RUN  v4.1.10 /home/hermes/projects/TravelOS
+
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > requires strict contracts and authorizes the create path 191ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > does not let cost visibility alone create INTERNAL_ONLY supplier cost 5ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > fails closed for a session bound to a different Agency 8ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > does not return INTERNAL_ONLY data to a settings-only accommodation editor 6ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > does not let cost visibility alone mutate an INTERNAL_ONLY note 5ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > requires and accepts the explicit finance mutation capability for an INTERNAL_ONLY note 5ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > accepts the exact create allowlist and rejects unknown fields 52ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > keeps Money JSON exact and string-valued in the response contract 15ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > enforces pinned Money scales, canonical IDs and coherent civil times 4ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > validates the full continuity and structured itinerary input before persistence 37ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > rejects same-airport flights, inverted times and invalid trip dates 4ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > keeps application persistence behind the repository port 6ms
+ ✓ apps/admin-api/test/health-live.test.ts > Admin API liveness > boots and exposes only the DEVELOPMENT-safe liveness response 156ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > keeps Money in bigint minor units and serializes only strings 7ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > uses an explicit commercial policy and fails closed for unknown policy ids 2ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > constructs valid UUIDv7 opaque identifiers and rejects malformed values 1ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > retains local civil time, zone and derived instant as separate validated values 34ms
+ ✓ apps/admin-api/test/composed-m1-body-parser.test.ts > Admin Stage 5 composed HTTP body parsing > parses JSON before the raw Stage 5 write routes are reached 213ms
+
+ Test Files  6 passed (6)
+      Tests  18 passed (18)
+   Start at  16:19:59
+   Duration  2.75s (transform 697ms, setup 0ms, import 5.55s, tests 799ms, environment 1ms)
+

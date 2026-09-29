@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "result": "PASS",
+  "scope": "deterministic-repository-inputs-plus-corrected-stage-3-evidence-before-index",
+  "freezeInputAggregateSha256": "0097b6aba6099cdb25c2ea37c17fd265eca39429500e54270901235869e5bde6",
+  "filesScanned": 320,
+  "coverage": {
+    "repositoryOwnedSource": 89,
+    "scriptsAndTooling": 74,
+    "githubWorkflows": 1,
+    "manifestsAndExampleConfiguration": 18,
+    "retainedEvidence": 68,
+    "reviewMarkdown": 31,
+    "stage3Migrations": 4,
+    "stage3IntegrationTests": 2,
+    "databaseDeployment": 1,
+    "stage3Evidence": 32,
+    "stage3ImplementationDocs": 1,
+    "stage3ReviewMarkdown": 4
+  },
+  "stage3EvidenceIndexIncluded": false,
+  "stage3CandidateValidationIncluded": true,
+  "stage3CandidateFreezeIncluded": true,
+  "stage3CorrectedCandidateValidationIncluded": true,
+  "stage3CorrectedCandidateFreezeIncluded": false,
+  "explicitAllowlistEntries": 0,
+  "allowlistedFindingCount": 0,
+  "findings": [],
+  "matchedValuesEmitted": false
+}

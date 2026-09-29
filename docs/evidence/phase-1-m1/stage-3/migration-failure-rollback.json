@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "deliberatelyFailingMigrationLocation": "disposable temporary directory outside production chain",
+  "failure": {
+    "rejected": true,
+    "message": "TravelOS migration run 84d44fc6-c32a-4358-ab79-dd83bf715e92 failed: stage3 deliberate migration failure"
+  },
+  "transactionalChangesRolledBack": true,
+  "failedMigrationLedgerCount": 0,
+  "lockReleased": true,
+  "laterCleanMigrationRun": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "runId": "f21e90fa-f0f3-492c-b5ea-754cd9f2e12a",
+    "target": {
+      "host": "127.0.0.1",
+      "port": 34111,
+      "database": "travelos_stage3_failure",
+      "sessionRole": "travelos_migrator",
+      "effectiveRole": "travelos_owner"
+    },
+    "policy": {
+      "authority": "TravelOS node-pg-migrate 9.0.0 chain",
+      "direction": "up",
+      "downPolicy": "disabled; rollback is compatible artifact rollback, restore, or forward fix",
+      "migrationsSchema": "travelos_meta",
+      "migrationsTable": "schema_migrations",
+      "checkOrder": true,
+      "createMigrationsSchema": true,
+      "createSchema": false,
+      "singleTransaction": true,
+      "advisoryLock": true,
+      "advisoryLockMode": "fail",
+      "advisoryLockValue": 7241865325823964,
+      "dryRun": false,
+      "fake": false,
+      "decamelize": false,
+      "timestamp": false,
+      "useGlob": false
+    },
+    "postgresqlVersionNumber": 180006,
+    "verifiedMigrationCount": 1,
+    "appliedMigrations": [
+      "0001_recovery_probe"
+    ],
+    "ledger": [
+      {
+        "name": "0001_recovery_probe",
+        "runOn": "2026-09-14T11:43:06.477Z"
+      }
+    ],
+    "currentVersion": "0001_recovery_probe",
+    "durationMs": 15,
+    "diagnostics": [
+      "> Migrating files:",
+      "> - 0001_recovery_probe",
+      "### MIGRATION 0001_recovery_probe (UP) ###"
+    ]
+  },
+  "deterministicRecoveryRerun": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "runId": "0be7d423-2057-4b05-80f9-90efcbe37dbc",
+    "target": {
+      "host": "127.0.0.1",
+      "port": 34111,
+      "database": "travelos_stage3_failure",
+      "sessionRole": "travelos_migrator",
+      "effectiveRole": "travelos_owner"
+    },
+    "policy": {
+      "authority": "TravelOS node-pg-migrate 9.0.0 chain",
+      "direction": "up",
+      "downPolicy": "disabled; rollback is compatible artifact rollback, restore, or forward fix",
+      "migrationsSchema": "travelos_meta",
+      "migrationsTable": "schema_migrations",
+      "checkOrder": true,
+      "createMigrationsSchema": true,
+      "createSchema": false,
+      "singleTransaction": true,
+      "advisoryLock": true,
+      "advisoryLockMode": "fail",
+      "advisoryLockValue": 7241865325823964,
+      "dryRun": false,
+      "fake": false,
+      "decamelize": false,
+      "timestamp": false,
+      "useGlob": false
+    },
+    "postgresqlVersionNumber": 180006,
+    "verifiedMigrationCount": 1,
+    "appliedMigrations": [],
+    "ledger": [
+      {
+        "name": "0001_recovery_probe",
+        "runOn": "2026-09-14T11:43:06.477Z"
+      }
+    ],
+    "currentVersion": "0001_recovery_probe",
+    "durationMs": 10,
+    "diagnostics": [
+      "No migrations to run!"
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "stage": "phase-1-m1/stage-5-final-8",
+  "result": "PASS",
+  "artifactCount": 14,
+  "aggregateSha256": "b706fdb79b606c8b302f7e8bd17531e7aebbac6d1dba5e966b885dc662c56351",
+  "serialization": "newline-terminated records: relative-path<TAB>bytes<TAB>sha256, sorted by relative path",
+  "artifacts": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/auth-bridge-tests.json",
+      "bytes": 510,
+      "sha256": "eca7fcc49e31df256702f7c7f47aa74d864b3501e2e8c2f6ec9cfeff70e92f1f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/auth-bridge-tests.log",
+      "bytes": 809,
+      "sha256": "f2d90d518c1a8c87f161456ae1f3787846a93083d019d1017f495dc011ee2dfd"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/ci-verify.log",
+      "bytes": 149515,
+      "sha256": "b75c2d7ebb51db7cb835bd1200efab7da710bf9fc56365f084d34c4927576809"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/disposable-cleanup.json",
+      "bytes": 252,
+      "sha256": "6e159bfe3a19f492f573a23d53e28bec082f0eb799fd6402e6ad14e773dfddf9"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/focused-test-execution.json",
+      "bytes": 910,
+      "sha256": "7add30203e68a6c50136d99d7fda423a42472d1839d6a0adbe1c2c7e017e7215"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/focused-tests.log",
+      "bytes": 4093,
+      "sha256": "3dd682b39c16420c95c1b969767e2d1d12ec7c052fc44fbf575da73c853ee9d2"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/integration-test-execution.json",
+      "bytes": 457,
+      "sha256": "ca04d6355926e9bb9b3382ba1e7589e0f4ed818086e210e62d7cedd8124b240e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/integration-tests.log",
+      "bytes": 3300,
+      "sha256": "c9ca979afab915f5fffbb3ace468a415b99dc82454f2a97906f573e9c5210c54"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/migration-checksums.json",
+      "bytes": 1101,
+      "sha256": "8d4013d21a6b3b0eedd2e6d19c4266de6ea02286ad2a51b0cb6468a25bb2c392"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/package-build.json",
+      "bytes": 219,
+      "sha256": "f1d4d0b17e1085793bf945ca1e2abb9cc4e3dd42e47c10a8cea1c4fdf34ef00e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/postgresql-runtime.json",
+      "bytes": 292,
+      "sha256": "690483dc28f7f67dac2545f08e60b0793ee5e7b56db9ae397bd91f5947dc7aea"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/qualification-summary.json",
+      "bytes": 1366,
+      "sha256": "2c424d83ca9c5acfbc5d3ed245d992302ee8d2aa8b885d68ef75ea4e70c73980"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-8/stage5-source-scope-test.log",
+      "bytes": 2947,
+      "sha256": "0cc70e1389ed41f1b63968f748584cc281f0a0006361921e98306c019f235620"
+    }
+  ]
+}

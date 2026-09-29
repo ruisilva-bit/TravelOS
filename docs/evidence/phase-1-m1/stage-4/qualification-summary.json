@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "phase": "Phase 1 M1",
+  "stage": 4,
+  "result": "PASS",
+  "scope": "authentication realms, Staff authorization foundation, disposable PostgreSQL qualification, controlled DEVELOPMENT CT 200 migration, and evidence integrity",
+  "qualified": {
+    "migrationChain": {
+      "through": "0005_root_agency_staff_authorization.cjs",
+      "checksumVerification": "PASS",
+      "ct200LedgerCount": 5
+    },
+    "authSchemaParity": "PASS",
+    "disposablePostgreSQL": {
+      "integrationTests": 6,
+      "packageBuild": "PASS",
+      "cleanup": "PASS"
+    },
+    "ct200": {
+      "environment": "DEVELOPMENT",
+      "migration": "PASS",
+      "postMigrationValidation": "PASS",
+      "backupRestoreProbe": "PASS",
+      "temporaryAccessCleanup": "PASS"
+    },
+    "sourceSafety": {
+      "preIndex": "PASS",
+      "fixtureEmailAllowlistEntries": 10,
+      "matchedValuesEmitted": false
+    },
+    "repositoryRegression": "PASS"
+  },
+  "verifiedInvariants": [
+    "Staff and Portal relations are physically separate and owned by travelos_owner.",
+    "Admin and Portal runtime logins can read only their designated identity realm; the worker cannot read either realm.",
+    "Root Agency singleton and last-active-Owner protections reject invalid writes inside rollback-only probes.",
+    "Authorization epochs increment after a role assignment and the probe rolls back without residual Agency or identity rows.",
+    "Better Auth generated schema agrees with the allowlisted relation names."
+  ],
+  "notClaimed": [
+    "No production deployment, public exposure, DNS/TLS/firewall change, or customer data operation occurred.",
+    "No user bootstrap invitation or identity was retained on CT 200; validation rows were rollback-only.",
+    "The Stage 4 candidate is not closed until the immutable candidate freeze and independent review complete."
+  ],
+  "credentialsCaptured": false
+}

@@ -1,0 +1,16 @@
+
+ RUN  v4.1.10 /home/hermes/projects/TravelOS
+
+ ✓ tests/integration/stage-3-postgresql.test.ts > TravelOS Stage 3 disposable PostgreSQL qualification > bootstraps an empty cluster and migrates the authoritative chain from zero 236ms
+ ✓ tests/integration/stage-3-postgresql.test.ts > TravelOS Stage 3 disposable PostgreSQL qualification > establishes deliberate schema ownership and role membership topology 177ms
+ ✓ tests/integration/stage-3-postgresql.test.ts > TravelOS Stage 3 disposable PostgreSQL qualification > proves the executable runtime privilege matrix and Portal isolation 1495ms
+ ✓ tests/integration/stage-3-postgresql.test.ts > TravelOS Stage 3 disposable PostgreSQL qualification > commits, rolls back, releases the pool connection, and rejects nesting explicitly 18ms
+ ↓ tests/integration/stage-3-postgresql.test.ts > TravelOS Stage 3 disposable PostgreSQL qualification > serializes migration authority with fail-fast advisory locking
+ ↓ tests/integration/stage-3-postgresql.test.ts > TravelOS Stage 3 disposable PostgreSQL qualification > rolls back a deliberately failing migration and releases its lock
+ ↓ tests/integration/stage-3-postgresql.test.ts > TravelOS Stage 3 disposable PostgreSQL qualification > dumps and restores database-local state after cluster-global role bootstrap
+
+ Test Files  1 passed (1)
+      Tests  4 passed | 3 skipped (7)
+   Start at  16:53:47
+   Duration  3.36s (transform 161ms, setup 0ms, import 1.22s, tests 1.93s, environment 0ms)
+

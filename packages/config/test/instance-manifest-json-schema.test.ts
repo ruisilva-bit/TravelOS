@@ -13,6 +13,7 @@ type ListenerRecords = {
   adminApi: Record<string, unknown>;
   portalApi: Record<string, unknown>;
 };
+type RuntimeRoleRecords = Record<"adminApi" | "portalApi" | "worker", Record<string, unknown>>;
 
 const examplePath = fileURLToPath(
   new URL("../../../deploy/manifests/development.example.json", import.meta.url),
@@ -192,6 +193,10 @@ const listenersOf = (candidate: JsonObject): ListenerRecords => {
   const runtime = candidate["runtime"] as JsonObject;
   return runtime["listeners"] as ListenerRecords;
 };
+const runtimeRolesOf = (candidate: JsonObject): RuntimeRoleRecords => {
+  const database = candidate["database"] as JsonObject;
+  return database["runtimeRoles"] as RuntimeRoleRecords;
+};
 
 describe("development manifest JSON Schema and runtime conformance", () => {
   it("accepts the representative valid manifest in runtime and JSON Schema", () => {
@@ -253,6 +258,31 @@ describe("development manifest JSON Schema and runtime conformance", () => {
     listenersOf(candidate)["portalApi"]["port"] = listenersOf(candidate)["adminApi"]["port"];
     expect(jsonSchemaAccepts(candidate)).toBe(true);
     expect(runtimeAccepts(candidate)).toBe(true);
+  });
+
+  it.each([
+    ["adminApi", "travelos_portal_api"],
+    ["portalApi", "travelos_admin_api"],
+    ["worker", "travelos_portal_api"],
+    ["portalApi", "travelos_owner"],
+    ["portalApi", "travelos_migrator"],
+    ["portalApi", "travelos_portal_runtime"],
+  ] as const)("represents exact %s database identity and rejects %s", (processName, roleName) => {
+    const candidate = copyManifest();
+    runtimeRolesOf(candidate)[processName]["roleName"] = roleName;
+    expect(jsonSchemaAccepts(candidate)).toBe(false);
+    expect(runtimeAccepts(candidate)).toBe(false);
+  });
+
+  it("declares credential-reference inequality as runtime-only", () => {
+    const candidate = copyManifest();
+    const roles = runtimeRolesOf(candidate);
+    roles["portalApi"]["credentialReference"] = roles["adminApi"]["credentialReference"];
+    expect(jsonSchemaAccepts(candidate)).toBe(true);
+    expect(runtimeAccepts(candidate)).toBe(false);
+    expect(instanceManifestInvariantRegistry.runtimeOnly).toContainEqual(
+      expect.objectContaining({ id: "TOS-CONFIG-RUNTIME-005" }),
+    );
   });
 
   it("identifies host and allowlist relationships as runtime-only", () => {

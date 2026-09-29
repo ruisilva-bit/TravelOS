@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "filesScanned": 359,
+  "coverage": {
+    "apps": 43,
+    "packages": 92,
+    "tooling": 88,
+    "tests": 4,
+    "migrations": 8,
+    "deploy": 3,
+    "workflows": 1,
+    "stage5Evidence": 86,
+    "stage5ReviewMarkdown": 24
+  },
+  "omissionProbe": {
+    "omittedSourcePath": "migrations/0007_stage5_m1_domain_slice.cjs",
+    "result": "FAIL"
+  },
+  "evidenceOmissionProbe": {
+    "omittedEvidenceIndex": "docs/evidence/phase-1-m1/stage-5-corrected/EVIDENCE_INDEX.json",
+    "result": "FAIL"
+  }
+}

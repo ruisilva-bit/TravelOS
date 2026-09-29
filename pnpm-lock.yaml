@@ -162,12 +162,21 @@ importers:
       '@nestjs/platform-express':
         specifier: 11.1.29
         version: 11.1.29(@nestjs/common@11.1.29(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@11.1.29)(supports-color@7.2.0)
+      '@travelos/auth-adapters':
+        specifier: workspace:*
+        version: link:../../packages/auth-adapters
+      '@travelos/backend-core':
+        specifier: workspace:*
+        version: link:../../packages/backend-core
       '@travelos/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@travelos/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@travelos/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
@@ -208,12 +217,18 @@ importers:
       '@nestjs/platform-express':
         specifier: 11.1.29
         version: 11.1.29(@nestjs/common@11.1.29(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@11.1.29)(supports-color@7.2.0)
+      '@travelos/auth-adapters':
+        specifier: workspace:*
+        version: link:../../packages/auth-adapters
       '@travelos/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@travelos/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@travelos/portal-safe-core':
+        specifier: workspace:*
+        version: link:../../packages/portal-safe-core
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
@@ -249,7 +264,20 @@ importers:
         specifier: workspace:*
         version: link:../../packages/config
 
-  packages/auth-adapters: {}
+  packages/auth-adapters:
+    dependencies:
+      '@better-auth/kysely-adapter':
+        specifier: 1.6.27
+        version: 1.6.27(@better-auth/core@1.6.27(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.4.0(zod@4.4.3))(jose@6.2.9)(kysely@0.29.5)(nanostores@1.5.1))(@better-auth/utils@0.4.2)(kysely@0.29.5)
+      better-auth:
+        specifier: 1.6.27
+        version: 1.6.27(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
+      kysely:
+        specifier: 0.29.5
+        version: 0.29.5
+      pg:
+        specifier: 8.23.0
+        version: 8.23.0
 
   packages/backend-core: {}
 
@@ -265,7 +293,17 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
-  packages/database: {}
+  packages/database:
+    dependencies:
+      '@travelos/backend-core':
+        specifier: workspace:*
+        version: link:../backend-core
+      kysely:
+        specifier: 0.29.5
+        version: 0.29.5
+      pg:
+        specifier: 8.23.0
+        version: 8.23.0
 
   packages/design-system:
     dependencies:

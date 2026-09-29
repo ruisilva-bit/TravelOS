@@ -2,3 +2,5 @@
 export interface PortalAccessCapabilityBoundary {
   readonly capability: "portal-access";
 }
+
+export { portalPrincipalIdentityFromSession, type PortalPrincipalIdentity } from "./identity.js";

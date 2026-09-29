@@ -151,7 +151,7 @@ export const architecturePolicy = {
       layer: "configuration-adapter",
       workspace: [],
       external: ["zod"],
-      builtins: ["node:fs/promises"],
+      builtins: ["node:fs/promises", "node:path"],
       exports: ["."],
     }),
     unit({
@@ -160,7 +160,7 @@ export const architecturePolicy = {
       layer: "database-adapter",
       workspace: ["@travelos/backend-core"],
       external: ["kysely", "pg"],
-      builtins: [],
+      builtins: ["node:async_hooks", "node:crypto"],
       exports: ["."],
     }),
     unit({
@@ -168,8 +168,8 @@ export const architecturePolicy = {
       root: "packages/auth-adapters",
       layer: "authentication-adapter",
       workspace: ["@travelos/backend-core", "@travelos/portal-safe-core/portal-access"],
-      external: ["better-auth", "zod"],
-      builtins: [],
+      external: ["@better-auth/kysely-adapter", "better-auth", "kysely", "pg", "zod"],
+      builtins: ["node:crypto"],
       exports: ["."],
     }),
     unit({

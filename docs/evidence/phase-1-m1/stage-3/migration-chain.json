@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "zeroToCurrent": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "runId": "c8e1b7b9-9db9-49b2-96db-2934872e77cb",
+    "target": {
+      "host": "127.0.0.1",
+      "port": 34111,
+      "database": "travelos_stage3_qualification",
+      "sessionRole": "travelos_migrator",
+      "effectiveRole": "travelos_owner"
+    },
+    "policy": {
+      "authority": "TravelOS node-pg-migrate 9.0.0 chain",
+      "direction": "up",
+      "downPolicy": "disabled; rollback is compatible artifact rollback, restore, or forward fix",
+      "migrationsSchema": "travelos_meta",
+      "migrationsTable": "schema_migrations",
+      "checkOrder": true,
+      "createMigrationsSchema": true,
+      "createSchema": false,
+      "singleTransaction": true,
+      "advisoryLock": true,
+      "advisoryLockMode": "fail",
+      "advisoryLockValue": 7241865325823964,
+      "dryRun": false,
+      "fake": false,
+      "decamelize": false,
+      "timestamp": false,
+      "useGlob": false
+    },
+    "postgresqlVersionNumber": 180006,
+    "verifiedMigrationCount": 3,
+    "appliedMigrations": [
+      "0001_foundation_schemas",
+      "0002_runtime_schema_boundaries",
+      "0003_creator_default_privileges"
+    ],
+    "ledger": [
+      {
+        "name": "0001_foundation_schemas",
+        "runOn": "2026-09-14T11:43:02.679Z"
+      },
+      {
+        "name": "0002_runtime_schema_boundaries",
+        "runOn": "2026-09-14T11:43:02.679Z"
+      },
+      {
+        "name": "0003_creator_default_privileges",
+        "runOn": "2026-09-14T11:43:02.679Z"
+      }
+    ],
+    "currentVersion": "0003_creator_default_privileges",
+    "durationMs": 100,
+    "diagnostics": [
+      "> Migrating files:",
+      "> - 0001_foundation_schemas",
+      "> - 0002_runtime_schema_boundaries",
+      "> - 0003_creator_default_privileges",
+      "### MIGRATION 0001_foundation_schemas (UP) ###",
+      "### MIGRATION 0002_runtime_schema_boundaries (UP) ###",
+      "### MIGRATION 0003_creator_default_privileges (UP) ###"
+    ]
+  },
+  "deterministicRerun": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "runId": "1b4f99f1-4bb2-492c-a93d-a75b0681318d",
+    "target": {
+      "host": "127.0.0.1",
+      "port": 34111,
+      "database": "travelos_stage3_qualification",
+      "sessionRole": "travelos_migrator",
+      "effectiveRole": "travelos_owner"
+    },
+    "policy": {
+      "authority": "TravelOS node-pg-migrate 9.0.0 chain",
+      "direction": "up",
+      "downPolicy": "disabled; rollback is compatible artifact rollback, restore, or forward fix",
+      "migrationsSchema": "travelos_meta",
+      "migrationsTable": "schema_migrations",
+      "checkOrder": true,
+      "createMigrationsSchema": true,
+      "createSchema": false,
+      "singleTransaction": true,
+      "advisoryLock": true,
+      "advisoryLockMode": "fail",
+      "advisoryLockValue": 7241865325823964,
+      "dryRun": false,
+      "fake": false,
+      "decamelize": false,
+      "timestamp": false,
+      "useGlob": false
+    },
+    "postgresqlVersionNumber": 180006,
+    "verifiedMigrationCount": 3,
+    "appliedMigrations": [],
+    "ledger": [
+      {
+        "name": "0001_foundation_schemas",
+        "runOn": "2026-09-14T11:43:02.679Z"
+      },
+      {
+        "name": "0002_runtime_schema_boundaries",
+        "runOn": "2026-09-14T11:43:02.679Z"
+      },
+      {
+        "name": "0003_creator_default_privileges",
+        "runOn": "2026-09-14T11:43:02.679Z"
+      }
+    ],
+    "currentVersion": "0003_creator_default_privileges",
+    "durationMs": 17,
+    "diagnostics": [
+      "No migrations to run!"
+    ]
+  },
+  "initialLedger": []
+}

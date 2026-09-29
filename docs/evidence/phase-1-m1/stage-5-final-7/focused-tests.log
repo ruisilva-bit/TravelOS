@@ -1,0 +1,34 @@
+
+ RUN  v4.1.10 /home/hermes/projects/TravelOS
+
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > accepts the exact create allowlist and rejects unknown fields 33ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > keeps Money JSON exact and string-valued in the response contract 25ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > enforces pinned Money scales, canonical IDs and coherent civil times 11ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > keeps the Admin timezone registry byte-equivalent to backend and PostgreSQL policy 8ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > requires strict contracts and authorizes the create path 120ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > does not let cost visibility alone create INTERNAL_ONLY supplier cost 4ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > denies composite reads without the Stage 5 product view capabilities 2ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > fails closed for a session bound to a different Agency 6ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > does not return INTERNAL_ONLY data to a settings-only accommodation editor 3ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > does not let cost visibility alone mutate an INTERNAL_ONLY note 2ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > requires and accepts the explicit finance mutation capability for an INTERNAL_ONLY note 5ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > maps a persistence serialization conflict to HTTP 409 2ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > validates the full continuity and structured itinerary input before persistence 7ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > rejects same-airport flights, inverted times and invalid trip dates 3ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > rejects non-primary traveller roles before the repository boundary 1ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > rejects unknown fields and contract-invalid values before the repository boundary 3ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > reconstructs Money at the exported application boundary 3ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > orders supported millisecond instants without precision loss 1ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > keeps application persistence behind the repository port 2ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > passes reconstructed JSON Money to the repository port 2ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > keeps Money in bigint minor units and serializes only strings 5ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > uses an explicit commercial policy and fails closed for unknown policy ids 5ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > constructs valid UUIDv7 opaque identifiers and rejects malformed values 1ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > retains local civil time, zone and derived instant as separate validated values 5ms
+ ✓ apps/admin-api/test/composed-m1-body-parser.test.ts > Admin Stage 5 composed HTTP body parsing > parses JSON before the raw Stage 5 write routes are reached 196ms
+
+ Test Files  5 passed (5)
+      Tests  25 passed (25)
+   Start at  15:05:54
+   Duration  2.63s (transform 660ms, setup 0ms, import 4.02s, tests 472ms, environment 1ms)
+

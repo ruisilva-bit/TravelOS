@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "phase": "Phase 1 M1",
+  "stage": 4,
+  "generation": "corrected",
+  "reviewedAt": "2026-09-22T19:36:57+01:00",
+  "reviewer": {
+    "role": "independent non-authoring Hermes leaf reviewer",
+    "model": "gpt-5.6-sol",
+    "mode": "read-only",
+    "repositoryWrites": 0,
+    "ctActions": 0
+  },
+  "candidate": {
+    "path": "docs/reviews/phase-1-m1/STAGE_4_CORRECTED_CANDIDATE_FREEZE.md",
+    "sha256": "1d1784dc2b75f54a5b7634635f53b59403e9fad0bb68b3e7021044ec69102551",
+    "entries": 266,
+    "aggregateSha256": "651d9188d105588c30940ca4dee13942131f3091dd7ee23f7496132ffc58ef51"
+  },
+  "correctedEvidence": {
+    "path": "docs/evidence/phase-1-m1/stage-4-corrected/EVIDENCE_INDEX.json",
+    "sha256": "4ad49232525ba262cd3df4a2f80090fd11f75162ce9e0837a3b5aefb78e09cee",
+    "artifacts": 4,
+    "aggregateSha256": "a3ebebf18d2d64e2149bfc0e2a6e33bfccbdbc1c53d4ca552f605ffe9d87d452"
+  },
+  "commandsRun": [
+    "pnpm stage4:candidate:verify (before and after review checks)",
+    "pnpm security:scan:stage4",
+    "pnpm auth:schema:verify",
+    "pnpm db:migrations:verify",
+    "pnpm test:stage4:postgres",
+    "pnpm exec vitest run apps/admin-api/test/auth-bridge.test.ts apps/portal-api/test/auth-bridge.test.ts --config tooling/testing/vitest.config.ts --reporter=verbose",
+    "pnpm evidence:stage4:verify",
+    "independent corrected-evidence exact hash/directory/aggregate validation",
+    "independent disposable concurrent last-Owner transition probe"
+  ],
+  "results": {
+    "freezeVerification": "PASS: 266/266 rows matched",
+    "sourceSafety": "PASS: 338 files, zero findings",
+    "schemaParity": "PASS",
+    "migrationIntegrity": "PASS",
+    "stage4Postgresql": "PASS: 6/6 tests",
+    "authBridgeTests": "PASS: 6/6 tests",
+    "lastOwnerConcurrencyProbe": "PASS: second removal rejected with SQLSTATE P0001"
+  },
+  "findings": [],
+  "residualCounts": { "BLOCKER": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "NOTE": 0 },
+  "verdict": "APPROVE",
+  "summary": "The independently verified corrected candidate contains no concrete reproducible blocking finding. The original Stage 4 candidate freeze remains historical and was not reused."
+}

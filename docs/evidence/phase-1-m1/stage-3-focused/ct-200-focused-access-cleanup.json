@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "target": {
+    "proxmoxNode": "pxmx2",
+    "ct": 200,
+    "hostname": "travelos-dev"
+  },
+  "temporaryAuthorizedKeyRemoved": true,
+  "removedEntries": 1,
+  "authorizedKeysMode": "0600",
+  "temporaryKeyReauthentication": "DENIED_AS_EXPECTED",
+  "localTemporaryArtifacts": {
+    "result": "PASS",
+    "verifiedPathCount": 7,
+    "privateKeyRetained": false,
+    "publicKeyRetained": false,
+    "consoleHelperRetained": false,
+    "screenshotsRetained": false,
+    "rawQueryOutputRetained": false
+  },
+  "databaseMutations": 0,
+  "roleOrMembershipMutations": 0,
+  "schemaMutations": 0,
+  "serviceChanges": 0,
+  "stage4Actions": 0
+}

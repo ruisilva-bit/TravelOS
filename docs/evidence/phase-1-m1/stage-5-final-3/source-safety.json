@@ -1,0 +1,25 @@
+{
+  "allowlistedFindingCount": 0,
+  "coverage": {
+    "githubWorkflows": 1,
+    "manifestsAndExampleConfiguration": 18,
+    "repositoryOwnedSource": 135,
+    "retainedEvidence": 36,
+    "reviewMarkdown": 27,
+    "scriptsAndTooling": 86
+  },
+  "explicitAllowlistEntries": 0,
+  "filesScanned": 335,
+  "findings": [],
+  "freezeInputAggregateSha256": "8b9e34af552cb9b4c75c8c5c7205c4d87632c3f975ab489fcc5943fc2ff6e4c4",
+  "matchedValuesEmitted": false,
+  "result": "PASS",
+  "schemaVersion": 3,
+  "scope": "deterministic-stage-2-freeze-inputs",
+  "stage3CandidateFreezeIncluded": false,
+  "stage3CandidateValidationIncluded": false,
+  "stage3CorrectedCandidateFreezeIncluded": false,
+  "stage3CorrectedCandidateValidationIncluded": false,
+  "stage3EvidenceIndexIncluded": false,
+  "stage4EvidenceIndexIncluded": false
+}

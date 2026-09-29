@@ -1,14 +1,14 @@
 {
-  "manifestSchemaVersion": 1,
+  "manifestSchemaVersion": 3,
   "environment": "DEVELOPMENT",
   "instanceId": "travelos-dev-local",
   "compatibility": {
-    "releaseVersion": "0.0.0-stage2",
-    "releaseTarget": "development:stage-2",
-    "configSchemaVersion": 1,
+    "releaseVersion": "0.0.0-stage4",
+    "releaseTarget": "development:stage-4",
+    "configSchemaVersion": 3,
     "databaseSchema": {
-      "minimum": 0,
-      "maximum": 0
+      "minimum": 6,
+      "maximum": 6
     },
     "postgresqlMajor": 18
   },
@@ -31,12 +31,28 @@
     "slug": "travelos-development"
   },
   "database": {
+    "host": "127.0.0.1",
+    "port": 5432,
     "name": "travelos_development",
-    "roleCredentialReferences": {
-      "adminApi": "systemd-credential:admin-api-db",
-      "portalApi": "systemd-credential:portal-api-db",
-      "worker": "systemd-credential:worker-db"
+    "tlsPolicy": "DISABLED_LOOPBACK_ONLY",
+    "runtimeRoles": {
+      "adminApi": {
+        "roleName": "travelos_admin_api",
+        "credentialReference": "systemd-credential:admin-api-db"
+      },
+      "portalApi": {
+        "roleName": "travelos_portal_api",
+        "credentialReference": "systemd-credential:portal-api-db"
+      },
+      "worker": {
+        "roleName": "travelos_worker",
+        "credentialReference": "systemd-credential:worker-db"
+      }
     }
+  },
+  "authentication": {
+    "staffRealmCredentialReference": "systemd-credential:staff-auth-realm",
+    "portalRealmCredentialReference": "systemd-credential:portal-auth-realm"
   },
   "runtime": {
     "listeners": {

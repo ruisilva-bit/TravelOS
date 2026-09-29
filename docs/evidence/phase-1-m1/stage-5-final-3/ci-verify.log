@@ -1,0 +1,3541 @@
+
+=== TravelOS CI gate: protected-baseline:pre ===
+$ node tooling/ci/verify-protected-baseline.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "sourceOfTruth": {
+    "path": "docs/reviews/PHASE_0_ACCEPTED_BASELINE.md",
+    "expectedSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+    "actualSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+    "match": true
+  },
+  "protectedFiles": {
+    "declaredCount": 40,
+    "parsedCount": 40,
+    "checkedCount": 40,
+    "matchingCount": 40,
+    "missing": [],
+    "mismatches": []
+  },
+  "required": {
+    "AGENTS.md": {
+      "expectedSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "actualSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "match": true
+    },
+    "IDEA.md": {
+      "expectedSha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524",
+      "actualSha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524",
+      "match": true
+    }
+  }
+}
+
+=== TravelOS CI gate: verify:pins ===
+$ node tooling/ci/verify-pins.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "toolchain": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "directPins": {
+    "count": 46,
+    "matchStage1": true,
+    "resolvedMatch": true
+  },
+  "workspace": {
+    "projectCount": 15,
+    "externalDeclarationsUseApprovedPins": true
+  },
+  "policies": {
+    "engineStrict": true,
+    "strictPeers": true,
+    "saveExact": true,
+    "minimumReleaseAgeMinutes": 1440,
+    "minimumReleaseAgeExclusions": [],
+    "approvedBuildScripts": [
+      "esbuild"
+    ],
+    "lodashOverride": "4.18.1",
+    "structuralChecks": {
+      "packagesExact": true,
+      "minimumReleaseAgeExact": true,
+      "minimumReleaseAgeExclusionsExact": true,
+      "overridesExact": true,
+      "approvedBuildsExact": true,
+      "npmrcExact": true
+    }
+  },
+  "lockfile": {
+    "sha256": "1b92defbee6cc3094a3f601be4d1560f22f7830a65ead14f8212eab521ae03f3",
+    "frozenCandidate": true
+  }
+}
+
+=== TravelOS CI gate: db:migrations:verify ===
+$ tsx tooling/database/verify-migration-checksums.ts
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "migrations": [
+    {
+      "file": "0001_foundation_schemas.cjs",
+      "sha256": "a5cc693a28129686f83fd4f8fbaddd754348e167f1de931a296b6f22abc23482"
+    },
+    {
+      "file": "0002_runtime_schema_boundaries.cjs",
+      "sha256": "bc5b9f0a4439a80b2167af4722b1245a9982c6226fbc8f7cfefae10fa1fce4fd"
+    },
+    {
+      "file": "0003_creator_default_privileges.cjs",
+      "sha256": "7c4ecf09cdaabef7aa96d38af8d46ad4405d31c0b340cfcabd89e3c6ce5f0138"
+    },
+    {
+      "file": "0004_authentication_realms.cjs",
+      "sha256": "76f5ac720afdcd4fd7aa8a16790c7c24e08a9fb97341c00e7de62d21303e9c62"
+    },
+    {
+      "file": "0005_root_agency_staff_authorization.cjs",
+      "sha256": "b6be1816bd5751f08cfabd8399cbc8b4b374042ba97edb912fb37953cae34661"
+    },
+    {
+      "file": "0006_stage4_authorization_hardening.cjs",
+      "sha256": "51f3f8a59028e5650990de79332b05a5a9249c72dadcae567e522e819619f93f"
+    },
+    {
+      "file": "0007_stage5_m1_domain_slice.cjs",
+      "sha256": "d2f87d3ada71b7ef3c744b85d0e2b0a75ed4dfcd6beb8f25292c52a7abac3cf3"
+    }
+  ]
+}
+
+=== TravelOS CI gate: auth:schema:verify ===
+$ tsx tooling/auth/verify-better-auth-schema-drift.ts
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "staffTables": [
+    "staff_account",
+    "staff_session",
+    "staff_two_factor",
+    "staff_user",
+    "staff_verification"
+  ],
+  "portalTables": [
+    "portal_account",
+    "portal_session",
+    "portal_user",
+    "portal_verification"
+  ]
+}
+
+=== TravelOS CI gate: test:lifecycle-policy ===
+$ node tooling/ci/test-lifecycle-policy.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "evaluatorCases": [
+    {
+      "name": "complete-cache-reuse-with-no-lifecycle-output",
+      "expected": "PASS",
+      "actual": "PASS",
+      "passed": true
+    },
+    {
+      "name": "approved-esbuild-execution",
+      "expected": "PASS",
+      "actual": "PASS",
+      "passed": true
+    },
+    {
+      "name": "empty-output-without-complete-cache-proof",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "passed": true
+    },
+    {
+      "name": "unapproved-lifecycle-execution",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "passed": true
+    },
+    {
+      "name": "ignored-build-present",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "passed": true
+    },
+    {
+      "name": "broadened-build-permission",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "passed": true
+    }
+  ],
+  "packageManagerProbe": {
+    "syntheticDependency": true,
+    "installExitWasNonZero": true,
+    "lifecycleMarkerAbsent": true,
+    "ignoredBuildReported": true,
+    "unapprovedLifecycleBlocked": true
+  },
+  "broadenedPermissionProbe": {
+    "policyResult": "FAIL",
+    "approvedBuildsExact": false,
+    "rejected": true
+  },
+  "repositoryPolicy": {
+    "result": "PASS",
+    "checks": {
+      "packagesExact": true,
+      "minimumReleaseAgeExact": true,
+      "minimumReleaseAgeExclusionsExact": true,
+      "overridesExact": true,
+      "approvedBuildsExact": true,
+      "npmrcExact": true
+    }
+  },
+  "syntheticFixturesOnly": true
+}
+
+=== TravelOS CI gate: format:check ===
+$ node tooling/ci/format-stage-2.mjs --check && node tooling/ci/verify-protected-baseline.mjs
+Checking formatting...
+All matched files use Prettier code style!
+{"schemaVersion":1,"result":"PASS","mode":"--check","filesChecked":241,"protectedBaselineFiles":40,"protectedOverlap":[]}
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "sourceOfTruth": {
+    "path": "docs/reviews/PHASE_0_ACCEPTED_BASELINE.md",
+    "expectedSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+    "actualSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+    "match": true
+  },
+  "protectedFiles": {
+    "declaredCount": 40,
+    "parsedCount": 40,
+    "checkedCount": 40,
+    "matchingCount": 40,
+    "missing": [],
+    "mismatches": []
+  },
+  "required": {
+    "AGENTS.md": {
+      "expectedSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "actualSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "match": true
+    },
+    "IDEA.md": {
+      "expectedSha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524",
+      "actualSha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524",
+      "match": true
+    }
+  }
+}
+
+=== TravelOS CI gate: lint ===
+$ eslint apps packages tooling tests migrations *.ts *.mjs
+
+=== TravelOS CI gate: typecheck ===
+$ tsc -p tooling/ci/tsconfig.typecheck.json --noEmit && tsc -p tooling/ci/tsconfig.owned-declarations.json --noEmit
+
+=== TravelOS CI gate: architecture:check ===
+$ node tooling/architecture/check.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "productionGraph": {
+    "productionSourceTargets": 72,
+    "modulesCruised": 73,
+    "dependenciesCruised": 113,
+    "cycles": 0,
+    "violations": 0,
+    "enforcedRules": [
+      "no-circular-dependencies",
+      "no-unresolvable-dependencies",
+      "portal-api-cannot-import-admin-workspace",
+      "portal-safe-core-cannot-import-admin-workspace",
+      "backend-core-dependencies-must-be-explicitly-allowed",
+      "core-cannot-import-frameworks-or-adapters",
+      "portal-roots-cannot-import-admin-contracts",
+      "admin-roots-cannot-import-portal-contracts",
+      "browser-apps-cannot-import-privileged-backend",
+      "packages-cannot-import-composition-roots",
+      "composition-root-admin-web-cannot-import-another-root",
+      "composition-root-portal-web-cannot-import-another-root",
+      "composition-root-admin-api-cannot-import-another-root",
+      "composition-root-portal-api-cannot-import-another-root",
+      "composition-root-worker-cannot-import-another-root",
+      "production-cannot-import-test-support",
+      "production-cannot-import-tests"
+    ],
+    "resolverSourceForms": [
+      ".d.mts",
+      ".d.cts",
+      ".d.ts",
+      ".mts",
+      ".cts",
+      ".tsx",
+      ".ts",
+      ".mjs",
+      ".cjs",
+      ".jsx",
+      ".js",
+      ".json"
+    ]
+  },
+  "sourceDiscovery": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "authority": "TypeScript compiler-program inclusion cross-checked against one repository-owned source classifier",
+    "tsconfigPath": "tooling/ci/tsconfig.typecheck.json",
+    "compilerProjectRootFiles": 121,
+    "compilerResolvedProductionSourceCount": 72,
+    "policyInspectedProductionSourceCount": 72,
+    "uncoveredProductionSourceCount": 0,
+    "compilerResolvedProductionSourceFiles": [
+      "apps/admin-api/src/app.module.ts",
+      "apps/admin-api/src/app.ts",
+      "apps/admin-api/src/auth-bridge.ts",
+      "apps/admin-api/src/health.controller.ts",
+      "apps/admin-api/src/m1-routes.ts",
+      "apps/admin-api/src/main.ts",
+      "apps/admin-web/src/app.tsx",
+      "apps/admin-web/src/main.tsx",
+      "apps/portal-api/src/app.module.ts",
+      "apps/portal-api/src/app.ts",
+      "apps/portal-api/src/auth-bridge.ts",
+      "apps/portal-api/src/health.controller.ts",
+      "apps/portal-api/src/main.ts",
+      "apps/portal-web/src/app.tsx",
+      "apps/portal-web/src/main.tsx",
+      "apps/worker/src/main.ts",
+      "apps/worker/src/worker-process.ts",
+      "packages/auth-adapters/src/http-bridge.ts",
+      "packages/auth-adapters/src/index.ts",
+      "packages/auth-adapters/src/operator-token.ts",
+      "packages/auth-adapters/src/realm-postgres.ts",
+      "packages/auth-adapters/src/realm.ts",
+      "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+      "packages/backend-core/src/application/transaction.ts",
+      "packages/backend-core/src/index.ts",
+      "packages/backend-core/src/modules/crm/domain/continuity.ts",
+      "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+      "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+      "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+      "packages/backend-core/src/shared-kernel/money/money.ts",
+      "packages/backend-core/src/shared-kernel/opaque-id.ts",
+      "packages/backend-core/src/shared-kernel/time.ts",
+      "packages/backend-core/src/staff-access/authorization.ts",
+      "packages/backend-core/src/staff-access/permission-registry.ts",
+      "packages/config/src/credential-reference.ts",
+      "packages/config/src/index.ts",
+      "packages/config/src/instance-manifest-invariants.ts",
+      "packages/config/src/instance-manifest-json-schema.ts",
+      "packages/config/src/instance-manifest.ts",
+      "packages/config/src/load-development-instance-manifest.ts",
+      "packages/config/src/systemd-credential.ts",
+      "packages/contracts/src/admin/auth/index.ts",
+      "packages/contracts/src/admin/auth/session-context.ts",
+      "packages/contracts/src/admin/customers/index.ts",
+      "packages/contracts/src/admin/customers/m1.ts",
+      "packages/contracts/src/admin/health.ts",
+      "packages/contracts/src/admin/index.ts",
+      "packages/contracts/src/admin/itinerary/index.ts",
+      "packages/contracts/src/admin/itinerary/m1.ts",
+      "packages/contracts/src/admin/money.ts",
+      "packages/contracts/src/admin/reservations/index.ts",
+      "packages/contracts/src/admin/reservations/m1.ts",
+      "packages/contracts/src/admin/trips/index.ts",
+      "packages/contracts/src/admin/trips/m1.ts",
+      "packages/contracts/src/portal/auth/authenticated-session.ts",
+      "packages/contracts/src/portal/auth/index.ts",
+      "packages/contracts/src/portal/health.ts",
+      "packages/contracts/src/portal/index.ts",
+      "packages/database/src/index.ts",
+      "packages/database/src/postgres/postgres-persistence.ts",
+      "packages/database/src/staff-access/staff-access-repository.ts",
+      "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+      "packages/database/src/uuidv7.ts",
+      "packages/design-system/src/foundation-page.tsx",
+      "packages/design-system/src/index.ts",
+      "packages/observability/src/index.ts",
+      "packages/portal-safe-core/src/customer-presentation/index.ts",
+      "packages/portal-safe-core/src/documents/index.ts",
+      "packages/portal-safe-core/src/index.ts",
+      "packages/portal-safe-core/src/portal-access/identity.ts",
+      "packages/portal-safe-core/src/portal-access/index.ts",
+      "packages/test-support/src/index.ts"
+    ],
+    "policyInspectedProductionSourceFiles": [
+      "apps/admin-api/src/app.module.ts",
+      "apps/admin-api/src/app.ts",
+      "apps/admin-api/src/auth-bridge.ts",
+      "apps/admin-api/src/health.controller.ts",
+      "apps/admin-api/src/m1-routes.ts",
+      "apps/admin-api/src/main.ts",
+      "apps/admin-web/src/app.tsx",
+      "apps/admin-web/src/main.tsx",
+      "apps/portal-api/src/app.module.ts",
+      "apps/portal-api/src/app.ts",
+      "apps/portal-api/src/auth-bridge.ts",
+      "apps/portal-api/src/health.controller.ts",
+      "apps/portal-api/src/main.ts",
+      "apps/portal-web/src/app.tsx",
+      "apps/portal-web/src/main.tsx",
+      "apps/worker/src/main.ts",
+      "apps/worker/src/worker-process.ts",
+      "packages/auth-adapters/src/http-bridge.ts",
+      "packages/auth-adapters/src/index.ts",
+      "packages/auth-adapters/src/operator-token.ts",
+      "packages/auth-adapters/src/realm-postgres.ts",
+      "packages/auth-adapters/src/realm.ts",
+      "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+      "packages/backend-core/src/application/transaction.ts",
+      "packages/backend-core/src/index.ts",
+      "packages/backend-core/src/modules/crm/domain/continuity.ts",
+      "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+      "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+      "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+      "packages/backend-core/src/shared-kernel/money/money.ts",
+      "packages/backend-core/src/shared-kernel/opaque-id.ts",
+      "packages/backend-core/src/shared-kernel/time.ts",
+      "packages/backend-core/src/staff-access/authorization.ts",
+      "packages/backend-core/src/staff-access/permission-registry.ts",
+      "packages/config/src/credential-reference.ts",
+      "packages/config/src/index.ts",
+      "packages/config/src/instance-manifest-invariants.ts",
+      "packages/config/src/instance-manifest-json-schema.ts",
+      "packages/config/src/instance-manifest.ts",
+      "packages/config/src/load-development-instance-manifest.ts",
+      "packages/config/src/systemd-credential.ts",
+      "packages/contracts/src/admin/auth/index.ts",
+      "packages/contracts/src/admin/auth/session-context.ts",
+      "packages/contracts/src/admin/customers/index.ts",
+      "packages/contracts/src/admin/customers/m1.ts",
+      "packages/contracts/src/admin/health.ts",
+      "packages/contracts/src/admin/index.ts",
+      "packages/contracts/src/admin/itinerary/index.ts",
+      "packages/contracts/src/admin/itinerary/m1.ts",
+      "packages/contracts/src/admin/money.ts",
+      "packages/contracts/src/admin/reservations/index.ts",
+      "packages/contracts/src/admin/reservations/m1.ts",
+      "packages/contracts/src/admin/trips/index.ts",
+      "packages/contracts/src/admin/trips/m1.ts",
+      "packages/contracts/src/portal/auth/authenticated-session.ts",
+      "packages/contracts/src/portal/auth/index.ts",
+      "packages/contracts/src/portal/health.ts",
+      "packages/contracts/src/portal/index.ts",
+      "packages/database/src/index.ts",
+      "packages/database/src/postgres/postgres-persistence.ts",
+      "packages/database/src/staff-access/staff-access-repository.ts",
+      "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+      "packages/database/src/uuidv7.ts",
+      "packages/design-system/src/foundation-page.tsx",
+      "packages/design-system/src/index.ts",
+      "packages/observability/src/index.ts",
+      "packages/portal-safe-core/src/customer-presentation/index.ts",
+      "packages/portal-safe-core/src/documents/index.ts",
+      "packages/portal-safe-core/src/index.ts",
+      "packages/portal-safe-core/src/portal-access/identity.ts",
+      "packages/portal-safe-core/src/portal-access/index.ts",
+      "packages/test-support/src/index.ts"
+    ],
+    "uncoveredCompilerResolvedProductionFiles": [],
+    "unsupportedCompilerResolvedProductionFiles": [],
+    "coverageGaps": [],
+    "policyOnlyProductionSourceFiles": [],
+    "explicitCompilerResourceExclusions": [],
+    "supportedSourceForms": [
+      ".d.mts",
+      ".d.cts",
+      ".d.ts",
+      ".mts",
+      ".cts",
+      ".tsx",
+      ".ts",
+      ".mjs",
+      ".cjs",
+      ".jsx",
+      ".js"
+    ],
+    "filesByUnit": {
+      "@travelos/admin-web": [
+        "apps/admin-web/src/app.tsx",
+        "apps/admin-web/src/main.tsx"
+      ],
+      "@travelos/portal-web": [
+        "apps/portal-web/src/app.tsx",
+        "apps/portal-web/src/main.tsx"
+      ],
+      "@travelos/admin-api": [
+        "apps/admin-api/src/app.module.ts",
+        "apps/admin-api/src/app.ts",
+        "apps/admin-api/src/auth-bridge.ts",
+        "apps/admin-api/src/health.controller.ts",
+        "apps/admin-api/src/m1-routes.ts",
+        "apps/admin-api/src/main.ts"
+      ],
+      "@travelos/portal-api": [
+        "apps/portal-api/src/app.module.ts",
+        "apps/portal-api/src/app.ts",
+        "apps/portal-api/src/auth-bridge.ts",
+        "apps/portal-api/src/health.controller.ts",
+        "apps/portal-api/src/main.ts"
+      ],
+      "@travelos/worker": [
+        "apps/worker/src/main.ts",
+        "apps/worker/src/worker-process.ts"
+      ],
+      "@travelos/backend-core": [
+        "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+        "packages/backend-core/src/application/transaction.ts",
+        "packages/backend-core/src/index.ts",
+        "packages/backend-core/src/modules/crm/domain/continuity.ts",
+        "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+        "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+        "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+        "packages/backend-core/src/shared-kernel/money/money.ts",
+        "packages/backend-core/src/shared-kernel/opaque-id.ts",
+        "packages/backend-core/src/shared-kernel/time.ts",
+        "packages/backend-core/src/staff-access/authorization.ts",
+        "packages/backend-core/src/staff-access/permission-registry.ts"
+      ],
+      "@travelos/portal-safe-core": [
+        "packages/portal-safe-core/src/customer-presentation/index.ts",
+        "packages/portal-safe-core/src/documents/index.ts",
+        "packages/portal-safe-core/src/index.ts",
+        "packages/portal-safe-core/src/portal-access/identity.ts",
+        "packages/portal-safe-core/src/portal-access/index.ts"
+      ],
+      "@travelos/contracts": [
+        "packages/contracts/src/admin/auth/index.ts",
+        "packages/contracts/src/admin/auth/session-context.ts",
+        "packages/contracts/src/admin/customers/index.ts",
+        "packages/contracts/src/admin/customers/m1.ts",
+        "packages/contracts/src/admin/health.ts",
+        "packages/contracts/src/admin/index.ts",
+        "packages/contracts/src/admin/itinerary/index.ts",
+        "packages/contracts/src/admin/itinerary/m1.ts",
+        "packages/contracts/src/admin/money.ts",
+        "packages/contracts/src/admin/reservations/index.ts",
+        "packages/contracts/src/admin/reservations/m1.ts",
+        "packages/contracts/src/admin/trips/index.ts",
+        "packages/contracts/src/admin/trips/m1.ts",
+        "packages/contracts/src/portal/auth/authenticated-session.ts",
+        "packages/contracts/src/portal/auth/index.ts",
+        "packages/contracts/src/portal/health.ts",
+        "packages/contracts/src/portal/index.ts"
+      ],
+      "@travelos/config": [
+        "packages/config/src/credential-reference.ts",
+        "packages/config/src/index.ts",
+        "packages/config/src/instance-manifest-invariants.ts",
+        "packages/config/src/instance-manifest-json-schema.ts",
+        "packages/config/src/instance-manifest.ts",
+        "packages/config/src/load-development-instance-manifest.ts",
+        "packages/config/src/systemd-credential.ts"
+      ],
+      "@travelos/database": [
+        "packages/database/src/index.ts",
+        "packages/database/src/postgres/postgres-persistence.ts",
+        "packages/database/src/staff-access/staff-access-repository.ts",
+        "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+        "packages/database/src/uuidv7.ts"
+      ],
+      "@travelos/auth-adapters": [
+        "packages/auth-adapters/src/http-bridge.ts",
+        "packages/auth-adapters/src/index.ts",
+        "packages/auth-adapters/src/operator-token.ts",
+        "packages/auth-adapters/src/realm-postgres.ts",
+        "packages/auth-adapters/src/realm.ts"
+      ],
+      "@travelos/design-system": [
+        "packages/design-system/src/foundation-page.tsx",
+        "packages/design-system/src/index.ts"
+      ],
+      "@travelos/observability": [
+        "packages/observability/src/index.ts"
+      ],
+      "@travelos/test-support": [
+        "packages/test-support/src/index.ts"
+      ]
+    }
+  },
+  "dependencyUniverse": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+    "compilerDiagnosticCount": 0,
+    "compilerProductionSourceCount": 72,
+    "policyProductionSourceCount": 72,
+    "uncoveredProductionSourceCount": 0,
+    "compilerKnownArchitecturalDependencyCount": 159,
+    "normalizedPolicyDependencyCount": 160,
+    "unexplainedCompilerDependencyReferenceCount": 0,
+    "unsupportedDependencyConstructCount": 0,
+    "unresolvedNormalizedDependencyCount": 0,
+    "nonTypeScriptAssetDependencyCount": 2,
+    "compilerDependencyExclusionCount": 67,
+    "supportedDependencyForms": [
+      "import",
+      "export-from",
+      "import-type",
+      "import-equals",
+      "dynamic-import",
+      "direct-require",
+      "direct-require-resolve",
+      "direct-create-require",
+      "direct-create-require-resolve",
+      "automatic-jsx-runtime",
+      "jsx-import-source",
+      "type-reference-directive",
+      "path-reference-directive",
+      "external-module-augmentation",
+      "static-css-asset-import"
+    ],
+    "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+    "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+  },
+  "nonTypeScriptAssetDependencies": [
+    {
+      "file": "apps/admin-web/src/main.tsx",
+      "kind": "import",
+      "category": "non-typescript-asset-dependency",
+      "mechanism": "compiler-module-resolution",
+      "compilerCategory": "module",
+      "specifier": "@travelos/design-system/styles.css",
+      "computed": false,
+      "line": 1,
+      "column": 1,
+      "resolutionStatus": "NON_TYPESCRIPT_ASSET",
+      "resolvedFile": null,
+      "resolvedPackage": null,
+      "assetKind": "css",
+      "classification": "Static CSS asset import: visible to architecture policy but not a TypeScript-resolved TS/JS module edge",
+      "compilerKnown": true
+    },
+    {
+      "file": "apps/portal-web/src/main.tsx",
+      "kind": "import",
+      "category": "non-typescript-asset-dependency",
+      "mechanism": "compiler-module-resolution",
+      "compilerCategory": "module",
+      "specifier": "@travelos/design-system/styles.css",
+      "computed": false,
+      "line": 1,
+      "column": 1,
+      "resolutionStatus": "NON_TYPESCRIPT_ASSET",
+      "resolvedFile": null,
+      "resolvedPackage": null,
+      "assetKind": "css",
+      "classification": "Static CSS asset import: visible to architecture policy but not a TypeScript-resolved TS/JS module edge",
+      "compilerKnown": true
+    }
+  ],
+  "packageBoundaries": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "dependencyModel": "domain <- application <- adapters <- composition root",
+    "unitsChecked": 14,
+    "sourceFilesChecked": 72,
+    "moduleRequestsChecked": 160,
+    "computedModuleSpecifiersAllowed": false,
+    "sourceDiscovery": {
+      "schemaVersion": 1,
+      "result": "PASS",
+      "authority": "TypeScript compiler-program inclusion cross-checked against one repository-owned source classifier",
+      "tsconfigPath": "tooling/ci/tsconfig.typecheck.json",
+      "compilerProjectRootFiles": 121,
+      "compilerResolvedProductionSourceCount": 72,
+      "policyInspectedProductionSourceCount": 72,
+      "uncoveredProductionSourceCount": 0,
+      "compilerResolvedProductionSourceFiles": [
+        "apps/admin-api/src/app.module.ts",
+        "apps/admin-api/src/app.ts",
+        "apps/admin-api/src/auth-bridge.ts",
+        "apps/admin-api/src/health.controller.ts",
+        "apps/admin-api/src/m1-routes.ts",
+        "apps/admin-api/src/main.ts",
+        "apps/admin-web/src/app.tsx",
+        "apps/admin-web/src/main.tsx",
+        "apps/portal-api/src/app.module.ts",
+        "apps/portal-api/src/app.ts",
+        "apps/portal-api/src/auth-bridge.ts",
+        "apps/portal-api/src/health.controller.ts",
+        "apps/portal-api/src/main.ts",
+        "apps/portal-web/src/app.tsx",
+        "apps/portal-web/src/main.tsx",
+        "apps/worker/src/main.ts",
+        "apps/worker/src/worker-process.ts",
+        "packages/auth-adapters/src/http-bridge.ts",
+        "packages/auth-adapters/src/index.ts",
+        "packages/auth-adapters/src/operator-token.ts",
+        "packages/auth-adapters/src/realm-postgres.ts",
+        "packages/auth-adapters/src/realm.ts",
+        "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+        "packages/backend-core/src/application/transaction.ts",
+        "packages/backend-core/src/index.ts",
+        "packages/backend-core/src/modules/crm/domain/continuity.ts",
+        "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+        "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+        "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+        "packages/backend-core/src/shared-kernel/money/money.ts",
+        "packages/backend-core/src/shared-kernel/opaque-id.ts",
+        "packages/backend-core/src/shared-kernel/time.ts",
+        "packages/backend-core/src/staff-access/authorization.ts",
+        "packages/backend-core/src/staff-access/permission-registry.ts",
+        "packages/config/src/credential-reference.ts",
+        "packages/config/src/index.ts",
+        "packages/config/src/instance-manifest-invariants.ts",
+        "packages/config/src/instance-manifest-json-schema.ts",
+        "packages/config/src/instance-manifest.ts",
+        "packages/config/src/load-development-instance-manifest.ts",
+        "packages/config/src/systemd-credential.ts",
+        "packages/contracts/src/admin/auth/index.ts",
+        "packages/contracts/src/admin/auth/session-context.ts",
+        "packages/contracts/src/admin/customers/index.ts",
+        "packages/contracts/src/admin/customers/m1.ts",
+        "packages/contracts/src/admin/health.ts",
+        "packages/contracts/src/admin/index.ts",
+        "packages/contracts/src/admin/itinerary/index.ts",
+        "packages/contracts/src/admin/itinerary/m1.ts",
+        "packages/contracts/src/admin/money.ts",
+        "packages/contracts/src/admin/reservations/index.ts",
+        "packages/contracts/src/admin/reservations/m1.ts",
+        "packages/contracts/src/admin/trips/index.ts",
+        "packages/contracts/src/admin/trips/m1.ts",
+        "packages/contracts/src/portal/auth/authenticated-session.ts",
+        "packages/contracts/src/portal/auth/index.ts",
+        "packages/contracts/src/portal/health.ts",
+        "packages/contracts/src/portal/index.ts",
+        "packages/database/src/index.ts",
+        "packages/database/src/postgres/postgres-persistence.ts",
+        "packages/database/src/staff-access/staff-access-repository.ts",
+        "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+        "packages/database/src/uuidv7.ts",
+        "packages/design-system/src/foundation-page.tsx",
+        "packages/design-system/src/index.ts",
+        "packages/observability/src/index.ts",
+        "packages/portal-safe-core/src/customer-presentation/index.ts",
+        "packages/portal-safe-core/src/documents/index.ts",
+        "packages/portal-safe-core/src/index.ts",
+        "packages/portal-safe-core/src/portal-access/identity.ts",
+        "packages/portal-safe-core/src/portal-access/index.ts",
+        "packages/test-support/src/index.ts"
+      ],
+      "policyInspectedProductionSourceFiles": [
+        "apps/admin-api/src/app.module.ts",
+        "apps/admin-api/src/app.ts",
+        "apps/admin-api/src/auth-bridge.ts",
+        "apps/admin-api/src/health.controller.ts",
+        "apps/admin-api/src/m1-routes.ts",
+        "apps/admin-api/src/main.ts",
+        "apps/admin-web/src/app.tsx",
+        "apps/admin-web/src/main.tsx",
+        "apps/portal-api/src/app.module.ts",
+        "apps/portal-api/src/app.ts",
+        "apps/portal-api/src/auth-bridge.ts",
+        "apps/portal-api/src/health.controller.ts",
+        "apps/portal-api/src/main.ts",
+        "apps/portal-web/src/app.tsx",
+        "apps/portal-web/src/main.tsx",
+        "apps/worker/src/main.ts",
+        "apps/worker/src/worker-process.ts",
+        "packages/auth-adapters/src/http-bridge.ts",
+        "packages/auth-adapters/src/index.ts",
+        "packages/auth-adapters/src/operator-token.ts",
+        "packages/auth-adapters/src/realm-postgres.ts",
+        "packages/auth-adapters/src/realm.ts",
+        "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+        "packages/backend-core/src/application/transaction.ts",
+        "packages/backend-core/src/index.ts",
+        "packages/backend-core/src/modules/crm/domain/continuity.ts",
+        "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+        "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+        "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+        "packages/backend-core/src/shared-kernel/money/money.ts",
+        "packages/backend-core/src/shared-kernel/opaque-id.ts",
+        "packages/backend-core/src/shared-kernel/time.ts",
+        "packages/backend-core/src/staff-access/authorization.ts",
+        "packages/backend-core/src/staff-access/permission-registry.ts",
+        "packages/config/src/credential-reference.ts",
+        "packages/config/src/index.ts",
+        "packages/config/src/instance-manifest-invariants.ts",
+        "packages/config/src/instance-manifest-json-schema.ts",
+        "packages/config/src/instance-manifest.ts",
+        "packages/config/src/load-development-instance-manifest.ts",
+        "packages/config/src/systemd-credential.ts",
+        "packages/contracts/src/admin/auth/index.ts",
+        "packages/contracts/src/admin/auth/session-context.ts",
+        "packages/contracts/src/admin/customers/index.ts",
+        "packages/contracts/src/admin/customers/m1.ts",
+        "packages/contracts/src/admin/health.ts",
+        "packages/contracts/src/admin/index.ts",
+        "packages/contracts/src/admin/itinerary/index.ts",
+        "packages/contracts/src/admin/itinerary/m1.ts",
+        "packages/contracts/src/admin/money.ts",
+        "packages/contracts/src/admin/reservations/index.ts",
+        "packages/contracts/src/admin/reservations/m1.ts",
+        "packages/contracts/src/admin/trips/index.ts",
+        "packages/contracts/src/admin/trips/m1.ts",
+        "packages/contracts/src/portal/auth/authenticated-session.ts",
+        "packages/contracts/src/portal/auth/index.ts",
+        "packages/contracts/src/portal/health.ts",
+        "packages/contracts/src/portal/index.ts",
+        "packages/database/src/index.ts",
+        "packages/database/src/postgres/postgres-persistence.ts",
+        "packages/database/src/staff-access/staff-access-repository.ts",
+        "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+        "packages/database/src/uuidv7.ts",
+        "packages/design-system/src/foundation-page.tsx",
+        "packages/design-system/src/index.ts",
+        "packages/observability/src/index.ts",
+        "packages/portal-safe-core/src/customer-presentation/index.ts",
+        "packages/portal-safe-core/src/documents/index.ts",
+        "packages/portal-safe-core/src/index.ts",
+        "packages/portal-safe-core/src/portal-access/identity.ts",
+        "packages/portal-safe-core/src/portal-access/index.ts",
+        "packages/test-support/src/index.ts"
+      ],
+      "uncoveredCompilerResolvedProductionFiles": [],
+      "unsupportedCompilerResolvedProductionFiles": [],
+      "coverageGaps": [],
+      "policyOnlyProductionSourceFiles": [],
+      "explicitCompilerResourceExclusions": [],
+      "supportedSourceForms": [
+        ".d.mts",
+        ".d.cts",
+        ".d.ts",
+        ".mts",
+        ".cts",
+        ".tsx",
+        ".ts",
+        ".mjs",
+        ".cjs",
+        ".jsx",
+        ".js"
+      ],
+      "filesByUnit": {
+        "@travelos/admin-web": [
+          "apps/admin-web/src/app.tsx",
+          "apps/admin-web/src/main.tsx"
+        ],
+        "@travelos/portal-web": [
+          "apps/portal-web/src/app.tsx",
+          "apps/portal-web/src/main.tsx"
+        ],
+        "@travelos/admin-api": [
+          "apps/admin-api/src/app.module.ts",
+          "apps/admin-api/src/app.ts",
+          "apps/admin-api/src/auth-bridge.ts",
+          "apps/admin-api/src/health.controller.ts",
+          "apps/admin-api/src/m1-routes.ts",
+          "apps/admin-api/src/main.ts"
+        ],
+        "@travelos/portal-api": [
+          "apps/portal-api/src/app.module.ts",
+          "apps/portal-api/src/app.ts",
+          "apps/portal-api/src/auth-bridge.ts",
+          "apps/portal-api/src/health.controller.ts",
+          "apps/portal-api/src/main.ts"
+        ],
+        "@travelos/worker": [
+          "apps/worker/src/main.ts",
+          "apps/worker/src/worker-process.ts"
+        ],
+        "@travelos/backend-core": [
+          "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+          "packages/backend-core/src/application/transaction.ts",
+          "packages/backend-core/src/index.ts",
+          "packages/backend-core/src/modules/crm/domain/continuity.ts",
+          "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+          "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+          "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+          "packages/backend-core/src/shared-kernel/money/money.ts",
+          "packages/backend-core/src/shared-kernel/opaque-id.ts",
+          "packages/backend-core/src/shared-kernel/time.ts",
+          "packages/backend-core/src/staff-access/authorization.ts",
+          "packages/backend-core/src/staff-access/permission-registry.ts"
+        ],
+        "@travelos/portal-safe-core": [
+          "packages/portal-safe-core/src/customer-presentation/index.ts",
+          "packages/portal-safe-core/src/documents/index.ts",
+          "packages/portal-safe-core/src/index.ts",
+          "packages/portal-safe-core/src/portal-access/identity.ts",
+          "packages/portal-safe-core/src/portal-access/index.ts"
+        ],
+        "@travelos/contracts": [
+          "packages/contracts/src/admin/auth/index.ts",
+          "packages/contracts/src/admin/auth/session-context.ts",
+          "packages/contracts/src/admin/customers/index.ts",
+          "packages/contracts/src/admin/customers/m1.ts",
+          "packages/contracts/src/admin/health.ts",
+          "packages/contracts/src/admin/index.ts",
+          "packages/contracts/src/admin/itinerary/index.ts",
+          "packages/contracts/src/admin/itinerary/m1.ts",
+          "packages/contracts/src/admin/money.ts",
+          "packages/contracts/src/admin/reservations/index.ts",
+          "packages/contracts/src/admin/reservations/m1.ts",
+          "packages/contracts/src/admin/trips/index.ts",
+          "packages/contracts/src/admin/trips/m1.ts",
+          "packages/contracts/src/portal/auth/authenticated-session.ts",
+          "packages/contracts/src/portal/auth/index.ts",
+          "packages/contracts/src/portal/health.ts",
+          "packages/contracts/src/portal/index.ts"
+        ],
+        "@travelos/config": [
+          "packages/config/src/credential-reference.ts",
+          "packages/config/src/index.ts",
+          "packages/config/src/instance-manifest-invariants.ts",
+          "packages/config/src/instance-manifest-json-schema.ts",
+          "packages/config/src/instance-manifest.ts",
+          "packages/config/src/load-development-instance-manifest.ts",
+          "packages/config/src/systemd-credential.ts"
+        ],
+        "@travelos/database": [
+          "packages/database/src/index.ts",
+          "packages/database/src/postgres/postgres-persistence.ts",
+          "packages/database/src/staff-access/staff-access-repository.ts",
+          "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+          "packages/database/src/uuidv7.ts"
+        ],
+        "@travelos/auth-adapters": [
+          "packages/auth-adapters/src/http-bridge.ts",
+          "packages/auth-adapters/src/index.ts",
+          "packages/auth-adapters/src/operator-token.ts",
+          "packages/auth-adapters/src/realm-postgres.ts",
+          "packages/auth-adapters/src/realm.ts"
+        ],
+        "@travelos/design-system": [
+          "packages/design-system/src/foundation-page.tsx",
+          "packages/design-system/src/index.ts"
+        ],
+        "@travelos/observability": [
+          "packages/observability/src/index.ts"
+        ],
+        "@travelos/test-support": [
+          "packages/test-support/src/index.ts"
+        ]
+      }
+    },
+    "dependencyUniverse": {
+      "schemaVersion": 1,
+      "result": "PASS",
+      "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+      "compilerDiagnosticCount": 0,
+      "compilerProductionSourceCount": 72,
+      "policyProductionSourceCount": 72,
+      "uncoveredProductionSourceCount": 0,
+      "compilerKnownArchitecturalDependencyCount": 159,
+      "normalizedPolicyDependencyCount": 160,
+      "unexplainedCompilerDependencyReferenceCount": 0,
+      "unsupportedDependencyConstructCount": 0,
+      "unresolvedNormalizedDependencyCount": 0,
+      "nonTypeScriptAssetDependencyCount": 2,
+      "compilerDependencyExclusionCount": 67,
+      "supportedDependencyForms": [
+        "import",
+        "export-from",
+        "import-type",
+        "import-equals",
+        "dynamic-import",
+        "direct-require",
+        "direct-require-resolve",
+        "direct-create-require",
+        "direct-create-require-resolve",
+        "automatic-jsx-runtime",
+        "jsx-import-source",
+        "type-reference-directive",
+        "path-reference-directive",
+        "external-module-augmentation",
+        "static-css-asset-import"
+      ],
+      "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+      "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+    },
+    "violations": []
+  },
+  "negativePortalFixture": {
+    "expectedFailureObserved": true,
+    "processExitCode": 1,
+    "rule": "portal-fixture-cannot-import-backend-core",
+    "from": "tooling/architecture/fixtures/invalid-portal-import/portal-entry.ts",
+    "to": "packages/backend-core/src/index.ts",
+    "violationCount": 1
+  },
+  "layeredBoundaryFixtures": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "fixtureCount": 9,
+    "expectedRejections": 9,
+    "unexpectedOrUnresolvedFailures": 0,
+    "outcomes": [
+      {
+        "fixture": "backend-better-auth-static",
+        "mode": "source",
+        "unit": "@travelos/backend-core",
+        "processExitCode": 1,
+        "intendedRule": "architecture/external-dependency-not-allowed",
+        "violationCount": 1,
+        "unresolvedLiteralImports": 0,
+        "resolvedLiteralImports": [
+          {
+            "specifier": "better-auth",
+            "resolvedFile": "node_modules/.pnpm/better-auth@1.6.27_pg@8.23.0_react-dom@19.2.8_react@19.2.8__react@19.2.8_vitest@4.1.10/node_modules/better-auth/dist/index.d.mts"
+          }
+        ]
+      },
+      {
+        "fixture": "backend-better-auth-deep",
+        "mode": "source",
+        "unit": "@travelos/backend-core",
+        "processExitCode": 1,
+        "intendedRule": "architecture/external-dependency-not-allowed",
+        "violationCount": 1,
+        "unresolvedLiteralImports": 0,
+        "resolvedLiteralImports": [
+          {
+            "specifier": "better-auth/api",
+            "resolvedFile": "node_modules/.pnpm/better-auth@1.6.27_pg@8.23.0_react-dom@19.2.8_react@19.2.8__react@19.2.8_vitest@4.1.10/node_modules/better-auth/dist/api/index.d.mts"
+          }
+        ]
+      },
+      {
+        "fixture": "backend-qualified-auth-alias",
+        "mode": "source",
+        "unit": "@travelos/backend-core",
+        "processExitCode": 1,
+        "intendedRule": "architecture/external-dependency-not-allowed",
+        "violationCount": 1,
+        "unresolvedLiteralImports": 0,
+        "resolvedLiteralImports": [
+          {
+            "specifier": "auth/api",
+            "resolvedFile": "node_modules/.pnpm/auth@1.6.27_@better-fetch+fetch@1.3.1_better-call@1.4.0_zod@4.4.3__jose@6.2.9_kysely@0._6c2ddbb1ed84062dc1310e004637d7b9/node_modules/auth/dist/api.d.mts"
+          }
+        ]
+      },
+      {
+        "fixture": "backend-design-system-indirect-react",
+        "mode": "source",
+        "unit": "@travelos/backend-core",
+        "processExitCode": 1,
+        "intendedRule": "architecture/workspace-dependency-not-allowed",
+        "violationCount": 1,
+        "unresolvedLiteralImports": 0,
+        "resolvedLiteralImports": [
+          {
+            "specifier": "@travelos/design-system",
+            "resolvedFile": "packages/design-system/src/index.ts"
+          }
+        ]
+      },
+      {
+        "fixture": "backend-computed-dynamic-import",
+        "mode": "source",
+        "unit": "@travelos/backend-core",
+        "processExitCode": 1,
+        "intendedRule": "architecture/computed-module-specifier-forbidden",
+        "violationCount": 1,
+        "unresolvedLiteralImports": 0,
+        "resolvedLiteralImports": []
+      },
+      {
+        "fixture": "backend-computed-require",
+        "mode": "source",
+        "unit": "@travelos/backend-core",
+        "processExitCode": 1,
+        "intendedRule": "architecture/computed-module-specifier-forbidden",
+        "violationCount": 1,
+        "unresolvedLiteralImports": 0,
+        "resolvedLiteralImports": []
+      },
+      {
+        "fixture": "portal-admin-contract-inversion",
+        "mode": "source",
+        "unit": "@travelos/portal-api",
+        "processExitCode": 1,
+        "intendedRule": "architecture/workspace-dependency-not-allowed",
+        "violationCount": 1,
+        "unresolvedLiteralImports": 0,
+        "resolvedLiteralImports": [
+          {
+            "specifier": "@travelos/contracts/admin",
+            "resolvedFile": "packages/contracts/src/admin/index.ts"
+          }
+        ]
+      },
+      {
+        "fixture": "backend-manifest-better-auth",
+        "mode": "manifest",
+        "unit": "@travelos/backend-core",
+        "processExitCode": 1,
+        "intendedRule": "architecture/manifest-dependency-not-allowed",
+        "violationCount": 1,
+        "unresolvedLiteralImports": 0,
+        "resolvedLiteralImports": []
+      },
+      {
+        "fixture": "backend-manifest-design-system",
+        "mode": "manifest",
+        "unit": "@travelos/backend-core",
+        "processExitCode": 1,
+        "intendedRule": "architecture/manifest-dependency-not-allowed",
+        "violationCount": 1,
+        "unresolvedLiteralImports": 0,
+        "resolvedLiteralImports": []
+      }
+    ]
+  },
+  "sourceDiscoveryFixtures": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "architecture": {
+      "fixtureCount": 6,
+      "rejectedFixtures": 3,
+      "acceptedFixtures": 3,
+      "outcomes": [
+        {
+          "fixture": "backend-mts-better-auth",
+          "sourceForm": ".mts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": true,
+          "intendedRule": "architecture/external-dependency-not-allowed",
+          "violationCount": 1,
+          "result": "REJECTED_AS_EXPECTED"
+        },
+        {
+          "fixture": "backend-cts-better-auth",
+          "sourceForm": ".cts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": true,
+          "intendedRule": "architecture/external-dependency-not-allowed",
+          "violationCount": 1,
+          "result": "REJECTED_AS_EXPECTED"
+        },
+        {
+          "fixture": "backend-declaration-type-better-auth",
+          "sourceForm": ".d.mts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": true,
+          "intendedRule": "architecture/external-dependency-not-allowed",
+          "violationCount": 1,
+          "result": "REJECTED_AS_EXPECTED"
+        },
+        {
+          "fixture": "backend-safe-ordinary-ts",
+          "sourceForm": ".ts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": null,
+          "intendedRule": null,
+          "violationCount": 0,
+          "result": "PASS"
+        },
+        {
+          "fixture": "backend-safe-mts",
+          "sourceForm": ".mts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": null,
+          "intendedRule": null,
+          "violationCount": 0,
+          "result": "PASS"
+        },
+        {
+          "fixture": "backend-safe-cts",
+          "sourceForm": ".cts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": null,
+          "intendedRule": null,
+          "violationCount": 0,
+          "result": "PASS"
+        }
+      ]
+    },
+    "rejectedTechnology": {
+      "fixtureCount": 4,
+      "rejectedFixtures": 2,
+      "acceptedFixtures": 2,
+      "outcomes": [
+        {
+          "fixture": "rejected-prisma-mts",
+          "sourceForm": ".mts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": true,
+          "intendedCategory": "prisma",
+          "semanticFindingCount": 1,
+          "result": "REJECTED_AS_EXPECTED"
+        },
+        {
+          "fixture": "rejected-next-cts",
+          "sourceForm": ".cts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": true,
+          "intendedCategory": "next",
+          "semanticFindingCount": 1,
+          "result": "REJECTED_AS_EXPECTED"
+        },
+        {
+          "fixture": "rejected-safe-mts",
+          "sourceForm": ".mts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": null,
+          "intendedCategory": null,
+          "semanticFindingCount": 0,
+          "result": "PASS"
+        },
+        {
+          "fixture": "rejected-safe-cts",
+          "sourceForm": ".cts",
+          "compilerIncluded": true,
+          "policyInspected": true,
+          "compilerDiagnostics": 0,
+          "moduleResolved": null,
+          "intendedCategory": null,
+          "semanticFindingCount": 0,
+          "result": "PASS"
+        }
+      ]
+    },
+    "unexpectedOrUnresolvedFailures": 0
+  },
+  "dependencyUniverseFixtures": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "fixtureCount": 12,
+    "rejectedArchitectureFixtures": 8,
+    "acceptedArchitectureFixtures": 4,
+    "semanticRejectedTechnologyFixtures": 3,
+    "aliasFailClosedFixtures": 3,
+    "unexpectedCompilerParserOrResolutionFailures": 0,
+    "outcomes": [
+      {
+        "fixture": "backend-implicit-react-jsx-runtime",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".tsx",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "react/jsx-runtime",
+        "dependencyKind": "implicit-jsx-runtime",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [
+          "architecture/external-dependency-not-allowed",
+          "architecture/manifest-dependency-not-allowed"
+        ],
+        "architectureViolationCount": 2,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-jsx-import-source-next",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".tsx",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "next/jsx-runtime",
+        "dependencyKind": "implicit-jsx-runtime",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [
+          "architecture/external-dependency-not-allowed",
+          "architecture/manifest-dependency-not-allowed"
+        ],
+        "architectureViolationCount": 2,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": "next",
+        "rejectedTechnologyFindingCount": 1,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-aliased-require",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".cts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": null,
+        "dependencyKind": null,
+        "dependencyResolutionStatus": null,
+        "intendedRules": [
+          "architecture/unsupported-module-loader-alias"
+        ],
+        "architectureViolationCount": 1,
+        "unsupportedConstruct": "require-alias",
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "FAIL",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 0,
+          "normalizedPolicyDependencyCount": 0,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 1,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 1,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-aliased-require-resolve",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".cts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": null,
+        "dependencyKind": null,
+        "dependencyResolutionStatus": null,
+        "intendedRules": [
+          "architecture/unsupported-module-loader-alias"
+        ],
+        "architectureViolationCount": 1,
+        "unsupportedConstruct": "require-resolve-alias",
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "FAIL",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 0,
+          "normalizedPolicyDependencyCount": 0,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 1,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 1,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-aliased-create-require-loader",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".mts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "node:module",
+        "dependencyKind": "import",
+        "dependencyResolutionStatus": "BUILTIN",
+        "intendedRules": [
+          "architecture/unsupported-module-loader-alias"
+        ],
+        "architectureViolationCount": 1,
+        "unsupportedConstruct": "create-require-loader-alias",
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "FAIL",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 2,
+          "policyProductionSourceCount": 2,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 1,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 1,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-better-auth-module-augmentation",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".mts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "better-auth",
+        "dependencyKind": "external-module-augmentation",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [
+          "architecture/external-dependency-not-allowed",
+          "architecture/manifest-dependency-not-allowed"
+        ],
+        "architectureViolationCount": 2,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-next-type-reference",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".ts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "next",
+        "dependencyKind": "type-reference-directive",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [
+          "architecture/external-dependency-not-allowed",
+          "architecture/manifest-dependency-not-allowed"
+        ],
+        "architectureViolationCount": 2,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": "next",
+        "rejectedTechnologyFindingCount": 1,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-next-module-augmentation",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".mts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "next",
+        "dependencyKind": "external-module-augmentation",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [
+          "architecture/external-dependency-not-allowed",
+          "architecture/manifest-dependency-not-allowed"
+        ],
+        "architectureViolationCount": 2,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": "next",
+        "rejectedTechnologyFindingCount": 1,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "admin-web-allowed-react-jsx-runtime",
+        "unit": "@travelos/admin-web",
+        "sourceForm": ".tsx",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "react/jsx-runtime",
+        "dependencyKind": "implicit-jsx-runtime",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [],
+        "architectureViolationCount": 0,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "PASS",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "auth-adapter-allowed-type-reference",
+        "unit": "@travelos/auth-adapters",
+        "sourceForm": ".ts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "better-auth",
+        "dependencyKind": "type-reference-directive",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [],
+        "architectureViolationCount": 0,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "PASS",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "auth-adapter-allowed-module-augmentation",
+        "unit": "@travelos/auth-adapters",
+        "sourceForm": ".mts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "better-auth",
+        "dependencyKind": "external-module-augmentation",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [],
+        "architectureViolationCount": 0,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "PASS",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-safe-local-ambient-declaration",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".ts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": null,
+        "dependencyKind": null,
+        "dependencyResolutionStatus": null,
+        "intendedRules": [],
+        "architectureViolationCount": 0,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "PASS",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 0,
+          "normalizedPolicyDependencyCount": 0,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      }
+    ],
+    "requiredProofs": {
+      "implicitJsxRuntime": "backend-implicit-react-jsx-runtime",
+      "jsxImportSource": "backend-jsx-import-source-next",
+      "aliasedRequire": "backend-aliased-require",
+      "aliasedRequireResolve": "backend-aliased-require-resolve",
+      "aliasedCreateRequireLoader": "backend-aliased-create-require-loader",
+      "externalModuleAugmentation": "backend-better-auth-module-augmentation",
+      "rejectedTechnologyModuleAugmentation": "backend-next-module-augmentation",
+      "tripleReferenceTypes": "backend-next-type-reference",
+      "allowedJsx": "admin-web-allowed-react-jsx-runtime",
+      "allowedTypeReference": "auth-adapter-allowed-type-reference",
+      "allowedAugmentation": "auth-adapter-allowed-module-augmentation",
+      "safeLocalDeclaration": "backend-safe-local-ambient-declaration"
+    }
+  }
+}
+
+=== TravelOS CI gate: test:unit ===
+$ vitest run --config tooling/testing/vitest.config.ts
+
+ RUN  v4.1.10 /home/hermes/projects/TravelOS
+
+
+ Test Files  18 passed (18)
+      Tests  89 passed (89)
+   Start at  16:50:38
+   Duration  17.05s (transform 1.27s, setup 0ms, import 23.40s, tests 2.75s, environment 19.75s)
+
+
+=== TravelOS CI gate: config:schema:check ===
+$ tsx tooling/ci/write-instance-manifest-schema.ts --check
+{"schemaVersion":1,"result":"PASS","generatedSchemaCurrent":true}
+
+=== TravelOS CI gate: stage3:corrections:verify ===
+$ tsx tooling/database/verify-stage-3-corrections.ts
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "findings": {
+    "TOS-S3-001": {
+      "status": "CORRECTED — PENDING INDEPENDENT CLOSURE",
+      "validManifestAccepted": true,
+      "exactRuntimeDatabaseIdentities": {
+        "adminApi": "travelos_admin_api",
+        "portalApi": "travelos_portal_api",
+        "worker": "travelos_worker"
+      },
+      "credentialReferencesPairwiseDistinct": true,
+      "invalidRoleCasesRejected": 11,
+      "duplicateCredentialCasesRejected": 4,
+      "generatedSchemaRoleIdentityParity": "PASS",
+      "runtimeInvariantRegistryParity": "PASS"
+    },
+    "TOS-S3-002": {
+      "status": "CORRECTED — PENDING INDEPENDENT CLOSURE",
+      "sharedExpectedEdgeCount": 4,
+      "exactGraphVerification": "PASS",
+      "bidirectionalQueryScope": "BIDIRECTIONAL_EITHER_ENDPOINT_IS_TRAVELOS",
+      "bootstrapSharedDefinitionParity": "PASS",
+      "maliciousEdgesRejected": 4,
+      "missingEdgeRejected": true,
+      "duplicateEdgeRejected": true,
+      "incorrectMembershipOptionsRejected": 3,
+      "unrelatedNonTravelosEdgeIgnored": true
+    }
+  },
+  "stage4Actions": 0
+}
+
+=== TravelOS CI gate: test:freeze-inputs ===
+$ node tooling/ci/test-stage-2-freeze-inputs.mjs && node tooling/database/verify-stage-3-evidence-index.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "mode": "PRE_FINAL",
+  "finalFreezeCreated": false,
+  "finalFreezeEligible": false,
+  "deterministicRepeatedCollection": true,
+  "collectedInputs": 335,
+  "aggregateSha256": "8b9e34af552cb9b4c75c8c5c7205c4d87632c3f975ab489fcc5943fc2ff6e4c4",
+  "completenessRequirements": 49,
+  "preFinalAllowedMissingPaths": [
+    "docs/evidence/phase-1-m1/stage-2/EVIDENCE_INDEX.json",
+    "docs/reviews/phase-1-m1/STAGE_2_CORRECTED_CANDIDATE_VALIDATION.md"
+  ],
+  "finalModeProbe": {
+    "result": "REJECTED_AS_EXPECTED",
+    "failedRequirementIds": [
+      "stage-2-evidence-index",
+      "stage-2-corrected-validation"
+    ]
+  },
+  "omissionProbe": {
+    "omittedPath": "docs/reviews/PHASE_0_ACCEPTED_BASELINE.md",
+    "result": "REJECTED_AS_EXPECTED",
+    "intendedRequirement": "required:docs/reviews/PHASE_0_ACCEPTED_BASELINE.md"
+  }
+}
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "indexPath": "docs/evidence/phase-1-m1/stage-3/EVIDENCE_INDEX.json",
+  "indexBytes": 6897,
+  "indexSha256": "93148f2946627d92a0098ccf2d4b513fc15d24448f75a50a2d794748b227e7d6",
+  "declaredCount": 33,
+  "parsedCount": 33,
+  "matched": 33,
+  "missing": [],
+  "unexpected": [],
+  "missingIndexPaths": [],
+  "unexpectedIndexPaths": [],
+  "duplicatePaths": [],
+  "invalidIndexPaths": [],
+  "invalidDirectoryEntries": [],
+  "sizeMismatches": [],
+  "hashMismatches": [],
+  "orderingValid": true,
+  "declaredAggregateSha256": "fa283626f8e5d3c9bbe7cab312a589fb94be4f78ded19c4a5e3744941bc7cf26",
+  "recomputedAggregateSha256": "fa283626f8e5d3c9bbe7cab312a589fb94be4f78ded19c4a5e3744941bc7cf26"
+}
+
+=== TravelOS CI gate: test:security-scanner ===
+$ node tooling/ci/test-sensitive-data-scanner.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "syntheticSentinelFixtures": 6,
+  "outcomes": [
+    {
+      "fixture": "api-token-assignment",
+      "intendedRule": "secret-assignment",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "authorization-bearer-material",
+      "intendedRule": "authorization-bearer",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "private-key-header",
+      "intendedRule": "private-key-header",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "credential-bearing-url",
+      "intendedRule": "credential-url-query",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "suspicious-password-config",
+      "intendedRule": "secret-assignment",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "unintended-pii-email",
+      "intendedRule": "email-address",
+      "result": "REJECTED_AS_EXPECTED"
+    }
+  ],
+  "generatedBrowserAsset": "REJECTED_AS_EXPECTED",
+  "explicitSafeFixtureAllowlist": "PASS",
+  "codeCredentialReferences": "PASS",
+  "matchedValuesEmitted": false
+}
+
+=== TravelOS CI gate: test:rejected-technologies ===
+$ node tooling/ci/test-rejected-technologies.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "semanticSourceFixtures": 9,
+  "sourceOutcomes": [
+    {
+      "fixture": "direct-next-import",
+      "intendedRequestKind": "import",
+      "intendedCategory": "next",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "deep-next-re-export",
+      "intendedRequestKind": "export-from",
+      "intendedCategory": "next",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "direct-prisma-import-type",
+      "intendedRequestKind": "import-type",
+      "intendedCategory": "prisma",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "direct-vite-tsconfig-paths-import-equals",
+      "intendedRequestKind": "import-equals",
+      "intendedCategory": "vite-tsconfig-paths",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "redis-client-require",
+      "intendedRequestKind": "require",
+      "intendedCategory": "redis-client",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "broker-client-require-resolve",
+      "intendedRequestKind": "require-resolve",
+      "intendedCategory": "message-queue-client",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "graphile-worker-dynamic-import",
+      "intendedRequestKind": "dynamic-import",
+      "intendedCategory": "graphile-worker",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "turbo-build-import",
+      "intendedRequestKind": "import",
+      "intendedCategory": "turborepo",
+      "result": "REJECTED_AS_EXPECTED"
+    },
+    {
+      "fixture": "broker-client-create-require",
+      "intendedRequestKind": "create-require",
+      "intendedCategory": "message-queue-client",
+      "result": "REJECTED_AS_EXPECTED"
+    }
+  ],
+  "npmAliasFixture": "REJECTED_AS_EXPECTED",
+  "safeOrdinarySource": "PASS",
+  "acceptedBetterAuthDirectDependency": "PASS",
+  "acceptedBetterAuthTransitiveDisclosure": "PASS_NOT_ARCHITECTURAL_ADOPTION",
+  "ordinaryStaticBypassClaim": "DISPROVED_AND_REGRESSION_COVERED",
+  "productionSourceDiscoveryFixtures": {
+    "fixtureCount": 4,
+    "rejectedFixtures": 2,
+    "acceptedFixtures": 2,
+    "outcomes": [
+      {
+        "fixture": "rejected-prisma-mts",
+        "sourceForm": ".mts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "moduleResolved": true,
+        "intendedCategory": "prisma",
+        "semanticFindingCount": 1,
+        "result": "REJECTED_AS_EXPECTED"
+      },
+      {
+        "fixture": "rejected-next-cts",
+        "sourceForm": ".cts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "moduleResolved": true,
+        "intendedCategory": "next",
+        "semanticFindingCount": 1,
+        "result": "REJECTED_AS_EXPECTED"
+      },
+      {
+        "fixture": "rejected-safe-mts",
+        "sourceForm": ".mts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "moduleResolved": null,
+        "intendedCategory": null,
+        "semanticFindingCount": 0,
+        "result": "PASS"
+      },
+      {
+        "fixture": "rejected-safe-cts",
+        "sourceForm": ".cts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "moduleResolved": null,
+        "intendedCategory": null,
+        "semanticFindingCount": 0,
+        "result": "PASS"
+      }
+    ]
+  },
+  "compilerVsPolicySourceDiscovery": "PASS",
+  "dependencyUniverseSemanticFixtures": {
+    "result": "PASS",
+    "fixtureCount": 12,
+    "semanticRejectedTechnologyFixtures": 3,
+    "aliasFailClosedFixtures": 3,
+    "requiredProofs": {
+      "implicitJsxRuntime": "backend-implicit-react-jsx-runtime",
+      "jsxImportSource": "backend-jsx-import-source-next",
+      "aliasedRequire": "backend-aliased-require",
+      "aliasedRequireResolve": "backend-aliased-require-resolve",
+      "aliasedCreateRequireLoader": "backend-aliased-create-require-loader",
+      "externalModuleAugmentation": "backend-better-auth-module-augmentation",
+      "rejectedTechnologyModuleAugmentation": "backend-next-module-augmentation",
+      "tripleReferenceTypes": "backend-next-type-reference",
+      "allowedJsx": "admin-web-allowed-react-jsx-runtime",
+      "allowedTypeReference": "auth-adapter-allowed-type-reference",
+      "allowedAugmentation": "auth-adapter-allowed-module-augmentation",
+      "safeLocalDeclaration": "backend-safe-local-ambient-declaration"
+    },
+    "outcomes": [
+      {
+        "fixture": "backend-jsx-import-source-next",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".tsx",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "next/jsx-runtime",
+        "dependencyKind": "implicit-jsx-runtime",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [
+          "architecture/external-dependency-not-allowed",
+          "architecture/manifest-dependency-not-allowed"
+        ],
+        "architectureViolationCount": 2,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": "next",
+        "rejectedTechnologyFindingCount": 1,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-aliased-require",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".cts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": null,
+        "dependencyKind": null,
+        "dependencyResolutionStatus": null,
+        "intendedRules": [
+          "architecture/unsupported-module-loader-alias"
+        ],
+        "architectureViolationCount": 1,
+        "unsupportedConstruct": "require-alias",
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "FAIL",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 0,
+          "normalizedPolicyDependencyCount": 0,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 1,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 1,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-aliased-require-resolve",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".cts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": null,
+        "dependencyKind": null,
+        "dependencyResolutionStatus": null,
+        "intendedRules": [
+          "architecture/unsupported-module-loader-alias"
+        ],
+        "architectureViolationCount": 1,
+        "unsupportedConstruct": "require-resolve-alias",
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "FAIL",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 0,
+          "normalizedPolicyDependencyCount": 0,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 1,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 1,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-aliased-create-require-loader",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".mts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "node:module",
+        "dependencyKind": "import",
+        "dependencyResolutionStatus": "BUILTIN",
+        "intendedRules": [
+          "architecture/unsupported-module-loader-alias"
+        ],
+        "architectureViolationCount": 1,
+        "unsupportedConstruct": "create-require-loader-alias",
+        "rejectedTechnologyCategory": null,
+        "rejectedTechnologyFindingCount": 0,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "FAIL",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 2,
+          "policyProductionSourceCount": 2,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 1,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 1,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-next-type-reference",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".ts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "next",
+        "dependencyKind": "type-reference-directive",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [
+          "architecture/external-dependency-not-allowed",
+          "architecture/manifest-dependency-not-allowed"
+        ],
+        "architectureViolationCount": 2,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": "next",
+        "rejectedTechnologyFindingCount": 1,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      },
+      {
+        "fixture": "backend-next-module-augmentation",
+        "unit": "@travelos/backend-core",
+        "sourceForm": ".mts",
+        "compilerIncluded": true,
+        "policyInspected": true,
+        "compilerDiagnostics": 0,
+        "normalizedDependency": "next",
+        "dependencyKind": "external-module-augmentation",
+        "dependencyResolutionStatus": "RESOLVED",
+        "intendedRules": [
+          "architecture/external-dependency-not-allowed",
+          "architecture/manifest-dependency-not-allowed"
+        ],
+        "architectureViolationCount": 2,
+        "unsupportedConstruct": null,
+        "rejectedTechnologyCategory": "next",
+        "rejectedTechnologyFindingCount": 1,
+        "result": "REJECTED_AS_EXPECTED",
+        "dependencyCoverage": {
+          "schemaVersion": 1,
+          "result": "PASS",
+          "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+          "compilerDiagnosticCount": 0,
+          "compilerProductionSourceCount": 1,
+          "policyProductionSourceCount": 1,
+          "uncoveredProductionSourceCount": 0,
+          "compilerKnownArchitecturalDependencyCount": 1,
+          "normalizedPolicyDependencyCount": 1,
+          "unexplainedCompilerDependencyReferenceCount": 0,
+          "unsupportedDependencyConstructCount": 0,
+          "unresolvedNormalizedDependencyCount": 0,
+          "nonTypeScriptAssetDependencyCount": 0,
+          "compilerDependencyExclusionCount": 0,
+          "supportedDependencyForms": [
+            "import",
+            "export-from",
+            "import-type",
+            "import-equals",
+            "dynamic-import",
+            "direct-require",
+            "direct-require-resolve",
+            "direct-create-require",
+            "direct-create-require-resolve",
+            "automatic-jsx-runtime",
+            "jsx-import-source",
+            "type-reference-directive",
+            "path-reference-directive",
+            "external-module-augmentation",
+            "static-css-asset-import"
+          ],
+          "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+          "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+        }
+      }
+    ]
+  }
+}
+
+=== TravelOS CI gate: verify:rejected-technologies ===
+$ node tooling/ci/verify-rejected-technologies.mjs
+{
+  "schemaVersion": 4,
+  "result": "PASS",
+  "semanticAuthority": "Shared compiler-cross-checked normalized dependency universe plus package-manifest dependency specifications",
+  "manifestsChecked": 15,
+  "sourceFilesChecked": 176,
+  "compilerResolvedProductionSourceCount": 72,
+  "policyInspectedProductionSourceCount": 72,
+  "uncoveredProductionSourceCount": 0,
+  "sourceDiscovery": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "production": {
+      "schemaVersion": 1,
+      "result": "PASS",
+      "authority": "TypeScript compiler-program inclusion cross-checked against one repository-owned source classifier",
+      "tsconfigPath": "tooling/ci/tsconfig.typecheck.json",
+      "compilerProjectRootFiles": 121,
+      "compilerResolvedProductionSourceCount": 72,
+      "policyInspectedProductionSourceCount": 72,
+      "uncoveredProductionSourceCount": 0,
+      "compilerResolvedProductionSourceFiles": [
+        "apps/admin-api/src/app.module.ts",
+        "apps/admin-api/src/app.ts",
+        "apps/admin-api/src/auth-bridge.ts",
+        "apps/admin-api/src/health.controller.ts",
+        "apps/admin-api/src/m1-routes.ts",
+        "apps/admin-api/src/main.ts",
+        "apps/admin-web/src/app.tsx",
+        "apps/admin-web/src/main.tsx",
+        "apps/portal-api/src/app.module.ts",
+        "apps/portal-api/src/app.ts",
+        "apps/portal-api/src/auth-bridge.ts",
+        "apps/portal-api/src/health.controller.ts",
+        "apps/portal-api/src/main.ts",
+        "apps/portal-web/src/app.tsx",
+        "apps/portal-web/src/main.tsx",
+        "apps/worker/src/main.ts",
+        "apps/worker/src/worker-process.ts",
+        "packages/auth-adapters/src/http-bridge.ts",
+        "packages/auth-adapters/src/index.ts",
+        "packages/auth-adapters/src/operator-token.ts",
+        "packages/auth-adapters/src/realm-postgres.ts",
+        "packages/auth-adapters/src/realm.ts",
+        "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+        "packages/backend-core/src/application/transaction.ts",
+        "packages/backend-core/src/index.ts",
+        "packages/backend-core/src/modules/crm/domain/continuity.ts",
+        "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+        "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+        "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+        "packages/backend-core/src/shared-kernel/money/money.ts",
+        "packages/backend-core/src/shared-kernel/opaque-id.ts",
+        "packages/backend-core/src/shared-kernel/time.ts",
+        "packages/backend-core/src/staff-access/authorization.ts",
+        "packages/backend-core/src/staff-access/permission-registry.ts",
+        "packages/config/src/credential-reference.ts",
+        "packages/config/src/index.ts",
+        "packages/config/src/instance-manifest-invariants.ts",
+        "packages/config/src/instance-manifest-json-schema.ts",
+        "packages/config/src/instance-manifest.ts",
+        "packages/config/src/load-development-instance-manifest.ts",
+        "packages/config/src/systemd-credential.ts",
+        "packages/contracts/src/admin/auth/index.ts",
+        "packages/contracts/src/admin/auth/session-context.ts",
+        "packages/contracts/src/admin/customers/index.ts",
+        "packages/contracts/src/admin/customers/m1.ts",
+        "packages/contracts/src/admin/health.ts",
+        "packages/contracts/src/admin/index.ts",
+        "packages/contracts/src/admin/itinerary/index.ts",
+        "packages/contracts/src/admin/itinerary/m1.ts",
+        "packages/contracts/src/admin/money.ts",
+        "packages/contracts/src/admin/reservations/index.ts",
+        "packages/contracts/src/admin/reservations/m1.ts",
+        "packages/contracts/src/admin/trips/index.ts",
+        "packages/contracts/src/admin/trips/m1.ts",
+        "packages/contracts/src/portal/auth/authenticated-session.ts",
+        "packages/contracts/src/portal/auth/index.ts",
+        "packages/contracts/src/portal/health.ts",
+        "packages/contracts/src/portal/index.ts",
+        "packages/database/src/index.ts",
+        "packages/database/src/postgres/postgres-persistence.ts",
+        "packages/database/src/staff-access/staff-access-repository.ts",
+        "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+        "packages/database/src/uuidv7.ts",
+        "packages/design-system/src/foundation-page.tsx",
+        "packages/design-system/src/index.ts",
+        "packages/observability/src/index.ts",
+        "packages/portal-safe-core/src/customer-presentation/index.ts",
+        "packages/portal-safe-core/src/documents/index.ts",
+        "packages/portal-safe-core/src/index.ts",
+        "packages/portal-safe-core/src/portal-access/identity.ts",
+        "packages/portal-safe-core/src/portal-access/index.ts",
+        "packages/test-support/src/index.ts"
+      ],
+      "policyInspectedProductionSourceFiles": [
+        "apps/admin-api/src/app.module.ts",
+        "apps/admin-api/src/app.ts",
+        "apps/admin-api/src/auth-bridge.ts",
+        "apps/admin-api/src/health.controller.ts",
+        "apps/admin-api/src/m1-routes.ts",
+        "apps/admin-api/src/main.ts",
+        "apps/admin-web/src/app.tsx",
+        "apps/admin-web/src/main.tsx",
+        "apps/portal-api/src/app.module.ts",
+        "apps/portal-api/src/app.ts",
+        "apps/portal-api/src/auth-bridge.ts",
+        "apps/portal-api/src/health.controller.ts",
+        "apps/portal-api/src/main.ts",
+        "apps/portal-web/src/app.tsx",
+        "apps/portal-web/src/main.tsx",
+        "apps/worker/src/main.ts",
+        "apps/worker/src/worker-process.ts",
+        "packages/auth-adapters/src/http-bridge.ts",
+        "packages/auth-adapters/src/index.ts",
+        "packages/auth-adapters/src/operator-token.ts",
+        "packages/auth-adapters/src/realm-postgres.ts",
+        "packages/auth-adapters/src/realm.ts",
+        "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+        "packages/backend-core/src/application/transaction.ts",
+        "packages/backend-core/src/index.ts",
+        "packages/backend-core/src/modules/crm/domain/continuity.ts",
+        "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+        "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+        "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+        "packages/backend-core/src/shared-kernel/money/money.ts",
+        "packages/backend-core/src/shared-kernel/opaque-id.ts",
+        "packages/backend-core/src/shared-kernel/time.ts",
+        "packages/backend-core/src/staff-access/authorization.ts",
+        "packages/backend-core/src/staff-access/permission-registry.ts",
+        "packages/config/src/credential-reference.ts",
+        "packages/config/src/index.ts",
+        "packages/config/src/instance-manifest-invariants.ts",
+        "packages/config/src/instance-manifest-json-schema.ts",
+        "packages/config/src/instance-manifest.ts",
+        "packages/config/src/load-development-instance-manifest.ts",
+        "packages/config/src/systemd-credential.ts",
+        "packages/contracts/src/admin/auth/index.ts",
+        "packages/contracts/src/admin/auth/session-context.ts",
+        "packages/contracts/src/admin/customers/index.ts",
+        "packages/contracts/src/admin/customers/m1.ts",
+        "packages/contracts/src/admin/health.ts",
+        "packages/contracts/src/admin/index.ts",
+        "packages/contracts/src/admin/itinerary/index.ts",
+        "packages/contracts/src/admin/itinerary/m1.ts",
+        "packages/contracts/src/admin/money.ts",
+        "packages/contracts/src/admin/reservations/index.ts",
+        "packages/contracts/src/admin/reservations/m1.ts",
+        "packages/contracts/src/admin/trips/index.ts",
+        "packages/contracts/src/admin/trips/m1.ts",
+        "packages/contracts/src/portal/auth/authenticated-session.ts",
+        "packages/contracts/src/portal/auth/index.ts",
+        "packages/contracts/src/portal/health.ts",
+        "packages/contracts/src/portal/index.ts",
+        "packages/database/src/index.ts",
+        "packages/database/src/postgres/postgres-persistence.ts",
+        "packages/database/src/staff-access/staff-access-repository.ts",
+        "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+        "packages/database/src/uuidv7.ts",
+        "packages/design-system/src/foundation-page.tsx",
+        "packages/design-system/src/index.ts",
+        "packages/observability/src/index.ts",
+        "packages/portal-safe-core/src/customer-presentation/index.ts",
+        "packages/portal-safe-core/src/documents/index.ts",
+        "packages/portal-safe-core/src/index.ts",
+        "packages/portal-safe-core/src/portal-access/identity.ts",
+        "packages/portal-safe-core/src/portal-access/index.ts",
+        "packages/test-support/src/index.ts"
+      ],
+      "uncoveredCompilerResolvedProductionFiles": [],
+      "unsupportedCompilerResolvedProductionFiles": [],
+      "coverageGaps": [],
+      "policyOnlyProductionSourceFiles": [],
+      "explicitCompilerResourceExclusions": [],
+      "supportedSourceForms": [
+        ".d.mts",
+        ".d.cts",
+        ".d.ts",
+        ".mts",
+        ".cts",
+        ".tsx",
+        ".ts",
+        ".mjs",
+        ".cjs",
+        ".jsx",
+        ".js"
+      ],
+      "filesByUnit": {
+        "@travelos/admin-web": [
+          "apps/admin-web/src/app.tsx",
+          "apps/admin-web/src/main.tsx"
+        ],
+        "@travelos/portal-web": [
+          "apps/portal-web/src/app.tsx",
+          "apps/portal-web/src/main.tsx"
+        ],
+        "@travelos/admin-api": [
+          "apps/admin-api/src/app.module.ts",
+          "apps/admin-api/src/app.ts",
+          "apps/admin-api/src/auth-bridge.ts",
+          "apps/admin-api/src/health.controller.ts",
+          "apps/admin-api/src/m1-routes.ts",
+          "apps/admin-api/src/main.ts"
+        ],
+        "@travelos/portal-api": [
+          "apps/portal-api/src/app.module.ts",
+          "apps/portal-api/src/app.ts",
+          "apps/portal-api/src/auth-bridge.ts",
+          "apps/portal-api/src/health.controller.ts",
+          "apps/portal-api/src/main.ts"
+        ],
+        "@travelos/worker": [
+          "apps/worker/src/main.ts",
+          "apps/worker/src/worker-process.ts"
+        ],
+        "@travelos/backend-core": [
+          "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+          "packages/backend-core/src/application/transaction.ts",
+          "packages/backend-core/src/index.ts",
+          "packages/backend-core/src/modules/crm/domain/continuity.ts",
+          "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+          "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+          "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+          "packages/backend-core/src/shared-kernel/money/money.ts",
+          "packages/backend-core/src/shared-kernel/opaque-id.ts",
+          "packages/backend-core/src/shared-kernel/time.ts",
+          "packages/backend-core/src/staff-access/authorization.ts",
+          "packages/backend-core/src/staff-access/permission-registry.ts"
+        ],
+        "@travelos/portal-safe-core": [
+          "packages/portal-safe-core/src/customer-presentation/index.ts",
+          "packages/portal-safe-core/src/documents/index.ts",
+          "packages/portal-safe-core/src/index.ts",
+          "packages/portal-safe-core/src/portal-access/identity.ts",
+          "packages/portal-safe-core/src/portal-access/index.ts"
+        ],
+        "@travelos/contracts": [
+          "packages/contracts/src/admin/auth/index.ts",
+          "packages/contracts/src/admin/auth/session-context.ts",
+          "packages/contracts/src/admin/customers/index.ts",
+          "packages/contracts/src/admin/customers/m1.ts",
+          "packages/contracts/src/admin/health.ts",
+          "packages/contracts/src/admin/index.ts",
+          "packages/contracts/src/admin/itinerary/index.ts",
+          "packages/contracts/src/admin/itinerary/m1.ts",
+          "packages/contracts/src/admin/money.ts",
+          "packages/contracts/src/admin/reservations/index.ts",
+          "packages/contracts/src/admin/reservations/m1.ts",
+          "packages/contracts/src/admin/trips/index.ts",
+          "packages/contracts/src/admin/trips/m1.ts",
+          "packages/contracts/src/portal/auth/authenticated-session.ts",
+          "packages/contracts/src/portal/auth/index.ts",
+          "packages/contracts/src/portal/health.ts",
+          "packages/contracts/src/portal/index.ts"
+        ],
+        "@travelos/config": [
+          "packages/config/src/credential-reference.ts",
+          "packages/config/src/index.ts",
+          "packages/config/src/instance-manifest-invariants.ts",
+          "packages/config/src/instance-manifest-json-schema.ts",
+          "packages/config/src/instance-manifest.ts",
+          "packages/config/src/load-development-instance-manifest.ts",
+          "packages/config/src/systemd-credential.ts"
+        ],
+        "@travelos/database": [
+          "packages/database/src/index.ts",
+          "packages/database/src/postgres/postgres-persistence.ts",
+          "packages/database/src/staff-access/staff-access-repository.ts",
+          "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+          "packages/database/src/uuidv7.ts"
+        ],
+        "@travelos/auth-adapters": [
+          "packages/auth-adapters/src/http-bridge.ts",
+          "packages/auth-adapters/src/index.ts",
+          "packages/auth-adapters/src/operator-token.ts",
+          "packages/auth-adapters/src/realm-postgres.ts",
+          "packages/auth-adapters/src/realm.ts"
+        ],
+        "@travelos/design-system": [
+          "packages/design-system/src/foundation-page.tsx",
+          "packages/design-system/src/index.ts"
+        ],
+        "@travelos/observability": [
+          "packages/observability/src/index.ts"
+        ],
+        "@travelos/test-support": [
+          "packages/test-support/src/index.ts"
+        ]
+      }
+    },
+    "sourceFiles": [
+      "apps/admin-api/src/app.module.ts",
+      "apps/admin-api/src/app.ts",
+      "apps/admin-api/src/auth-bridge.ts",
+      "apps/admin-api/src/health.controller.ts",
+      "apps/admin-api/src/m1-routes.ts",
+      "apps/admin-api/src/main.ts",
+      "apps/admin-api/test/auth-bridge.test.ts",
+      "apps/admin-api/test/composed-m1-body-parser.test.ts",
+      "apps/admin-api/test/health-live.test.ts",
+      "apps/admin-api/test/m1-routes.test.ts",
+      "apps/admin-web/src/app.tsx",
+      "apps/admin-web/src/main.tsx",
+      "apps/admin-web/test/app.test.tsx",
+      "apps/admin-web/vite.config.ts",
+      "apps/portal-api/src/app.module.ts",
+      "apps/portal-api/src/app.ts",
+      "apps/portal-api/src/auth-bridge.ts",
+      "apps/portal-api/src/health.controller.ts",
+      "apps/portal-api/src/main.ts",
+      "apps/portal-api/test/auth-bridge.test.ts",
+      "apps/portal-api/test/health-live.test.ts",
+      "apps/portal-web/src/app.tsx",
+      "apps/portal-web/src/main.tsx",
+      "apps/portal-web/test/app.test.tsx",
+      "apps/portal-web/vite.config.ts",
+      "apps/worker/src/main.ts",
+      "apps/worker/src/worker-process.ts",
+      "apps/worker/test/worker-process.test.ts",
+      "eslint.config.mjs",
+      "packages/auth-adapters/src/http-bridge.ts",
+      "packages/auth-adapters/src/index.ts",
+      "packages/auth-adapters/src/operator-token.ts",
+      "packages/auth-adapters/src/realm-postgres.ts",
+      "packages/auth-adapters/src/realm.ts",
+      "packages/auth-adapters/test/http-bridge.test.ts",
+      "packages/auth-adapters/test/operator-token.test.ts",
+      "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+      "packages/backend-core/src/application/transaction.ts",
+      "packages/backend-core/src/index.ts",
+      "packages/backend-core/src/modules/crm/domain/continuity.ts",
+      "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",
+      "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+      "packages/backend-core/src/modules/trip-operations/domain/m1-slice.ts",
+      "packages/backend-core/src/shared-kernel/money/money.ts",
+      "packages/backend-core/src/shared-kernel/opaque-id.ts",
+      "packages/backend-core/src/shared-kernel/time.ts",
+      "packages/backend-core/src/staff-access/authorization.ts",
+      "packages/backend-core/src/staff-access/permission-registry.ts",
+      "packages/backend-core/test/m1/application.test.ts",
+      "packages/backend-core/test/m1/shared-kernel.test.ts",
+      "packages/backend-core/test/staff-access/authorization.test.ts",
+      "packages/config/src/credential-reference.ts",
+      "packages/config/src/index.ts",
+      "packages/config/src/instance-manifest-invariants.ts",
+      "packages/config/src/instance-manifest-json-schema.ts",
+      "packages/config/src/instance-manifest.ts",
+      "packages/config/src/load-development-instance-manifest.ts",
+      "packages/config/src/systemd-credential.ts",
+      "packages/config/test/instance-manifest-json-schema.test.ts",
+      "packages/config/test/instance-manifest.test.ts",
+      "packages/config/test/systemd-credential.test.ts",
+      "packages/contracts/src/admin/auth/index.ts",
+      "packages/contracts/src/admin/auth/session-context.ts",
+      "packages/contracts/src/admin/customers/index.ts",
+      "packages/contracts/src/admin/customers/m1.ts",
+      "packages/contracts/src/admin/health.ts",
+      "packages/contracts/src/admin/index.ts",
+      "packages/contracts/src/admin/itinerary/index.ts",
+      "packages/contracts/src/admin/itinerary/m1.ts",
+      "packages/contracts/src/admin/money.ts",
+      "packages/contracts/src/admin/reservations/index.ts",
+      "packages/contracts/src/admin/reservations/m1.ts",
+      "packages/contracts/src/admin/trips/index.ts",
+      "packages/contracts/src/admin/trips/m1.ts",
+      "packages/contracts/src/portal/auth/authenticated-session.ts",
+      "packages/contracts/src/portal/auth/index.ts",
+      "packages/contracts/src/portal/health.ts",
+      "packages/contracts/src/portal/index.ts",
+      "packages/contracts/test/admin-m1-contracts.test.ts",
+      "packages/database/src/index.ts",
+      "packages/database/src/postgres/postgres-persistence.ts",
+      "packages/database/src/staff-access/staff-access-repository.ts",
+      "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+      "packages/database/src/uuidv7.ts",
+      "packages/design-system/src/foundation-page.tsx",
+      "packages/design-system/src/index.ts",
+      "packages/observability/src/index.ts",
+      "packages/portal-safe-core/src/customer-presentation/index.ts",
+      "packages/portal-safe-core/src/documents/index.ts",
+      "packages/portal-safe-core/src/index.ts",
+      "packages/portal-safe-core/src/portal-access/identity.ts",
+      "packages/portal-safe-core/src/portal-access/index.ts",
+      "packages/test-support/src/index.ts",
+      "playwright.config.ts",
+      "prettier.config.mjs",
+      "tooling/architecture/check.mjs",
+      "tooling/architecture/dependency-cruiser.cjs",
+      "tooling/architecture/dependency-universe-fixture-suite.mjs",
+      "tooling/architecture/dependency-universe.mjs",
+      "tooling/architecture/fixtures/invalid-portal-import/portal-entry.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-auth-alias.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-better-auth-deep.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-better-auth-static.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-computed-import.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-computed-require.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-design-system.ts",
+      "tooling/architecture/fixtures/layered-boundaries/portal-admin-contract.ts",
+      "tooling/architecture/negative-fixture.cjs",
+      "tooling/architecture/package-boundary-policy.mjs",
+      "tooling/architecture/production-source-discovery.mjs",
+      "tooling/architecture/reject-negative-fixture.mjs",
+      "tooling/architecture/source-discovery-fixture-suite.mjs",
+      "tooling/architecture/verify-dependency-universe.mjs",
+      "tooling/architecture/verify-layered-boundary-fixtures.mjs",
+      "tooling/architecture/verify-production-source-discovery.mjs",
+      "tooling/auth/bootstrap-first-owner.ts",
+      "tooling/auth/verify-better-auth-schema-drift.ts",
+      "tooling/ci/capture-stage-2-evidence.mjs",
+      "tooling/ci/clean-build-output.mjs",
+      "tooling/ci/collect-stage-2-freeze-inputs.mjs",
+      "tooling/ci/collect-stage-3-corrected-freeze-inputs.mjs",
+      "tooling/ci/collect-stage-3-freeze-inputs.mjs",
+      "tooling/ci/format-stage-2.mjs",
+      "tooling/ci/install-lifecycle-policy.mjs",
+      "tooling/ci/rejected-technology-policy.mjs",
+      "tooling/ci/run-clean-frozen-install.mjs",
+      "tooling/ci/scan-browser-bundles.mjs",
+      "tooling/ci/scan-source-secrets.mjs",
+      "tooling/ci/sensitive-data-scanner.mjs",
+      "tooling/ci/stage-2-freeze-inputs.mjs",
+      "tooling/ci/stage-3-corrected-freeze-inputs.mjs",
+      "tooling/ci/stage-3-freeze-inputs.mjs",
+      "tooling/ci/stage-4-freeze-inputs.mjs",
+      "tooling/ci/test-lifecycle-policy.mjs",
+      "tooling/ci/test-rejected-technologies.mjs",
+      "tooling/ci/test-sensitive-data-scanner.mjs",
+      "tooling/ci/test-stage-2-freeze-inputs.mjs",
+      "tooling/ci/test-stage-3-freeze-inputs.mjs",
+      "tooling/ci/verify-pins.mjs",
+      "tooling/ci/verify-protected-baseline.mjs",
+      "tooling/ci/verify-rejected-technologies.mjs",
+      "tooling/ci/verify-stage-3-candidate-freeze.mjs",
+      "tooling/ci/verify-stage-3-corrected-candidate-freeze.mjs",
+      "tooling/ci/verify-stage-4-candidate-freeze.mjs",
+      "tooling/ci/verify.mjs",
+      "tooling/ci/workspace-policy.mjs",
+      "tooling/ci/write-instance-manifest-schema.ts",
+      "tooling/ci/write-stage-3-candidate-freeze.mjs",
+      "tooling/ci/write-stage-3-corrected-candidate-freeze.mjs",
+      "tooling/ci/write-stage-4-candidate-freeze.mjs",
+      "tooling/database/build-stage-3-correction-evidence.mjs",
+      "tooling/database/build-stage-3-evidence-index.mjs",
+      "tooling/database/build-stage-4-evidence-index.mjs",
+      "tooling/database/migration-runner.ts",
+      "tooling/database/prepare-postgresql-18.mjs",
+      "tooling/database/run-migrations.ts",
+      "tooling/database/run-stage-3-aggregate.mjs",
+      "tooling/database/run-stage-3-ct-validation.ts",
+      "tooling/database/run-stage-3-disposable.mjs",
+      "tooling/database/run-stage-4-disposable.mjs",
+      "tooling/database/run-stage-5-disposable.mjs",
+      "tooling/database/stage-3-evidence-contract.mjs",
+      "tooling/database/stage-3-role-graph.ts",
+      "tooling/database/stage-4-evidence-contract.mjs",
+      "tooling/database/verify-migration-checksums.ts",
+      "tooling/database/verify-stage-3-corrections.ts",
+      "tooling/database/verify-stage-3-ct-role-graph.ts",
+      "tooling/database/verify-stage-3-evidence-index.mjs",
+      "tooling/database/verify-stage-4-evidence-index.mjs",
+      "tooling/testing/owned-declarations/stage-2-sentinel.d.ts",
+      "tooling/testing/smoke-built.mjs",
+      "tooling/testing/vitest.config.ts",
+      "tooling/testing/vitest.stage-3.config.ts",
+      "tooling/testing/vitest.stage-4.config.ts",
+      "tooling/testing/vitest.stage-5.config.ts",
+      "vitest.workspace.ts"
+    ],
+    "supplementalPolicySourceFiles": [
+      "apps/admin-api/test/auth-bridge.test.ts",
+      "apps/admin-api/test/composed-m1-body-parser.test.ts",
+      "apps/admin-api/test/health-live.test.ts",
+      "apps/admin-api/test/m1-routes.test.ts",
+      "apps/admin-web/test/app.test.tsx",
+      "apps/admin-web/vite.config.ts",
+      "apps/portal-api/test/auth-bridge.test.ts",
+      "apps/portal-api/test/health-live.test.ts",
+      "apps/portal-web/test/app.test.tsx",
+      "apps/portal-web/vite.config.ts",
+      "apps/worker/test/worker-process.test.ts",
+      "eslint.config.mjs",
+      "packages/auth-adapters/test/http-bridge.test.ts",
+      "packages/auth-adapters/test/operator-token.test.ts",
+      "packages/backend-core/test/m1/application.test.ts",
+      "packages/backend-core/test/m1/shared-kernel.test.ts",
+      "packages/backend-core/test/staff-access/authorization.test.ts",
+      "packages/config/test/instance-manifest-json-schema.test.ts",
+      "packages/config/test/instance-manifest.test.ts",
+      "packages/config/test/systemd-credential.test.ts",
+      "packages/contracts/test/admin-m1-contracts.test.ts",
+      "playwright.config.ts",
+      "prettier.config.mjs",
+      "tooling/architecture/check.mjs",
+      "tooling/architecture/dependency-cruiser.cjs",
+      "tooling/architecture/dependency-universe-fixture-suite.mjs",
+      "tooling/architecture/dependency-universe.mjs",
+      "tooling/architecture/fixtures/invalid-portal-import/portal-entry.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-auth-alias.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-better-auth-deep.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-better-auth-static.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-computed-import.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-computed-require.ts",
+      "tooling/architecture/fixtures/layered-boundaries/backend-design-system.ts",
+      "tooling/architecture/fixtures/layered-boundaries/portal-admin-contract.ts",
+      "tooling/architecture/negative-fixture.cjs",
+      "tooling/architecture/package-boundary-policy.mjs",
+      "tooling/architecture/production-source-discovery.mjs",
+      "tooling/architecture/reject-negative-fixture.mjs",
+      "tooling/architecture/source-discovery-fixture-suite.mjs",
+      "tooling/architecture/verify-dependency-universe.mjs",
+      "tooling/architecture/verify-layered-boundary-fixtures.mjs",
+      "tooling/architecture/verify-production-source-discovery.mjs",
+      "tooling/auth/bootstrap-first-owner.ts",
+      "tooling/auth/verify-better-auth-schema-drift.ts",
+      "tooling/ci/capture-stage-2-evidence.mjs",
+      "tooling/ci/clean-build-output.mjs",
+      "tooling/ci/collect-stage-2-freeze-inputs.mjs",
+      "tooling/ci/collect-stage-3-corrected-freeze-inputs.mjs",
+      "tooling/ci/collect-stage-3-freeze-inputs.mjs",
+      "tooling/ci/format-stage-2.mjs",
+      "tooling/ci/install-lifecycle-policy.mjs",
+      "tooling/ci/rejected-technology-policy.mjs",
+      "tooling/ci/run-clean-frozen-install.mjs",
+      "tooling/ci/scan-browser-bundles.mjs",
+      "tooling/ci/scan-source-secrets.mjs",
+      "tooling/ci/sensitive-data-scanner.mjs",
+      "tooling/ci/stage-2-freeze-inputs.mjs",
+      "tooling/ci/stage-3-corrected-freeze-inputs.mjs",
+      "tooling/ci/stage-3-freeze-inputs.mjs",
+      "tooling/ci/stage-4-freeze-inputs.mjs",
+      "tooling/ci/test-lifecycle-policy.mjs",
+      "tooling/ci/test-rejected-technologies.mjs",
+      "tooling/ci/test-sensitive-data-scanner.mjs",
+      "tooling/ci/test-stage-2-freeze-inputs.mjs",
+      "tooling/ci/test-stage-3-freeze-inputs.mjs",
+      "tooling/ci/verify-pins.mjs",
+      "tooling/ci/verify-protected-baseline.mjs",
+      "tooling/ci/verify-rejected-technologies.mjs",
+      "tooling/ci/verify-stage-3-candidate-freeze.mjs",
+      "tooling/ci/verify-stage-3-corrected-candidate-freeze.mjs",
+      "tooling/ci/verify-stage-4-candidate-freeze.mjs",
+      "tooling/ci/verify.mjs",
+      "tooling/ci/workspace-policy.mjs",
+      "tooling/ci/write-instance-manifest-schema.ts",
+      "tooling/ci/write-stage-3-candidate-freeze.mjs",
+      "tooling/ci/write-stage-3-corrected-candidate-freeze.mjs",
+      "tooling/ci/write-stage-4-candidate-freeze.mjs",
+      "tooling/database/build-stage-3-correction-evidence.mjs",
+      "tooling/database/build-stage-3-evidence-index.mjs",
+      "tooling/database/build-stage-4-evidence-index.mjs",
+      "tooling/database/migration-runner.ts",
+      "tooling/database/prepare-postgresql-18.mjs",
+      "tooling/database/run-migrations.ts",
+      "tooling/database/run-stage-3-aggregate.mjs",
+      "tooling/database/run-stage-3-ct-validation.ts",
+      "tooling/database/run-stage-3-disposable.mjs",
+      "tooling/database/run-stage-4-disposable.mjs",
+      "tooling/database/run-stage-5-disposable.mjs",
+      "tooling/database/stage-3-evidence-contract.mjs",
+      "tooling/database/stage-3-role-graph.ts",
+      "tooling/database/stage-4-evidence-contract.mjs",
+      "tooling/database/verify-migration-checksums.ts",
+      "tooling/database/verify-stage-3-corrections.ts",
+      "tooling/database/verify-stage-3-ct-role-graph.ts",
+      "tooling/database/verify-stage-3-evidence-index.mjs",
+      "tooling/database/verify-stage-4-evidence-index.mjs",
+      "tooling/testing/owned-declarations/stage-2-sentinel.d.ts",
+      "tooling/testing/smoke-built.mjs",
+      "tooling/testing/vitest.config.ts",
+      "tooling/testing/vitest.stage-3.config.ts",
+      "tooling/testing/vitest.stage-4.config.ts",
+      "tooling/testing/vitest.stage-5.config.ts",
+      "vitest.workspace.ts"
+    ]
+  },
+  "dependencyUniverse": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "authority": "TypeScript Program resolution cross-checked against one normalized repository-owned dependency universe",
+    "compilerDiagnosticCount": 0,
+    "compilerProductionSourceCount": 72,
+    "policyProductionSourceCount": 72,
+    "uncoveredProductionSourceCount": 0,
+    "compilerKnownArchitecturalDependencyCount": 159,
+    "normalizedPolicyDependencyCount": 160,
+    "unexplainedCompilerDependencyReferenceCount": 0,
+    "unsupportedDependencyConstructCount": 0,
+    "unresolvedNormalizedDependencyCount": 0,
+    "nonTypeScriptAssetDependencyCount": 2,
+    "compilerDependencyExclusionCount": 67,
+    "supportedDependencyForms": [
+      "import",
+      "export-from",
+      "import-type",
+      "import-equals",
+      "dynamic-import",
+      "direct-require",
+      "direct-require-resolve",
+      "direct-create-require",
+      "direct-create-require-resolve",
+      "automatic-jsx-runtime",
+      "jsx-import-source",
+      "type-reference-directive",
+      "path-reference-directive",
+      "external-module-augmentation",
+      "static-css-asset-import"
+    ],
+    "unsupportedDependencyPolicy": "Unsupported or aliased runtime module-loader mechanisms fail closed",
+    "assetDependencyPolicy": "Only static imports ending in .css are classified as non-TypeScript assets; they remain normalized and are evaluated by package-boundary policy"
+  },
+  "unsupportedProductionDependencyConstructs": [],
+  "rejectedDirectOrResolvedPackages": [],
+  "rejectedImports": [],
+  "defenseInDepthTextFindings": [],
+  "acceptedTransitiveDisclosures": [
+    {
+      "package": "@better-auth/prisma-adapter",
+      "classification": "accepted-dependency-internal-package",
+      "architecturalFailure": false,
+      "reason": "Better Auth's internal adapter declaration is transitive metadata; TravelOS does not directly adopt Prisma unless a source import or direct manifest specification does so."
+    },
+    {
+      "packages": [
+        "next",
+        "prisma"
+      ],
+      "classification": "transitive-lockfile-reference-not-direct-adoption",
+      "architecturalFailure": false,
+      "reason": "Lockfile presence alone does not establish that TravelOS-owned source or a TravelOS manifest directly adopts the technology."
+    }
+  ]
+}
+
+=== TravelOS CI gate: security:scan:source ===
+$ node tooling/ci/scan-source-secrets.mjs
+{
+  "schemaVersion": 3,
+  "result": "PASS",
+  "scope": "deterministic-stage-2-freeze-inputs",
+  "freezeInputAggregateSha256": "8b9e34af552cb9b4c75c8c5c7205c4d87632c3f975ab489fcc5943fc2ff6e4c4",
+  "filesScanned": 335,
+  "coverage": {
+    "repositoryOwnedSource": 135,
+    "scriptsAndTooling": 86,
+    "githubWorkflows": 1,
+    "manifestsAndExampleConfiguration": 18,
+    "retainedEvidence": 36,
+    "reviewMarkdown": 27
+  },
+  "stage3EvidenceIndexIncluded": false,
+  "stage3CandidateValidationIncluded": false,
+  "stage3CandidateFreezeIncluded": false,
+  "stage3CorrectedCandidateValidationIncluded": false,
+  "stage3CorrectedCandidateFreezeIncluded": false,
+  "stage4EvidenceIndexIncluded": false,
+  "explicitAllowlistEntries": 0,
+  "allowlistedFindingCount": 0,
+  "findings": [],
+  "matchedValuesEmitted": false
+}
+
+=== TravelOS CI gate: evidence:stage4:verify ===
+$ node tooling/database/verify-stage-4-evidence-index.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "indexPath": "docs/evidence/phase-1-m1/stage-4/EVIDENCE_INDEX.json",
+  "indexBytes": 2989,
+  "indexSha256": "3d81afd58d88dd35e48252f958bc598ea7125916af47ce4897f896a0f2d20bc6",
+  "declaredCount": 13,
+  "parsedCount": 13,
+  "matched": 13,
+  "missing": [],
+  "unexpected": [],
+  "missingIndexPaths": [],
+  "unexpectedIndexPaths": [],
+  "duplicatePaths": [],
+  "invalidIndexPaths": [],
+  "invalidDirectoryEntries": [],
+  "sizeMismatches": [],
+  "hashMismatches": [],
+  "orderingValid": true,
+  "declaredAggregateSha256": "57f1c37fe6337c3937b4106879b1206dfeb3ead08daecb8eeebece9a493a3111",
+  "recomputedAggregateSha256": "57f1c37fe6337c3937b4106879b1206dfeb3ead08daecb8eeebece9a493a3111"
+}
+
+=== TravelOS CI gate: security:scan:stage4 ===
+$ node tooling/ci/scan-source-secrets.mjs --stage4-final
+{
+  "schemaVersion": 3,
+  "result": "PASS",
+  "scope": "repository-owned-source-plus-final-stage-4-evidence",
+  "freezeInputAggregateSha256": "8b9e34af552cb9b4c75c8c5c7205c4d87632c3f975ab489fcc5943fc2ff6e4c4",
+  "filesScanned": 367,
+  "coverage": {
+    "repositoryOwnedSource": 135,
+    "scriptsAndTooling": 86,
+    "githubWorkflows": 1,
+    "manifestsAndExampleConfiguration": 18,
+    "retainedEvidence": 50,
+    "reviewMarkdown": 32,
+    "stage4Migrations": 8,
+    "stage4IntegrationTests": 1,
+    "stage4AuthAdapters": 7,
+    "stage4Evidence": 14,
+    "stage4ImplementationDocs": 1,
+    "stage4ReviewMarkdown": 5
+  },
+  "stage3EvidenceIndexIncluded": false,
+  "stage3CandidateValidationIncluded": false,
+  "stage3CandidateFreezeIncluded": false,
+  "stage3CorrectedCandidateValidationIncluded": false,
+  "stage3CorrectedCandidateFreezeIncluded": false,
+  "stage4EvidenceIndexIncluded": true,
+  "explicitAllowlistEntries": 10,
+  "allowlistedFindingCount": 10,
+  "findings": [],
+  "matchedValuesEmitted": false
+}
+
+=== TravelOS CI gate: build ===
+$ node tooling/ci/clean-build-output.mjs && pnpm -r --if-present build
+{"schemaVersion":1,"result":"PASS","generatedDirectoriesRemovedOrConfirmedAbsent":["apps/admin-api/dist","apps/admin-web/dist","apps/portal-api/dist","apps/portal-web/dist","apps/worker/dist","packages/auth-adapters/dist","packages/backend-core/dist","packages/config/dist","packages/contracts/dist","packages/database/dist","packages/design-system/dist","packages/observability/dist","packages/portal-safe-core/dist","packages/test-support/dist"]}
+Scope: 14 of 15 workspace projects
+packages/auth-adapters build$ tsc -p tsconfig.build.json
+packages/backend-core build$ tsc -p tsconfig.build.json
+packages/config build$ tsc -p tsconfig.build.json
+packages/contracts build$ tsc -p tsconfig.build.json
+packages/contracts build: Done
+packages/design-system build$ tsc -p tsconfig.build.json
+packages/backend-core build: Done
+packages/observability build$ tsc -p tsconfig.build.json
+packages/config build: Done
+packages/portal-safe-core build$ tsc -p tsconfig.build.json
+packages/observability build: Done
+packages/test-support build$ tsc -p tsconfig.build.json
+packages/design-system build: Done
+packages/portal-safe-core build: Done
+packages/test-support build: Done
+packages/auth-adapters build: Done
+apps/admin-web build$ vite build
+apps/portal-api build$ tsc -p tsconfig.build.json
+apps/portal-web build$ vite build
+apps/worker build$ tsc -p tsconfig.build.json
+apps/worker build: Done
+packages/database build$ tsc -p tsconfig.build.json
+apps/admin-web build: vite v8.2.1 building client environment for production...
+apps/portal-web build: vite v8.2.1 building client environment for production...
+apps/portal-web build: 
+apps/admin-web build: 
+apps/admin-web build: transforming...✓ 18 modules transformed.
+apps/portal-web build: transforming...✓ 18 modules transformed.
+apps/portal-api build: Done
+apps/portal-web build: rendering chunks...
+apps/admin-web build: rendering chunks...
+apps/admin-web build: computing gzip size...
+apps/admin-web build: dist/index.html                   0.48 kB │ gzip:  0.31 kB
+apps/admin-web build: dist/assets/index-BXrmIXvv.css    5.54 kB │ gzip:  1.91 kB
+apps/admin-web build: dist/assets/index-CSFu-y-u.js   190.84 kB │ gzip: 60.09 kB
+apps/admin-web build: ✓ built in 1.01s
+apps/portal-web build: computing gzip size...
+apps/admin-web build: Done
+apps/portal-web build: dist/index.html                   0.49 kB │ gzip:  0.32 kB
+apps/portal-web build: dist/assets/index-BXrmIXvv.css    5.54 kB │ gzip:  1.91 kB
+apps/portal-web build: dist/assets/index-U-F5_OOj.js   190.85 kB │ gzip: 60.09 kB
+apps/portal-web build: ✓ built in 1.06s
+apps/portal-web build: Done
+packages/database build: Done
+apps/admin-api build$ tsc -p tsconfig.build.json
+apps/admin-api build: Done
+
+=== TravelOS CI gate: test:smoke ===
+$ node tooling/testing/smoke-built.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "deployablesBuilt": 5,
+  "webBuilds": [
+    {
+      "app": "admin-web",
+      "markerChecks": {
+        "ownMarker": "TravelOS",
+        "ownMarkerPresent": true,
+        "otherMarker": "TravelOS Portal",
+        "otherMarkerAbsent": true
+      },
+      "fileCount": 3,
+      "aggregateSha256": "c46711c780a337b1b966222df92328278b8d0134ceee1eddbc9c8ffdd882694c",
+      "files": [
+        {
+          "path": "apps/admin-web/dist/assets/index-BXrmIXvv.css",
+          "bytes": 5540,
+          "sha256": "c4f6f0befeace4dd9c68eb798327a87b902ef4f531fa0beb1863cb8f76fac304"
+        },
+        {
+          "path": "apps/admin-web/dist/assets/index-CSFu-y-u.js",
+          "bytes": 190840,
+          "sha256": "bd6cd1f04b3fc21310e95245136ef173b41bbedc07df17b01ab568380fe7349b"
+        },
+        {
+          "path": "apps/admin-web/dist/index.html",
+          "bytes": 483,
+          "sha256": "701ffe1eaa3bb3a13805cec864e905661e53f67620b01ccabf5b57bfe4137f98"
+        }
+      ]
+    },
+    {
+      "app": "portal-web",
+      "markerChecks": {
+        "ownMarker": "TravelOS Portal",
+        "ownMarkerPresent": true,
+        "otherMarker": "data-routing-root=\"admin\"",
+        "otherMarkerAbsent": true
+      },
+      "fileCount": 3,
+      "aggregateSha256": "f7224103371288374dcce6cb6d3420901ed0c246643355f7d4cc1a01e796a4ca",
+      "files": [
+        {
+          "path": "apps/portal-web/dist/assets/index-BXrmIXvv.css",
+          "bytes": 5540,
+          "sha256": "c4f6f0befeace4dd9c68eb798327a87b902ef4f531fa0beb1863cb8f76fac304"
+        },
+        {
+          "path": "apps/portal-web/dist/assets/index-U-F5_OOj.js",
+          "bytes": 190850,
+          "sha256": "16f776df5d925a301064ee32cbd27e101e946bff604e2f0bdb7a15a1b1f358ff"
+        },
+        {
+          "path": "apps/portal-web/dist/index.html",
+          "bytes": 491,
+          "sha256": "d465cad71bb1d44bd8e8988eec4a569442b60a9180b916391b34d70b65813516"
+        }
+      ]
+    }
+  ],
+  "processSmokes": [
+    {
+      "service": "admin-api",
+      "exitCode": 0,
+      "events": [
+        {
+          "event": "process_smoke",
+          "service": "admin-api",
+          "environment": "DEVELOPMENT",
+          "initialized": true,
+          "listening": true,
+          "binding": {
+            "requestedPort": 0,
+            "boundAddress": "127.0.0.1",
+            "boundPort": 41863,
+            "ephemeralPortRequested": true
+          },
+          "healthRequest": {
+            "method": "GET",
+            "path": "/health/live"
+          },
+          "healthStatus": 200,
+          "healthResponse": {
+            "status": "ok",
+            "service": "admin-api",
+            "environment": "DEVELOPMENT"
+          },
+          "cleanShutdown": true
+        }
+      ]
+    },
+    {
+      "service": "portal-api",
+      "exitCode": 0,
+      "events": [
+        {
+          "event": "process_smoke",
+          "service": "portal-api",
+          "environment": "DEVELOPMENT",
+          "initialized": true,
+          "listening": true,
+          "binding": {
+            "requestedPort": 0,
+            "boundAddress": "127.0.0.1",
+            "boundPort": 36167,
+            "ephemeralPortRequested": true
+          },
+          "healthRequest": {
+            "method": "GET",
+            "path": "/health/live"
+          },
+          "healthStatus": 200,
+          "healthResponse": {
+            "status": "ok",
+            "service": "portal-api",
+            "environment": "DEVELOPMENT"
+          },
+          "cleanShutdown": true
+        }
+      ]
+    },
+    {
+      "service": "worker",
+      "exitCode": 0,
+      "events": [
+        {
+          "event": "process_bootstrap",
+          "service": "worker",
+          "environment": "DEVELOPMENT",
+          "state": "RUNNING"
+        },
+        {
+          "event": "process_shutdown",
+          "service": "worker",
+          "state": "STOPPED"
+        }
+      ]
+    }
+  ]
+}
+
+=== TravelOS CI gate: security:scan:bundles ===
+$ node tooling/ci/scan-browser-bundles.mjs
+{
+  "schemaVersion": 2,
+  "result": "PASS",
+  "bundlesScanned": [
+    {
+      "app": "admin-web",
+      "file": "apps/admin-web/dist/assets/index-BXrmIXvv.css",
+      "bytes": 5540,
+      "sha256": "c4f6f0befeace4dd9c68eb798327a87b902ef4f531fa0beb1863cb8f76fac304"
+    },
+    {
+      "app": "admin-web",
+      "file": "apps/admin-web/dist/assets/index-CSFu-y-u.js",
+      "bytes": 190840,
+      "sha256": "bd6cd1f04b3fc21310e95245136ef173b41bbedc07df17b01ab568380fe7349b"
+    },
+    {
+      "app": "admin-web",
+      "file": "apps/admin-web/dist/index.html",
+      "bytes": 483,
+      "sha256": "701ffe1eaa3bb3a13805cec864e905661e53f67620b01ccabf5b57bfe4137f98"
+    },
+    {
+      "app": "portal-web",
+      "file": "apps/portal-web/dist/assets/index-BXrmIXvv.css",
+      "bytes": 5540,
+      "sha256": "c4f6f0befeace4dd9c68eb798327a87b902ef4f531fa0beb1863cb8f76fac304"
+    },
+    {
+      "app": "portal-web",
+      "file": "apps/portal-web/dist/assets/index-U-F5_OOj.js",
+      "bytes": 190850,
+      "sha256": "16f776df5d925a301064ee32cbd27e101e946bff604e2f0bdb7a15a1b1f358ff"
+    },
+    {
+      "app": "portal-web",
+      "file": "apps/portal-web/dist/index.html",
+      "bytes": 491,
+      "sha256": "d465cad71bb1d44bd8e8988eec4a569442b60a9180b916391b34d70b65813516"
+    }
+  ],
+  "findings": [],
+  "matchedValuesEmitted": false
+}
+
+=== TravelOS CI gate: protected-baseline:post ===
+$ node tooling/ci/verify-protected-baseline.mjs
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "sourceOfTruth": {
+    "path": "docs/reviews/PHASE_0_ACCEPTED_BASELINE.md",
+    "expectedSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+    "actualSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+    "match": true
+  },
+  "protectedFiles": {
+    "declaredCount": 40,
+    "parsedCount": 40,
+    "checkedCount": 40,
+    "matchingCount": 40,
+    "missing": [],
+    "mismatches": []
+  },
+  "required": {
+    "AGENTS.md": {
+      "expectedSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "actualSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "match": true
+    },
+    "IDEA.md": {
+      "expectedSha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524",
+      "actualSha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524",
+      "match": true
+    }
+  }
+}
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "completed": [
+    "protected-baseline:pre",
+    "verify:pins",
+    "db:migrations:verify",
+    "auth:schema:verify",
+    "test:lifecycle-policy",
+    "format:check",
+    "lint",
+    "typecheck",
+    "architecture:check",
+    "test:unit",
+    "config:schema:check",
+    "stage3:corrections:verify",
+    "test:freeze-inputs",
+    "test:security-scanner",
+    "test:rejected-technologies",
+    "verify:rejected-technologies",
+    "security:scan:source",
+    "evidence:stage4:verify",
+    "security:scan:stage4",
+    "build",
+    "test:smoke",
+    "security:scan:bundles",
+    "protected-baseline:post"
+  ]
+}

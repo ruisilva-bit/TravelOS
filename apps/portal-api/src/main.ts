@@ -1,8 +1,13 @@
 import "reflect-metadata";
 
-import { loadDevelopmentInstanceManifest } from "@travelos/config";
+import { createAuthRealmPostgresDatabase, createPortalAuthRealm } from "@travelos/auth-adapters";
+import {
+  loadDevelopmentInstanceManifest,
+  readSystemdCredentialText,
+  type DevelopmentInstanceManifest,
+} from "@travelos/config";
 
-import { createPortalApi } from "./app.js";
+import { createPortalApi, type CreatePortalApiOptions } from "./app.js";
 
 const readRequiredArgument = (name: string): string => {
   const prefix = `${name}=`;
@@ -20,13 +25,67 @@ const readRequiredArgument = (name: string): string => {
   throw new Error(`Required argument is missing: ${name}`);
 };
 
+const createPortalAuthOptions = async (
+  manifest: DevelopmentInstanceManifest,
+): Promise<{
+  readonly options: CreatePortalApiOptions;
+  readonly destroy: () => Promise<void>;
+}> => {
+  const databaseCredential = await readSystemdCredentialText(
+    manifest.database.runtimeRoles.portalApi.credentialReference,
+  );
+  const realmKeyMaterial = await readSystemdCredentialText(
+    manifest.authentication.portalRealmCredentialReference,
+  );
+  const realmDatabase = createAuthRealmPostgresDatabase({
+    host: manifest.database.host,
+    port: manifest.database.port,
+    database: manifest.database.name,
+    user: manifest.database.runtimeRoles.portalApi.roleName,
+    password: databaseCredential,
+    tls: { mode: manifest.database.tlsPolicy },
+    applicationName: "travelos-portal-api",
+    maxConnections: 10,
+  });
+  try {
+    const realm = createPortalAuthRealm({
+      database: realmDatabase.database,
+      canonicalOrigin: `http://${manifest.hosts.portal}`,
+      realmKeyMaterial,
+      environment: manifest.environment,
+    });
+    return {
+      options: {
+        auth: {
+          realm,
+          policy: {
+            canonicalOrigin: `http://${manifest.hosts.portal}`,
+            expectedHost: manifest.hosts.portal,
+          },
+        },
+      },
+      destroy: () => realmDatabase.destroy(),
+    };
+  } catch (error) {
+    await realmDatabase.destroy();
+    throw error;
+  }
+};
+
 const main = async (): Promise<void> => {
   const manifestPath = readRequiredArgument("--manifest");
   const manifest = await loadDevelopmentInstanceManifest(manifestPath);
-  const application = await createPortalApi();
   const listener = manifest.runtime.listeners.portalApi;
+  const smoke = process.argv.includes("--smoke");
+  const runtime = smoke ? null : await createPortalAuthOptions(manifest);
+  const application = await createPortalApi(runtime?.options ?? {}).catch(
+    async (error: unknown) => {
+      await runtime?.destroy();
+      throw error;
+    },
+  );
 
-  if (process.argv.includes("--smoke")) {
+  if (smoke) {
     await application.listen(0, listener.host);
     const applicationUrl = new URL(await application.getUrl());
     const boundPort = Number.parseInt(applicationUrl.port, 10);
@@ -69,7 +128,11 @@ const main = async (): Promise<void> => {
     return;
   }
 
-  application.enableShutdownHooks(["SIGINT", "SIGTERM"]);
+  const shutdown = (): void => {
+    void application.close().finally(() => runtime?.destroy());
+  };
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
   await application.listen(listener.port, listener.host);
 };
 

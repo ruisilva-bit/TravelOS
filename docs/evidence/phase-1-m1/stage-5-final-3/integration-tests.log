@@ -1,0 +1,18 @@
+
+ RUN  v4.1.10 /home/hermes/projects/TravelOS
+
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > applies the new migration head and preserves the predecessor isolation boundary 24ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > creates the complete scoped continuity, itinerary, reservation/link and internal Money slice 58ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > increments workspace revision exactly once for a publication-relevant edit and not for internal-only cost edits 50ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > increments both workspace revisions when a child moves between trips 63ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > maps a real repeatable-read SQLSTATE 40001 to an M1 optimistic conflict 16ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > increments both workspace revisions when a dependency-free reservation moves between trips 50ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > serializes concurrent opposite-direction child moves without a revision deadlock 75ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > proves Agency and same-Trip constraints, wrong-family rejection and no float columns 83ms
+ ✓ tests/integration/stage-5-postgresql.test.ts > TravelOS Stage 5 disposable PostgreSQL qualification > keeps the repository Agency-scoped on reads 3ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  16:48:57
+   Duration  1.71s (transform 193ms, setup 0ms, import 468ms, tests 1.06s, environment 0ms)
+

@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "databaseOwner": "travelos_owner",
+  "schemaOwners": [
+    {
+      "schema_name": "activity",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "audit",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "communications",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "crm",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "documents",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "finance",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "integration",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "job_runtime",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "organization",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "portal_access",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "presentation",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "sales",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "staff_access",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "travelos_meta",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "trip_ops",
+      "owner_name": "travelos_owner"
+    },
+    {
+      "schema_name": "work_service",
+      "owner_name": "travelos_owner"
+    }
+  ],
+  "roles": [
+    {
+      "rolname": "travelos_admin_api",
+      "rolcanlogin": true,
+      "rolsuper": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolinherit": true,
+      "rolreplication": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "travelos_admin_runtime",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolinherit": false,
+      "rolreplication": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "travelos_migrator",
+      "rolcanlogin": true,
+      "rolsuper": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolinherit": false,
+      "rolreplication": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "travelos_owner",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolinherit": false,
+      "rolreplication": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "travelos_portal_api",
+      "rolcanlogin": true,
+      "rolsuper": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolinherit": true,
+      "rolreplication": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "travelos_portal_runtime",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolinherit": false,
+      "rolreplication": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "travelos_worker",
+      "rolcanlogin": true,
+      "rolsuper": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolinherit": true,
+      "rolreplication": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "travelos_worker_runtime",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolinherit": false,
+      "rolreplication": false,
+      "rolbypassrls": false
+    }
+  ],
+  "memberships": [
+    {
+      "member": "travelos_admin_api",
+      "granted_role": "travelos_admin_runtime",
+      "admin_option": false,
+      "inherit_option": true,
+      "set_option": false
+    },
+    {
+      "member": "travelos_migrator",
+      "granted_role": "travelos_owner",
+      "admin_option": false,
+      "inherit_option": false,
+      "set_option": true
+    },
+    {
+      "member": "travelos_portal_api",
+      "granted_role": "travelos_portal_runtime",
+      "admin_option": false,
+      "inherit_option": true,
+      "set_option": false
+    },
+    {
+      "member": "travelos_worker",
+      "granted_role": "travelos_worker_runtime",
+      "admin_option": false,
+      "inherit_option": true,
+      "set_option": false
+    }
+  ],
+  "membershipVerification": {
+    "result": "PASS",
+    "scope": "BIDIRECTIONAL_EITHER_ENDPOINT_IS_TRAVELOS",
+    "expectedMode": "EXACT_GRAPH_AND_OPTIONS",
+    "expectedCount": 4,
+    "actualCount": 4,
+    "missing": [],
+    "unexpected": [],
+    "duplicateActual": []
+  },
+  "bootstrapSharedDefinitionParity": "PASS",
+  "adversarialMembershipVerification": {
+    "externalOwnerEdgeRejected": true,
+    "externalRuntimeEdgeRejected": true,
+    "unrelatedEdgeIgnored": true,
+    "fixtureRolesRemoved": true
+  },
+  "databasePrivileges": [
+    {
+      "role_name": "travelos_admin_api",
+      "can_connect": true,
+      "can_create_temp": false,
+      "can_create_public": false
+    },
+    {
+      "role_name": "travelos_portal_api",
+      "can_connect": true,
+      "can_create_temp": false,
+      "can_create_public": false
+    },
+    {
+      "role_name": "travelos_worker",
+      "can_connect": true,
+      "can_create_temp": false,
+      "can_create_public": false
+    }
+  ],
+  "runtimeRolesAreOwners": false
+}

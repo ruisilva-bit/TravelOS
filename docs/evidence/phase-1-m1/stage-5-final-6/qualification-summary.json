@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "stage": "phase-1-m1/stage-5-final-6",
+  "result": "PASS",
+  "migrationHead": "0007_stage5_m1_domain_slice.cjs",
+  "migrationSha256": "a1f2e1ce9dcb50616cf71093d666573e5f468a6c92a9c704d1e83dfe739fafe2",
+  "focused": {
+    "result": "PASS",
+    "files": 5,
+    "tests": 22
+  },
+  "postgresql": {
+    "result": "PASS",
+    "version": "18.6",
+    "files": 1,
+    "tests": 12,
+    "cleanup": "PASS",
+    "ct200Actions": 0
+  },
+  "ci": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "gates": 24,
+    "node": "v24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0",
+    "logSha256": "7dc5794367bc59842d270ba23dc868dd85e097cd0be770b6c895bcc63e288993"
+  },
+  "sourceSafety": {
+    "result": "PASS",
+    "findings": 0,
+    "matchedValuesEmitted": false
+  },
+  "stage6Actions": 0
+}

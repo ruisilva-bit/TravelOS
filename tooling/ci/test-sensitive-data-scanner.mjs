@@ -98,6 +98,12 @@ try {
   assert.equal(approvedSafeFixture.result, "PASS");
   assert.equal(approvedSafeFixture.allowlistedFindingCount, 1);
 
+  const safeCodeReference = scanSensitiveText({
+    text: `${passwordKey}: runtimeCredentials.portal\n${passwordKey}: runtimeCredentials[role]\n`,
+    file: "fixtures/safe-code-credential-reference.ts",
+  });
+  assert.equal(safeCodeReference.findings.length, 0);
+
   console.log(
     JSON.stringify(
       {
@@ -107,6 +113,7 @@ try {
         outcomes,
         generatedBrowserAsset: "REJECTED_AS_EXPECTED",
         explicitSafeFixtureAllowlist: "PASS",
+        codeCredentialReferences: "PASS",
         matchedValuesEmitted: false,
       },
       null,

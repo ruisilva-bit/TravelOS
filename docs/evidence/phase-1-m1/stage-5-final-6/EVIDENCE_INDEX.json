@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "stage": "phase-1-m1/stage-5-final-6",
+  "result": "PASS",
+  "artifactCount": 13,
+  "aggregateSha256": "f1361785ff83c32d0a0faee73895ce9622e5610f70a17db0ca9ba7a9a1c1d92d",
+  "serialization": "newline-terminated records: relative-path<TAB>bytes<TAB>sha256, sorted by relative path",
+  "artifacts": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/ci-verify.log",
+      "bytes": 147187,
+      "sha256": "7dc5794367bc59842d270ba23dc868dd85e097cd0be770b6c895bcc63e288993"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/disposable-cleanup.json",
+      "bytes": 252,
+      "sha256": "6e159bfe3a19f492f573a23d53e28bec082f0eb799fd6402e6ad14e773dfddf9"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/focused-test-execution.json",
+      "bytes": 690,
+      "sha256": "4366907f848a1f818af246d192991d81c53811e046e36f6433ce9770951e0e9d"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/focused-tests.log",
+      "bytes": 3591,
+      "sha256": "98bac60e4b9d3578beec5077557958729e531632d1eacff1a1c41c634197d0d2"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/integration-test-execution.json",
+      "bytes": 457,
+      "sha256": "b190dc5b2baf4a7fe1324280145d5ca70b5e3180102a0e67f02f16439cae6339"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/integration-tests.log",
+      "bytes": 2529,
+      "sha256": "be35d0809aac9590837ff64986d02f3b868002a72ced9ed72f5e3a9cddccfcc3"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/migration-checksums.json",
+      "bytes": 1101,
+      "sha256": "435567bec7b275bb360ed38c7781492f48dff2195a1db498f5178996d07b767b"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/package-build.json",
+      "bytes": 219,
+      "sha256": "fbaf2f845e792cca64197ac69bb74072212183dabe39bb26ac7dacb8aaed146f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/postgresql-runtime.json",
+      "bytes": 292,
+      "sha256": "690483dc28f7f67dac2545f08e60b0793ee5e7b56db9ae397bd91f5947dc7aea"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/qualification-summary.json",
+      "bytes": 806,
+      "sha256": "bdb36b8fd4d283d22719fdee8d945d4b949af7ea40ef7e7109bd775b7991d87c"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/source-safety.json",
+      "bytes": 1344,
+      "sha256": "e9b2c20759de578ec27b68602360ce2da070baea2aee02a0365cf78fe1ad39fe"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-6/stage5-source-scope-test.log",
+      "bytes": 543,
+      "sha256": "c799a1575927df262aaebb748b0da7f42851b94d7ad0613bcdb1ec9ae7cbcbef"
+    }
+  ]
+}

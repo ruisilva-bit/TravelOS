@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "target": {
+    "proxmoxNode": "pxmx2",
+    "ct": 200,
+    "hostname": "travelos-dev",
+    "ip": "192.168.1.33"
+  },
+  "managementAccess": {
+    "method": "Proxmox HTTPS API plus LXC termproxy/VNC; temporary SSH key used only after console bootstrap",
+    "directProxmoxSshUsed": false,
+    "proxmoxRestLxcExecUsed": false,
+    "reason": "Direct Proxmox SSH was unavailable and the REST LXC exec endpoint returned HTTP 501",
+    "credentialValuesCaptured": false
+  },
+  "preState": {
+    "ctState": "running",
+    "operatingSystem": "Debian 13 Trixie",
+    "architecture": "amd64",
+    "unprivilegedLxc": true,
+    "cpuCount": 4,
+    "memoryGiB": 7.5,
+    "rootFilesystemGiB": 20,
+    "rootFilesystemFreeGiBApproximate": 18,
+    "postgresqlInstalled": false,
+    "postgresqlServiceActive": false,
+    "listeners": [
+      "ssh:22",
+      "postfix-loopback:25",
+      "dhcp-client"
+    ],
+    "postgresqlListenerPresent": false
+  },
+  "protectedStage2Baseline": {
+    "result": "PASS",
+    "tests": 40
+  },
+  "qualifiedDisposablePredecessor": {
+    "indexSha256": "a41501517ef8abffe0c402b10579f5e48cbe2e61c0e9cb6d34257b5dd30229a3",
+    "artifactCount": 19,
+    "aggregateSha256": "d33b48357df56701459a98d34bedb88f8ae8577156150950f1c025580276bcbf"
+  }
+}

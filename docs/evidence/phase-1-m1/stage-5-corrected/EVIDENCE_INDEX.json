@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "phase": "Phase 1 M1",
+  "stage": 5,
+  "generation": "corrected",
+  "scope": "Corrected M1 domain slice implementation, Admin contracts/API, disposable PostgreSQL qualification, correction matrix and full CI",
+  "result": "PASS",
+  "artifactCount": 11,
+  "aggregateAlgorithm": "sha256(path\\0bytes\\0sha256\\n ordered by path)",
+  "aggregateSha256": "c75fc5792a21e599e04b9bab62ccdfd2736613946e54e825c914705f29b94504",
+  "artifacts": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/ci-verify.log",
+      "bytes": 145648,
+      "sha256": "ed43ba06064410460d831f66340803d3a7c8a0c9ddf2b26ca38abcdcff80b488"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/disposable-cleanup.json",
+      "bytes": 252,
+      "sha256": "6e159bfe3a19f492f573a23d53e28bec082f0eb799fd6402e6ad14e773dfddf9"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/focused-tests.log",
+      "bytes": 217,
+      "sha256": "c4f027c15f271a0f06e94c75f48f7ec30b9f3ccdc73256038824f31f613dea33"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/integration-test-execution.json",
+      "bytes": 457,
+      "sha256": "eff9901d2c0f6023dfdb19f442345a012cb0a4853c64911b4ffed306156876db"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/integration-tests.log",
+      "bytes": 1369,
+      "sha256": "b2a94ba69e4922517638beda57bc13dc79458cd514447a00750cd20ac808fd3e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/migration-checksums.json",
+      "bytes": 1101,
+      "sha256": "bf522447f7fefb24d1a14979b4e66a4c56fe765521c2d25a9d4ba7bcb8c2d86d"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/package-build.json",
+      "bytes": 219,
+      "sha256": "0904660206268b975eca5501a45fe8c63c59f59feafd607eb69a9aace0b6a9b1"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/postgresql-runtime.json",
+      "bytes": 292,
+      "sha256": "690483dc28f7f67dac2545f08e60b0793ee5e7b56db9ae397bd91f5947dc7aea"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/qualification-summary.json",
+      "bytes": 858,
+      "sha256": "f7761d3484c1c9bd6ffa318c0c4cb665950fb5de799b504c1711765c5371a45d"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-corrected/source-safety.json",
+      "bytes": 1013,
+      "sha256": "263a3f35ce9591a53fe64b30cff956170f198bd9e3e9a72f308c858daa71e395"
+    }
+  ]
+}

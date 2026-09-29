@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "command": "pnpm run ci:verify",
+  "exitCode": 0,
+  "completedGateCount": 19,
+  "completionMarkerPresent": true,
+  "logBytes": 116230,
+  "logSha256": "4a7a30b8ff2ba5e0d3cfe8985f94f6f3726ba468563f4267c1812af8911d0788",
+  "requiredCoverage": [
+    "protected baseline pre/post",
+    "dependency and pin policy",
+    "migration checksums",
+    "format and lint",
+    "typecheck",
+    "architecture and dependency universe",
+    "backend-core vendor independence",
+    "Portal package isolation",
+    "configuration schema drift",
+    "freeze-input determinism and fail-closed completeness",
+    "rejected technology scan",
+    "sensitive-data scans",
+    "unit tests",
+    "build and smoke"
+  ],
+  "ct200Actions": 0,
+  "stage4Executed": false
+}

@@ -33,7 +33,7 @@ The generated document owns every directly representable constraint, including:
 - literals, types, bounded integers, and string patterns;
 - exact `hostAllowlist` length and one `ADMIN` plus one `PORTAL` entry;
 - listener host grammar and port range;
-- exact database credential-reference object shape;
+- exact Admin, Portal, and Worker database role identities and credential-reference object shapes;
 - compatibility, bootstrap, feature, and safe-limit shapes.
 
 ### Runtime-only invariants
@@ -44,5 +44,6 @@ The authoritative Zod parser additionally enforces cross-field comparisons that 
 - Admin/Portal canonical host inequality;
 - allowlist host equality with each declared surface host;
 - allowlist host uniqueness projected across otherwise different objects.
+- pairwise inequality of the Admin, Portal, and Worker database credential references.
 
 The machine-readable source of this split is `instanceManifestInvariantRegistry`, exported by `@travelos/config` and embedded in generated JSON Schema as `x-travelos-invariant-registry`. Consumers must run `parseDevelopmentInstanceManifest`; JSON Schema validation alone is intentionally insufficient for runtime-only invariants.

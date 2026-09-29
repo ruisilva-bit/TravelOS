@@ -13,6 +13,18 @@ type ListenerRecords = {
   adminApi: Record<string, unknown>;
   portalApi: Record<string, unknown>;
 };
+type RuntimeRoleRecords = Record<"adminApi" | "portalApi" | "worker", Record<string, unknown>>;
+type AuthenticationRecords = Record<
+  "staffRealmCredentialReference" | "portalRealmCredentialReference",
+  unknown
+>;
+
+const runtimeRolesOf = (candidate: Record<string, unknown>): RuntimeRoleRecords => {
+  const database = candidate["database"] as Record<string, unknown>;
+  return database["runtimeRoles"] as RuntimeRoleRecords;
+};
+const authenticationOf = (candidate: Record<string, unknown>): AuthenticationRecords =>
+  candidate["authentication"] as AuthenticationRecords;
 
 describe("development instance manifest", () => {
   it("accepts the safe repository example", () => {
@@ -26,6 +38,30 @@ describe("development instance manifest", () => {
       { host: "admin.travelos.test", surface: "ADMIN" },
       { host: "portal.travelos.test", surface: "PORTAL" },
     ]);
+    expect(manifest.database).toEqual({
+      host: "127.0.0.1",
+      port: 5432,
+      name: "travelos_development",
+      tlsPolicy: "DISABLED_LOOPBACK_ONLY",
+      runtimeRoles: {
+        adminApi: {
+          roleName: "travelos_admin_api",
+          credentialReference: "systemd-credential:admin-api-db",
+        },
+        portalApi: {
+          roleName: "travelos_portal_api",
+          credentialReference: "systemd-credential:portal-api-db",
+        },
+        worker: {
+          roleName: "travelos_worker",
+          credentialReference: "systemd-credential:worker-db",
+        },
+      },
+    });
+    expect(manifest.authentication).toEqual({
+      staffRealmCredentialReference: "systemd-credential:staff-auth-realm",
+      portalRealmCredentialReference: "systemd-credential:portal-auth-realm",
+    });
   });
 
   it("rejects an unknown root key", () => {
@@ -81,6 +117,63 @@ describe("development instance manifest", () => {
     database["connectionString"] = "forbidden";
     expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(
       /Secret-like configuration field is forbidden/,
+    );
+  });
+
+  it("rejects a non-loopback database host", () => {
+    const candidate = copyManifest();
+    const database = candidate["database"] as Record<string, unknown>;
+    database["host"] = "192.168.1.33";
+    expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow();
+  });
+
+  it.each([
+    ["adminApi", "travelos_portal_api"],
+    ["portalApi", "travelos_admin_api"],
+    ["worker", "travelos_portal_api"],
+    ["portalApi", "travelos_owner"],
+    ["portalApi", "travelos_migrator"],
+    ["portalApi", "travelos_portal_runtime"],
+    ["adminApi", "travelos_admin_runtime"],
+    ["worker", "travelos_worker_runtime"],
+  ] as const)("rejects %s database identity %s", (processName, roleName) => {
+    const candidate = copyManifest();
+    runtimeRolesOf(candidate)[processName]["roleName"] = roleName;
+    expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow();
+  });
+
+  it.each([
+    ["adminApi", "portalApi"],
+    ["adminApi", "worker"],
+    ["portalApi", "worker"],
+  ] as const)(
+    "rejects duplicate credential references for %s and %s",
+    (sourceProcess, duplicateProcess) => {
+      const candidate = copyManifest();
+      const roles = runtimeRolesOf(candidate);
+      roles[duplicateProcess]["credentialReference"] = roles[sourceProcess]["credentialReference"];
+      expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(
+        /Credential references must be pairwise distinct/,
+      );
+    },
+  );
+
+  it("rejects duplicate Staff and Portal realm credential references", () => {
+    const candidate = copyManifest();
+    const authentication = authenticationOf(candidate);
+    authentication["portalRealmCredentialReference"] =
+      authentication["staffRealmCredentialReference"];
+    expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(
+      /Credential references must be pairwise distinct/,
+    );
+  });
+
+  it("rejects a realm credential reference reused by a database process", () => {
+    const candidate = copyManifest();
+    authenticationOf(candidate)["staffRealmCredentialReference"] =
+      runtimeRolesOf(candidate)["adminApi"]["credentialReference"];
+    expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(
+      /Credential references must be pairwise distinct/,
     );
   });
 

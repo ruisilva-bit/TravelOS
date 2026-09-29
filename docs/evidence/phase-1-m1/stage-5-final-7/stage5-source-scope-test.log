@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "filesScanned": 391,
+  "coverage": {
+    "apps": 43,
+    "packages": 92,
+    "tooling": 89,
+    "tests": 4,
+    "migrations": 8,
+    "deploy": 3,
+    "workflows": 1,
+    "stage5Evidence": 114,
+    "stage5ReviewMarkdown": 27
+  },
+  "omissionProbe": {
+    "omittedSourcePath": "migrations/0007_stage5_m1_domain_slice.cjs",
+    "result": "FAIL"
+  },
+  "evidenceOmissionProbe": {
+    "omittedEvidenceIndex": "docs/evidence/phase-1-m1/stage-5-corrected/EVIDENCE_INDEX.json",
+    "result": "FAIL",
+    "matrix": [
+      {
+        "omittedIndex": "docs/evidence/phase-1-m1/stage-5-corrected/EVIDENCE_INDEX.json",
+        "result": "FAIL",
+        "missing": [
+          "docs/evidence/phase-1-m1/stage-5-corrected/EVIDENCE_INDEX.json"
+        ]
+      },
+      {
+        "omittedIndex": "docs/evidence/phase-1-m1/stage-5-final-2/EVIDENCE_INDEX.json",
+        "result": "FAIL",
+        "missing": [
+          "docs/evidence/phase-1-m1/stage-5-final-2/EVIDENCE_INDEX.json"
+        ]
+      },
+      {
+        "omittedIndex": "docs/evidence/phase-1-m1/stage-5-final-3/EVIDENCE_INDEX.json",
+        "result": "FAIL",
+        "missing": [
+          "docs/evidence/phase-1-m1/stage-5-final-3/EVIDENCE_INDEX.json"
+        ]
+      },
+      {
+        "omittedIndex": "docs/evidence/phase-1-m1/stage-5-final-4/EVIDENCE_INDEX.json",
+        "result": "FAIL",
+        "missing": [
+          "docs/evidence/phase-1-m1/stage-5-final-4/EVIDENCE_INDEX.json"
+        ]
+      },
+      {
+        "omittedIndex": "docs/evidence/phase-1-m1/stage-5-final-5/EVIDENCE_INDEX.json",
+        "result": "FAIL",
+        "missing": [
+          "docs/evidence/phase-1-m1/stage-5-final-5/EVIDENCE_INDEX.json"
+        ]
+      },
+      {
+        "omittedIndex": "docs/evidence/phase-1-m1/stage-5-final-6/EVIDENCE_INDEX.json",
+        "result": "FAIL",
+        "missing": [
+          "docs/evidence/phase-1-m1/stage-5-final-6/EVIDENCE_INDEX.json"
+        ]
+      },
+      {
+        "omittedIndex": "docs/evidence/phase-1-m1/stage-5-final-7/EVIDENCE_INDEX.json",
+        "result": "FAIL",
+        "missing": [
+          "docs/evidence/phase-1-m1/stage-5-final-7/EVIDENCE_INDEX.json"
+        ]
+      },
+      {
+        "omittedIndex": "docs/evidence/phase-1-m1/stage-5-final/EVIDENCE_INDEX.json",
+        "result": "FAIL",
+        "missing": [
+          "docs/evidence/phase-1-m1/stage-5-final/EVIDENCE_INDEX.json"
+        ]
+      },
+      {
+        "omittedIndex": "docs/evidence/phase-1-m1/stage-5/EVIDENCE_INDEX.json",
+        "result": "FAIL",
+        "missing": [
+          "docs/evidence/phase-1-m1/stage-5/EVIDENCE_INDEX.json"
+        ]
+      }
+    ]
+  }
+}

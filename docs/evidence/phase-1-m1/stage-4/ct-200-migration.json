@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "phase": "Phase 1 M1",
+  "stage": 4,
+  "result": "PASS",
+  "target": {
+    "ct": 200,
+    "guest": "travelos-dev",
+    "transport": "loopback SSH tunnel",
+    "database": "travelos_development"
+  },
+  "preMigration": {
+    "serverVersionNumber": 180006,
+    "migrationLedger": [
+      "0001_foundation_schemas",
+      "0002_runtime_schema_boundaries",
+      "0003_creator_default_privileges"
+    ],
+    "currentMigration": "0003_creator_default_privileges"
+  },
+  "verifiedMigrationCount": 5,
+  "appliedMigrations": [
+    "0004_authentication_realms",
+    "0005_root_agency_staff_authorization"
+  ],
+  "appliedAtUtc": "2026-09-21T12:28:32.671Z",
+  "finalMigrationLedger": [
+    "0001_foundation_schemas",
+    "0002_runtime_schema_boundaries",
+    "0003_creator_default_privileges",
+    "0004_authentication_realms",
+    "0005_root_agency_staff_authorization"
+  ],
+  "currentMigration": "0005_root_agency_staff_authorization",
+  "migrationPolicy": {
+    "authority": "TravelOS node-pg-migrate 9.0.0 chain",
+    "direction": "up",
+    "singleTransaction": true,
+    "advisoryLock": true,
+    "advisoryLockMode": "fail",
+    "downPolicy": "disabled; rollback is compatible artifact rollback, restore, or forward fix"
+  },
+  "durationMs": 174,
+  "credentialsCaptured": false,
+  "applicationDeployment": false,
+  "productionCredentials": false
+}

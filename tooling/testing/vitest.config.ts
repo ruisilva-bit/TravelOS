@@ -12,6 +12,10 @@ export default defineConfig({
         replacement: source("packages/contracts/src/admin/index.ts"),
       },
       {
+        find: "@travelos/backend-core",
+        replacement: source("packages/backend-core/src/index.ts"),
+      },
+      {
         find: "@travelos/contracts/portal",
         replacement: source("packages/contracts/src/portal/index.ts"),
       },
