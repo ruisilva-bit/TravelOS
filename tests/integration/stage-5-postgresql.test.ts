@@ -62,6 +62,30 @@ let repository: ReturnType<typeof createM1OperationalSliceRepository>;
 let staffAccessRepository: ReturnType<typeof createStaffAccessRepository>;
 let slice: M1TripSlice;
 
+const primaryFlight = (value: M1TripSlice): M1TripSlice["flights"][number] => {
+  const item = value.flights[0];
+  if (item === undefined) throw new Error("Qualification Trip has no Flight");
+  return item;
+};
+
+const primaryAccommodation = (value: M1TripSlice): M1TripSlice["accommodations"][number] => {
+  const item = value.accommodations[0];
+  if (item === undefined) throw new Error("Qualification Trip has no Accommodation");
+  return item;
+};
+
+const primaryReservation = (value: M1TripSlice): M1TripSlice["reservations"][number] => {
+  const item = value.reservations[0];
+  if (item === undefined) throw new Error("Qualification Trip has no Reservation");
+  return item;
+};
+
+const primarySupplierCost = (value: M1TripSlice): M1TripSlice["supplierCosts"][number] => {
+  const item = value.supplierCosts[0];
+  if (item === undefined) throw new Error("Qualification Trip has no supplier cost");
+  return item;
+};
+
 const clientFor = async (user: string, database = databaseName): Promise<Client> => {
   const client = new Client({
     host,
@@ -321,7 +345,7 @@ afterAll(async () => {
 describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () => {
   it("applies the new migration head and preserves the predecessor isolation boundary", async () => {
     const status = await inspectMigrationStatus(migrationTarget, productionChain);
-    expect(status.currentVersion).toBe("0007_stage5_m1_domain_slice");
+    expect(status.currentVersion).toBe("0008_stage5_cardinality_only");
     const bootstrapInput = {
       agencyId,
       bootstrapReference: "stage5-qualification",
@@ -349,12 +373,12 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     expect(slice.person.agencyId).toBe(agencyId);
     expect(slice.customerPerson.personId).toBe(slice.person.id);
     expect(slice.traveller.tripId).toBe(slice.trip.id);
-    expect(slice.flight.family).toBe("FLIGHT");
-    expect(slice.accommodation.family).toBe("ACCOMMODATION");
+    expect(primaryFlight(slice).family).toBe("FLIGHT");
+    expect(primaryAccommodation(slice).family).toBe("ACCOMMODATION");
     expect(slice.reservationItemLinks).toHaveLength(2);
     expect(slice.reservationItemLinks.every((link) => link.tripId === slice.trip.id)).toBe(true);
-    expect(slice.supplierCost.classification).toBe("INTERNAL_ONLY");
-    expect(slice.supplierCost.amount.minorUnits).toBe(12345n);
+    expect(primarySupplierCost(slice).classification).toBe("INTERNAL_ONLY");
+    expect(primarySupplierCost(slice).amount.minorUnits).toBe(12345n);
     expect(slice.trip.workspaceRevision).toBe(1n);
   });
 
@@ -362,19 +386,21 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const edited = await updateM1Accommodation(repository, {
       agencyId,
       tripId: slice.trip.id,
-      itemId: slice.accommodation.id,
-      expectedLockVersion: slice.accommodation.lockVersion,
+      itemId: primaryAccommodation(slice).id,
+      expectedLockVersion: primaryAccommodation(slice).lockVersion,
       title: "Porto hotel updated",
       description: "Updated synthetic accommodation",
     });
     expect(edited.trip.workspaceRevision).toBe(slice.trip.workspaceRevision + 1n);
-    expect(edited.accommodation.lockVersion).toBe(slice.accommodation.lockVersion + 1);
+    expect(primaryAccommodation(edited).lockVersion).toBe(
+      primaryAccommodation(slice).lockVersion + 1,
+    );
     await expect(
       updateM1Accommodation(repository, {
         agencyId,
         tripId: slice.trip.id,
-        itemId: slice.accommodation.id,
-        expectedLockVersion: slice.accommodation.lockVersion,
+        itemId: primaryAccommodation(slice).id,
+        expectedLockVersion: primaryAccommodation(slice).lockVersion,
         title: "Stale write",
         description: "Must fail",
       }),
@@ -382,27 +408,27 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const internal = await updateM1InternalSupplierNote(repository, {
       agencyId,
       tripId: slice.trip.id,
-      reservationId: slice.reservation.id,
-      expectedLockVersion: slice.supplierCost.lockVersion,
+      reservationId: primaryReservation(slice).id,
+      expectedLockVersion: primarySupplierCost(slice).lockVersion,
       internalNote: "Updated internal-only note",
     });
     expect(internal.trip.workspaceRevision).toBe(edited.trip.workspaceRevision);
-    expect(internal.supplierCost.internalNote).toBe("Updated internal-only note");
+    expect(primarySupplierCost(internal).internalNote).toBe("Updated internal-only note");
 
     const concurrent = await Promise.allSettled([
       updateM1Accommodation(repository, {
         agencyId,
         tripId: slice.trip.id,
-        itemId: slice.accommodation.id,
-        expectedLockVersion: edited.accommodation.lockVersion,
+        itemId: primaryAccommodation(slice).id,
+        expectedLockVersion: primaryAccommodation(edited).lockVersion,
         title: "Concurrent accommodation A",
         description: "Concurrent description A",
       }),
       updateM1Accommodation(repository, {
         agencyId,
         tripId: slice.trip.id,
-        itemId: slice.accommodation.id,
-        expectedLockVersion: edited.accommodation.lockVersion,
+        itemId: primaryAccommodation(slice).id,
+        expectedLockVersion: primaryAccommodation(edited).lockVersion,
         title: "Concurrent accommodation B",
         description: "Concurrent description B",
       }),
@@ -997,21 +1023,21 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       ]);
       await Promise.all([
         firstClient.query(
-          `SELECT "lockVersion" FROM "finance"."supplier_cost_line" WHERE "id" = '${slice.supplierCost.id}'::uuid`,
+          `SELECT "lockVersion" FROM "finance"."supplier_cost_line" WHERE "id" = '${primarySupplierCost(slice).id}'::uuid`,
         ),
         secondClient.query(
-          `SELECT "lockVersion" FROM "finance"."supplier_cost_line" WHERE "id" = '${slice.supplierCost.id}'::uuid`,
+          `SELECT "lockVersion" FROM "finance"."supplier_cost_line" WHERE "id" = '${primarySupplierCost(slice).id}'::uuid`,
         ),
       ]);
       await firstClient.query(
         `UPDATE "finance"."supplier_cost_line"
             SET "internalNote" = 'Serialization winner', "lockVersion" = "lockVersion" + 1
-          WHERE "id" = '${slice.supplierCost.id}'::uuid`,
+          WHERE "id" = '${primarySupplierCost(slice).id}'::uuid`,
       );
       const blockedUpdate = secondClient.query(
         `UPDATE "finance"."supplier_cost_line"
             SET "internalNote" = 'Serialization loser', "lockVersion" = "lockVersion" + 1
-          WHERE "id" = '${slice.supplierCost.id}'::uuid`,
+          WHERE "id" = '${primarySupplierCost(slice).id}'::uuid`,
       );
       await firstClient.query("COMMIT");
       await blockedUpdate.catch((error: unknown) => {
@@ -1194,6 +1220,182 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     }
   });
 
+  it("persists and reads plural typed itinerary items, reservations and many-to-many links", async () => {
+    const input = baseInput();
+    const seeded = await createM1TripSlice(repository, {
+      ...input,
+      trip: { ...input.trip, title: "Plural cardinality qualification" },
+    });
+    const secondFlightId = randomUUID();
+    const secondAccommodationId = randomUUID();
+    const secondReservationId = randomUUID();
+    const thirdReservationId = randomUUID();
+    const secondReservationReference = `SUP-${randomUUID()}`;
+    const thirdReservationReference = `SUP-${randomUUID()}`;
+
+    await withOwnerTransaction(async (client) => {
+      await client.query(
+        `INSERT INTO "trip_ops"."itinerary_item"
+           ("id", "agencyId", "tripId", "family", "state", "sortOrder", "customerTitle", "customerDescription")
+         VALUES
+           ($1::uuid, $2::uuid, $3::uuid, 'FLIGHT', 'CONFIRMED', 3, 'Return flight', 'Synthetic return flight'),
+           ($4::uuid, $2::uuid, $3::uuid, 'ACCOMMODATION', 'CONFIRMED', 4, 'Second hotel', 'Synthetic second stay')`,
+        [secondFlightId, agencyId, seeded.trip.id, secondAccommodationId],
+      );
+      await client.query(
+        `INSERT INTO "trip_ops"."flight_item_detail"
+           ("agencyId", "tripId", "itemId", "carrier", "flightNumber", "departureAirport", "arrivalAirport",
+            "departureDate", "departureTime", "departureTimezone", "departureInstant", "arrivalDate", "arrivalTime",
+            "arrivalTimezone", "arrivalInstant")
+         VALUES
+           ($1::uuid, $2::uuid, $3::uuid, 'Example Air', 'EA200', 'LIS', 'MAD',
+            '2026-09-25', '11:00', 'Europe/Lisbon', '2026-09-25T10:00:00Z', '2026-09-25', '12:30',
+            'Europe/Lisbon', '2026-09-25T11:30:00Z')`,
+        [agencyId, seeded.trip.id, secondFlightId],
+      );
+      await client.query(
+        `INSERT INTO "trip_ops"."accommodation_item_detail"
+           ("agencyId", "tripId", "itemId", "propertyName", "checkInDate", "checkInTime", "checkInTimezone", "checkInInstant",
+            "checkOutDate", "checkOutTime", "checkOutTimezone", "checkOutInstant")
+         VALUES
+           ($1::uuid, $2::uuid, $3::uuid, 'Example Inn', '2026-09-25', '16:00', 'Europe/Lisbon', '2026-09-25T15:00:00Z',
+            '2026-09-27', '10:00', 'Europe/Lisbon', '2026-09-27T09:00:00Z')`,
+        [agencyId, seeded.trip.id, secondAccommodationId],
+      );
+      await client.query(
+        `INSERT INTO "trip_ops"."reservation"
+           ("id", "agencyId", "tripId", "supplierName", "supplierReference", "state")
+         VALUES
+           ($1::uuid, $2::uuid, $3::uuid, 'Example Supplier', $4, 'CONFIRMED'),
+           ($5::uuid, $2::uuid, $3::uuid, 'Example Supplier', $6, 'CONFIRMED')`,
+        [
+          secondReservationId,
+          agencyId,
+          seeded.trip.id,
+          secondReservationReference,
+          thirdReservationId,
+          thirdReservationReference,
+        ],
+      );
+      await client.query(
+        `INSERT INTO "trip_ops"."reservation_item_link"
+           ("agencyId", "tripId", "reservationId", "itineraryItemId", "linkRole")
+         VALUES
+           ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'PRIMARY'),
+           ($1::uuid, $2::uuid, $5::uuid, $6::uuid, 'PRIMARY'),
+           ($1::uuid, $2::uuid, $5::uuid, $4::uuid, 'SECONDARY')`,
+        [
+          agencyId,
+          seeded.trip.id,
+          secondReservationId,
+          secondFlightId,
+          thirdReservationId,
+          primaryFlight(seeded).id,
+        ],
+      );
+    });
+
+    const projected = await readM1TripSlice(repository, agencyId, seeded.trip.id);
+    if (projected === null) throw new Error("Plural qualification Trip was not readable");
+    const plural = projected;
+    expect(plural.flights.map((item) => [item.id, item.sortOrder])).toEqual([
+      [primaryFlight(seeded).id, 1],
+      [secondFlightId, 3],
+    ]);
+    expect(plural.accommodations.map((item) => [item.id, item.sortOrder])).toEqual([
+      [primaryAccommodation(seeded).id, 2],
+      [secondAccommodationId, 4],
+    ]);
+    const expectedReservationRows = await queryAsOwner<{ readonly id: string }>(
+      `SELECT "id"::text AS "id"
+         FROM "trip_ops"."reservation"
+        WHERE "agencyId" = '${agencyId}'::uuid AND "tripId" = '${seeded.trip.id}'::uuid
+        ORDER BY "createdAt", "id"`,
+    );
+    expect(plural.reservations.map((reservation) => reservation.id)).toEqual(
+      expectedReservationRows.map((reservation) => reservation.id),
+    );
+    expect(plural.reservations).toHaveLength(3);
+    const expectedLinkRows = await queryAsOwner<{
+      readonly reservationId: string;
+      readonly itineraryItemId: string;
+    }>(
+      `SELECT "reservationId"::text AS "reservationId", "itineraryItemId"::text AS "itineraryItemId"
+         FROM "trip_ops"."reservation_item_link"
+        WHERE "agencyId" = '${agencyId}'::uuid AND "tripId" = '${seeded.trip.id}'::uuid
+        ORDER BY "reservationId", "itineraryItemId"`,
+    );
+    expect(
+      plural.reservationItemLinks.map(({ reservationId, itineraryItemId }) => ({
+        reservationId,
+        itineraryItemId,
+      })),
+    ).toEqual(expectedLinkRows);
+    expect(plural.reservationItemLinks).toHaveLength(5);
+    const linkedItemIdsForFirstReservation = new Set(
+      plural.reservationItemLinks
+        .filter((link) => link.reservationId === primaryReservation(seeded).id)
+        .map((link) => link.itineraryItemId),
+    );
+    expect(linkedItemIdsForFirstReservation).toEqual(
+      new Set([primaryFlight(seeded).id, primaryAccommodation(seeded).id]),
+    );
+    expect(
+      plural.reservationItemLinks.filter(
+        (link) => link.itineraryItemId === primaryFlight(seeded).id,
+      ),
+    ).toHaveLength(2);
+    expect(plural.supplierCosts.map((cost) => cost.reservationId)).toEqual([
+      primaryReservation(seeded).id,
+    ]);
+    expect(plural.traveller.role).toBe("PRIMARY_TRAVELLER");
+
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `INSERT INTO "trip_ops"."reservation_item_link"
+             ("agencyId", "tripId", "reservationId", "itineraryItemId", "linkRole")
+           VALUES ('${agencyId}'::uuid, '${seeded.trip.id}'::uuid, '${primaryReservation(seeded).id}'::uuid,
+                   '${randomUUID()}'::uuid, 'PRIMARY')`,
+        ),
+      ),
+    ).toBe("reservation_link_item_trip_fk");
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `INSERT INTO "trip_ops"."reservation_item_link"
+             ("agencyId", "tripId", "reservationId", "itineraryItemId", "linkRole")
+           VALUES ('${agencyId}'::uuid, '${seeded.trip.id}'::uuid, '${randomUUID()}'::uuid,
+                   '${primaryFlight(seeded).id}'::uuid, 'PRIMARY')`,
+        ),
+      ),
+    ).toBe("reservation_link_reservation_trip_fk");
+    expect(
+      await queryErrorCode(() =>
+        withOwnerTransaction(async (client) => {
+          await client.query(
+            `INSERT INTO "trip_ops"."itinerary_item"
+               ("id", "agencyId", "tripId", "family", "state", "sortOrder", "customerTitle", "customerDescription")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, 'FLIGHT', 'DRAFT', 5, 'Incomplete flight', 'No detail row')`,
+            [randomUUID(), agencyId, seeded.trip.id],
+          );
+        }),
+      ),
+    ).toBe("P0001");
+    expect(
+      await queryErrorCode(() =>
+        withOwnerTransaction(async (client) => {
+          await client.query(
+            `INSERT INTO "trip_ops"."itinerary_item"
+               ("id", "agencyId", "tripId", "family", "state", "sortOrder", "customerTitle", "customerDescription")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, 'ACCOMMODATION', 'DRAFT', 6, 'Incomplete hotel', 'No detail row')`,
+            [randomUUID(), agencyId, seeded.trip.id],
+          );
+        }),
+      ),
+    ).toBe("P0001");
+  });
+
   it("proves Agency and same-Trip constraints, wrong-family rejection and no float columns", async () => {
     const secondInput = baseInput();
     const secondSlice = await createM1TripSlice(repository, {
@@ -1203,18 +1405,9 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     expect(
       await queryErrorConstraint(() =>
         queryAsOwner(
-          `INSERT INTO "trip_ops"."itinerary_item"
-             ("id", "agencyId", "tripId", "family", "state", "sortOrder", "customerTitle", "customerDescription")
-           VALUES ('${randomUUID()}'::uuid, '${agencyId}'::uuid, '${slice.trip.id}'::uuid, 'ACCOMMODATION', 'DRAFT', 2, 'Second hotel', 'Must be rejected')`,
-        ),
-      ),
-    ).toBe("itinerary_item_trip_family_unique");
-    expect(
-      await queryErrorConstraint(() =>
-        queryAsOwner(
           `UPDATE "trip_ops"."flight_item_detail"
               SET "departureTime" = TIME '24:00:00'
-            WHERE "itemId" = '${slice.flight.id}'::uuid`,
+            WHERE "itemId" = '${primaryFlight(slice).id}'::uuid`,
         ),
       ),
     ).toBe("flight_local_time_policy");
@@ -1223,7 +1416,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         queryAsOwner(
           `UPDATE "trip_ops"."accommodation_item_detail"
               SET "checkInTime" = TIME '24:00:00'
-            WHERE "itemId" = '${slice.accommodation.id}'::uuid`,
+            WHERE "itemId" = '${primaryAccommodation(slice).id}'::uuid`,
         ),
       ),
     ).toBe("accommodation_local_time_policy");
@@ -1232,7 +1425,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         queryAsOwner(
           `UPDATE "trip_ops"."flight_item_detail"
               SET "departureTime" = TIME '09:00:00.001'
-            WHERE "itemId" = '${slice.flight.id}'::uuid`,
+            WHERE "itemId" = '${primaryFlight(slice).id}'::uuid`,
         ),
       ),
     ).toBe("flight_local_time_policy");
@@ -1241,7 +1434,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         queryAsOwner(
           `UPDATE "trip_ops"."flight_item_detail"
               SET "departureInstant" = '2026-09-25T08:00:00.000001Z'::timestamptz
-            WHERE "itemId" = '${slice.flight.id}'::uuid`,
+            WHERE "itemId" = '${primaryFlight(slice).id}'::uuid`,
         ),
       ),
     ).toBe("flight_instant_precision_policy");
@@ -1250,7 +1443,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         queryAsOwner(
           `UPDATE "trip_ops"."flight_item_detail"
               SET "departureTimezone" = 'Mars/Phobos'
-            WHERE "itemId" = '${slice.flight.id}'::uuid`,
+            WHERE "itemId" = '${primaryFlight(slice).id}'::uuid`,
         ),
       ),
     ).toBe("scheduled_timezone_policy");
@@ -1259,7 +1452,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         queryAsOwner(
           `UPDATE "trip_ops"."flight_item_detail"
               SET "departureTimezone" = 'Asia/Kolkata'
-            WHERE "itemId" = '${slice.flight.id}'::uuid`,
+            WHERE "itemId" = '${primaryFlight(slice).id}'::uuid`,
         ),
       ),
     ).toBe("scheduled_timezone_policy");
@@ -1323,7 +1516,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         queryAsOwner(
           `UPDATE "trip_ops"."flight_item_detail"
               SET "departureTime" = TIME '09:01:00'
-            WHERE "itemId" = '${slice.flight.id}'::uuid`,
+            WHERE "itemId" = '${primaryFlight(slice).id}'::uuid`,
         ),
       ),
     ).toBe("scheduled_local_tuple_policy");
@@ -1332,7 +1525,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         queryAsOwner(
           `UPDATE "trip_ops"."accommodation_item_detail"
               SET "checkOutInstant" = '2026-09-28T10:00:00.000001Z'::timestamptz
-            WHERE "itemId" = '${slice.accommodation.id}'::uuid`,
+            WHERE "itemId" = '${primaryAccommodation(slice).id}'::uuid`,
         ),
       ),
     ).toBe("accommodation_instant_precision_policy");
@@ -1341,7 +1534,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         queryAsOwner(
           `UPDATE "trip_ops"."accommodation_item_detail"
               SET "checkOutTimezone" = 'Mars/Phobos'
-            WHERE "itemId" = '${slice.accommodation.id}'::uuid`,
+            WHERE "itemId" = '${primaryAccommodation(slice).id}'::uuid`,
         ),
       ),
     ).toBe("scheduled_timezone_policy");
@@ -1356,7 +1549,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       await queryErrorCode(() =>
         queryAsOwner(
           `INSERT INTO "trip_ops"."reservation_item_link" ("agencyId", "tripId", "reservationId", "itineraryItemId", "linkRole")
-           VALUES ('00000000-0000-4000-8000-000000000099'::uuid, '${slice.trip.id}'::uuid, '${slice.reservation.id}'::uuid, '${slice.flight.id}'::uuid, 'PRIMARY')`,
+           VALUES ('00000000-0000-4000-8000-000000000099'::uuid, '${slice.trip.id}'::uuid, '${primaryReservation(slice).id}'::uuid, '${primaryFlight(slice).id}'::uuid, 'PRIMARY')`,
         ),
       ),
     ).toBe("23503");
@@ -1364,7 +1557,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       await queryErrorConstraint(() =>
         queryAsOwner(
           `INSERT INTO "trip_ops"."reservation_item_link" ("agencyId", "tripId", "reservationId", "itineraryItemId", "linkRole")
-           VALUES ('${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${secondSlice.reservation.id}'::uuid, '${secondSlice.flight.id}'::uuid, 'PRIMARY')`,
+           VALUES ('${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${primaryReservation(secondSlice).id}'::uuid, '${primaryFlight(secondSlice).id}'::uuid, 'PRIMARY')`,
         ),
       ),
     ).toBe("reservation_link_reservation_trip_fk");
@@ -1373,7 +1566,18 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         queryAsOwner(
           `INSERT INTO "trip_ops"."flight_item_detail"
              ("agencyId", "tripId", "itemId", "carrier", "flightNumber", "departureAirport", "arrivalAirport", "departureDate", "departureTime", "departureTimezone", "departureInstant", "arrivalDate", "arrivalTime", "arrivalTimezone", "arrivalInstant")
-           VALUES ('${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${slice.accommodation.id}'::uuid, 'Bad', 'BAD', 'LIS', 'OPO', '2026-09-25', '09:00', 'Europe/Lisbon', '2026-09-25T08:00:00Z', '2026-09-25', '10:00', 'Europe/Lisbon', '2026-09-25T09:00:00Z')`,
+           VALUES ('${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${primaryAccommodation(slice).id}'::uuid, 'Bad', 'BAD', 'LIS', 'OPO', '2026-09-25', '09:00', 'Europe/Lisbon', '2026-09-25T08:00:00Z', '2026-09-25', '10:00', 'Europe/Lisbon', '2026-09-25T09:00:00Z')`,
+        ),
+      ),
+    ).toBe("P0001");
+    expect(
+      await queryErrorCode(() =>
+        queryAsOwner(
+          `INSERT INTO "trip_ops"."accommodation_item_detail"
+             ("agencyId", "tripId", "itemId", "propertyName", "checkInDate", "checkInTime", "checkInTimezone", "checkInInstant", "checkOutDate", "checkOutTime", "checkOutTimezone", "checkOutInstant")
+           VALUES ('${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${primaryFlight(slice).id}'::uuid,
+                   'Wrong-family detail', '2026-09-25', '15:00', 'Europe/Lisbon', '2026-09-25T14:00:00Z',
+                   '2026-09-28', '11:00', 'Europe/Lisbon', '2026-09-28T10:00:00Z')`,
         ),
       ),
     ).toBe("P0001");

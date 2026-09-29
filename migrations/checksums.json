@@ -29,6 +29,10 @@
     {
       "file": "0007_stage5_m1_domain_slice.cjs",
       "sha256": "e52672ef7d720488b7b274cef30f3c89d68d8dd88fc616dc8baf356ac5265ddf"
+    },
+    {
+      "file": "0008_stage5_cardinality_only.cjs",
+      "sha256": "8120a68cd1f8b9799029b818d8431f0c18fdd8683cf0554966263c43c9922d20"
     }
   ]
 }

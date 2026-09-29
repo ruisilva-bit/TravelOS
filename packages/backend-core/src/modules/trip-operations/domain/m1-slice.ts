@@ -119,11 +119,11 @@ export interface M1TripSlice {
   readonly customerPerson: CustomerPerson;
   readonly traveller: PrimaryTripTraveller;
   readonly trip: Trip;
-  readonly flight: FlightItem;
-  readonly accommodation: AccommodationItem;
-  readonly reservation: Reservation;
+  readonly flights: readonly FlightItem[];
+  readonly accommodations: readonly AccommodationItem[];
+  readonly reservations: readonly Reservation[];
   readonly reservationItemLinks: readonly ReservationItemLink[];
-  readonly supplierCost: SupplierCostLine;
+  readonly supplierCosts: readonly SupplierCostLine[];
 }
 
 export interface ReservationDraft {

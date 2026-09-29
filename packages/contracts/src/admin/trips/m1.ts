@@ -95,11 +95,11 @@ export const AdminM1TripSliceResponseSchema = z
     customerPerson: AdminCustomerPersonResponseSchema,
     traveller: AdminPrimaryTripTravellerResponseSchema,
     trip: AdminTripResponseSchema,
-    flight: AdminFlightResponseSchema,
-    accommodation: AdminAccommodationResponseSchema,
-    reservation: AdminReservationResponseSchema,
+    flights: z.array(AdminFlightResponseSchema),
+    accommodations: z.array(AdminAccommodationResponseSchema),
+    reservations: z.array(AdminReservationResponseSchema),
     reservationItemLinks: z.array(AdminReservationItemLinkResponseSchema),
-    supplierCost: AdminSupplierCostResponseSchema,
+    supplierCosts: z.array(AdminSupplierCostResponseSchema),
   })
   .strict();
 

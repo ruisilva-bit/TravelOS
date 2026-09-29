@@ -175,6 +175,97 @@ const scheduled = (
   }),
 });
 
+const mapFlightRow = (flight: FlightRow): M1TripSlice["flights"][number] => ({
+  id: asOpaqueId(flight.id),
+  agencyId: asOpaqueId(flight.agencyId),
+  tripId: asOpaqueId(flight.tripId),
+  family: "FLIGHT",
+  state: flight.state,
+  sortOrder: flight.sortOrder,
+  title: flight.title,
+  description: flight.description,
+  customerBookingReference: flight.customerBookingReference,
+  lockVersion: flight.lockVersion,
+  carrier: flight.carrier,
+  flightNumber: flight.flightNumber,
+  departureAirport: flight.departureAirport,
+  arrivalAirport: flight.arrivalAirport,
+  departure: scheduled(
+    flight.departureDate,
+    flight.departureTime,
+    flight.departureTimezone,
+    flight.departureInstant,
+  ),
+  arrival: scheduled(
+    flight.arrivalDate,
+    flight.arrivalTime,
+    flight.arrivalTimezone,
+    flight.arrivalInstant,
+  ),
+  terminal: flight.terminal,
+  cabin: flight.cabin,
+  baggage: flight.baggage,
+  seat: flight.seat,
+});
+
+const mapAccommodationRow = (
+  accommodation: AccommodationRow,
+): M1TripSlice["accommodations"][number] => ({
+  id: asOpaqueId(accommodation.id),
+  agencyId: asOpaqueId(accommodation.agencyId),
+  tripId: asOpaqueId(accommodation.tripId),
+  family: "ACCOMMODATION",
+  state: accommodation.state,
+  sortOrder: accommodation.sortOrder,
+  title: accommodation.title,
+  description: accommodation.description,
+  customerBookingReference: accommodation.customerBookingReference,
+  lockVersion: accommodation.lockVersion,
+  propertyName: accommodation.propertyName,
+  checkIn: scheduled(
+    accommodation.checkInDate,
+    accommodation.checkInTime,
+    accommodation.checkInTimezone,
+    accommodation.checkInInstant,
+  ),
+  checkOut: scheduled(
+    accommodation.checkOutDate,
+    accommodation.checkOutTime,
+    accommodation.checkOutTimezone,
+    accommodation.checkOutInstant,
+  ),
+  roomDescription: accommodation.roomDescription,
+  boardType: accommodation.boardType,
+});
+
+const mapReservationRow = (reservation: ReservationRow): M1TripSlice["reservations"][number] => ({
+  id: asOpaqueId(reservation.id),
+  agencyId: asOpaqueId(reservation.agencyId),
+  tripId: asOpaqueId(reservation.tripId),
+  supplierName: reservation.supplierName,
+  supplierReference: reservation.supplierReference,
+  customerBookingReference: reservation.customerBookingReference,
+  state: reservation.state,
+  lockVersion: reservation.lockVersion,
+});
+
+const mapSupplierCostRow = (
+  supplierCost: SupplierCostRow,
+): M1TripSlice["supplierCosts"][number] => ({
+  id: asOpaqueId(supplierCost.id),
+  agencyId: asOpaqueId(supplierCost.agencyId),
+  tripId: asOpaqueId(supplierCost.tripId),
+  reservationId: asOpaqueId(supplierCost.reservationId),
+  amount: createMoney(
+    supplierCost.amountMinor,
+    supplierCost.currencyCode,
+    supplierCost.currencyScale,
+  ),
+  internalNote: supplierCost.internalNote,
+  classification: supplierCost.classification,
+  lockVersion: supplierCost.lockVersion,
+});
+
 const readSlice = async (
   database: Kysely<DatabaseShape>,
   agencyId: OpaqueId,
@@ -257,9 +348,8 @@ const readSlice = async (
       `.execute(database)
     ).rows,
   );
-  const flight = first(
-    (
-      await sql<FlightRow>`
+  const flights = (
+    await sql<FlightRow>`
         SELECT item."id"::text AS "id", item."agencyId"::text AS "agencyId", item."tripId"::text AS "tripId",
                item."state", item."sortOrder", item."customerTitle" AS "title",
                item."customerDescription" AS "description", item."customerBookingReference",
@@ -274,13 +364,10 @@ const readSlice = async (
             ON detail."agencyId" = item."agencyId" AND detail."tripId" = item."tripId" AND detail."itemId" = item."id"
          WHERE item."agencyId" = ${agencyId}::uuid AND item."tripId" = ${tripId}::uuid
          ORDER BY item."sortOrder", item."id"
-         LIMIT 1
       `.execute(database)
-    ).rows,
-  );
-  const accommodation = first(
-    (
-      await sql<AccommodationRow>`
+  ).rows;
+  const accommodations = (
+    await sql<AccommodationRow>`
         SELECT item."id"::text AS "id", item."agencyId"::text AS "agencyId", item."tripId"::text AS "tripId",
                item."state", item."sortOrder", item."customerTitle" AS "title",
                item."customerDescription" AS "description", item."customerBookingReference",
@@ -293,47 +380,36 @@ const readSlice = async (
             ON detail."agencyId" = item."agencyId" AND detail."tripId" = item."tripId" AND detail."itemId" = item."id"
          WHERE item."agencyId" = ${agencyId}::uuid AND item."tripId" = ${tripId}::uuid
          ORDER BY item."sortOrder", item."id"
-         LIMIT 1
       `.execute(database)
-    ).rows,
-  );
-  const reservation = first(
-    (
-      await sql<ReservationRow>`
+  ).rows;
+  const reservations = (
+    await sql<ReservationRow>`
         SELECT "id"::text AS "id", "agencyId"::text AS "agencyId", "tripId"::text AS "tripId",
                "supplierName", "supplierReference", "customerBookingReference", "state", "lockVersion"
           FROM "trip_ops"."reservation"
          WHERE "agencyId" = ${agencyId}::uuid AND "tripId" = ${tripId}::uuid
          ORDER BY "createdAt", "id"
-         LIMIT 1
       `.execute(database)
-    ).rows,
-  );
-  const supplierCost = reservation
-    ? first(
-        (
-          await sql<SupplierCostRow>`
+  ).rows;
+  const supplierCosts = (
+    await sql<SupplierCostRow>`
             SELECT "id"::text AS "id", "agencyId"::text AS "agencyId", "tripId"::text AS "tripId",
                    "reservationId"::text AS "reservationId", "amountMinor"::text AS "amountMinor",
                    "currencyCode", "currencyScale", "internalNote", "classification", "lockVersion"
               FROM "finance"."supplier_cost_line"
              WHERE "agencyId" = ${agencyId}::uuid
                AND "tripId" = ${tripId}::uuid
-               AND "reservationId" = ${reservation.id}::uuid
              ORDER BY "createdAt", "id"
-             LIMIT 1
           `.execute(database)
-        ).rows,
-      )
-    : null;
+  ).rows;
   if (
     customer === null ||
     customerPerson === null ||
     traveller === null ||
-    flight === null ||
-    accommodation === null ||
-    reservation === null ||
-    supplierCost === null
+    flights.length === 0 ||
+    accommodations.length === 0 ||
+    reservations.length === 0 ||
+    supplierCosts.length === 0
   ) {
     throw new Error("M1 Trip slice is incomplete or violates its relational invariants");
   }
@@ -344,8 +420,6 @@ const readSlice = async (
         FROM "trip_ops"."reservation_item_link"
        WHERE "agencyId" = ${agencyId}::uuid
          AND "tripId" = ${tripId}::uuid
-         AND "reservationId" = ${reservation.id}::uuid
-         AND "itineraryItemId" IN (${flight.id}::uuid, ${accommodation.id}::uuid)
        ORDER BY "reservationId", "itineraryItemId"
     `.execute(database)
   ).rows;
@@ -388,75 +462,9 @@ const readSlice = async (
       workspaceRevision: BigInt(trip.workspaceRevision),
       lockVersion: trip.lockVersion,
     },
-    flight: {
-      id: asOpaqueId(flight.id),
-      agencyId: asOpaqueId(flight.agencyId),
-      tripId: asOpaqueId(flight.tripId),
-      family: "FLIGHT",
-      state: flight.state,
-      sortOrder: flight.sortOrder,
-      title: flight.title,
-      description: flight.description,
-      customerBookingReference: flight.customerBookingReference,
-      lockVersion: flight.lockVersion,
-      carrier: flight.carrier,
-      flightNumber: flight.flightNumber,
-      departureAirport: flight.departureAirport,
-      arrivalAirport: flight.arrivalAirport,
-      departure: scheduled(
-        flight.departureDate,
-        flight.departureTime,
-        flight.departureTimezone,
-        flight.departureInstant,
-      ),
-      arrival: scheduled(
-        flight.arrivalDate,
-        flight.arrivalTime,
-        flight.arrivalTimezone,
-        flight.arrivalInstant,
-      ),
-      terminal: flight.terminal,
-      cabin: flight.cabin,
-      baggage: flight.baggage,
-      seat: flight.seat,
-    },
-    accommodation: {
-      id: asOpaqueId(accommodation.id),
-      agencyId: asOpaqueId(accommodation.agencyId),
-      tripId: asOpaqueId(accommodation.tripId),
-      family: "ACCOMMODATION",
-      state: accommodation.state,
-      sortOrder: accommodation.sortOrder,
-      title: accommodation.title,
-      description: accommodation.description,
-      customerBookingReference: accommodation.customerBookingReference,
-      lockVersion: accommodation.lockVersion,
-      propertyName: accommodation.propertyName,
-      checkIn: scheduled(
-        accommodation.checkInDate,
-        accommodation.checkInTime,
-        accommodation.checkInTimezone,
-        accommodation.checkInInstant,
-      ),
-      checkOut: scheduled(
-        accommodation.checkOutDate,
-        accommodation.checkOutTime,
-        accommodation.checkOutTimezone,
-        accommodation.checkOutInstant,
-      ),
-      roomDescription: accommodation.roomDescription,
-      boardType: accommodation.boardType,
-    },
-    reservation: {
-      id: asOpaqueId(reservation.id),
-      agencyId: asOpaqueId(reservation.agencyId),
-      tripId: asOpaqueId(reservation.tripId),
-      supplierName: reservation.supplierName,
-      supplierReference: reservation.supplierReference,
-      customerBookingReference: reservation.customerBookingReference,
-      state: reservation.state,
-      lockVersion: reservation.lockVersion,
-    },
+    flights: flights.map(mapFlightRow),
+    accommodations: accommodations.map(mapAccommodationRow),
+    reservations: reservations.map(mapReservationRow),
     reservationItemLinks: links.map((link) => ({
       agencyId: asOpaqueId(link.agencyId),
       tripId: asOpaqueId(link.tripId),
@@ -464,20 +472,7 @@ const readSlice = async (
       itineraryItemId: asOpaqueId(link.itineraryItemId),
       linkRole: link.linkRole,
     })),
-    supplierCost: {
-      id: asOpaqueId(supplierCost.id),
-      agencyId: asOpaqueId(supplierCost.agencyId),
-      tripId: asOpaqueId(supplierCost.tripId),
-      reservationId: asOpaqueId(supplierCost.reservationId),
-      amount: createMoney(
-        supplierCost.amountMinor,
-        supplierCost.currencyCode,
-        supplierCost.currencyScale,
-      ),
-      internalNote: supplierCost.internalNote,
-      classification: supplierCost.classification,
-      lockVersion: supplierCost.lockVersion,
-    },
+    supplierCosts: supplierCosts.map(mapSupplierCostRow),
   };
 };
 

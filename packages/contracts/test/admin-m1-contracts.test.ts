@@ -137,46 +137,84 @@ describe("Stage 5 Admin contracts", () => {
         workspaceRevision: "1",
         lockVersion: 1,
       },
-      flight: {
-        ...baseRequest.flight,
-        id: baseRequest.agencyId,
-        agencyId: baseRequest.agencyId,
-        tripId: baseRequest.agencyId,
-        family: "FLIGHT",
-        state: "CONFIRMED",
-        sortOrder: 1,
-        lockVersion: 1,
-      },
-      accommodation: {
-        ...baseRequest.accommodation,
-        id: baseRequest.agencyId,
-        agencyId: baseRequest.agencyId,
-        tripId: baseRequest.agencyId,
-        family: "ACCOMMODATION",
-        state: "CONFIRMED",
-        sortOrder: 2,
-        lockVersion: 1,
-      },
-      reservation: {
-        id: baseRequest.agencyId,
-        agencyId: baseRequest.agencyId,
-        tripId: baseRequest.agencyId,
-        ...baseRequest.reservation,
-        lockVersion: 1,
-      },
+      flights: [
+        {
+          ...baseRequest.flight,
+          id: baseRequest.agencyId,
+          agencyId: baseRequest.agencyId,
+          tripId: baseRequest.agencyId,
+          family: "FLIGHT",
+          state: "CONFIRMED",
+          sortOrder: 1,
+          lockVersion: 1,
+        },
+      ],
+      accommodations: [
+        {
+          ...baseRequest.accommodation,
+          id: baseRequest.agencyId,
+          agencyId: baseRequest.agencyId,
+          tripId: baseRequest.agencyId,
+          family: "ACCOMMODATION",
+          state: "CONFIRMED",
+          sortOrder: 2,
+          lockVersion: 1,
+        },
+      ],
+      reservations: [
+        {
+          id: baseRequest.agencyId,
+          agencyId: baseRequest.agencyId,
+          tripId: baseRequest.agencyId,
+          ...baseRequest.reservation,
+          lockVersion: 1,
+        },
+      ],
       reservationItemLinks: [],
-      supplierCost: {
-        id: baseRequest.agencyId,
-        agencyId: baseRequest.agencyId,
-        tripId: baseRequest.agencyId,
-        reservationId: baseRequest.agencyId,
-        amount: baseRequest.supplierCost.amount,
-        internalNote: "Net",
-        classification: "INTERNAL_ONLY",
-        lockVersion: 1,
-      },
+      supplierCosts: [
+        {
+          id: baseRequest.agencyId,
+          agencyId: baseRequest.agencyId,
+          tripId: baseRequest.agencyId,
+          reservationId: baseRequest.agencyId,
+          amount: baseRequest.supplierCost.amount,
+          internalNote: "Net",
+          classification: "INTERNAL_ONLY",
+          lockVersion: 1,
+        },
+      ],
     });
     expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      const pluralResponse = AdminM1TripSliceResponseSchema.safeParse({
+        ...parsed.data,
+        flights: [
+          ...parsed.data.flights,
+          { ...parsed.data.flights[0]!, id: "00000000-0000-4000-8000-000000000002", sortOrder: 3 },
+        ],
+        accommodations: [
+          ...parsed.data.accommodations,
+          {
+            ...parsed.data.accommodations[0]!,
+            id: "00000000-0000-4000-8000-000000000003",
+            sortOrder: 4,
+          },
+        ],
+        reservations: [
+          ...parsed.data.reservations,
+          { ...parsed.data.reservations[0]!, id: "00000000-0000-4000-8000-000000000004" },
+        ],
+        supplierCosts: [
+          ...parsed.data.supplierCosts,
+          {
+            ...parsed.data.supplierCosts[0]!,
+            id: "00000000-0000-4000-8000-000000000005",
+            reservationId: "00000000-0000-4000-8000-000000000004",
+          },
+        ],
+      });
+      expect(pluralResponse.success).toBe(true);
+    }
     expect(
       AdminM1TripSliceResponseSchema.safeParse({
         ...(parsed.success ? parsed.data : {}),
@@ -189,10 +227,12 @@ describe("Stage 5 Admin contracts", () => {
     expect(
       AdminM1TripSliceResponseSchema.safeParse({
         ...(parsed.success ? parsed.data : {}),
-        supplierCost: {
-          ...(parsed.success ? parsed.data.supplierCost : {}),
-          amount: { minorUnits: 1, currency: "EUR", scale: 2 },
-        },
+        supplierCosts: [
+          {
+            ...(parsed.success ? parsed.data.supplierCosts[0] : {}),
+            amount: { minorUnits: 1, currency: "EUR", scale: 2 },
+          },
+        ],
       }).success,
     ).toBe(false);
   });
