@@ -237,6 +237,7 @@ try {
       ...runtimeEnvironment,
       TRAVELOS_STAGE5_PG_BIN: postgresBin,
       TRAVELOS_STAGE5_EVIDENCE_DIR: evidenceDirectory,
+      TRAVELOS_STAGE5_WORK_ROOT: workRoot,
     },
   );
   await writeFile(

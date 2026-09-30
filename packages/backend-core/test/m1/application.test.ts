@@ -162,8 +162,18 @@ describe("Stage 5 M1 application invariants", () => {
         agencyId,
         tripId: agencyId,
         itemId: agencyId,
-        expectedLockVersion: 1,
+        expectedLockVersion: 0n,
         title: "x".repeat(301),
+        description: "valid description",
+      }),
+    ).rejects.toThrow(M1InputValidationError);
+    await expect(
+      updateM1Accommodation(repository, {
+        agencyId,
+        tripId: agencyId,
+        itemId: agencyId,
+        expectedLockVersion: 1 as never,
+        title: "valid title",
         description: "valid description",
       }),
     ).rejects.toThrow(M1InputValidationError);
@@ -172,7 +182,25 @@ describe("Stage 5 M1 application invariants", () => {
         agencyId,
         tripId: agencyId,
         reservationId: agencyId,
-        expectedLockVersion: 1,
+        expectedLockVersion: -1n,
+        internalNote: "valid note",
+      }),
+    ).rejects.toThrow(M1InputValidationError);
+    await expect(
+      updateM1InternalSupplierNote(repository, {
+        agencyId,
+        tripId: agencyId,
+        reservationId: agencyId,
+        expectedLockVersion: 9_223_372_036_854_775_808n,
+        internalNote: "valid note",
+      }),
+    ).rejects.toThrow(M1InputValidationError);
+    await expect(
+      updateM1InternalSupplierNote(repository, {
+        agencyId,
+        tripId: agencyId,
+        reservationId: agencyId,
+        expectedLockVersion: 0n,
         internalNote: "x".repeat(10_001),
       }),
     ).rejects.toThrow(M1InputValidationError);

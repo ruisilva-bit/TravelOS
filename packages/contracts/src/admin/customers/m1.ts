@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { AdminLockVersionSchema } from "../lock-version.js";
 import { AdminOpaqueIdSchema } from "../money.js";
 
 export const AdminPersonDraftSchema = z
@@ -33,7 +34,7 @@ export const AdminPersonResponseSchema = z
     givenName: z.string(),
     familyName: z.string(),
     email: z.string().email().nullable(),
-    lockVersion: z.number().int().min(1),
+    lockVersion: AdminLockVersionSchema,
   })
   .strict();
 
@@ -42,7 +43,7 @@ export const AdminCustomerResponseSchema = z
     id: AdminOpaqueIdSchema,
     agencyId: AdminOpaqueIdSchema,
     displayName: z.string(),
-    lockVersion: z.number().int().min(1),
+    lockVersion: AdminLockVersionSchema,
   })
   .strict();
 

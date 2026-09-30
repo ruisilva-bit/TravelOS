@@ -6,6 +6,7 @@ export {
   AdminOpaqueIdSchema,
   type AdminMoney,
 } from "./money.js";
+export { AdminLockVersionSchema } from "./lock-version.js";
 export * from "./customers/index.js";
 export * from "./itinerary/index.js";
 export * from "./reservations/index.js";

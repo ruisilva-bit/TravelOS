@@ -23,7 +23,7 @@ export interface Trip {
   readonly endDate: string;
   readonly state: TripState;
   readonly workspaceRevision: bigint;
-  readonly lockVersion: number;
+  readonly lockVersion: bigint;
 }
 
 export interface FlightDraft {
@@ -63,7 +63,7 @@ export interface FlightItem {
   readonly title: string;
   readonly description: string;
   readonly customerBookingReference: string | null;
-  readonly lockVersion: number;
+  readonly lockVersion: bigint;
   readonly carrier: string;
   readonly flightNumber: string;
   readonly departureAirport: string;
@@ -86,7 +86,7 @@ export interface AccommodationItem {
   readonly title: string;
   readonly description: string;
   readonly customerBookingReference: string | null;
-  readonly lockVersion: number;
+  readonly lockVersion: bigint;
   readonly propertyName: string;
   readonly checkIn: ScheduledLocalDateTime;
   readonly checkOut: ScheduledLocalDateTime;
@@ -102,7 +102,7 @@ export interface Reservation {
   readonly supplierReference: string;
   readonly customerBookingReference: string | null;
   readonly state: ReservationState;
-  readonly lockVersion: number;
+  readonly lockVersion: bigint;
 }
 
 export interface ReservationItemLink {

@@ -5,6 +5,7 @@ import {
   AdminMoneySchema,
   AdminOpaqueIdSchema,
 } from "../money.js";
+import { AdminLockVersionSchema } from "../lock-version.js";
 
 export const AdminReservationStateSchema = z.enum([
   "PROVISIONAL",
@@ -33,7 +34,7 @@ export const AdminReservationResponseSchema = z
     supplierReference: z.string(),
     customerBookingReference: z.string().nullable(),
     state: AdminReservationStateSchema,
-    lockVersion: z.number().int().min(1),
+    lockVersion: AdminLockVersionSchema,
   })
   .strict();
 
@@ -63,7 +64,7 @@ export const AdminSupplierCostResponseSchema = z
     amount: AdminMoneySchema,
     internalNote: z.string(),
     classification: AdminInternalOnlyClassificationSchema,
-    lockVersion: z.number().int().min(1),
+    lockVersion: AdminLockVersionSchema,
   })
   .strict();
 
@@ -72,7 +73,7 @@ export const AdminSupplierCostNoteUpdateRequestSchema = z
     agencyId: AdminOpaqueIdSchema,
     tripId: AdminOpaqueIdSchema,
     reservationId: AdminOpaqueIdSchema,
-    expectedLockVersion: z.number().int().min(1),
+    expectedLockVersion: AdminLockVersionSchema,
     internalNote: z.string().trim().min(1).max(10_000),
   })
   .strict();

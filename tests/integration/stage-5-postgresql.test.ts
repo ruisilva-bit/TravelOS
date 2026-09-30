@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createHash } from "node:crypto";
+import { copyFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -47,6 +49,39 @@ const productionChain: MigrationChain = {
   directory: path.join(repositoryRoot, "migrations"),
   checksumManifestPath: path.join(repositoryRoot, "migrations/checksums.json"),
 };
+
+const createPredecessorMigrationChain = async (): Promise<MigrationChain> => {
+  const manifest = JSON.parse(await readFile(productionChain.checksumManifestPath, "utf8")) as {
+    readonly schemaVersion: number;
+    readonly algorithm: string;
+    readonly migrations: readonly { readonly file: string; readonly sha256: string }[];
+  };
+  const predecessorMigrations = manifest.migrations.filter(
+    ({ file }) => file !== "0009_stage5_revision_and_lock_version_hardening.cjs",
+  );
+  if (predecessorMigrations.length !== 8) {
+    throw new Error("The Stage 5 predecessor migration chain must end at migration 0008");
+  }
+  const workRoot = process.env["TRAVELOS_STAGE5_WORK_ROOT"];
+  if (workRoot === undefined || !path.resolve(workRoot).startsWith(`${os.tmpdir()}${path.sep}`)) {
+    throw new Error("Stage 5 predecessor migrations must stay inside the disposable work root");
+  }
+  const directory = await mkdtemp(path.join(workRoot, "predecessor-migrations-"));
+  predecessorMigrationDirectory = directory;
+  for (const migration of predecessorMigrations) {
+    await copyFile(
+      path.join(productionChain.directory, migration.file),
+      path.join(directory, migration.file),
+    );
+  }
+  const checksumManifestPath = path.join(directory, "checksums.json");
+  await writeFile(
+    checksumManifestPath,
+    `${JSON.stringify({ ...manifest, migrations: predecessorMigrations }, null, 2)}\n`,
+  );
+  return { directory, checksumManifestPath };
+};
+
 const migrationTarget: MigrationTarget = {
   host,
   port,
@@ -61,6 +96,8 @@ let persistence: PostgresPersistence<Record<string, never>> | null = null;
 let repository: ReturnType<typeof createM1OperationalSliceRepository>;
 let staffAccessRepository: ReturnType<typeof createStaffAccessRepository>;
 let slice: M1TripSlice;
+let upgradedSlice: M1TripSlice | null = null;
+let predecessorMigrationDirectory: string | null = null;
 
 const primaryFlight = (value: M1TripSlice): M1TripSlice["flights"][number] => {
   const item = value.flights[0];
@@ -323,8 +360,9 @@ beforeAll(async () => {
     throw new Error("Stage 5 disposable PostgreSQL environment is incomplete");
   }
   bootstrapDatabase();
-  const migration = await runMigrationChain(migrationTarget, productionChain);
-  expect(migration.result).toBe("PASS");
+  const predecessorChain = await createPredecessorMigrationChain();
+  const predecessorMigration = await runMigrationChain(migrationTarget, predecessorChain);
+  expect(predecessorMigration.result).toBe("PASS");
   persistence = createPostgresPersistence<Record<string, never>>({
     host,
     port,
@@ -336,23 +374,57 @@ beforeAll(async () => {
   });
   staffAccessRepository = createStaffAccessRepository(persistence);
   repository = createM1OperationalSliceRepository(persistence);
+
+  const upgradeBootstrap = await bootstrapRootAgency(staffAccessRepository, {
+    agencyId,
+    bootstrapReference: "stage5-upgrade-qualification",
+    slug: "stage5-upgrade-qualification",
+  });
+  expect(upgradeBootstrap.created).toBe(true);
+  const upgradeInput = baseInput();
+  const predecessorSlice = await createM1TripSlice(repository, {
+    ...upgradeInput,
+    agencyId,
+    trip: { ...upgradeInput.trip, title: "Stage 5 migration predecessor fixture" },
+  });
+  expect([
+    predecessorSlice.person.lockVersion,
+    predecessorSlice.customer.lockVersion,
+    predecessorSlice.trip.lockVersion,
+    primaryFlight(predecessorSlice).lockVersion,
+    primaryAccommodation(predecessorSlice).lockVersion,
+    primaryReservation(predecessorSlice).lockVersion,
+    primarySupplierCost(predecessorSlice).lockVersion,
+  ]).toEqual([1n, 1n, 1n, 1n, 1n, 1n, 1n]);
+
+  const migration = await runMigrationChain(migrationTarget, productionChain);
+  expect(migration.result).toBe("PASS");
+  const converted = await readM1TripSlice(repository, agencyId, predecessorSlice.trip.id);
+  if (converted === null) throw new Error("The Stage 5 predecessor fixture disappeared on upgrade");
+  upgradedSlice = converted;
 });
 
 afterAll(async () => {
-  await persistence?.destroy();
+  try {
+    await persistence?.destroy();
+  } finally {
+    if (predecessorMigrationDirectory !== null) {
+      await rm(predecessorMigrationDirectory, { recursive: true, force: true });
+    }
+  }
 });
 
 describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () => {
   it("applies the new migration head and preserves the predecessor isolation boundary", async () => {
     const status = await inspectMigrationStatus(migrationTarget, productionChain);
-    expect(status.currentVersion).toBe("0008_stage5_cardinality_only");
+    expect(status.currentVersion).toBe("0009_stage5_revision_and_lock_version_hardening");
     const bootstrapInput = {
       agencyId,
-      bootstrapReference: "stage5-qualification",
-      slug: "stage5-qualification",
+      bootstrapReference: "stage5-upgrade-qualification",
+      slug: "stage5-upgrade-qualification",
     };
     const firstBootstrap = await bootstrapRootAgency(staffAccessRepository, bootstrapInput);
-    expect(firstBootstrap.created).toBe(true);
+    expect(firstBootstrap.created).toBe(false);
     expect(firstBootstrap.permissionRegistryVersion).toBe(PERMISSION_REGISTRY_VERSION);
     const rerunBootstrap = await bootstrapRootAgency(staffAccessRepository, bootstrapInput);
     expect(rerunBootstrap.created).toBe(false);
@@ -368,6 +440,57 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     ).toBe("42501");
   });
 
+  it("converts populated Stage 5 roots to zero-based PostgreSQL bigint lock versions", async () => {
+    const migratedSlice = upgradedSlice;
+    if (migratedSlice === null) throw new Error("The predecessor fixture was not migrated");
+    expect([
+      migratedSlice.person.lockVersion,
+      migratedSlice.customer.lockVersion,
+      migratedSlice.trip.lockVersion,
+      primaryFlight(migratedSlice).lockVersion,
+      primaryAccommodation(migratedSlice).lockVersion,
+      primaryReservation(migratedSlice).lockVersion,
+      primarySupplierCost(migratedSlice).lockVersion,
+    ]).toEqual([0n, 0n, 0n, 0n, 0n, 0n, 0n]);
+    expect(migratedSlice.trip.workspaceRevision).toBe(1n);
+
+    const columns = await queryAsOwner<{
+      readonly schemaName: string;
+      readonly tableName: string;
+      readonly dataType: string;
+    }>(
+      `SELECT roots.schema_name AS "schemaName", roots.table_name AS "tableName",
+              pg_catalog.format_type(attribute.atttypid, attribute.atttypmod) AS "dataType"
+         FROM (VALUES
+           ('crm', 'person'),
+           ('crm', 'customer'),
+           ('trip_ops', 'trip'),
+           ('trip_ops', 'itinerary_item'),
+           ('trip_ops', 'reservation'),
+           ('finance', 'supplier_cost_line')
+         ) AS roots(schema_name, table_name)
+         JOIN pg_catalog.pg_namespace AS namespace
+           ON namespace.nspname = roots.schema_name
+         JOIN pg_catalog.pg_class AS relation
+           ON relation.relnamespace = namespace.oid
+          AND relation.relname = roots.table_name
+         JOIN pg_catalog.pg_attribute AS attribute
+           ON attribute.attrelid = relation.oid
+          AND attribute.attname = 'lockVersion'
+          AND attribute.attnum > 0
+          AND NOT attribute.attisdropped
+        ORDER BY roots.schema_name, roots.table_name`,
+    );
+    expect(columns).toEqual([
+      { schemaName: "crm", tableName: "customer", dataType: "bigint" },
+      { schemaName: "crm", tableName: "person", dataType: "bigint" },
+      { schemaName: "finance", tableName: "supplier_cost_line", dataType: "bigint" },
+      { schemaName: "trip_ops", tableName: "itinerary_item", dataType: "bigint" },
+      { schemaName: "trip_ops", tableName: "reservation", dataType: "bigint" },
+      { schemaName: "trip_ops", tableName: "trip", dataType: "bigint" },
+    ]);
+  });
+
   it("creates the complete scoped continuity, itinerary, reservation/link and internal Money slice", async () => {
     slice = await createM1TripSlice(repository, baseInput());
     expect(slice.person.agencyId).toBe(agencyId);
@@ -380,9 +503,18 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     expect(primarySupplierCost(slice).classification).toBe("INTERNAL_ONLY");
     expect(primarySupplierCost(slice).amount.minorUnits).toBe(12345n);
     expect(slice.trip.workspaceRevision).toBe(1n);
+    expect([
+      slice.person.lockVersion,
+      slice.customer.lockVersion,
+      slice.trip.lockVersion,
+      primaryFlight(slice).lockVersion,
+      primaryAccommodation(slice).lockVersion,
+      primaryReservation(slice).lockVersion,
+      primarySupplierCost(slice).lockVersion,
+    ]).toEqual([0n, 0n, 0n, 0n, 0n, 0n, 0n]);
   });
 
-  it("increments workspace revision exactly once for a publication-relevant edit and not for internal-only cost edits", async () => {
+  it("increments once per committed relevant transaction and returns typed conflicts for stale and racing writes", async () => {
     const edited = await updateM1Accommodation(repository, {
       agencyId,
       tripId: slice.trip.id,
@@ -393,7 +525,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     });
     expect(edited.trip.workspaceRevision).toBe(slice.trip.workspaceRevision + 1n);
     expect(primaryAccommodation(edited).lockVersion).toBe(
-      primaryAccommodation(slice).lockVersion + 1,
+      primaryAccommodation(slice).lockVersion + 1n,
     );
     await expect(
       updateM1Accommodation(repository, {
@@ -405,6 +537,27 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         description: "Must fail",
       }),
     ).rejects.toBeInstanceOf(M1OptimisticConflictError);
+    const afterStale = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    if (afterStale === null) throw new Error("The Trip disappeared after a stale CAS rejection");
+    expect(afterStale.trip.workspaceRevision).toBe(edited.trip.workspaceRevision);
+    expect(primaryAccommodation(afterStale).lockVersion).toBe(
+      primaryAccommodation(edited).lockVersion,
+    );
+    expect(primaryAccommodation(afterStale).title).toBe(primaryAccommodation(edited).title);
+
+    const secondEdit = await updateM1Accommodation(repository, {
+      agencyId,
+      tripId: slice.trip.id,
+      itemId: primaryAccommodation(edited).id,
+      expectedLockVersion: primaryAccommodation(edited).lockVersion,
+      title: "Porto hotel updated twice",
+      description: "Second committed edit",
+    });
+    expect(secondEdit.trip.workspaceRevision).toBe(edited.trip.workspaceRevision + 1n);
+    expect(primaryAccommodation(secondEdit).lockVersion).toBe(
+      primaryAccommodation(edited).lockVersion + 1n,
+    );
+
     const internal = await updateM1InternalSupplierNote(repository, {
       agencyId,
       tripId: slice.trip.id,
@@ -412,7 +565,10 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       expectedLockVersion: primarySupplierCost(slice).lockVersion,
       internalNote: "Updated internal-only note",
     });
-    expect(internal.trip.workspaceRevision).toBe(edited.trip.workspaceRevision);
+    expect(internal.trip.workspaceRevision).toBe(secondEdit.trip.workspaceRevision);
+    expect(primarySupplierCost(internal).lockVersion).toBe(
+      primarySupplierCost(slice).lockVersion + 1n,
+    );
     expect(primarySupplierCost(internal).internalNote).toBe("Updated internal-only note");
 
     const concurrent = await Promise.allSettled([
@@ -420,7 +576,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         agencyId,
         tripId: slice.trip.id,
         itemId: primaryAccommodation(slice).id,
-        expectedLockVersion: primaryAccommodation(edited).lockVersion,
+        expectedLockVersion: primaryAccommodation(secondEdit).lockVersion,
         title: "Concurrent accommodation A",
         description: "Concurrent description A",
       }),
@@ -428,7 +584,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         agencyId,
         tripId: slice.trip.id,
         itemId: primaryAccommodation(slice).id,
-        expectedLockVersion: primaryAccommodation(edited).lockVersion,
+        expectedLockVersion: primaryAccommodation(secondEdit).lockVersion,
         title: "Concurrent accommodation B",
         description: "Concurrent description B",
       }),
@@ -438,6 +594,98 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     expect(rejected?.status === "rejected" ? rejected.reason : null).toBeInstanceOf(
       M1OptimisticConflictError,
     );
+    const committed = concurrent.find((result) => result.status === "fulfilled");
+    if (committed?.status !== "fulfilled") throw new Error("No concurrent CAS mutation committed");
+    expect(committed.value.trip.workspaceRevision).toBe(secondEdit.trip.workspaceRevision + 1n);
+  });
+
+  it("round-trips and compare-and-swaps bigint lock versions beyond JavaScript safe integer", async () => {
+    const input = baseInput();
+    const seeded = await createM1TripSlice(repository, {
+      ...input,
+      trip: { ...input.trip, title: "Bigint lock version qualification" },
+    });
+    const highLockVersion = 9_007_199_254_740_993n;
+    await withOwnerTransaction(async (client) => {
+      await client.query(
+        `UPDATE "trip_ops"."itinerary_item"
+            SET "lockVersion" = $1::bigint
+          WHERE "agencyId" = $2::uuid
+            AND "tripId" = $3::uuid
+            AND "id" = $4::uuid`,
+        [highLockVersion.toString(), agencyId, seeded.trip.id, primaryAccommodation(seeded).id],
+      );
+      await client.query(
+        `UPDATE "finance"."supplier_cost_line"
+            SET "lockVersion" = $1::bigint
+          WHERE "agencyId" = $2::uuid
+            AND "tripId" = $3::uuid
+            AND "reservationId" = $4::uuid`,
+        [highLockVersion.toString(), agencyId, seeded.trip.id, primaryReservation(seeded).id],
+      );
+    });
+
+    const loaded = await readM1TripSlice(repository, agencyId, seeded.trip.id);
+    if (loaded === null) throw new Error("The high-version Trip fixture was not readable");
+    expect(primaryAccommodation(loaded).lockVersion).toBe(highLockVersion);
+    expect(primarySupplierCost(loaded).lockVersion).toBe(highLockVersion);
+
+    const updatedAccommodation = await updateM1Accommodation(repository, {
+      agencyId,
+      tripId: seeded.trip.id,
+      itemId: primaryAccommodation(loaded).id,
+      expectedLockVersion: highLockVersion,
+      title: "Bigint version updated",
+      description: "Exact compare-and-swap beyond Number.MAX_SAFE_INTEGER",
+    });
+    expect(primaryAccommodation(updatedAccommodation).lockVersion).toBe(highLockVersion + 1n);
+
+    const updatedInternal = await updateM1InternalSupplierNote(repository, {
+      agencyId,
+      tripId: seeded.trip.id,
+      reservationId: primaryReservation(loaded).id,
+      expectedLockVersion: highLockVersion,
+      internalNote: "Bigint version note update",
+    });
+    expect(primarySupplierCost(updatedInternal).lockVersion).toBe(highLockVersion + 1n);
+    expect(updatedInternal.trip.workspaceRevision).toBe(
+      updatedAccommodation.trip.workspaceRevision,
+    );
+  });
+
+  it("rolls back both workspace revision and deduplication state with a failed transaction", async () => {
+    const input = baseInput();
+    const seeded = await createM1TripSlice(repository, {
+      ...input,
+      trip: { ...input.trip, title: "Workspace revision rollback qualification" },
+    });
+    await expect(
+      withOwnerTransaction(async (client) => {
+        await client.query(
+          `UPDATE "trip_ops"."itinerary_item"
+              SET "customerTitle" = 'Rolled-back title'
+            WHERE "agencyId" = $1::uuid
+              AND "tripId" = $2::uuid
+              AND "id" = $3::uuid`,
+          [agencyId, seeded.trip.id, primaryAccommodation(seeded).id],
+        );
+        throw new Error("Intentional transaction rollback");
+      }),
+    ).rejects.toThrow("Intentional transaction rollback");
+    const rolledBack = await readM1TripSlice(repository, agencyId, seeded.trip.id);
+    if (rolledBack === null) throw new Error("The rollback Trip fixture was not readable");
+    expect(rolledBack.trip.workspaceRevision).toBe(seeded.trip.workspaceRevision);
+    expect(primaryAccommodation(rolledBack).title).toBe(primaryAccommodation(seeded).title);
+
+    const committed = await updateM1Accommodation(repository, {
+      agencyId,
+      tripId: seeded.trip.id,
+      itemId: primaryAccommodation(seeded).id,
+      expectedLockVersion: primaryAccommodation(seeded).lockVersion,
+      title: "Committed after rollback",
+      description: "The transaction marker was rolled back too",
+    });
+    expect(committed.trip.workspaceRevision).toBe(seeded.trip.workspaceRevision + 1n);
   });
 
   it("enforces exactly one primary traveller at commit and during replacement", async () => {
@@ -823,35 +1071,116 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     expect(await readRevision()).toBe(revision + 1n);
   });
 
-  it("rejects direct workspace revision assignment through the actual Admin API login role", async () => {
-    expect(
-      await queryErrorCode(() =>
-        queryAs(
-          "travelos_admin_api",
-          `UPDATE "trip_ops"."trip"
-              SET "workspaceRevision" = 0
-            WHERE "id" = '${slice.trip.id}'::uuid
-              AND "agencyId" = '${agencyId}'::uuid`,
-        ),
-      ),
-    ).toBe("42501");
-    expect(
-      await queryErrorCode(() =>
-        queryAs(
-          "travelos_admin_api",
-          `INSERT INTO "trip_ops"."trip"
-            ("id", "agencyId", "title", "startDate", "endDate", "state", "workspaceRevision")
-           VALUES ('${randomUUID()}'::uuid, '${agencyId}'::uuid, 'Forbidden revision insert', '2026-09-25', '2026-09-28', 'DRAFT', 99)`,
-        ),
-      ),
-    ).toBe("42501");
-    const currentTrip = await queryAsOwner<{ readonly revision: string }>(
+  it("rejects direct workspace revision and lockVersion writes through the actual Admin login role", async () => {
+    const before = await queryAsOwner<{ readonly revision: string }>(
       `SELECT "workspaceRevision"::text AS "revision"
          FROM "trip_ops"."trip"
         WHERE "id" = '${slice.trip.id}'::uuid
           AND "agencyId" = '${agencyId}'::uuid`,
     );
-    expect(BigInt(currentTrip[0]!.revision)).toBeGreaterThan(0n);
+    const deniedStatements = [
+      `UPDATE "trip_ops"."trip"
+          SET "workspaceRevision" = 0
+        WHERE "id" = '${slice.trip.id}'::uuid
+          AND "agencyId" = '${agencyId}'::uuid`,
+      `UPDATE "trip_ops"."itinerary_item"
+          SET "lockVersion" = 99
+        WHERE "id" = '${primaryAccommodation(slice).id}'::uuid
+          AND "agencyId" = '${agencyId}'::uuid`,
+      `UPDATE "finance"."supplier_cost_line"
+          SET "lockVersion" = 99
+        WHERE "reservationId" = '${primaryReservation(slice).id}'::uuid
+          AND "agencyId" = '${agencyId}'::uuid`,
+      `INSERT INTO "trip_ops"."trip"
+        ("id", "agencyId", "title", "startDate", "endDate", "state", "workspaceRevision")
+       VALUES ('${randomUUID()}'::uuid, '${agencyId}'::uuid, 'Forbidden revision insert', '2026-09-25', '2026-09-28', 'DRAFT', 99)`,
+      `INSERT INTO "trip_ops"."trip"
+        ("id", "agencyId", "title", "startDate", "endDate", "state", "lockVersion")
+       VALUES ('${randomUUID()}'::uuid, '${agencyId}'::uuid, 'Forbidden version insert', '2026-09-25', '2026-09-28', 'DRAFT', 99)`,
+      `SELECT "trip_ops"."touch_workspace_revision"('${agencyId}'::uuid, '${slice.trip.id}'::uuid)`,
+      `UPDATE "trip_ops"."workspace_revision_touch"
+          SET "lastTransactionId" = pg_catalog.pg_current_xact_id()
+        WHERE "agencyId" = '${agencyId}'::uuid
+          AND "tripId" = '${slice.trip.id}'::uuid`,
+    ];
+    for (const statement of deniedStatements) {
+      expect(await queryErrorCode(() => queryAs("travelos_admin_api", statement))).toBe("42501");
+    }
+
+    const accommodationCall =
+      `SELECT "trip_ops"."cas_update_accommodation_presentation"(` +
+      `'${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${primaryAccommodation(slice).id}'::uuid, ` +
+      `0::bigint, 'forbidden portal edit', 'forbidden')`;
+    const supplierCostCall =
+      `SELECT "trip_ops"."cas_update_supplier_cost_internal_note"(` +
+      `'${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${primaryReservation(slice).id}'::uuid, ` +
+      `0::bigint, 'forbidden portal edit')`;
+    for (const role of ["travelos_portal_api", "travelos_worker"] as const) {
+      for (const statement of [accommodationCall, supplierCostCall]) {
+        expect(await queryErrorCode(() => queryAs(role, statement))).toBe("42501");
+      }
+    }
+
+    const after = await queryAsOwner<{ readonly revision: string }>(
+      `SELECT "workspaceRevision"::text AS "revision"
+         FROM "trip_ops"."trip"
+        WHERE "id" = '${slice.trip.id}'::uuid
+          AND "agencyId" = '${agencyId}'::uuid`,
+    );
+    expect(after[0]?.revision).toBe(before[0]?.revision);
+  });
+
+  it("ignores a forged transaction-local marker while deduplicating multiple relevant edits", async () => {
+    const input = baseInput();
+    const seeded = await createM1TripSlice(repository, {
+      ...input,
+      trip: { ...input.trip, title: "Revision marker spoof qualification" },
+    });
+    const accommodation = primaryAccommodation(seeded);
+    const markerName = `travelos.revision_touch_${createHash("md5")
+      .update(`${agencyId}:${seeded.trip.id}`)
+      .digest("hex")}`;
+    const client = await clientFor("travelos_admin_api");
+    let expectedLockVersion = accommodation.lockVersion;
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        "SELECT pg_catalog.set_config($1::text, pg_catalog.txid_current()::text, true)",
+        [markerName],
+      );
+      for (const [title, description] of [
+        ["Marker spoof first edit", "First same-transaction change"],
+        ["Marker spoof second edit", "Second same-transaction change"],
+      ] as const) {
+        const result = await client.query<{ readonly updated: boolean }>(
+          `SELECT "trip_ops"."cas_update_accommodation_presentation"(
+             $1::uuid, $2::uuid, $3::uuid, $4::bigint, $5::text, $6::text
+           ) AS "updated"`,
+          [
+            agencyId,
+            seeded.trip.id,
+            accommodation.id,
+            expectedLockVersion.toString(),
+            title,
+            description,
+          ],
+        );
+        expect(result.rows[0]?.updated).toBe(true);
+        expectedLockVersion += 1n;
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      await client.end();
+    }
+
+    const projected = await readM1TripSlice(repository, agencyId, seeded.trip.id);
+    if (projected === null) throw new Error("The marker-spoof Trip fixture was not readable");
+    expect(projected.trip.workspaceRevision).toBe(seeded.trip.workspaceRevision + 1n);
+    expect(primaryAccommodation(projected).lockVersion).toBe(accommodation.lockVersion + 2n);
+    expect(primaryAccommodation(projected).title).toBe("Marker spoof second edit");
   });
 
   it("serializes continuity writes under READ COMMITTED and REPEATABLE READ", async () => {
@@ -1135,7 +1464,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const beforeRevisions = await queryAsOwner<{
       readonly id: string;
       readonly workspaceRevision: string;
-      readonly lockVersion: number;
+      readonly lockVersion: string;
     }>(
       `SELECT "id"::text AS "id", "workspaceRevision"::text AS "workspaceRevision", "lockVersion"
          FROM "trip_ops"."trip"
@@ -1204,7 +1533,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const afterRevisions = await queryAsOwner<{
       readonly id: string;
       readonly workspaceRevision: string;
-      readonly lockVersion: number;
+      readonly lockVersion: string;
     }>(
       `SELECT "id"::text AS "id", "workspaceRevision"::text AS "workspaceRevision", "lockVersion"
          FROM "trip_ops"."trip"

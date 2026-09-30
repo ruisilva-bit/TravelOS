@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   AdminCreateM1TripSliceRequestSchema,
+  AdminLockVersionSchema,
   AdminM1TripSliceResponseSchema,
   AdminMoneySchema,
   AdminOpaqueIdSchema,
@@ -97,6 +98,15 @@ describe("Stage 5 Admin contracts", () => {
     ).toBe(false);
   });
 
+  it("keeps PostgreSQL bigint lock versions as canonical decimal strings", () => {
+    expect(AdminLockVersionSchema.parse("0")).toBe("0");
+    expect(AdminLockVersionSchema.parse("9007199254740993")).toBe("9007199254740993");
+    expect(AdminLockVersionSchema.safeParse("9223372036854775807").success).toBe(true);
+    expect(AdminLockVersionSchema.safeParse("9223372036854775808").success).toBe(false);
+    expect(AdminLockVersionSchema.safeParse("01").success).toBe(false);
+    expect(AdminLockVersionSchema.safeParse(1).success).toBe(false);
+  });
+
   it("keeps Money JSON exact and string-valued in the response contract", () => {
     const parsed = AdminM1TripSliceResponseSchema.safeParse({
       person: {
@@ -105,13 +115,13 @@ describe("Stage 5 Admin contracts", () => {
         givenName: "Rui",
         familyName: "Silva",
         email: syntheticEmail,
-        lockVersion: 1,
+        lockVersion: "0",
       },
       customer: {
         id: baseRequest.agencyId,
         agencyId: baseRequest.agencyId,
         displayName: "Silva Travel",
-        lockVersion: 1,
+        lockVersion: "0",
       },
       customerPerson: {
         agencyId: baseRequest.agencyId,
@@ -135,7 +145,7 @@ describe("Stage 5 Admin contracts", () => {
         endDate: "2026-09-28",
         state: "DRAFT",
         workspaceRevision: "1",
-        lockVersion: 1,
+        lockVersion: "0",
       },
       flights: [
         {
@@ -146,7 +156,7 @@ describe("Stage 5 Admin contracts", () => {
           family: "FLIGHT",
           state: "CONFIRMED",
           sortOrder: 1,
-          lockVersion: 1,
+          lockVersion: "0",
         },
       ],
       accommodations: [
@@ -158,7 +168,7 @@ describe("Stage 5 Admin contracts", () => {
           family: "ACCOMMODATION",
           state: "CONFIRMED",
           sortOrder: 2,
-          lockVersion: 1,
+          lockVersion: "0",
         },
       ],
       reservations: [
@@ -167,7 +177,7 @@ describe("Stage 5 Admin contracts", () => {
           agencyId: baseRequest.agencyId,
           tripId: baseRequest.agencyId,
           ...baseRequest.reservation,
-          lockVersion: 1,
+          lockVersion: "0",
         },
       ],
       reservationItemLinks: [],
@@ -180,7 +190,7 @@ describe("Stage 5 Admin contracts", () => {
           amount: baseRequest.supplierCost.amount,
           internalNote: "Net",
           classification: "INTERNAL_ONLY",
-          lockVersion: 1,
+          lockVersion: "0",
         },
       ],
     });

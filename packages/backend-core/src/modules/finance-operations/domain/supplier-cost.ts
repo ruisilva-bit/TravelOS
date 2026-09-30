@@ -11,7 +11,7 @@ export interface SupplierCostLine {
   readonly amount: Money;
   readonly internalNote: string;
   readonly classification: typeof INTERNAL_ONLY_FIELD_CLASSIFICATION;
-  readonly lockVersion: number;
+  readonly lockVersion: bigint;
 }
 
 export interface SupplierCostDraft {

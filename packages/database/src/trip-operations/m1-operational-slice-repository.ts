@@ -24,14 +24,14 @@ type PersonRow = {
   readonly givenName: string;
   readonly familyName: string;
   readonly email: string | null;
-  readonly lockVersion: number;
+  readonly lockVersion: string;
 };
 
 type CustomerRow = {
   readonly id: string;
   readonly agencyId: string;
   readonly displayName: string;
-  readonly lockVersion: number;
+  readonly lockVersion: string;
 };
 
 type CustomerPersonRow = {
@@ -50,7 +50,7 @@ type TripRow = {
   readonly endDate: string;
   readonly state: "DRAFT" | "CONFIRMED" | "IN_OPERATION" | "COMPLETED" | "CANCELLED";
   readonly workspaceRevision: string;
-  readonly lockVersion: number;
+  readonly lockVersion: string;
 };
 
 type TravellerRow = {
@@ -70,7 +70,7 @@ type FlightRow = {
   readonly title: string;
   readonly description: string;
   readonly customerBookingReference: string | null;
-  readonly lockVersion: number;
+  readonly lockVersion: string;
   readonly carrier: string;
   readonly flightNumber: string;
   readonly departureAirport: string;
@@ -98,7 +98,7 @@ type AccommodationRow = {
   readonly title: string;
   readonly description: string;
   readonly customerBookingReference: string | null;
-  readonly lockVersion: number;
+  readonly lockVersion: string;
   readonly propertyName: string;
   readonly checkInDate: string;
   readonly checkInTime: string;
@@ -120,7 +120,7 @@ type ReservationRow = {
   readonly supplierReference: string;
   readonly customerBookingReference: string | null;
   readonly state: "PROVISIONAL" | "HELD" | "CONFIRMED" | "USED" | "CANCELLED" | "FAILED";
-  readonly lockVersion: number;
+  readonly lockVersion: string;
 };
 
 type LinkRow = {
@@ -141,7 +141,7 @@ type SupplierCostRow = {
   readonly currencyScale: number;
   readonly internalNote: string;
   readonly classification: "INTERNAL_ONLY";
-  readonly lockVersion: number;
+  readonly lockVersion: string;
 };
 
 const first = <Row>(rows: readonly Row[]): Row | null => rows[0] ?? null;
@@ -185,7 +185,7 @@ const mapFlightRow = (flight: FlightRow): M1TripSlice["flights"][number] => ({
   title: flight.title,
   description: flight.description,
   customerBookingReference: flight.customerBookingReference,
-  lockVersion: flight.lockVersion,
+  lockVersion: BigInt(flight.lockVersion),
   carrier: flight.carrier,
   flightNumber: flight.flightNumber,
   departureAirport: flight.departureAirport,
@@ -220,7 +220,7 @@ const mapAccommodationRow = (
   title: accommodation.title,
   description: accommodation.description,
   customerBookingReference: accommodation.customerBookingReference,
-  lockVersion: accommodation.lockVersion,
+  lockVersion: BigInt(accommodation.lockVersion),
   propertyName: accommodation.propertyName,
   checkIn: scheduled(
     accommodation.checkInDate,
@@ -246,7 +246,7 @@ const mapReservationRow = (reservation: ReservationRow): M1TripSlice["reservatio
   supplierReference: reservation.supplierReference,
   customerBookingReference: reservation.customerBookingReference,
   state: reservation.state,
-  lockVersion: reservation.lockVersion,
+  lockVersion: BigInt(reservation.lockVersion),
 });
 
 const mapSupplierCostRow = (
@@ -263,7 +263,7 @@ const mapSupplierCostRow = (
   ),
   internalNote: supplierCost.internalNote,
   classification: supplierCost.classification,
-  lockVersion: supplierCost.lockVersion,
+  lockVersion: BigInt(supplierCost.lockVersion),
 });
 
 const readSlice = async (
@@ -274,7 +274,8 @@ const readSlice = async (
   const person = first(
     (
       await sql<PersonRow>`
-        SELECT "id"::text AS "id", "agencyId"::text AS "agencyId", "givenName", "familyName", "email", "lockVersion"
+        SELECT "id"::text AS "id", "agencyId"::text AS "agencyId", "givenName", "familyName", "email",
+               "lockVersion"::text AS "lockVersion"
           FROM "crm"."person"
          WHERE "agencyId" = ${agencyId}::uuid
            AND EXISTS (
@@ -293,7 +294,8 @@ const readSlice = async (
     (
       await sql<TripRow>`
         SELECT "id"::text AS "id", "agencyId"::text AS "agencyId", "title", "startDate"::text AS "startDate",
-               "endDate"::text AS "endDate", "state", "workspaceRevision"::text AS "workspaceRevision", "lockVersion"
+               "endDate"::text AS "endDate", "state", "workspaceRevision"::text AS "workspaceRevision",
+               "lockVersion"::text AS "lockVersion"
           FROM "trip_ops"."trip"
          WHERE "agencyId" = ${agencyId}::uuid AND "id" = ${tripId}::uuid
       `.execute(database)
@@ -304,7 +306,7 @@ const readSlice = async (
     (
       await sql<CustomerRow>`
         SELECT customer."id"::text AS "id", customer."agencyId"::text AS "agencyId",
-               customer."displayName", customer."lockVersion"
+               customer."displayName", customer."lockVersion"::text AS "lockVersion"
           FROM "crm"."customer" AS customer
           JOIN "crm"."customer_person" AS relationship
             ON relationship."customerId" = customer."id"
@@ -353,7 +355,7 @@ const readSlice = async (
         SELECT item."id"::text AS "id", item."agencyId"::text AS "agencyId", item."tripId"::text AS "tripId",
                item."state", item."sortOrder", item."customerTitle" AS "title",
                item."customerDescription" AS "description", item."customerBookingReference",
-               item."lockVersion", detail."carrier", detail."flightNumber", detail."departureAirport",
+               item."lockVersion"::text AS "lockVersion", detail."carrier", detail."flightNumber", detail."departureAirport",
                detail."arrivalAirport", detail."departureDate"::text AS "departureDate",
                detail."departureTime"::text AS "departureTime", detail."departureTimezone",
                detail."departureInstant", detail."arrivalDate"::text AS "arrivalDate",
@@ -371,7 +373,7 @@ const readSlice = async (
         SELECT item."id"::text AS "id", item."agencyId"::text AS "agencyId", item."tripId"::text AS "tripId",
                item."state", item."sortOrder", item."customerTitle" AS "title",
                item."customerDescription" AS "description", item."customerBookingReference",
-               item."lockVersion", detail."propertyName", detail."checkInDate"::text AS "checkInDate",
+               item."lockVersion"::text AS "lockVersion", detail."propertyName", detail."checkInDate"::text AS "checkInDate",
                detail."checkInTime"::text AS "checkInTime", detail."checkInTimezone", detail."checkInInstant",
                detail."checkOutDate"::text AS "checkOutDate", detail."checkOutTime"::text AS "checkOutTime",
                detail."checkOutTimezone", detail."checkOutInstant", detail."roomDescription", detail."boardType"
@@ -385,7 +387,8 @@ const readSlice = async (
   const reservations = (
     await sql<ReservationRow>`
         SELECT "id"::text AS "id", "agencyId"::text AS "agencyId", "tripId"::text AS "tripId",
-               "supplierName", "supplierReference", "customerBookingReference", "state", "lockVersion"
+               "supplierName", "supplierReference", "customerBookingReference", "state",
+               "lockVersion"::text AS "lockVersion"
           FROM "trip_ops"."reservation"
          WHERE "agencyId" = ${agencyId}::uuid AND "tripId" = ${tripId}::uuid
          ORDER BY "createdAt", "id"
@@ -395,7 +398,8 @@ const readSlice = async (
     await sql<SupplierCostRow>`
             SELECT "id"::text AS "id", "agencyId"::text AS "agencyId", "tripId"::text AS "tripId",
                    "reservationId"::text AS "reservationId", "amountMinor"::text AS "amountMinor",
-                   "currencyCode", "currencyScale", "internalNote", "classification", "lockVersion"
+                   "currencyCode", "currencyScale", "internalNote", "classification",
+                   "lockVersion"::text AS "lockVersion"
               FROM "finance"."supplier_cost_line"
              WHERE "agencyId" = ${agencyId}::uuid
                AND "tripId" = ${tripId}::uuid
@@ -430,13 +434,13 @@ const readSlice = async (
       givenName: person.givenName,
       familyName: person.familyName,
       email: person.email,
-      lockVersion: person.lockVersion,
+      lockVersion: BigInt(person.lockVersion),
     },
     customer: {
       id: asOpaqueId(customer.id),
       agencyId: asOpaqueId(customer.agencyId),
       displayName: customer.displayName,
-      lockVersion: customer.lockVersion,
+      lockVersion: BigInt(customer.lockVersion),
     },
     customerPerson: {
       agencyId: asOpaqueId(customerPerson.agencyId),
@@ -460,7 +464,7 @@ const readSlice = async (
       endDate: trip.endDate,
       state: trip.state,
       workspaceRevision: BigInt(trip.workspaceRevision),
-      lockVersion: trip.lockVersion,
+      lockVersion: BigInt(trip.lockVersion),
     },
     flights: flights.map(mapFlightRow),
     accommodations: accommodations.map(mapAccommodationRow),
@@ -591,19 +595,17 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
       return await this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
           await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`.execute(database);
-          const result = await sql`
-            UPDATE "trip_ops"."itinerary_item"
-               SET "customerTitle" = ${input.title.trim()},
-                   "customerDescription" = ${input.description.trim()},
-                   "lockVersion" = "lockVersion" + 1,
-                   "updatedAt" = CURRENT_TIMESTAMP
-             WHERE "agencyId" = ${input.agencyId}::uuid
-               AND "tripId" = ${input.tripId}::uuid
-               AND "id" = ${input.itemId}::uuid
-               AND "family" = 'ACCOMMODATION'
-               AND "lockVersion" = ${input.expectedLockVersion}
+          const result = await sql<{ readonly updated: boolean }>`
+            SELECT "trip_ops"."cas_update_accommodation_presentation"(
+              ${input.agencyId}::uuid,
+              ${input.tripId}::uuid,
+              ${input.itemId}::uuid,
+              ${input.expectedLockVersion.toString()}::bigint,
+              ${input.title.trim()},
+              ${input.description.trim()}
+            ) AS "updated"
           `.execute(database);
-          if (result.numAffectedRows !== 1n) throw new M1OptimisticConflictError();
+          if (result.rows[0]?.updated !== true) throw new M1OptimisticConflictError();
           const slice = await readSlice(database, input.agencyId, input.tripId);
           if (slice === null)
             throw new Error("M1 Trip slice disappeared during accommodation update");
@@ -620,17 +622,16 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
       return await this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
           await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`.execute(database);
-          const result = await sql`
-            UPDATE "finance"."supplier_cost_line"
-               SET "internalNote" = ${input.internalNote.trim()},
-                   "lockVersion" = "lockVersion" + 1,
-                   "updatedAt" = CURRENT_TIMESTAMP
-             WHERE "agencyId" = ${input.agencyId}::uuid
-               AND "tripId" = ${input.tripId}::uuid
-               AND "reservationId" = ${input.reservationId}::uuid
-               AND "lockVersion" = ${input.expectedLockVersion}
+          const result = await sql<{ readonly updated: boolean }>`
+            SELECT "trip_ops"."cas_update_supplier_cost_internal_note"(
+              ${input.agencyId}::uuid,
+              ${input.tripId}::uuid,
+              ${input.reservationId}::uuid,
+              ${input.expectedLockVersion.toString()}::bigint,
+              ${input.internalNote.trim()}
+            ) AS "updated"
           `.execute(database);
-          if (result.numAffectedRows !== 1n) throw new M1OptimisticConflictError();
+          if (result.rows[0]?.updated !== true) throw new M1OptimisticConflictError();
           const slice = await readSlice(database, input.agencyId, input.tripId);
           if (slice === null) throw new Error("M1 Trip slice disappeared during internal update");
           return slice;

@@ -200,13 +200,13 @@ const mapSlice = (slice: M1TripSlice) =>
       givenName: slice.person.givenName,
       familyName: slice.person.familyName,
       email: slice.person.email,
-      lockVersion: slice.person.lockVersion,
+      lockVersion: slice.person.lockVersion.toString(),
     },
     customer: {
       id: slice.customer.id,
       agencyId: slice.customer.agencyId,
       displayName: slice.customer.displayName,
-      lockVersion: slice.customer.lockVersion,
+      lockVersion: slice.customer.lockVersion.toString(),
     },
     customerPerson: {
       agencyId: slice.customerPerson.agencyId,
@@ -230,7 +230,7 @@ const mapSlice = (slice: M1TripSlice) =>
       endDate: slice.trip.endDate,
       state: slice.trip.state,
       workspaceRevision: slice.trip.workspaceRevision.toString(),
-      lockVersion: slice.trip.lockVersion,
+      lockVersion: slice.trip.lockVersion.toString(),
     },
     flights: slice.flights.map((flight) => ({
       id: flight.id,
@@ -242,7 +242,7 @@ const mapSlice = (slice: M1TripSlice) =>
       title: flight.title,
       description: flight.description,
       customerBookingReference: flight.customerBookingReference,
-      lockVersion: flight.lockVersion,
+      lockVersion: flight.lockVersion.toString(),
       carrier: flight.carrier,
       flightNumber: flight.flightNumber,
       departureAirport: flight.departureAirport,
@@ -274,7 +274,7 @@ const mapSlice = (slice: M1TripSlice) =>
       title: accommodation.title,
       description: accommodation.description,
       customerBookingReference: accommodation.customerBookingReference,
-      lockVersion: accommodation.lockVersion,
+      lockVersion: accommodation.lockVersion.toString(),
       propertyName: accommodation.propertyName,
       checkIn: {
         localDate: accommodation.checkIn.localDate,
@@ -299,7 +299,7 @@ const mapSlice = (slice: M1TripSlice) =>
       supplierReference: reservation.supplierReference,
       customerBookingReference: reservation.customerBookingReference,
       state: reservation.state,
-      lockVersion: reservation.lockVersion,
+      lockVersion: reservation.lockVersion.toString(),
     })),
     reservationItemLinks: slice.reservationItemLinks.map((link) => ({
       agencyId: link.agencyId,
@@ -316,7 +316,7 @@ const mapSlice = (slice: M1TripSlice) =>
       amount: moneyToJson(supplierCost.amount),
       internalNote: supplierCost.internalNote,
       classification: supplierCost.classification,
-      lockVersion: supplierCost.lockVersion,
+      lockVersion: supplierCost.lockVersion.toString(),
     })),
   });
 
@@ -478,7 +478,7 @@ export const registerAdminM1Routes = (
           agencyId: asOpaqueId(parsed.data.agencyId),
           tripId: asOpaqueId(parsed.data.tripId),
           itemId,
-          expectedLockVersion: parsed.data.expectedLockVersion,
+          expectedLockVersion: BigInt(parsed.data.expectedLockVersion),
           title: parsed.data.title,
           description: parsed.data.description,
         });
@@ -518,7 +518,7 @@ export const registerAdminM1Routes = (
             agencyId: asOpaqueId(parsed.data.agencyId),
             tripId: asOpaqueId(parsed.data.tripId),
             reservationId,
-            expectedLockVersion: parsed.data.expectedLockVersion,
+            expectedLockVersion: BigInt(parsed.data.expectedLockVersion),
             internalNote: parsed.data.internalNote,
           });
           send(response, 200, mapSlice(slice));

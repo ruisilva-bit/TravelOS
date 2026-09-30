@@ -19,14 +19,14 @@ export interface Person {
   readonly givenName: string;
   readonly familyName: string;
   readonly email: string | null;
-  readonly lockVersion: number;
+  readonly lockVersion: bigint;
 }
 
 export interface Customer {
   readonly id: OpaqueId;
   readonly agencyId: OpaqueId;
   readonly displayName: string;
-  readonly lockVersion: number;
+  readonly lockVersion: bigint;
 }
 
 export interface CustomerPerson {

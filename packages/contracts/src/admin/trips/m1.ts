@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { AdminLockVersionSchema } from "../lock-version.js";
 import {
   AdminCustomerDraftSchema,
   AdminCustomerPersonResponseSchema,
@@ -69,7 +70,7 @@ export const AdminTripResponseSchema = z
     endDate: z.string(),
     state: AdminTripStateSchema,
     workspaceRevision: z.string().regex(/^\d+$/u),
-    lockVersion: z.number().int().min(1),
+    lockVersion: AdminLockVersionSchema,
   })
   .strict();
 

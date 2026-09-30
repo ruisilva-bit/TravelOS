@@ -49,9 +49,9 @@ const slice: M1TripSlice = {
     givenName: "Rui",
     familyName: "Silva",
     email: syntheticEmail,
-    lockVersion: 1,
+    lockVersion: 0n,
   },
-  customer: { id: customerId, agencyId: agency, displayName: "Silva Travel", lockVersion: 1 },
+  customer: { id: customerId, agencyId: agency, displayName: "Silva Travel", lockVersion: 0n },
   customerPerson: {
     agencyId: agency,
     customerId,
@@ -68,7 +68,7 @@ const slice: M1TripSlice = {
     endDate: "2026-09-28",
     state: "DRAFT",
     workspaceRevision: 1n,
-    lockVersion: 1,
+    lockVersion: 9_007_199_254_740_993n,
   },
   flights: [
     {
@@ -81,7 +81,7 @@ const slice: M1TripSlice = {
       title: "Flight",
       description: "Synthetic flight",
       customerBookingReference: "BOOK-1",
-      lockVersion: 1,
+      lockVersion: 0n,
       carrier: "Example Air",
       flightNumber: "EA100",
       departureAirport: "LIS",
@@ -115,7 +115,7 @@ const slice: M1TripSlice = {
       title: "Hotel",
       description: "Synthetic hotel",
       customerBookingReference: "HOTEL-1",
-      lockVersion: 1,
+      lockVersion: 9_007_199_254_740_993n,
       propertyName: "Example Hotel",
       checkIn: createScheduledLocalDateTime({
         localDate: "2026-09-25",
@@ -142,7 +142,7 @@ const slice: M1TripSlice = {
       supplierReference: "SUP-1",
       customerBookingReference: "CUST-1",
       state: "CONFIRMED",
-      lockVersion: 1,
+      lockVersion: 0n,
     },
   ],
   reservationItemLinks: [
@@ -164,7 +164,7 @@ const slice: M1TripSlice = {
       amount: createMoney("12345", "EUR", 2),
       internalNote: "internal",
       classification: "INTERNAL_ONLY",
-      lockVersion: 1,
+      lockVersion: 0n,
     },
   ],
 };
@@ -275,7 +275,7 @@ const makeHarness = (
   const repository = {
     createM1TripSlice: vi.fn().mockResolvedValue(slice),
     getM1TripSlice: vi.fn().mockResolvedValue(slice),
-    updateM1Accommodation: vi.fn().mockResolvedValue(slice),
+    updateAccommodation: vi.fn().mockResolvedValue(slice),
     updateInternalSupplierNote: vi.fn().mockResolvedValue(slice),
   };
   registerAdminM1Routes(application, {
@@ -350,7 +350,12 @@ describe("Admin Stage 5 routes", () => {
     const accepted = await harness.invoke("POST /api/admin/trips", requestBody());
     expect(accepted.statusCode).toBe(201);
     expect(accepted.body).toMatchObject({
-      trip: { id: tripId, workspaceRevision: "1" },
+      trip: {
+        id: tripId,
+        workspaceRevision: "1",
+        lockVersion: "9007199254740993",
+      },
+      accommodations: [{ lockVersion: "9007199254740993" }],
       supplierCosts: [{ classification: "INTERNAL_ONLY" }],
     });
     expect(harness.repository.createM1TripSlice).toHaveBeenCalledOnce();
@@ -385,14 +390,38 @@ describe("Admin Stage 5 routes", () => {
         agencyId,
         tripId,
         itemId: accommodationId,
-        expectedLockVersion: 1,
+        expectedLockVersion: "0",
         title: "Updated hotel",
         description: "Updated description",
       },
       { itemId: accommodationId },
     );
     expect(response.statusCode).toBe(403);
-    expect(harness.repository.updateM1Accommodation).not.toHaveBeenCalled();
+    expect(harness.repository.updateAccommodation).not.toHaveBeenCalled();
+  });
+
+  it("parses and returns bigint accommodation versions without Number coercion", async () => {
+    const harness = makeHarness(agencyId, grantedPermissions);
+    const response = await harness.invoke(
+      "PATCH /api/admin/itinerary/accommodations/:itemId",
+      {
+        agencyId,
+        tripId,
+        itemId: accommodationId,
+        expectedLockVersion: "9007199254740993",
+        title: "Updated hotel",
+        description: "Updated description",
+      },
+      { itemId: accommodationId },
+    );
+    expect(response.statusCode).toBe(200);
+    expect(harness.repository.updateAccommodation).toHaveBeenCalledWith(
+      expect.objectContaining({ expectedLockVersion: 9_007_199_254_740_993n }),
+    );
+    expect(response.body).toMatchObject({
+      trip: { lockVersion: "9007199254740993" },
+      accommodations: [{ lockVersion: "9007199254740993" }],
+    });
   });
 
   it("does not let cost visibility alone mutate an INTERNAL_ONLY note", async () => {
@@ -403,7 +432,7 @@ describe("Admin Stage 5 routes", () => {
         agencyId,
         tripId,
         reservationId,
-        expectedLockVersion: 1,
+        expectedLockVersion: "0",
         internalNote: "Updated note",
       },
       { reservationId },
@@ -420,7 +449,7 @@ describe("Admin Stage 5 routes", () => {
         agencyId,
         tripId,
         reservationId,
-        expectedLockVersion: 1,
+        expectedLockVersion: "0",
         internalNote: "Updated note",
       },
       { reservationId },
@@ -440,7 +469,7 @@ describe("Admin Stage 5 routes", () => {
         agencyId,
         tripId,
         reservationId,
-        expectedLockVersion: 1,
+        expectedLockVersion: "0",
         internalNote: "Updated note",
       },
       { reservationId },

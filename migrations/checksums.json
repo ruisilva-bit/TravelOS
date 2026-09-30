@@ -33,6 +33,10 @@
     {
       "file": "0008_stage5_cardinality_only.cjs",
       "sha256": "8120a68cd1f8b9799029b818d8431f0c18fdd8683cf0554966263c43c9922d20"
+    },
+    {
+      "file": "0009_stage5_revision_and_lock_version_hardening.cjs",
+      "sha256": "ce927a10e9001098d9cac648d74032d2bf73bb6d5dbee5844cd01cf963c3ab2c"
     }
   ]
 }

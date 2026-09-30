@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { AdminLockVersionSchema } from "../lock-version.js";
 import { AdminOpaqueIdSchema } from "../money.js";
 
 const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/u;
@@ -177,7 +178,7 @@ export const AdminFlightResponseSchema = z
     title: z.string(),
     description: z.string(),
     customerBookingReference: z.string().nullable(),
-    lockVersion: z.number().int().min(1),
+    lockVersion: AdminLockVersionSchema,
     carrier: z.string(),
     flightNumber: z.string(),
     departureAirport: z.string().length(3),
@@ -202,7 +203,7 @@ export const AdminAccommodationResponseSchema = z
     title: z.string(),
     description: z.string(),
     customerBookingReference: z.string().nullable(),
-    lockVersion: z.number().int().min(1),
+    lockVersion: AdminLockVersionSchema,
     propertyName: z.string(),
     checkIn: AdminScheduledLocalDateTimeSchema,
     checkOut: AdminScheduledLocalDateTimeSchema,
@@ -216,7 +217,7 @@ export const AdminAccommodationUpdateRequestSchema = z
     agencyId: AdminOpaqueIdSchema,
     tripId: AdminOpaqueIdSchema,
     itemId: AdminOpaqueIdSchema,
-    expectedLockVersion: z.number().int().min(1),
+    expectedLockVersion: AdminLockVersionSchema,
     title: z.string().trim().min(1).max(300),
     description: z.string().trim().min(1).max(10_000),
   })

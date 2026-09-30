@@ -40,7 +40,7 @@ export interface UpdateAccommodationInput {
   readonly agencyId: OpaqueId;
   readonly tripId: OpaqueId;
   readonly itemId: OpaqueId;
-  readonly expectedLockVersion: number;
+  readonly expectedLockVersion: bigint;
   readonly title: string;
   readonly description: string;
 }
@@ -49,7 +49,7 @@ export interface UpdateInternalNoteInput {
   readonly agencyId: OpaqueId;
   readonly tripId: OpaqueId;
   readonly reservationId: OpaqueId;
-  readonly expectedLockVersion: number;
+  readonly expectedLockVersion: bigint;
   readonly internalNote: string;
 }
 
@@ -149,9 +149,11 @@ const requiredOpaqueId = (record: UnknownRecord, key: string, label: string): Op
   return asOpaqueId(value);
 };
 
-const requiredInteger = (record: UnknownRecord, key: string, label: string): number => {
+const POSTGRES_BIGINT_MAX = 9_223_372_036_854_775_807n;
+
+const requiredLockVersion = (record: UnknownRecord, key: string, label: string): bigint => {
   const value = record[key];
-  if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
+  if (typeof value !== "bigint" || value < 0n || value > POSTGRES_BIGINT_MAX) {
     throw new Error(`${label} is invalid`);
   }
   return value;
@@ -466,7 +468,7 @@ export const updateM1Accommodation = async (
       agencyId: requiredOpaqueId(record, "agencyId", "Agency ID"),
       tripId: requiredOpaqueId(record, "tripId", "Trip ID"),
       itemId: requiredOpaqueId(record, "itemId", "Itinerary item ID"),
-      expectedLockVersion: requiredInteger(
+      expectedLockVersion: requiredLockVersion(
         record,
         "expectedLockVersion",
         "Expected itinerary lock version",
@@ -495,7 +497,7 @@ export const updateM1InternalSupplierNote = async (
       agencyId: requiredOpaqueId(record, "agencyId", "Agency ID"),
       tripId: requiredOpaqueId(record, "tripId", "Trip ID"),
       reservationId: requiredOpaqueId(record, "reservationId", "Reservation ID"),
-      expectedLockVersion: requiredInteger(
+      expectedLockVersion: requiredLockVersion(
         record,
         "expectedLockVersion",
         "Expected supplier-cost lock version",
