@@ -454,11 +454,8 @@ export const readM1TripSlice = async (
 ): Promise<M1TripSlice | null> =>
   repository.getM1TripSlice(asOpaqueId(agencyId), asOpaqueId(tripId));
 
-export const updateM1Accommodation = async (
-  repository: M1OperationalSliceRepository,
-  input: UpdateAccommodationInput,
-): Promise<M1TripSlice> => {
-  const normalizedInput = runInputValidation(() => {
+export const validateUpdateM1AccommodationInput = (input: unknown): UpdateAccommodationInput =>
+  runInputValidation(() => {
     const record = exactRecord(
       input,
       ["agencyId", "description", "expectedLockVersion", "itemId", "title", "tripId"],
@@ -480,14 +477,17 @@ export const updateM1Accommodation = async (
       }),
     } satisfies UpdateAccommodationInput;
   });
-  return repository.updateAccommodation(normalizedInput);
-};
 
-export const updateM1InternalSupplierNote = async (
+export const updateM1Accommodation = async (
   repository: M1OperationalSliceRepository,
-  input: UpdateInternalNoteInput,
-): Promise<M1TripSlice> => {
-  const normalizedInput = runInputValidation(() => {
+  input: UpdateAccommodationInput,
+): Promise<M1TripSlice> =>
+  repository.updateAccommodation(validateUpdateM1AccommodationInput(input));
+
+export const validateUpdateM1InternalSupplierNoteInput = (
+  input: unknown,
+): UpdateInternalNoteInput =>
+  runInputValidation(() => {
     const record = exactRecord(
       input,
       ["agencyId", "expectedLockVersion", "internalNote", "reservationId", "tripId"],
@@ -508,8 +508,12 @@ export const updateM1InternalSupplierNote = async (
       }),
     } satisfies UpdateInternalNoteInput;
   });
-  return repository.updateInternalSupplierNote(normalizedInput);
-};
+
+export const updateM1InternalSupplierNote = async (
+  repository: M1OperationalSliceRepository,
+  input: UpdateInternalNoteInput,
+): Promise<M1TripSlice> =>
+  repository.updateInternalSupplierNote(validateUpdateM1InternalSupplierNoteInput(input));
 
 export type M1RepositoryPerson = Person;
 export type M1RepositoryCustomer = Customer;

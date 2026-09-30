@@ -2,7 +2,10 @@ import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 
 import type { AuthRealm } from "@travelos/auth-adapters";
-import type { M1OperationalSliceRepository } from "@travelos/database";
+import {
+  createM1StaffTripOperations,
+  type M1OperationalSliceRepository,
+} from "@travelos/backend-core";
 
 import { createAdminApi } from "../src/app.js";
 
@@ -80,6 +83,19 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
       basePath: "/api/auth",
       getServerSession: vi.fn().mockResolvedValue(null),
     } as unknown as AuthRealm;
+    const m1Repository: M1OperationalSliceRepository = {
+      createM1TripSlice: vi.fn(),
+      getM1TripSlice: vi.fn(),
+      updateAccommodation: vi.fn(),
+      updateInternalSupplierNote: vi.fn(),
+    };
+    const m1Operations = createM1StaffTripOperations({
+      repository: m1Repository,
+      authorizationRepository: {
+        getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue(null),
+      },
+      sessionResolver: { resolveStaffSession: vi.fn().mockResolvedValue(null) },
+    });
     const application = await createAdminApi({
       auth: {
         realm,
@@ -87,10 +103,8 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
           canonicalOrigin: "https://admin.example.test",
           expectedHost: "admin.example.test",
         },
-        staffAccessRepository: {
-          getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue(null),
-        },
-        m1Repository: {} as M1OperationalSliceRepository,
+        staffAccessRepository: { getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue(null) },
+        m1Operations,
       },
     });
     try {
@@ -100,6 +114,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
         .send(validCreateBody());
       expect(response.status).toBe(401);
       expect(response.headers["cache-control"]).toBe("private, no-store");
+      expect(m1Repository.createM1TripSlice).not.toHaveBeenCalled();
 
       const invalidRoleResponse = await request(application.getHttpServer())
         .post("/api/admin/trips")
@@ -107,6 +122,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
         .send({ ...validCreateBody(), travellerRole: "TRAVELLER" });
       expect(invalidRoleResponse.status).toBe(400);
       expect(invalidRoleResponse.headers["cache-control"]).toBe("private, no-store");
+      expect(m1Repository.createM1TripSlice).not.toHaveBeenCalled();
     } finally {
       await application.close();
     }

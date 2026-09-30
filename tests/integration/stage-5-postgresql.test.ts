@@ -11,24 +11,26 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   asOpaqueId,
   bootstrapRootAgency,
-  createM1TripSlice,
   createMoney,
   M1OptimisticConflictError,
   PERMISSION_REGISTRY_VERSION,
-  readM1TripSlice,
   TRAVELOS_CANONICAL_TIMEZONE_NAMES,
-  updateM1Accommodation,
-  updateM1InternalSupplierNote,
-  type CreateM1TripSliceInput,
   type M1TripSlice,
 } from "../../packages/backend-core/src/index.js";
 import {
-  createM1OperationalSliceRepository,
+  createM1TripSlice,
+  readM1TripSlice,
+  updateM1Accommodation,
+  updateM1InternalSupplierNote,
+  type CreateM1TripSliceInput,
+} from "../../packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.js";
+import {
   createPostgresPersistence,
   createStaffAccessRepository,
   mapPostgresMutationError,
   type PostgresPersistence,
 } from "../../packages/database/src/index.js";
+import { createM1OperationalSliceRepository } from "../../packages/database/src/trip-operations/m1-operational-slice-repository.js";
 import {
   inspectMigrationStatus,
   runMigrationChain,

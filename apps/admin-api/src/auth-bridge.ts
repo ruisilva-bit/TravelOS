@@ -4,8 +4,9 @@ import {
   type AuthSurfacePolicy,
 } from "@travelos/auth-adapters";
 import { authorizeStaffRequest } from "@travelos/backend-core";
+import type { M1StaffTripOperations } from "@travelos/backend-core";
 import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
-import type { M1OperationalSliceRepository, StaffAccessRepository } from "@travelos/database";
+import type { StaffAccessRepository } from "@travelos/database";
 
 import { registerAdminM1Routes } from "./m1-routes.js";
 
@@ -46,7 +47,7 @@ export interface AdminAuthBridgeOptions {
   readonly realm: AuthRealm;
   readonly policy: AuthSurfacePolicy;
   readonly staffAccessRepository: Pick<StaffAccessRepository, "getStaffAuthorizationSnapshot">;
-  readonly m1Repository?: M1OperationalSliceRepository;
+  readonly m1Operations?: M1StaffTripOperations;
 }
 
 type SetCookieHeaders = Headers & { readonly getSetCookie?: () => string[] };
@@ -218,12 +219,10 @@ export const registerAdminAuthBridge = (
   const http = application.getHttpAdapter().getInstance() as ExpressLikeApplication;
   http.use(bridgeHandler(options));
   http.get("/api/staff/session-context", staffSessionContextHandler(options));
-  if (options.m1Repository !== undefined) {
+  if (options.m1Operations !== undefined) {
     registerAdminM1Routes(http, {
-      realm: options.realm,
       policy: options.policy,
-      staffAccessRepository: options.staffAccessRepository,
-      m1Repository: options.m1Repository,
+      m1Operations: options.m1Operations,
     });
   }
 };

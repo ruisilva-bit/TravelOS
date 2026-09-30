@@ -75,11 +75,6 @@ export {
   type ScheduledLocalDateTime,
 } from "./shared-kernel/time.js";
 export {
-  validateCreateM1TripSliceInput,
-  createM1TripSlice,
-  readM1TripSlice,
-  updateM1Accommodation,
-  updateM1InternalSupplierNote,
   M1OptimisticConflictError,
   M1InputValidationError,
   type CreateM1TripSliceInput,
@@ -87,6 +82,14 @@ export {
   type UpdateAccommodationInput,
   type UpdateInternalNoteInput,
 } from "./modules/trip-operations/application/m1-trip-slice.js";
+export {
+  createM1StaffTripOperations,
+  M1StaffAuthorizationError,
+  type M1StaffAuthorizationRepository,
+  type M1StaffSessionResolver,
+  type M1StaffTripOperations,
+  type M1StaffTripOperationsDependencies,
+} from "./modules/trip-operations/application/m1-staff-operations.js";
 export {
   INTERNAL_ONLY_FIELD_CLASSIFICATION,
   type SupplierCostDraft,

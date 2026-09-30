@@ -7,12 +7,13 @@ import {
   type DevelopmentInstanceManifest,
 } from "@travelos/config";
 import {
-  createM1OperationalSliceRepository,
+  createPostgresM1StaffTripOperations,
   createPostgresPersistence,
   createStaffAccessRepository,
 } from "@travelos/database";
 
 import { createAdminApi, type CreateAdminApiOptions } from "./app.js";
+import { createAdminStaffSessionResolver } from "./m1-session-resolver.js";
 
 const readRequiredArgument = (name: string): string => {
   const prefix = `${name}=`;
@@ -61,16 +62,21 @@ const createAdminAuthOptions = async (
         environment: manifest.environment,
       }),
     );
+    const policy = {
+      canonicalOrigin: `http://${manifest.hosts.admin}`,
+      expectedHost: manifest.hosts.admin,
+    };
+    const staffAccessRepository = createStaffAccessRepository(persistence);
     return {
       options: {
         auth: {
           realm,
-          policy: {
-            canonicalOrigin: `http://${manifest.hosts.admin}`,
-            expectedHost: manifest.hosts.admin,
-          },
-          staffAccessRepository: createStaffAccessRepository(persistence),
-          m1Repository: createM1OperationalSliceRepository(persistence),
+          policy,
+          staffAccessRepository,
+          m1Operations: createPostgresM1StaffTripOperations(
+            persistence,
+            createAdminStaffSessionResolver(realm, policy),
+          ),
         },
       },
       destroy: () => persistence.destroy(),

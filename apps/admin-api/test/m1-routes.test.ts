@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   asOpaqueId,
   createMoney,
+  createM1StaffTripOperations,
   createScheduledLocalDateTime,
   M1OptimisticConflictError,
   type M1TripSlice,
@@ -10,7 +11,7 @@ import {
   type StaffAuthorizationSnapshot,
   type StaffPermissionId,
 } from "@travelos/backend-core";
-import type { AuthRealm, AuthSurfacePolicy } from "@travelos/auth-adapters";
+import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
 import { registerAdminM1Routes, type AdminM1ExpressApplication } from "../src/m1-routes.js";
 
 const syntheticEmail = ["rui", "example.test"].join(String.fromCharCode(64));
@@ -263,27 +264,27 @@ const makeHarness = (
     post: (path, handler) => handlers.set(`POST ${path}`, handler),
     patch: (path, handler) => handlers.set(`PATCH ${path}`, handler),
   };
-  const realm = {
-    getServerSession: vi.fn().mockResolvedValue({
-      principalId: "staff-1",
+  const sessionResolver = {
+    resolveStaffSession: vi.fn().mockResolvedValue({
+      staffPrincipalId: "staff-1",
       agencyId: sessionAgencyId,
       authorizationEpoch: 1n,
       expiresAtEpochMs: Date.now() + 60_000,
       recentMfaVerifiedAtEpochMs: null,
     }),
-  } as unknown as AuthRealm;
+  };
   const repository = {
     createM1TripSlice: vi.fn().mockResolvedValue(slice),
     getM1TripSlice: vi.fn().mockResolvedValue(slice),
     updateAccommodation: vi.fn().mockResolvedValue(slice),
     updateInternalSupplierNote: vi.fn().mockResolvedValue(slice),
   };
-  registerAdminM1Routes(application, {
-    realm,
-    policy,
-    staffAccessRepository: {
+  const m1Operations = createM1StaffTripOperations({
+    repository: repository as unknown as M1OperationalSliceRepository,
+    authorizationRepository: {
       getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue({
         ...snapshot,
+        agencyId: sessionAgencyId,
         assignments: permissionIds.map((permissionId) => ({
           permissionId,
           scopeKind: "AGENCY",
@@ -293,7 +294,11 @@ const makeHarness = (
         })),
       }),
     },
-    m1Repository: repository as unknown as M1OperationalSliceRepository,
+    sessionResolver,
+  });
+  registerAdminM1Routes(application, {
+    policy,
+    m1Operations,
   });
   const invoke = async (
     key: string,
@@ -334,7 +339,7 @@ const makeHarness = (
     if (nextError !== undefined) throw nextError;
     return response;
   };
-  return { handlers, invoke, repository, realm };
+  return { handlers, invoke, repository, sessionResolver };
 };
 
 describe("Admin Stage 5 routes", () => {

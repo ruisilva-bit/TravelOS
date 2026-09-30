@@ -1,19 +1,12 @@
 import {
   asOpaqueId,
-  M1OptimisticConflictError,
   M1InputValidationError,
-  authorizeStaffRequest,
-  createM1TripSlice,
+  M1OptimisticConflictError,
+  M1StaffAuthorizationError,
   createMoney,
   moneyToJson,
-  readM1TripSlice,
-  updateM1Accommodation,
-  updateM1InternalSupplierNote,
-  type M1OperationalSliceRepository,
+  type M1StaffTripOperations,
   type M1TripSlice,
-  type StaffAuthorizationSnapshot,
-  type StaffPermissionId,
-  type StaffSessionAuthorizationProof,
 } from "@travelos/backend-core";
 import {
   AdminAccommodationUpdateRequestSchema,
@@ -22,8 +15,7 @@ import {
   AdminSupplierCostNoteUpdateRequestSchema,
   type AdminCreateM1TripSliceRequest,
 } from "@travelos/contracts/admin";
-import type { AuthRealm, AuthSurfacePolicy } from "@travelos/auth-adapters";
-import type { StaffAccessRepository } from "@travelos/database";
+import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
 
 interface IncomingHttpRequest {
   readonly method: string;
@@ -55,38 +47,9 @@ export interface AdminM1ExpressApplication {
 }
 
 export interface AdminM1RouteOptions {
-  readonly realm: AuthRealm;
   readonly policy: AuthSurfacePolicy;
-  readonly staffAccessRepository: Pick<StaffAccessRepository, "getStaffAuthorizationSnapshot">;
-  readonly m1Repository: M1OperationalSliceRepository;
+  readonly m1Operations: M1StaffTripOperations;
 }
-
-const M1_COMPOSITE_READ_PERMISSIONS = [
-  "customer.view",
-  "traveller.view_sensitive",
-  "trip.view",
-  "reservation.view",
-  "finance.view_costs",
-] as const satisfies readonly StaffPermissionId[];
-
-const M1_CREATE_PERMISSIONS = [
-  ...M1_COMPOSITE_READ_PERMISSIONS,
-  "customer.edit",
-  "traveller.edit",
-  "trip.edit",
-  "reservation.edit",
-  "finance.manage_costs",
-] as const satisfies readonly StaffPermissionId[];
-
-const M1_ACCOMMODATION_EDIT_PERMISSIONS = [
-  ...M1_COMPOSITE_READ_PERMISSIONS,
-  "trip.edit",
-] as const satisfies readonly StaffPermissionId[];
-
-const M1_INTERNAL_NOTE_EDIT_PERMISSIONS = [
-  ...M1_COMPOSITE_READ_PERMISSIONS,
-  "finance.manage_costs",
-] as const satisfies readonly StaffPermissionId[];
 
 const headersFor = (request: IncomingHttpRequest): Headers => {
   const headers = new Headers();
@@ -115,6 +78,7 @@ const surfaceRejectionStatus = (
   policy: AuthSurfacePolicy,
 ): 403 | 404 | null => {
   const headers = headersFor(request);
+  if (routeUrlFor(request, policy) === null) return 404;
   if (headers.get("host") !== policy.expectedHost) return 404;
   if (headers.has("authorization") || headers.has("x-forwarded-host")) return 403;
   return null;
@@ -134,62 +98,6 @@ const idFrom = (value: string | undefined): ReturnType<typeof asOpaqueId> | null
   } catch {
     return null;
   }
-};
-
-const sessionProofFor = async (
-  request: IncomingHttpRequest,
-  options: AdminM1RouteOptions,
-): Promise<StaffSessionAuthorizationProof | null> => {
-  const target = routeUrlFor(request, options.policy);
-  if (target === null) return null;
-  const session = await options.realm.getServerSession(
-    new Request(target, { headers: headersFor(request) }),
-  );
-  if (session === null || session.agencyId === null || session.authorizationEpoch === null)
-    return null;
-  return {
-    staffPrincipalId: session.principalId,
-    agencyId: session.agencyId,
-    authorizationEpoch: session.authorizationEpoch,
-    expiresAtEpochMs: session.expiresAtEpochMs,
-    recentMfaVerifiedAtEpochMs: session.recentMfaVerifiedAtEpochMs,
-  };
-};
-
-const authorizeFor = async (
-  request: IncomingHttpRequest,
-  options: AdminM1RouteOptions,
-  agencyId: string,
-  permissionIds: readonly StaffPermissionId[],
-): Promise<
-  { readonly proof: StaffSessionAuthorizationProof } | { readonly status: 401 | 403 | 404 }
-> => {
-  const rejection = surfaceRejectionStatus(request, options.policy);
-  if (rejection !== null) return { status: rejection };
-  const proof = await sessionProofFor(request, options);
-  if (proof === null) return { status: 401 };
-  const targetAgencyId = agencyId === "" ? proof.agencyId : agencyId;
-  if (proof.agencyId !== targetAgencyId) return { status: 403 };
-  const snapshot: StaffAuthorizationSnapshot | null =
-    await options.staffAccessRepository.getStaffAuthorizationSnapshot(proof.staffPrincipalId);
-  for (const permissionId of permissionIds) {
-    const decision = authorizeStaffRequest({
-      session: proof,
-      snapshot,
-      permissionId,
-      target: {
-        agencyId: targetAgencyId,
-        organizationUnitAncestorIds: [],
-        requiredAccessLevel: "ALL",
-      },
-      nowEpochMs: Date.now(),
-      recentMfaMaximumAgeMs: null,
-    });
-    if (decision.result === "DENY") {
-      return { status: decision.reason === "UNAUTHENTICATED" ? 401 : 403 };
-    }
-  }
-  return { proof };
 };
 
 const mapSlice = (slice: M1TripSlice) =>
@@ -384,6 +292,10 @@ const runHandler = (
 ): void => {
   response.setHeader("Cache-Control", "private, no-store");
   void work().catch((error: unknown) => {
+    if (error instanceof M1StaffAuthorizationError) {
+      response.status(error.code === "UNAUTHENTICATED" ? 401 : 403).end();
+      return;
+    }
     if (error instanceof M1OptimisticConflictError) {
       send(response, 409, { error: "optimistic_conflict" });
       return;
@@ -408,17 +320,15 @@ export const registerAdminM1Routes = (
           badRequest(response);
           return;
         }
-        const authorized = await authorizeFor(
-          request,
-          options,
-          parsed.data.agencyId,
-          M1_CREATE_PERMISSIONS,
-        );
-        if ("status" in authorized) {
-          response.status(authorized.status).end();
+        const rejection = surfaceRejectionStatus(request, options.policy);
+        if (rejection !== null) {
+          response.status(rejection).end();
           return;
         }
-        const slice = await createM1TripSlice(options.m1Repository, toCreateInput(parsed.data));
+        const slice = await options.m1Operations.createTripSlice(
+          headersFor(request).get("cookie"),
+          toCreateInput(parsed.data),
+        );
         send(response, 201, mapSlice(slice));
       },
       response,
@@ -434,14 +344,13 @@ export const registerAdminM1Routes = (
           badRequest(response);
           return;
         }
-        const authorized = await authorizeFor(request, options, "", M1_COMPOSITE_READ_PERMISSIONS);
-        if ("status" in authorized) {
-          response.status(authorized.status).end();
+        const rejection = surfaceRejectionStatus(request, options.policy);
+        if (rejection !== null) {
+          response.status(rejection).end();
           return;
         }
-        const slice = await readM1TripSlice(
-          options.m1Repository,
-          asOpaqueId(authorized.proof.agencyId),
+        const slice = await options.m1Operations.readTripSlice(
+          headersFor(request).get("cookie"),
           tripId,
         );
         if (slice === null) {
@@ -464,24 +373,22 @@ export const registerAdminM1Routes = (
           badRequest(response);
           return;
         }
-        const authorized = await authorizeFor(
-          request,
-          options,
-          parsed.data.agencyId,
-          M1_ACCOMMODATION_EDIT_PERMISSIONS,
-        );
-        if ("status" in authorized) {
-          response.status(authorized.status).end();
+        const rejection = surfaceRejectionStatus(request, options.policy);
+        if (rejection !== null) {
+          response.status(rejection).end();
           return;
         }
-        const slice = await updateM1Accommodation(options.m1Repository, {
-          agencyId: asOpaqueId(parsed.data.agencyId),
-          tripId: asOpaqueId(parsed.data.tripId),
-          itemId,
-          expectedLockVersion: BigInt(parsed.data.expectedLockVersion),
-          title: parsed.data.title,
-          description: parsed.data.description,
-        });
+        const slice = await options.m1Operations.updateAccommodation(
+          headersFor(request).get("cookie"),
+          {
+            agencyId: asOpaqueId(parsed.data.agencyId),
+            tripId: asOpaqueId(parsed.data.tripId),
+            itemId,
+            expectedLockVersion: BigInt(parsed.data.expectedLockVersion),
+            title: parsed.data.title,
+            description: parsed.data.description,
+          },
+        );
         send(response, 200, mapSlice(slice));
       },
       response,
@@ -504,23 +411,21 @@ export const registerAdminM1Routes = (
             badRequest(response);
             return;
           }
-          const authorized = await authorizeFor(
-            request,
-            options,
-            parsed.data.agencyId,
-            M1_INTERNAL_NOTE_EDIT_PERMISSIONS,
-          );
-          if ("status" in authorized) {
-            response.status(authorized.status).end();
+          const rejection = surfaceRejectionStatus(request, options.policy);
+          if (rejection !== null) {
+            response.status(rejection).end();
             return;
           }
-          const slice = await updateM1InternalSupplierNote(options.m1Repository, {
-            agencyId: asOpaqueId(parsed.data.agencyId),
-            tripId: asOpaqueId(parsed.data.tripId),
-            reservationId,
-            expectedLockVersion: BigInt(parsed.data.expectedLockVersion),
-            internalNote: parsed.data.internalNote,
-          });
+          const slice = await options.m1Operations.updateInternalSupplierNote(
+            headersFor(request).get("cookie"),
+            {
+              agencyId: asOpaqueId(parsed.data.agencyId),
+              tripId: asOpaqueId(parsed.data.tripId),
+              reservationId,
+              expectedLockVersion: BigInt(parsed.data.expectedLockVersion),
+              internalNote: parsed.data.internalNote,
+            },
+          );
           send(response, 200, mapSlice(slice));
         },
         response,
