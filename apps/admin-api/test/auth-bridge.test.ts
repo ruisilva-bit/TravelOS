@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { AuthRealm } from "@travelos/auth-adapters";
+import { STAFF_AUTH_BASE_PATH, type AuthRealm } from "@travelos/auth-adapters";
 
 import { registerAdminAuthBridge } from "../src/auth-bridge.js";
 
@@ -111,6 +111,17 @@ describe("Admin Staff auth bridge", () => {
         { ...bridgeOptions(), realm: { ...staffRealm(), kind: "PORTAL" } },
       ),
     ).toThrow("Staff realm");
+  });
+
+  it("refuses a non-canonical Staff authentication prefix at composition time", () => {
+    const express = new FakeExpress();
+    expect(() =>
+      registerAdminAuthBridge(
+        { getHttpAdapter: () => ({ getInstance: () => express }) },
+        { ...bridgeOptions(), realm: staffRealm({ basePath: "/api/auth" }) },
+      ),
+    ).toThrow("canonical Staff authentication prefix");
+    expect(STAFF_AUTH_BASE_PATH).toBe("/api/auth/staff");
   });
 
   it("rechecks membership and authorization epoch before returning trusted session context", async () => {

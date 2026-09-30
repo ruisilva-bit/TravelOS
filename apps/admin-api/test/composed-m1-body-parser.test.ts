@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 
-import type { AuthRealm } from "@travelos/auth-adapters";
+import { STAFF_AUTH_BASE_PATH, type AuthRealm } from "@travelos/auth-adapters";
 import {
   createM1StaffTripOperations,
   type M1OperationalSliceRepository,
@@ -80,7 +80,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
   it("parses JSON before the raw Stage 5 write routes are reached", async () => {
     const realm = {
       kind: "STAFF",
-      basePath: "/api/auth",
+      basePath: STAFF_AUTH_BASE_PATH,
       getServerSession: vi.fn().mockResolvedValue(null),
     } as unknown as AuthRealm;
     const m1Repository: M1OperationalSliceRepository = {
@@ -97,6 +97,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
       sessionResolver: { resolveStaffSession: vi.fn().mockResolvedValue(null) },
     });
     const application = await createAdminApi({
+      expectedHost: "admin.example.test",
       auth: {
         realm,
         policy: {
@@ -108,9 +109,19 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
       },
     });
     try {
+      const rejectedBeforeParsing = await request(application.getHttpServer())
+        .post("/api/admin/trips")
+        .set("Host", "attacker.example.test")
+        .set("Content-Type", "application/json")
+        .send("{");
+      expect(rejectedBeforeParsing.status).toBe(404);
+      expect(rejectedBeforeParsing.text).toBe("");
+      expect(m1Repository.createM1TripSlice).not.toHaveBeenCalled();
+
       const response = await request(application.getHttpServer())
         .post("/api/admin/trips")
         .set("Host", "admin.example.test")
+        .set("X-Forwarded-Host", "admin.example.test")
         .send(validCreateBody());
       expect(response.status).toBe(401);
       expect(response.headers["cache-control"]).toBe("private, no-store");

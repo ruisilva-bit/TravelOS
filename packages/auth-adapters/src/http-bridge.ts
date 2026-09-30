@@ -1,4 +1,4 @@
-import type { AuthRealm } from "./realm.js";
+import { PORTAL_AUTH_BASE_PATH, STAFF_AUTH_BASE_PATH, type AuthRealm } from "./realm.js";
 
 export interface AuthHttpRequest {
   readonly method: string;
@@ -20,6 +20,49 @@ export interface AuthSurfacePolicy {
 
 const stateChangingMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const sensitiveQueryParameter = /^(?:authorization|password|secret|session|token)$/iu;
+
+export const hostHeaderMatchesExpectedHost = (
+  value: string | null | undefined,
+  expectedHost: string,
+): boolean =>
+  typeof value === "string" &&
+  expectedHost === expectedHost.toLowerCase() &&
+  value === value.trim() &&
+  value.toLowerCase() === expectedHost;
+
+const rawPathnameFor = (requestUrl: string): string | null => {
+  const requestTarget = requestUrl.split(/[?#]/u, 1)[0] ?? "";
+  if (requestTarget.startsWith("/")) return requestTarget;
+  const schemeSeparator = requestTarget.indexOf("://");
+  if (schemeSeparator < 0) return null;
+  const pathStart = requestTarget.indexOf("/", schemeSeparator + 3);
+  return pathStart < 0 ? "/" : requestTarget.slice(pathStart);
+};
+
+const pathnameMatchesBasePath = (pathname: string, basePath: string): boolean => {
+  if (pathname === basePath) return true;
+  if (!pathname.startsWith(`${basePath}/`)) return false;
+  const suffix = pathname.slice(basePath.length + 1);
+  return (
+    suffix.length > 0 &&
+    !pathname.endsWith("/") &&
+    !pathname.includes("//") &&
+    !/%(?:2f|5c)/iu.test(suffix)
+  );
+};
+
+export const authRequestPathMatchesBase = (
+  requestUrl: string,
+  targetUrl: URL,
+  basePath: string,
+): boolean => {
+  const rawPathname = rawPathnameFor(requestUrl);
+  return (
+    rawPathname !== null &&
+    rawPathname === targetUrl.pathname &&
+    pathnameMatchesBasePath(rawPathname, basePath)
+  );
+};
 
 const requestOriginIsAllowed = (request: AuthHttpRequest, policy: AuthSurfacePolicy): boolean => {
   if (!stateChangingMethods.has(request.method.toUpperCase())) return true;
@@ -66,12 +109,14 @@ export const dispatchAuthRealmRequest = async (
   ) {
     throw new Error("Auth surface canonical origin must not include a path, query, or hash");
   }
-  if (request.headers.get("host") !== policy.expectedHost) {
+  if (!hostHeaderMatchesExpectedHost(request.headers.get("host"), policy.expectedHost)) {
     return { status: 404, headers: new Headers(), body: new Uint8Array() };
   }
+  const forwardedHost = request.headers.get("x-forwarded-host");
   if (
     request.headers.has("authorization") ||
-    request.headers.has("x-forwarded-host") ||
+    (forwardedHost !== null &&
+      !hostHeaderMatchesExpectedHost(forwardedHost, policy.expectedHost)) ||
     !requestOriginIsAllowed(request, policy)
   ) {
     return { status: 403, headers: new Headers(), body: new Uint8Array() };
@@ -83,8 +128,11 @@ export const dispatchAuthRealmRequest = async (
   ) {
     return { status: 403, headers: new Headers(), body: new Uint8Array() };
   }
-  const pathname = targetUrl.pathname;
-  if (!pathname.startsWith(`${realm.basePath}/`) && pathname !== realm.basePath) {
+  const expectedBasePath = realm.kind === "STAFF" ? STAFF_AUTH_BASE_PATH : PORTAL_AUTH_BASE_PATH;
+  if (
+    realm.basePath !== expectedBasePath ||
+    !authRequestPathMatchesBase(request.url, targetUrl, expectedBasePath)
+  ) {
     return { status: 404, headers: new Headers(), body: new Uint8Array() };
   }
   const headers = new Headers(request.headers);

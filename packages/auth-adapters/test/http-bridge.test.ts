@@ -85,6 +85,39 @@ describe("auth realm HTTP boundary", () => {
     expect(handled).toHaveLength(0);
   });
 
+  it("accepts only the canonical Staff base path and a corroborating trusted-proxy host", async () => {
+    const handled: Request[] = [];
+    const fake = realm(handled);
+    const forwarded = await dispatchAuthRealmRequest(
+      fake,
+      policy,
+      request({
+        headers: new Headers({
+          host: policy.expectedHost,
+          "x-forwarded-host": policy.expectedHost,
+        }),
+      }),
+    );
+    expect(forwarded.status).toBe(201);
+
+    for (const url of [
+      `${STAFF_AUTH_BASE_PATH}/`,
+      `${STAFF_AUTH_BASE_PATH}//get-session`,
+      `${STAFF_AUTH_BASE_PATH}/../staff/get-session`,
+      `${STAFF_AUTH_BASE_PATH}%2Fget-session`,
+    ]) {
+      await expect(dispatchAuthRealmRequest(fake, policy, request({ url }))).resolves.toMatchObject(
+        { status: 404 },
+      );
+    }
+
+    const nonCanonicalRealm = { ...fake, basePath: "/api/auth" };
+    await expect(
+      dispatchAuthRealmRequest(nonCanonicalRealm, policy, request()),
+    ).resolves.toMatchObject({ status: 404 });
+    expect(handled).toHaveLength(1);
+  });
+
   it("routes only the configured realm and preserves safe form bodies without parsing credentials", async () => {
     const handled: Request[] = [];
     const fake = realm(handled);

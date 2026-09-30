@@ -1,5 +1,8 @@
 import {
+  authRequestPathMatchesBase,
   dispatchAuthRealmRequest,
+  hostHeaderMatchesExpectedHost,
+  STAFF_AUTH_BASE_PATH,
   type AuthRealm,
   type AuthSurfacePolicy,
 } from "@travelos/auth-adapters";
@@ -81,8 +84,14 @@ const surfaceRejectionStatus = (
   policy: AuthSurfacePolicy,
 ): 403 | 404 | null => {
   const headers = headersFor(request);
-  if (headers.get("host") !== policy.expectedHost) return 404;
-  if (headers.has("authorization") || headers.has("x-forwarded-host")) return 403;
+  if (!hostHeaderMatchesExpectedHost(headers.get("host"), policy.expectedHost)) return 404;
+  const forwardedHost = headers.get("x-forwarded-host");
+  if (
+    headers.has("authorization") ||
+    (forwardedHost !== null && !hostHeaderMatchesExpectedHost(forwardedHost, policy.expectedHost))
+  ) {
+    return 403;
+  }
   return null;
 };
 
@@ -107,11 +116,12 @@ const authRouteMatches = (
   request: IncomingHttpRequest,
   options: AdminAuthBridgeOptions,
 ): boolean => {
+  const requestUrl = request.originalUrl ?? request.url;
   const target = requestUrlFor(request, options.policy);
   return (
     target !== null &&
-    (target.pathname === options.realm.basePath ||
-      target.pathname.startsWith(`${options.realm.basePath}/`))
+    options.realm.basePath === STAFF_AUTH_BASE_PATH &&
+    authRequestPathMatchesBase(requestUrl, target, STAFF_AUTH_BASE_PATH)
   );
 };
 
@@ -215,6 +225,11 @@ export const registerAdminAuthBridge = (
 ): void => {
   if (options.realm.kind !== "STAFF") {
     throw new Error("Admin authentication bridge requires the Staff realm");
+  }
+  if (options.realm.basePath !== STAFF_AUTH_BASE_PATH) {
+    throw new Error(
+      "Admin authentication bridge requires the canonical Staff authentication prefix",
+    );
   }
   const http = application.getHttpAdapter().getInstance() as ExpressLikeApplication;
   http.use(bridgeHandler(options));

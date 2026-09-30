@@ -34,7 +34,7 @@ const readRequiredArgument = (name: string): string => {
 const createAdminAuthOptions = async (
   manifest: DevelopmentInstanceManifest,
 ): Promise<{
-  readonly options: CreateAdminApiOptions;
+  readonly options: Omit<CreateAdminApiOptions, "expectedHost">;
   readonly destroy: () => Promise<void>;
 }> => {
   const databaseCredential = await readSystemdCredentialText(
@@ -92,11 +92,67 @@ const main = async (): Promise<void> => {
   const manifest = await loadDevelopmentInstanceManifest(manifestPath);
   const listener = manifest.runtime.listeners.adminApi;
   const smoke = process.argv.includes("--smoke");
-  const runtime = smoke ? null : await createAdminAuthOptions(manifest);
-  const application = await createAdminApi(runtime?.options ?? {}).catch(async (error: unknown) => {
+  const smokeListener = process.argv.includes("--smoke-listener");
+  const runtime = smoke || smokeListener ? null : await createAdminAuthOptions(manifest);
+  const application = await createAdminApi({
+    expectedHost: manifest.hosts.admin,
+    ...(runtime?.options ?? {}),
+  }).catch(async (error: unknown) => {
     await runtime?.destroy();
     throw error;
   });
+
+  if (smokeListener) {
+    await application.listen(0, listener.host);
+    const applicationUrl = new URL(await application.getUrl());
+    const boundPort = Number.parseInt(applicationUrl.port, 10);
+    if (applicationUrl.hostname !== listener.host || !Number.isInteger(boundPort)) {
+      await application.close();
+      throw new Error("Admin API smoke did not bind an ephemeral IPv4 loopback listener");
+    }
+    const healthPath = "/health/live";
+    const binding = {
+      requestedPort: 0,
+      boundAddress: applicationUrl.hostname,
+      boundPort,
+      ephemeralPortRequested: true,
+    };
+    let shutdownStarted = false;
+    const shutdownSmokeListener = (): void => {
+      if (shutdownStarted) return;
+      shutdownStarted = true;
+      void application
+        .close()
+        .then(async () => {
+          await runtime?.destroy();
+          console.log(
+            JSON.stringify({
+              event: "process_smoke_shutdown",
+              service: "admin-api",
+              state: "STOPPED",
+              cleanShutdown: true,
+            }),
+          );
+        })
+        .catch(() => {
+          process.exitCode = 1;
+        });
+    };
+    process.once("SIGINT", shutdownSmokeListener);
+    process.once("SIGTERM", shutdownSmokeListener);
+    console.log(
+      JSON.stringify({
+        event: "process_smoke_listening",
+        service: "admin-api",
+        environment: manifest.environment,
+        initialized: true,
+        listening: true,
+        binding,
+        healthRequest: { method: "GET", path: healthPath },
+      }),
+    );
+    return;
+  }
 
   if (smoke) {
     await application.listen(0, listener.host);
@@ -106,19 +162,7 @@ const main = async (): Promise<void> => {
       await application.close();
       throw new Error("Admin API smoke did not bind an ephemeral IPv4 loopback listener");
     }
-    const healthPath = "/health/live";
-    const healthResult = await (async () => {
-      try {
-        const response = await fetch(new URL(healthPath, applicationUrl));
-        const body: unknown = await response.json();
-        if (response.status !== 200) {
-          throw new Error(`Admin API liveness smoke returned HTTP ${response.status}`);
-        }
-        return { status: response.status, body };
-      } finally {
-        await application.close();
-      }
-    })();
+    await application.close();
     console.log(
       JSON.stringify({
         event: "process_smoke",
@@ -132,9 +176,6 @@ const main = async (): Promise<void> => {
           boundPort,
           ephemeralPortRequested: true,
         },
-        healthRequest: { method: "GET", path: healthPath },
-        healthStatus: healthResult.status,
-        healthResponse: healthResult.body,
         cleanShutdown: true,
       }),
     );

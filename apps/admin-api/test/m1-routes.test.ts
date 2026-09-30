@@ -304,6 +304,10 @@ const makeHarness = (
     key: string,
     body: unknown,
     params: Readonly<Record<string, string>> = {},
+    headers: Record<string, string | string[] | undefined> = {
+      host: "admin.example.test",
+      cookie: "session=opaque",
+    },
   ) => {
     const handler = handlers.get(key);
     if (handler === undefined) throw new Error(`Missing handler ${key}`);
@@ -326,7 +330,7 @@ const makeHarness = (
         method: key.split(" ")[0] ?? "POST",
         url: "/api/admin/trips",
         originalUrl: "/api/admin/trips",
-        headers: { host: "admin.example.test", cookie: "session=opaque" },
+        headers,
         body,
         params,
       },
@@ -364,6 +368,36 @@ describe("Admin Stage 5 routes", () => {
       supplierCosts: [{ classification: "INTERNAL_ONLY" }],
     });
     expect(harness.repository.createM1TripSlice).toHaveBeenCalledOnce();
+  });
+
+  it("accepts only a forwarded host that corroborates the configured Admin host", async () => {
+    const harness = makeHarness();
+    const accepted = await harness.invoke(
+      "POST /api/admin/trips",
+      requestBody(),
+      {},
+      {
+        host: "admin.example.test",
+        cookie: "session=opaque",
+        "x-forwarded-host": "admin.example.test",
+      },
+    );
+    expect(accepted.statusCode).toBe(201);
+    expect(harness.repository.createM1TripSlice).toHaveBeenCalledOnce();
+
+    const conflicting = makeHarness();
+    const rejected = await conflicting.invoke(
+      "POST /api/admin/trips",
+      requestBody(),
+      {},
+      {
+        host: "admin.example.test",
+        cookie: "session=opaque",
+        "x-forwarded-host": "attacker.example.test",
+      },
+    );
+    expect(rejected.statusCode).toBe(403);
+    expect(conflicting.repository.createM1TripSlice).not.toHaveBeenCalled();
   });
 
   it("does not let cost visibility alone create INTERNAL_ONLY supplier cost", async () => {

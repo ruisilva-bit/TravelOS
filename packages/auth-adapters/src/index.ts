@@ -1,5 +1,7 @@
 export {
+  authRequestPathMatchesBase,
   dispatchAuthRealmRequest,
+  hostHeaderMatchesExpectedHost,
   type AuthHttpRequest,
   type AuthHttpResponse,
   type AuthSurfacePolicy,

@@ -15,7 +15,7 @@ import {
   AdminSupplierCostNoteUpdateRequestSchema,
   type AdminCreateM1TripSliceRequest,
 } from "@travelos/contracts/admin";
-import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
+import { hostHeaderMatchesExpectedHost, type AuthSurfacePolicy } from "@travelos/auth-adapters";
 
 interface IncomingHttpRequest {
   readonly method: string;
@@ -79,8 +79,14 @@ const surfaceRejectionStatus = (
 ): 403 | 404 | null => {
   const headers = headersFor(request);
   if (routeUrlFor(request, policy) === null) return 404;
-  if (headers.get("host") !== policy.expectedHost) return 404;
-  if (headers.has("authorization") || headers.has("x-forwarded-host")) return 403;
+  if (!hostHeaderMatchesExpectedHost(headers.get("host"), policy.expectedHost)) return 404;
+  const forwardedHost = headers.get("x-forwarded-host");
+  if (
+    headers.has("authorization") ||
+    (forwardedHost !== null && !hostHeaderMatchesExpectedHost(forwardedHost, policy.expectedHost))
+  ) {
+    return 403;
+  }
   return null;
 };
 

@@ -1,7 +1,9 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
+import { request as httpRequest } from "node:http";
 import path from "node:path";
+import { createInterface } from "node:readline";
 
 const root = process.cwd();
 const manifest = "deploy/manifests/development.example.json";
@@ -23,6 +25,158 @@ const runProcessSmoke = (service) => {
     .filter(Boolean)
     .map((line) => JSON.parse(line));
   return { service, exitCode: result.status, events };
+};
+
+const requestAdminHealth = ({ host, port, expectedHost }) =>
+  new Promise((resolve, reject) => {
+    const request = httpRequest(
+      {
+        hostname: host,
+        port,
+        path: "/health/live",
+        method: "GET",
+        headers: { host: expectedHost },
+      },
+      (response) => {
+        let bodyText = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          bodyText += chunk;
+        });
+        response.on("error", reject);
+        response.on("end", () => {
+          try {
+            resolve({
+              status: response.statusCode ?? 0,
+              body: JSON.parse(bodyText),
+            });
+          } catch (error) {
+            reject(error);
+          }
+        });
+      },
+    );
+    request.setTimeout(5_000, () => request.destroy(new Error("Admin API health smoke timed out")));
+    request.on("error", reject);
+    request.end();
+  });
+
+const runAdminApiSmoke = async () => {
+  const developmentManifest = JSON.parse(await readFile(path.join(root, manifest), "utf8"));
+  const expectedHost = developmentManifest.hosts?.admin;
+  assert(typeof expectedHost === "string", "Development manifest Admin host is missing");
+
+  const child = spawn(
+    process.execPath,
+    [path.join(root, "apps/admin-api/dist/main.js"), `--manifest=${manifest}`, "--smoke-listener"],
+    { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
+  );
+  const events = [];
+  let stderr = "";
+  let readyEvent = null;
+  let closed = false;
+  child.stderr.setEncoding("utf8");
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
+
+  const lines = createInterface({ input: child.stdout });
+  let resolveReady;
+  let rejectReady;
+  const readyPromise = new Promise((resolve, reject) => {
+    resolveReady = resolve;
+    rejectReady = reject;
+  });
+  let resolveExit;
+  const exitPromise = new Promise((resolve) => {
+    resolveExit = resolve;
+  });
+
+  lines.on("line", (line) => {
+    try {
+      const event = JSON.parse(line);
+      events.push(event);
+      if (readyEvent === null && event.event === "process_smoke_listening") {
+        readyEvent = event;
+        resolveReady(event);
+      }
+    } catch (error) {
+      rejectReady(new Error(`Admin API smoke emitted invalid JSON: ${error.message}`));
+    }
+  });
+  child.once("error", rejectReady);
+  child.once("close", (code, signal) => {
+    closed = true;
+    const result = { code, signal };
+    if (readyEvent === null) {
+      rejectReady(
+        new Error(
+          `Admin API smoke listener exited before readiness (${JSON.stringify(result)}): ${stderr}`,
+        ),
+      );
+    }
+    resolveExit(result);
+  });
+
+  const startupTimeout = setTimeout(
+    () => rejectReady(new Error(`Admin API smoke listener startup timed out: ${stderr}`)),
+    15_000,
+  );
+  try {
+    const listening = await readyPromise;
+    clearTimeout(startupTimeout);
+    assert(
+      listening.binding?.boundAddress === "127.0.0.1" &&
+        Number.isInteger(listening.binding?.boundPort) &&
+        listening.binding.boundPort > 0,
+      "Admin API smoke listener did not bind an ephemeral IPv4 loopback address",
+    );
+
+    const health = await requestAdminHealth({
+      host: listening.binding.boundAddress,
+      port: listening.binding.boundPort,
+      expectedHost,
+    });
+    assert(health.status === 200, `Admin API health smoke returned HTTP ${health.status}`);
+    child.kill("SIGTERM");
+    const exit = await exitPromise;
+    assert(
+      exit.code === 0 && exit.signal === null,
+      `Admin API smoke did not exit cleanly: ${JSON.stringify(exit)}`,
+    );
+    const shutdown = events.find((event) => event.event === "process_smoke_shutdown");
+    assert(
+      shutdown?.state === "STOPPED" && shutdown.cleanShutdown === true,
+      "Admin API smoke did not report clean shutdown",
+    );
+
+    return {
+      service: "admin-api",
+      exitCode: exit.code,
+      events: [
+        ...events,
+        {
+          event: "process_smoke",
+          service: "admin-api",
+          environment: listening.environment,
+          initialized: listening.initialized,
+          listening: listening.listening,
+          binding: listening.binding,
+          healthRequest: { method: "GET", path: "/health/live" },
+          healthStatus: health.status,
+          healthResponse: health.body,
+          cleanShutdown: shutdown.cleanShutdown,
+        },
+      ],
+    };
+  } finally {
+    clearTimeout(startupTimeout);
+    lines.close();
+    if (!closed && child.pid !== undefined) {
+      child.kill("SIGKILL");
+      await exitPromise;
+    }
+  }
 };
 
 const collectFiles = async (directory) => {
@@ -75,7 +229,7 @@ const webBuild = async (app, requiredText, forbiddenText) => {
 const adminWeb = await webBuild("admin-web", "TravelOS", "TravelOS Portal");
 const portalWeb = await webBuild("portal-web", "TravelOS Portal", 'data-routing-root="admin"');
 const processSmokes = [
-  runProcessSmoke("admin-api"),
+  await runAdminApiSmoke(),
   runProcessSmoke("portal-api"),
   runProcessSmoke("worker"),
 ];
