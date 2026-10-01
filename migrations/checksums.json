@@ -37,6 +37,10 @@
     {
       "file": "0009_stage5_revision_and_lock_version_hardening.cjs",
       "sha256": "ce927a10e9001098d9cac648d74032d2bf73bb6d5dbee5844cd01cf963c3ab2c"
+    },
+    {
+      "file": "0010_stage5_temporal_persistence_parity.cjs",
+      "sha256": "d7961fbf06cda8b222fd1219de6d9aec85a0205fb1d186e809260d579c598030"
     }
   ]
 }

@@ -319,6 +319,38 @@ describe("Stage 5 Admin contracts", () => {
     ).toBe(true);
     expect(
       AdminScheduledLocalDateTimeSchema.safeParse({
+        localDate: "1000-01-01",
+        localTime: "00:00:00",
+        timezoneName: "UTC",
+        instant: "1000-01-01T00:00:00.000Z",
+      }).success,
+    ).toBe(true);
+    expect(
+      AdminScheduledLocalDateTimeSchema.safeParse({
+        localDate: "9999-12-31",
+        localTime: "23:59:59",
+        timezoneName: "UTC",
+        instant: "9999-12-31T23:59:59.999Z",
+      }).success,
+    ).toBe(true);
+    expect(
+      AdminScheduledLocalDateTimeSchema.safeParse({
+        localDate: "1000-01-01",
+        localTime: "00:52:00",
+        timezoneName: "Africa/Johannesburg",
+        instant: "1000-01-01T00:52:00+01:52",
+      }).success,
+    ).toBe(false);
+    expect(
+      AdminScheduledLocalDateTimeSchema.safeParse({
+        localDate: "9999-12-31",
+        localTime: "16:00:00",
+        timezoneName: "America/Los_Angeles",
+        instant: "9999-12-31T16:00:00-08:00",
+      }).success,
+    ).toBe(false);
+    expect(
+      AdminScheduledLocalDateTimeSchema.safeParse({
         localDate: "2026-09-25",
         localTime: "04:00",
         timezoneName: "US/Eastern",

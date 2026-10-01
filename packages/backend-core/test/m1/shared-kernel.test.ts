@@ -181,4 +181,40 @@ describe("Stage 5 exact shared kernel", () => {
       }),
     ).toThrow("does not match");
   });
+
+  it("bounds normalized UTC instants to inclusive four-digit calendar years", () => {
+    expect(
+      createScheduledLocalDateTime({
+        localDate: "1000-01-01",
+        localTime: "00:00:00",
+        timezoneName: "UTC",
+        instant: "1000-01-01T00:00:00.000Z",
+      }).instant,
+    ).toBe("1000-01-01T00:00:00.000Z");
+    expect(
+      createScheduledLocalDateTime({
+        localDate: "9999-12-31",
+        localTime: "23:59:59",
+        timezoneName: "UTC",
+        instant: "9999-12-31T23:59:59.999Z",
+      }).instant,
+    ).toBe("9999-12-31T23:59:59.999Z");
+
+    expect(() =>
+      createScheduledLocalDateTime({
+        localDate: "1000-01-01",
+        localTime: "00:52:00",
+        timezoneName: "Africa/Johannesburg",
+        instant: "1000-01-01T00:52:00+01:52",
+      }),
+    ).toThrow("four-digit UTC calendar year");
+    expect(() =>
+      createScheduledLocalDateTime({
+        localDate: "9999-12-31",
+        localTime: "16:00:00",
+        timezoneName: "America/Los_Angeles",
+        instant: "9999-12-31T16:00:00-08:00",
+      }),
+    ).toThrow("four-digit UTC calendar year");
+  });
 });

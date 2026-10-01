@@ -5,6 +5,9 @@ const IGNORED_DIRECTORY_NAMES = new Set([".git", ".vite", "coverage", "dist", "n
 
 export const STAGE5_REQUIRED_SOURCE_PATHS = Object.freeze([
   "migrations/0007_stage5_m1_domain_slice.cjs",
+  "migrations/0008_stage5_cardinality_only.cjs",
+  "migrations/0009_stage5_revision_and_lock_version_hardening.cjs",
+  "migrations/0010_stage5_temporal_persistence_parity.cjs",
   "migrations/checksums.json",
   "packages/backend-core/src/modules/crm/domain/continuity.ts",
   "packages/backend-core/src/modules/finance-operations/domain/supplier-cost.ts",

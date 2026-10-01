@@ -6,13 +6,13 @@ import { spawnSync } from "node:child_process";
 const repositoryRoot = process.cwd();
 const outputPath = path.resolve(
   process.env["TRAVELOS_STAGE5_FOCUSED_OUTPUT"] ??
-    "docs/evidence/phase-1-m1/stage-5-final-7/focused-test-execution.json",
+    "docs/evidence/phase-1-m1/stage-5-final-9/focused-test-execution.json",
 );
 const logPath = path.resolve(
   process.env["TRAVELOS_STAGE5_FOCUSED_LOG"] ??
-    "docs/evidence/phase-1-m1/stage-5-final-7/focused-tests.log",
+    "docs/evidence/phase-1-m1/stage-5-final-9/focused-tests.log",
 );
-const corepack = path.join(path.dirname(process.execPath), "corepack");
+const corepack = "corepack";
 const focusedTests = [
   "packages/contracts/test/admin-m1-contracts.test.ts",
   "apps/admin-api/test/m1-routes.test.ts",

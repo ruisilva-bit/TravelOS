@@ -68,7 +68,12 @@ const isCalendarDate = (value: string): boolean => {
   );
 };
 
-const isInstantCalendarValid = (value: string): boolean => isCalendarDate(value.slice(0, 10));
+const isInstantCalendarValid = (value: string): boolean => {
+  if (!isCalendarDate(value.slice(0, 10))) return false;
+  const instant = new Date(value);
+  const utcYear = instant.getUTCFullYear();
+  return Number.isFinite(instant.getTime()) && utcYear >= 1000 && utcYear <= 9999;
+};
 
 const matchesLocalTuple = (value: {
   readonly localDate: string;

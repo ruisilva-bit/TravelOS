@@ -58,10 +58,15 @@ const createPredecessorMigrationChain = async (): Promise<MigrationChain> => {
     readonly algorithm: string;
     readonly migrations: readonly { readonly file: string; readonly sha256: string }[];
   };
-  const predecessorMigrations = manifest.migrations.filter(
-    ({ file }) => file !== "0009_stage5_revision_and_lock_version_hardening.cjs",
+  const currentStage5ChainIndex = manifest.migrations.findIndex(
+    ({ file }) => file === "0009_stage5_revision_and_lock_version_hardening.cjs",
   );
-  if (predecessorMigrations.length !== 8) {
+  const predecessorMigrations =
+    currentStage5ChainIndex < 0 ? [] : manifest.migrations.slice(0, currentStage5ChainIndex);
+  if (
+    predecessorMigrations.length !== 8 ||
+    predecessorMigrations.at(-1)?.file !== "0008_stage5_cardinality_only.cjs"
+  ) {
     throw new Error("The Stage 5 predecessor migration chain must end at migration 0008");
   }
   const workRoot = process.env["TRAVELOS_STAGE5_WORK_ROOT"];
@@ -419,7 +424,7 @@ afterAll(async () => {
 describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () => {
   it("applies the new migration head and preserves the predecessor isolation boundary", async () => {
     const status = await inspectMigrationStatus(migrationTarget, productionChain);
-    expect(status.currentVersion).toBe("0009_stage5_revision_and_lock_version_hardening");
+    expect(status.currentVersion).toBe("0010_stage5_temporal_persistence_parity");
     const bootstrapInput = {
       agencyId,
       bootstrapReference: "stage5-upgrade-qualification",
@@ -1725,6 +1730,207 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         }),
       ),
     ).toBe("P0001");
+  });
+
+  it("enforces the four-digit temporal contract at the PostgreSQL boundary", async () => {
+    const input = baseInput();
+    const temporalSlice = await createM1TripSlice(repository, {
+      ...input,
+      trip: { ...input.trip, title: "Temporal calendar-boundary qualification" },
+    });
+    const flightId = primaryFlight(temporalSlice).id;
+    const accommodationId = primaryAccommodation(temporalSlice).id;
+    const tripId = temporalSlice.trip.id;
+
+    const datesFor = async () =>
+      queryAsOwner<{ readonly startDate: string; readonly endDate: string }>(
+        `SELECT "startDate"::text AS "startDate", "endDate"::text AS "endDate"
+           FROM "trip_ops"."trip" WHERE "id" = '${tripId}'::uuid`,
+      );
+    const setTripDate = async (dateLiteral: string) =>
+      queryAsOwner(
+        `UPDATE "trip_ops"."trip"
+            SET "startDate" = DATE '${dateLiteral}', "endDate" = DATE '${dateLiteral}'
+          WHERE "id" = '${tripId}'::uuid`,
+      );
+
+    await setTripDate("1000-01-01");
+    expect(await datesFor()).toEqual([{ startDate: "1000-01-01", endDate: "1000-01-01" }]);
+    await setTripDate("9999-12-31");
+    expect(await datesFor()).toEqual([{ startDate: "9999-12-31", endDate: "9999-12-31" }]);
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `UPDATE "trip_ops"."trip" SET "startDate" = DATE '0999-12-31'
+            WHERE "id" = '${tripId}'::uuid`,
+        ),
+      ),
+    ).toBe("trip_date_policy");
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `UPDATE "trip_ops"."trip" SET "endDate" = DATE '10000-01-01'
+            WHERE "id" = '${tripId}'::uuid`,
+        ),
+      ),
+    ).toBe("trip_date_policy");
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `UPDATE "trip_ops"."trip" SET "endDate" = DATE 'infinity'
+            WHERE "id" = '${tripId}'::uuid`,
+        ),
+      ),
+    ).toBe("trip_date_policy");
+    expect(await queryErrorCode(() => queryAsOwner("SELECT DATE '2026-02-30'"))).toBe("22008");
+
+    await queryAsOwner(
+      `UPDATE "trip_ops"."flight_item_detail"
+          SET "departureDate" = DATE '1000-01-01',
+              "departureTime" = TIME '00:00:00',
+              "departureTimezone" = 'UTC',
+              "departureInstant" = TIMESTAMPTZ '1000-01-01 00:00:00+00',
+              "arrivalDate" = DATE '1000-01-01',
+              "arrivalTime" = TIME '00:00:01',
+              "arrivalTimezone" = 'UTC',
+              "arrivalInstant" = TIMESTAMPTZ '1000-01-01 00:00:01+00'
+        WHERE "itemId" = '${flightId}'::uuid`,
+    );
+    await queryAsOwner(
+      `UPDATE "trip_ops"."flight_item_detail"
+          SET "departureDate" = DATE '9999-12-31',
+              "departureTime" = TIME '23:59:58',
+              "departureTimezone" = 'UTC',
+              "departureInstant" = TIMESTAMPTZ '9999-12-31 23:59:58.999+00',
+              "arrivalDate" = DATE '9999-12-31',
+              "arrivalTime" = TIME '23:59:59',
+              "arrivalTimezone" = 'UTC',
+              "arrivalInstant" = TIMESTAMPTZ '9999-12-31 23:59:59.999+00'
+        WHERE "itemId" = '${flightId}'::uuid`,
+    );
+    const flightUpperBoundary = await queryAsOwner<{ readonly arrival: string }>(
+      `SELECT to_char("arrivalInstant" AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS "arrival"
+         FROM "trip_ops"."flight_item_detail" WHERE "itemId" = '${flightId}'::uuid`,
+    );
+    expect(flightUpperBoundary[0]?.arrival).toBe("9999-12-31T23:59:59.999");
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `UPDATE "trip_ops"."flight_item_detail"
+              SET "departureInstant" = TIMESTAMPTZ '0999-12-31 23:00:00+00'
+            WHERE "itemId" = '${flightId}'::uuid`,
+        ),
+      ),
+    ).toBe("scheduled_instant_calendar_policy");
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `UPDATE "trip_ops"."flight_item_detail"
+              SET "departureInstant" = TIMESTAMPTZ '10000-01-01 00:00:00+00'
+            WHERE "itemId" = '${flightId}'::uuid`,
+        ),
+      ),
+    ).toBe("scheduled_instant_calendar_policy");
+
+    await queryAsOwner(
+      `UPDATE "trip_ops"."accommodation_item_detail"
+          SET "checkInDate" = DATE '1000-01-01',
+              "checkInTime" = TIME '00:00:00',
+              "checkInTimezone" = 'UTC',
+              "checkInInstant" = TIMESTAMPTZ '1000-01-01 00:00:00+00',
+              "checkOutDate" = DATE '1000-01-01',
+              "checkOutTime" = TIME '00:01:00',
+              "checkOutTimezone" = 'UTC',
+              "checkOutInstant" = TIMESTAMPTZ '1000-01-01 00:01:00+00'
+        WHERE "itemId" = '${accommodationId}'::uuid`,
+    );
+    await queryAsOwner(
+      `UPDATE "trip_ops"."accommodation_item_detail"
+          SET "checkInDate" = DATE '9999-12-31',
+              "checkInTime" = TIME '23:59:58',
+              "checkInTimezone" = 'UTC',
+              "checkInInstant" = TIMESTAMPTZ '9999-12-31 23:59:58.999+00',
+              "checkOutDate" = DATE '9999-12-31',
+              "checkOutTime" = TIME '23:59:59',
+              "checkOutTimezone" = 'UTC',
+              "checkOutInstant" = TIMESTAMPTZ '9999-12-31 23:59:59.999+00'
+        WHERE "itemId" = '${accommodationId}'::uuid`,
+    );
+    const accommodationUpperBoundary = await queryAsOwner<{ readonly checkOut: string }>(
+      `SELECT to_char("checkOutInstant" AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS "checkOut"
+         FROM "trip_ops"."accommodation_item_detail" WHERE "itemId" = '${accommodationId}'::uuid`,
+    );
+    expect(accommodationUpperBoundary[0]?.checkOut).toBe("9999-12-31T23:59:59.999");
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `UPDATE "trip_ops"."accommodation_item_detail"
+              SET "checkInInstant" = TIMESTAMPTZ '0999-12-31 23:00:00+00'
+            WHERE "itemId" = '${accommodationId}'::uuid`,
+        ),
+      ),
+    ).toBe("scheduled_instant_calendar_policy");
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `UPDATE "trip_ops"."accommodation_item_detail"
+              SET "checkOutInstant" = TIMESTAMPTZ '10000-01-01 00:00:00+00'
+            WHERE "itemId" = '${accommodationId}'::uuid`,
+        ),
+      ),
+    ).toBe("scheduled_instant_calendar_policy");
+
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `UPDATE "trip_ops"."flight_item_detail"
+              SET "departureDate" = DATE '2026-09-25',
+                  "departureTime" = TIME '09:00:00',
+                  "departureTimezone" = 'Europe/Lisbon',
+                  "departureInstant" = TIMESTAMPTZ '2026-09-25 08:00:00+00',
+                  "arrivalDate" = DATE '2026-09-25',
+                  "arrivalTime" = TIME '08:00:00',
+                  "arrivalTimezone" = 'Europe/Lisbon',
+                  "arrivalInstant" = TIMESTAMPTZ '2026-09-25 07:00:00+00'
+            WHERE "itemId" = '${flightId}'::uuid`,
+        ),
+      ),
+    ).toBe("flight_time_order");
+    expect(
+      await queryErrorConstraint(() =>
+        queryAsOwner(
+          `UPDATE "trip_ops"."accommodation_item_detail"
+              SET "checkInDate" = DATE '2026-09-25',
+                  "checkInTime" = TIME '15:00:00',
+                  "checkInTimezone" = 'Europe/Lisbon',
+                  "checkInInstant" = TIMESTAMPTZ '2026-09-25 14:00:00+00',
+                  "checkOutDate" = DATE '2026-09-25',
+                  "checkOutTime" = TIME '11:00:00',
+                  "checkOutTimezone" = 'Europe/Lisbon',
+                  "checkOutInstant" = TIMESTAMPTZ '2026-09-25 10:00:00+00'
+            WHERE "itemId" = '${accommodationId}'::uuid`,
+        ),
+      ),
+    ).toBe("accommodation_time_order");
+
+    const temporalPolicies = await queryAsOwner<{
+      readonly constraintName: string;
+      readonly validated: boolean;
+    }>(`
+      SELECT constraint_row.conname AS "constraintName",
+             constraint_row.convalidated AS "validated"
+        FROM pg_catalog.pg_constraint AS constraint_row
+       WHERE constraint_row.conname IN (
+         'trip_date_policy',
+         'flight_departure_instant_calendar_policy',
+         'flight_arrival_instant_calendar_policy',
+         'accommodation_check_instant_calendar_policy',
+         'accommodation_check_out_instant_calendar_policy'
+       )
+       ORDER BY constraint_row.conname
+    `);
+    expect(temporalPolicies).toHaveLength(5);
+    expect(temporalPolicies.every((policy) => policy.validated)).toBe(true);
   });
 
   it("proves Agency and same-Trip constraints, wrong-family rejection and no float columns", async () => {

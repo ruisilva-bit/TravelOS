@@ -25,8 +25,9 @@ const socketDirectory = path.join(workRoot, "socket");
 const postgresLog = path.join(workRoot, "postgres.log");
 const postgresBin = path.join(postgresRoot, "usr/lib/postgresql/18/bin");
 const postgresShare = path.join(postgresRoot, "usr/share/postgresql/18");
-const corepack = path.join(path.dirname(process.execPath), "corepack");
+const corepack = "corepack";
 let clusterStarted = false;
+let clusterStartAttempted = false;
 let clusterStopped = false;
 let primaryFailure = null;
 
@@ -163,6 +164,7 @@ try {
     path.join(dataDirectory, "postgresql.conf"),
     `\n# TravelOS Stage 5 disposable qualification\nlisten_addresses = '127.0.0.1'\nport = ${port}\nunix_socket_directories = '${socketDirectory.replaceAll("'", "''")}'\npassword_encryption = 'scram-sha-256'\nssl = off\nfsync = on\nsynchronous_commit = on\nfull_page_writes = on\nlogging_collector = off\nlog_min_messages = warning\nmax_connections = 40\n`,
   );
+  clusterStartAttempted = true;
   requirePass(
     "pg_ctl start",
     run(path.join(postgresBin, "pg_ctl"), [
@@ -270,7 +272,7 @@ try {
 } finally {
   let stopExitCode = null;
   let immediateStopExitCode = null;
-  if (clusterStarted) {
+  if (clusterStartAttempted) {
     const stop = run(path.join(postgresBin, "pg_ctl"), [
       "--pgdata",
       dataDirectory,
@@ -298,14 +300,14 @@ try {
     }
     const serverProcessAbsent = await processAbsent();
     const portClosed = await loopbackPortClosed();
-    clusterStopped =
-      (stop.exitCode === 0 || immediateStopExitCode === 0) && serverProcessAbsent && portClosed;
+    clusterStopped = serverProcessAbsent && portClosed;
     if (!clusterStopped && primaryFailure === null) {
       primaryFailure = new Error(
         "Disposable PostgreSQL process or loopback listener remained active",
       );
     }
   }
+  if (!clusterStartAttempted) clusterStopped = true;
   const disposableRootAbsent = clusterStopped
     ? await rm(workRoot, { recursive: true, force: true }).then(
         () => true,
@@ -318,6 +320,8 @@ try {
       {
         schemaVersion: 1,
         result: disposableRootAbsent && clusterStopped ? "PASS" : "FAIL",
+        clusterStartAttempted,
+        clusterStarted,
         clusterStopped,
         stopExitCode,
         immediateStopExitCode,

@@ -108,6 +108,12 @@ export const createScheduledLocalDateTime = (
     throw new Error("Derived travel instant must be a valid RFC3339 timestamp");
   }
   assertLocalDate(input.instant.slice(0, 10));
+  const normalizedUtcYear = new Date(input.instant).getUTCFullYear();
+  if (normalizedUtcYear < 1000 || normalizedUtcYear > 9999) {
+    throw new Error(
+      "Derived travel instant must resolve to a supported four-digit UTC calendar year",
+    );
+  }
   const expectedLocalTime =
     input.localTime.length === 5 ? `${input.localTime}:00` : input.localTime;
   if (
