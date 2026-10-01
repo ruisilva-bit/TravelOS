@@ -66,23 +66,31 @@ const rawStatus = (response: string): number => {
 
 describe("Admin API global host and Staff auth routing boundary", () => {
   it("validates the configured Host before body parsing, health, API and unknown-route handling", async () => {
-    const { application, baseUrl } = await startListener();
+    const { application, baseUrl } = await startListener({ auth: authOptions(staffRealm()) });
     try {
-      await request(baseUrl).get("/health/live").set("Host", expectedHost).expect(200);
-      await request(baseUrl).get("/not-a-route").set("Host", expectedHost).expect(404);
+      const liveHealth = await request(baseUrl).get("/health/live").set("Host", expectedHost);
+      expect(liveHealth.status).toBe(200);
+      expect(liveHealth.headers["cache-control"]).toBe("private, no-store");
+      const headHealth = await request(baseUrl).head("/health/live").set("Host", expectedHost);
+      expect(headHealth.status).toBe(200);
+      expect(headHealth.headers["cache-control"]).toBe("private, no-store");
+      const unknownRoute = await request(baseUrl).get("/not-a-route").set("Host", expectedHost);
+      expect(unknownRoute.status).toBe(404);
+      expect(unknownRoute.headers["cache-control"]).toBe("private, no-store");
 
       const deniedHealth = await request(baseUrl)
         .get("/health/live")
         .set("Host", "unauthorized.example.test");
       expect(deniedHealth.status).toBe(404);
       expect(deniedHealth.text).toBe("");
-      expect(deniedHealth.headers["cache-control"]).toContain("no-store");
+      expect(deniedHealth.headers["cache-control"]).toBe("private, no-store");
 
       const deniedUnknownRoute = await request(baseUrl)
         .get("/not-a-route")
         .set("Host", "unauthorized.example.test");
       expect(deniedUnknownRoute.status).toBe(404);
       expect(deniedUnknownRoute.text).toBe("");
+      expect(deniedUnknownRoute.headers["cache-control"]).toBe("private, no-store");
 
       const deniedMalformedBody = await request(baseUrl)
         .post("/not-a-route")
@@ -103,9 +111,11 @@ describe("Admin API global host and Staff auth routing boundary", () => {
       const authorizedMalformedBody = await request(baseUrl)
         .post("/not-a-route")
         .set("Host", expectedHost)
+        .set("Origin", canonicalOrigin)
         .set("Content-Type", "application/json")
         .send("{");
       expect(authorizedMalformedBody.status).toBe(400);
+      expect(authorizedMalformedBody.headers["cache-control"]).toBe("private, no-store");
     } finally {
       await application.close();
     }
@@ -169,7 +179,16 @@ describe("Admin API global host and Staff auth routing boundary", () => {
   });
 
   it("routes only canonical Staff auth paths and rejects lookalikes, Portal and path variants", async () => {
-    const handle = vi.fn(async () => new Response("staff-auth", { status: 200 }));
+    const handle = vi.fn(
+      async () =>
+        new Response("staff-auth", {
+          status: 200,
+          headers: {
+            "Cache-Control": "public, max-age=3600",
+            "X-Auth-Trace": "preserved",
+          },
+        }),
+    );
     const realm = staffRealm(handle);
     const { application, baseUrl } = await startListener({ auth: authOptions(realm) });
     try {
@@ -179,16 +198,20 @@ describe("Admin API global host and Staff auth routing boundary", () => {
         .set("X-Forwarded-Host", expectedHost)
         .expect(200);
       expect(valid.text).toBe("staff-auth");
+      expect(valid.headers["cache-control"]).toBe("private, no-store");
+      expect(valid.headers["x-auth-trace"]).toBe("preserved");
       expect(handle).toHaveBeenCalledTimes(1);
 
       const validAdminApiHost = await request(baseUrl)
         .get("/api/staff/session-context")
         .set("Host", expectedHost);
       expect(validAdminApiHost.status).toBe(401);
+      expect(validAdminApiHost.headers["cache-control"]).toBe("private, no-store");
       const unauthorizedAdminApiHost = await request(baseUrl)
         .get("/api/staff/session-context")
         .set("Host", "attacker.example.test");
       expect(unauthorizedAdminApiHost.status).toBe(404);
+      expect(unauthorizedAdminApiHost.headers["cache-control"]).toBe("private, no-store");
 
       const rejectedPaths = [
         "/api/auth/staffish/get-session",
@@ -201,6 +224,7 @@ describe("Admin API global host and Staff auth routing boundary", () => {
       for (const path of rejectedPaths) {
         const response = await request(baseUrl).get(path).set("Host", expectedHost);
         expect(response.status, path).toBe(404);
+        expect(response.headers["cache-control"], path).toBe("private, no-store");
       }
       const traversalVariant = await rawRequest(
         Number(new URL(baseUrl).port),
@@ -213,6 +237,7 @@ describe("Admin API global host and Staff auth routing boundary", () => {
         ].join("\r\n"),
       );
       expect(rawStatus(traversalVariant)).toBe(404);
+      expect(traversalVariant).toMatch(/cache-control: private, no-store/iu);
       expect(handle).toHaveBeenCalledTimes(1);
     } finally {
       await application.close();

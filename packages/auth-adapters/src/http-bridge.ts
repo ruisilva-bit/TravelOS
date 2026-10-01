@@ -21,6 +21,14 @@ export interface AuthSurfacePolicy {
 const stateChangingMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const sensitiveQueryParameter = /^(?:authorization|password|secret|session|token)$/iu;
 
+export const originAllowedForMethod = (
+  method: string,
+  origin: string | null,
+  canonicalOrigin: string | null,
+): boolean =>
+  !stateChangingMethods.has(method.toUpperCase()) ||
+  (canonicalOrigin !== null && origin === canonicalOrigin);
+
 export const hostHeaderMatchesExpectedHost = (
   value: string | null | undefined,
   expectedHost: string,
@@ -62,11 +70,6 @@ export const authRequestPathMatchesBase = (
     rawPathname === targetUrl.pathname &&
     pathnameMatchesBasePath(rawPathname, basePath)
   );
-};
-
-const requestOriginIsAllowed = (request: AuthHttpRequest, policy: AuthSurfacePolicy): boolean => {
-  if (!stateChangingMethods.has(request.method.toUpperCase())) return true;
-  return request.headers.get("origin") === policy.canonicalOrigin;
 };
 
 const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
@@ -117,7 +120,7 @@ export const dispatchAuthRealmRequest = async (
     request.headers.has("authorization") ||
     (forwardedHost !== null &&
       !hostHeaderMatchesExpectedHost(forwardedHost, policy.expectedHost)) ||
-    !requestOriginIsAllowed(request, policy)
+    !originAllowedForMethod(request.method, request.headers.get("origin"), policy.canonicalOrigin)
   ) {
     return { status: 403, headers: new Headers(), body: new Uint8Array() };
   }

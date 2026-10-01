@@ -133,7 +133,7 @@ describe("Admin Staff auth bridge", () => {
     await expect(invoke(handler!, sessionContextRequest())).resolves.toEqual({
       status: 200,
       next: false,
-      headers: { "cache-control": "no-store, private" },
+      headers: { "cache-control": "private, no-store" },
       body: {
         principalId: "staff-principal-1",
         agencyId: "00000000-0000-4000-8000-000000000001",
@@ -150,7 +150,7 @@ describe("Admin Staff auth bridge", () => {
     const staleHandler = staleExpress.routes.get("/api/staff/session-context");
     await expect(invoke(staleHandler!, sessionContextRequest())).resolves.toMatchObject({
       status: 403,
-      headers: { "cache-control": "no-store, private" },
+      headers: { "cache-control": "private, no-store" },
     });
   });
 
@@ -165,7 +165,7 @@ describe("Admin Staff auth bridge", () => {
       invoke(context!, sessionContextRequest({ host: "portal.travelos.test" })),
     ).resolves.toMatchObject({
       status: 404,
-      headers: { "cache-control": "no-store, private" },
+      headers: { "cache-control": "private, no-store" },
     });
     await expect(
       invoke(
@@ -174,7 +174,7 @@ describe("Admin Staff auth bridge", () => {
       ),
     ).resolves.toMatchObject({
       status: 403,
-      headers: { "cache-control": "no-store, private" },
+      headers: { "cache-control": "private, no-store" },
     });
 
     const noSessionExpress = new FakeExpress();
@@ -193,7 +193,7 @@ describe("Admin Staff auth bridge", () => {
       invoke(noSessionExpress.routes.get("/api/staff/session-context")!, sessionContextRequest()),
     ).resolves.toMatchObject({
       status: 401,
-      headers: { "cache-control": "no-store, private" },
+      headers: { "cache-control": "private, no-store" },
     });
 
     await expect(
@@ -204,7 +204,7 @@ describe("Admin Staff auth bridge", () => {
       }),
     ).resolves.toMatchObject({
       status: 404,
-      headers: { "cache-control": "no-store, private" },
+      headers: { "cache-control": "private, no-store" },
     });
     await expect(
       invoke(express.middleware[0]!, {
@@ -214,7 +214,7 @@ describe("Admin Staff auth bridge", () => {
       }),
     ).resolves.toMatchObject({
       status: 403,
-      headers: { "cache-control": "no-store, private" },
+      headers: { "cache-control": "private, no-store" },
     });
   });
 

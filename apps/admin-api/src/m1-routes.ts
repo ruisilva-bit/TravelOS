@@ -17,6 +17,8 @@ import {
 } from "@travelos/contracts/admin";
 import { hostHeaderMatchesExpectedHost, type AuthSurfacePolicy } from "@travelos/auth-adapters";
 
+import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
+
 interface IncomingHttpRequest {
   readonly method: string;
   readonly originalUrl?: string;
@@ -296,7 +298,7 @@ const runHandler = (
   response: OutgoingHttpResponse,
   next: Next,
 ): void => {
-  response.setHeader("Cache-Control", "private, no-store");
+  response.setHeader("Cache-Control", ADMIN_PRIVATE_NO_STORE);
   void work().catch((error: unknown) => {
     if (error instanceof M1StaffAuthorizationError) {
       response.status(error.code === "UNAUTHENTICATED" ? 401 : 403).end();

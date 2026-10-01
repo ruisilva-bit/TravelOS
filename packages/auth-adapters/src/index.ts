@@ -2,6 +2,7 @@ export {
   authRequestPathMatchesBase,
   dispatchAuthRealmRequest,
   hostHeaderMatchesExpectedHost,
+  originAllowedForMethod,
   type AuthHttpRequest,
   type AuthHttpResponse,
   type AuthSurfacePolicy,

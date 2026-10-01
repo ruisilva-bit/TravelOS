@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { PORTAL_AUTH_BASE_PATH, STAFF_AUTH_BASE_PATH, type AuthRealm } from "../src/realm.js";
-import { dispatchAuthRealmRequest, type AuthHttpRequest } from "../src/http-bridge.js";
+import {
+  dispatchAuthRealmRequest,
+  originAllowedForMethod,
+  type AuthHttpRequest,
+} from "../src/http-bridge.js";
 
 const policy = {
   canonicalOrigin: "http://admin.travelos.test",
@@ -34,6 +38,21 @@ const request = (overrides: Partial<AuthHttpRequest> = {}): AuthHttpRequest => (
 });
 
 describe("auth realm HTTP boundary", () => {
+  it("requires the canonical Origin for every state-changing HTTP method only", () => {
+    for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+      expect(originAllowedForMethod(method, policy.canonicalOrigin, policy.canonicalOrigin)).toBe(
+        true,
+      );
+      expect(
+        originAllowedForMethod(method, "http://portal.travelos.test", policy.canonicalOrigin),
+      ).toBe(false);
+      expect(originAllowedForMethod(method, null, policy.canonicalOrigin)).toBe(false);
+      expect(originAllowedForMethod(method, policy.canonicalOrigin, null)).toBe(false);
+    }
+    expect(originAllowedForMethod("GET", null, policy.canonicalOrigin)).toBe(true);
+    expect(originAllowedForMethod("HEAD", "https://foreign.example.test", null)).toBe(true);
+  });
+
   it("rejects the wrong host, bearer headers, forwarded host, unsafe Origin and token query strings", async () => {
     const handled: Request[] = [];
     const fake = realm(handled);

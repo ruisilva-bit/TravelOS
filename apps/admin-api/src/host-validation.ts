@@ -1,5 +1,7 @@
 import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters";
 
+import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
+
 interface IncomingHttpRequest {
   readonly headers: Readonly<Record<string, string | string[] | undefined>>;
   readonly rawHeaders?: readonly string[];
@@ -50,7 +52,7 @@ export const createAdminHostValidationMiddleware =
         hostHeaderMatchesExpectedHost(forwardedHostValues[0], expectedHost));
 
     if (!hostIsAllowed || !forwardedHostIsAllowed) {
-      response.setHeader("cache-control", "no-store, private");
+      response.setHeader("cache-control", ADMIN_PRIVATE_NO_STORE);
       response.status(404).end();
       return;
     }

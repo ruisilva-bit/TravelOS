@@ -11,6 +11,7 @@ import type { M1StaffTripOperations } from "@travelos/backend-core";
 import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
 import type { StaffAccessRepository } from "@travelos/database";
 
+import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
 import { registerAdminM1Routes } from "./m1-routes.js";
 
 interface IncomingHttpRequest {
@@ -106,9 +107,12 @@ const writeBridgeResponse = (
     setCookieHeaders.getSetCookie?.() ??
     [headers.get("set-cookie")].flatMap((value) => (value === null ? [] : [value]));
   headers.forEach((value, name) => {
-    if (name.toLowerCase() !== "set-cookie") response.setHeader(name, value);
+    if (name.toLowerCase() !== "set-cookie" && name.toLowerCase() !== "cache-control") {
+      response.setHeader(name, value);
+    }
   });
   if (cookies.length > 0) response.setHeader("set-cookie", cookies);
+  response.setHeader("Cache-Control", ADMIN_PRIVATE_NO_STORE);
   response.status(status).end(body);
 };
 
@@ -132,7 +136,7 @@ const bridgeHandler =
       next();
       return;
     }
-    response.setHeader("cache-control", "no-store, private");
+    response.setHeader("cache-control", ADMIN_PRIVATE_NO_STORE);
     const rejection = surfaceRejectionStatus(request, options.policy);
     if (rejection !== null) {
       response.status(rejection).end();
@@ -159,7 +163,7 @@ const sessionRequestFor = (
 const staffSessionContextHandler =
   (options: AdminAuthBridgeOptions): HttpHandler =>
   (request, response, next) => {
-    response.setHeader("cache-control", "no-store, private");
+    response.setHeader("cache-control", ADMIN_PRIVATE_NO_STORE);
     const rejection = surfaceRejectionStatus(request, options.policy);
     if (rejection !== null) {
       response.status(rejection).end();
