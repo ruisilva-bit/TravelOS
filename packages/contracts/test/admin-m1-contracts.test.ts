@@ -20,9 +20,11 @@ import {
 } from "../../backend-core/src/shared-kernel/time.js";
 
 const syntheticEmail = ["rui", "example.test"].join(String.fromCharCode(64));
+const id = (sequence: number) =>
+  `abcdef12-3456-7abc-8def-${sequence.toString(16).padStart(12, "0")}`;
 
 const baseRequest = {
-  agencyId: "00000000-0000-4000-8000-000000000001",
+  agencyId: id(1),
   person: { givenName: "Rui", familyName: "Silva", email: syntheticEmail },
   customer: { displayName: "Silva Travel" },
   customerPersonRole: "PRIMARY_CONTACT",
@@ -96,6 +98,58 @@ describe("Stage 5 Admin contracts", () => {
       AdminCreateM1TripSliceRequestSchema.safeParse({ ...baseRequest, travellerRole: "PAYER" })
         .success,
     ).toBe(false);
+    expect(
+      AdminCreateM1TripSliceRequestSchema.safeParse({
+        ...baseRequest,
+        trip: { ...baseRequest.trip, startDate: "2026-09-29" },
+      }).success,
+    ).toBe(false);
+    expect(
+      AdminCreateM1TripSliceRequestSchema.safeParse({
+        ...baseRequest,
+        trip: { ...baseRequest.trip, startDate: "2026-09-25\n" },
+      }).success,
+    ).toBe(false);
+    for (const departure of [
+      { ...baseRequest.flight.departure, localDate: "2026-09-25\n" },
+      { ...baseRequest.flight.departure, localTime: "09:00\n" },
+      { ...baseRequest.flight.departure, instant: "2026-09-25T08:00:00Z\n" },
+    ]) {
+      expect(
+        AdminCreateM1TripSliceRequestSchema.safeParse({
+          ...baseRequest,
+          flight: { ...baseRequest.flight, departure },
+        }).success,
+      ).toBe(false);
+    }
+    expect(
+      AdminCreateM1TripSliceRequestSchema.safeParse({
+        ...baseRequest,
+        flight: {
+          ...baseRequest.flight,
+          arrival: {
+            localDate: "2026-09-25",
+            localTime: "08:00",
+            timezoneName: "Europe/Lisbon",
+            instant: "2026-09-25T07:00:00Z",
+          },
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      AdminCreateM1TripSliceRequestSchema.safeParse({
+        ...baseRequest,
+        accommodation: {
+          ...baseRequest.accommodation,
+          checkOut: {
+            localDate: "2026-09-25",
+            localTime: "14:00",
+            timezoneName: "Europe/Lisbon",
+            instant: "2026-09-25T13:00:00Z",
+          },
+        },
+      }).success,
+    ).toBe(false);
   });
 
   it("keeps PostgreSQL bigint lock versions as canonical decimal strings", () => {
@@ -104,13 +158,14 @@ describe("Stage 5 Admin contracts", () => {
     expect(AdminLockVersionSchema.safeParse("9223372036854775807").success).toBe(true);
     expect(AdminLockVersionSchema.safeParse("9223372036854775808").success).toBe(false);
     expect(AdminLockVersionSchema.safeParse("01").success).toBe(false);
+    expect(AdminLockVersionSchema.safeParse("0\n").success).toBe(false);
     expect(AdminLockVersionSchema.safeParse(1).success).toBe(false);
   });
 
   it("keeps Money JSON exact and string-valued in the response contract", () => {
     const parsed = AdminM1TripSliceResponseSchema.safeParse({
       person: {
-        id: baseRequest.agencyId,
+        id: id(2),
         agencyId: baseRequest.agencyId,
         givenName: "Rui",
         familyName: "Silva",
@@ -118,31 +173,31 @@ describe("Stage 5 Admin contracts", () => {
         lockVersion: "0",
       },
       customer: {
-        id: baseRequest.agencyId,
+        id: id(3),
         agencyId: baseRequest.agencyId,
         displayName: "Silva Travel",
         lockVersion: "0",
       },
       customerPerson: {
         agencyId: baseRequest.agencyId,
-        customerId: baseRequest.agencyId,
-        personId: baseRequest.agencyId,
+        customerId: id(3),
+        personId: id(2),
         role: "PRIMARY_CONTACT",
         isPrimary: true,
       },
       traveller: {
-        id: baseRequest.agencyId,
+        id: id(5),
         agencyId: baseRequest.agencyId,
-        tripId: baseRequest.agencyId,
-        personId: baseRequest.agencyId,
+        tripId: id(4),
+        personId: id(2),
         role: "PRIMARY_TRAVELLER",
       },
       trip: {
-        id: baseRequest.agencyId,
+        id: id(4),
         agencyId: baseRequest.agencyId,
         title: "Trip",
-        startDate: "2026-09-25",
-        endDate: "2026-09-28",
+        startDate: baseRequest.trip.startDate,
+        endDate: baseRequest.trip.endDate,
         state: "DRAFT",
         workspaceRevision: "1",
         lockVersion: "0",
@@ -150,9 +205,9 @@ describe("Stage 5 Admin contracts", () => {
       flights: [
         {
           ...baseRequest.flight,
-          id: baseRequest.agencyId,
+          id: id(6),
           agencyId: baseRequest.agencyId,
-          tripId: baseRequest.agencyId,
+          tripId: id(4),
           family: "FLIGHT",
           state: "CONFIRMED",
           sortOrder: 1,
@@ -162,9 +217,9 @@ describe("Stage 5 Admin contracts", () => {
       accommodations: [
         {
           ...baseRequest.accommodation,
-          id: baseRequest.agencyId,
+          id: id(7),
           agencyId: baseRequest.agencyId,
-          tripId: baseRequest.agencyId,
+          tripId: id(4),
           family: "ACCOMMODATION",
           state: "CONFIRMED",
           sortOrder: 2,
@@ -173,20 +228,35 @@ describe("Stage 5 Admin contracts", () => {
       ],
       reservations: [
         {
-          id: baseRequest.agencyId,
+          id: id(8),
           agencyId: baseRequest.agencyId,
-          tripId: baseRequest.agencyId,
+          tripId: id(4),
           ...baseRequest.reservation,
           lockVersion: "0",
         },
       ],
-      reservationItemLinks: [],
+      reservationItemLinks: [
+        {
+          agencyId: baseRequest.agencyId,
+          tripId: id(4),
+          reservationId: id(8),
+          itineraryItemId: id(6),
+          linkRole: "PRIMARY",
+        },
+        {
+          agencyId: baseRequest.agencyId,
+          tripId: id(4),
+          reservationId: id(8),
+          itineraryItemId: id(7),
+          linkRole: "SECONDARY",
+        },
+      ],
       supplierCosts: [
         {
-          id: baseRequest.agencyId,
+          id: id(9),
           agencyId: baseRequest.agencyId,
-          tripId: baseRequest.agencyId,
-          reservationId: baseRequest.agencyId,
+          tripId: id(4),
+          reservationId: id(8),
           amount: baseRequest.supplierCost.amount,
           internalNote: "Net",
           classification: "INTERNAL_ONLY",
@@ -198,32 +268,171 @@ describe("Stage 5 Admin contracts", () => {
     if (parsed.success) {
       const pluralResponse = AdminM1TripSliceResponseSchema.safeParse({
         ...parsed.data,
-        flights: [
-          ...parsed.data.flights,
-          { ...parsed.data.flights[0]!, id: "00000000-0000-4000-8000-000000000002", sortOrder: 3 },
-        ],
+        flights: [...parsed.data.flights, { ...parsed.data.flights[0]!, id: id(12), sortOrder: 3 }],
         accommodations: [
           ...parsed.data.accommodations,
           {
             ...parsed.data.accommodations[0]!,
-            id: "00000000-0000-4000-8000-000000000003",
+            id: id(13),
             sortOrder: 4,
           },
         ],
         reservations: [
           ...parsed.data.reservations,
-          { ...parsed.data.reservations[0]!, id: "00000000-0000-4000-8000-000000000004" },
+          { ...parsed.data.reservations[0]!, id: id(14) },
         ],
         supplierCosts: [
           ...parsed.data.supplierCosts,
           {
             ...parsed.data.supplierCosts[0]!,
-            id: "00000000-0000-4000-8000-000000000005",
-            reservationId: "00000000-0000-4000-8000-000000000004",
+            id: id(15),
+            reservationId: id(14),
           },
         ],
       });
       expect(pluralResponse.success).toBe(true);
+      expect(
+        AdminM1TripSliceResponseSchema.safeParse({
+          ...parsed.data,
+          trip: { ...parsed.data.trip, startDate: "2026-02-30" },
+        }).success,
+      ).toBe(false);
+      expect(
+        AdminM1TripSliceResponseSchema.safeParse({
+          ...parsed.data,
+          trip: { ...parsed.data.trip, startDate: "2026-09-29" },
+        }).success,
+      ).toBe(false);
+      expect(
+        AdminM1TripSliceResponseSchema.safeParse({
+          ...parsed.data,
+          trip: { ...parsed.data.trip, workspaceRevision: "1\n" },
+        }).success,
+      ).toBe(false);
+      expect(
+        AdminM1TripSliceResponseSchema.safeParse({
+          ...parsed.data,
+          flights: [
+            {
+              ...parsed.data.flights[0]!,
+              arrival: {
+                localDate: "2026-09-25",
+                localTime: "08:00",
+                timezoneName: "Europe/Lisbon",
+                instant: "2026-09-25T07:00:00Z",
+              },
+            },
+          ],
+        }).success,
+      ).toBe(false);
+      expect(
+        AdminM1TripSliceResponseSchema.safeParse({
+          ...parsed.data,
+          accommodations: [
+            {
+              ...parsed.data.accommodations[0]!,
+              checkOut: {
+                localDate: "2026-09-25",
+                localTime: "14:00",
+                timezoneName: "Europe/Lisbon",
+                instant: "2026-09-25T13:00:00Z",
+              },
+            },
+          ],
+        }).success,
+      ).toBe(false);
+      for (const inconsistentResponse of [
+        {
+          ...parsed.data,
+          person: { ...parsed.data.person, agencyId: id(99) },
+        },
+        {
+          ...parsed.data,
+          customer: { ...parsed.data.customer, agencyId: id(99) },
+        },
+        {
+          ...parsed.data,
+          customerPerson: { ...parsed.data.customerPerson, agencyId: id(99) },
+        },
+        {
+          ...parsed.data,
+          customerPerson: { ...parsed.data.customerPerson, customerId: id(99) },
+        },
+        {
+          ...parsed.data,
+          customerPerson: { ...parsed.data.customerPerson, personId: id(99) },
+        },
+        {
+          ...parsed.data,
+          traveller: { ...parsed.data.traveller, agencyId: id(99) },
+        },
+        {
+          ...parsed.data,
+          traveller: { ...parsed.data.traveller, personId: id(99) },
+        },
+        {
+          ...parsed.data,
+          trip: { ...parsed.data.trip, agencyId: id(99) },
+        },
+        {
+          ...parsed.data,
+          flights: [{ ...parsed.data.flights[0]!, agencyId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          flights: [{ ...parsed.data.flights[0]!, tripId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          accommodations: [{ ...parsed.data.accommodations[0]!, agencyId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          accommodations: [{ ...parsed.data.accommodations[0]!, tripId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          reservations: [{ ...parsed.data.reservations[0]!, agencyId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          reservations: [{ ...parsed.data.reservations[0]!, tripId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          reservationItemLinks: [{ ...parsed.data.reservationItemLinks[0]!, agencyId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          reservationItemLinks: [{ ...parsed.data.reservationItemLinks[0]!, tripId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          reservationItemLinks: [
+            { ...parsed.data.reservationItemLinks[0]!, reservationId: id(99) },
+          ],
+        },
+        {
+          ...parsed.data,
+          reservationItemLinks: [
+            { ...parsed.data.reservationItemLinks[0]!, itineraryItemId: id(99) },
+          ],
+        },
+        {
+          ...parsed.data,
+          supplierCosts: [{ ...parsed.data.supplierCosts[0]!, agencyId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          supplierCosts: [{ ...parsed.data.supplierCosts[0]!, tripId: id(99) }],
+        },
+        {
+          ...parsed.data,
+          supplierCosts: [{ ...parsed.data.supplierCosts[0]!, reservationId: id(99) }],
+        },
+      ]) {
+        expect(AdminM1TripSliceResponseSchema.safeParse(inconsistentResponse).success).toBe(false);
+      }
     }
     expect(
       AdminM1TripSliceResponseSchema.safeParse({
@@ -258,9 +467,28 @@ describe("Stage 5 Admin contracts", () => {
         scale: 2,
       }).success,
     ).toBe(false);
-    expect(AdminOpaqueIdSchema.parse(baseRequest.agencyId.toUpperCase())).toBe(
-      baseRequest.agencyId,
-    );
+    expect(AdminOpaqueIdSchema.parse(baseRequest.agencyId)).toBe(baseRequest.agencyId);
+    for (const invalidId of [
+      baseRequest.agencyId.toUpperCase(),
+      ` ${baseRequest.agencyId}`,
+      "00000000-0000-0000-0000-000000000000",
+      "00000000-0000-4000-8000-000000000001",
+      "00000000-0000-7000-7000-000000000001",
+      "00000000-0000-7000-8000-00000000000g",
+      "00000000-0000-7000-8000-00000000001",
+      `${baseRequest.agencyId}\n`,
+    ]) {
+      expect(AdminOpaqueIdSchema.safeParse(invalidId).success).toBe(false);
+    }
+    for (const nonCanonicalMinorUnits of ["00", "0001", "-0", "1\n"]) {
+      expect(
+        AdminMoneySchema.safeParse({
+          minorUnits: nonCanonicalMinorUnits,
+          currency: "EUR",
+          scale: 2,
+        }).success,
+      ).toBe(false);
+    }
     expect(
       AdminScheduledLocalDateTimeSchema.safeParse({
         localDate: "2026-02-30",

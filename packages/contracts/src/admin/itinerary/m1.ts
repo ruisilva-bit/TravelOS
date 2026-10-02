@@ -3,10 +3,10 @@ import { z } from "zod";
 import { AdminLockVersionSchema } from "../lock-version.js";
 import { AdminOpaqueIdSchema } from "../money.js";
 
-const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/u;
-const LOCAL_TIME = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/u;
+const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}(?![\s\S])/u;
+const LOCAL_TIME = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?![\s\S])/u;
 const RFC3339 =
-  /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{3})?(?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$/u;
+  /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{3})?(?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)(?![\s\S])/u;
 
 // This exclusion set is the contract-layer mirror of the backend-core and
 // migration registry. The contract tests assert byte-equivalent membership.
@@ -68,6 +68,11 @@ const isCalendarDate = (value: string): boolean => {
   );
 };
 
+export const AdminLocalDateSchema = z
+  .string()
+  .regex(LOCAL_DATE)
+  .refine(isCalendarDate, "Invalid calendar date");
+
 const isInstantCalendarValid = (value: string): boolean => {
   if (!isCalendarDate(value.slice(0, 10))) return false;
   const instant = new Date(value);
@@ -105,7 +110,7 @@ const matchesLocalTuple = (value: {
 
 export const AdminScheduledLocalDateTimeSchema = z
   .object({
-    localDate: z.string().regex(LOCAL_DATE),
+    localDate: AdminLocalDateSchema,
     localTime: z.string().regex(LOCAL_TIME),
     timezoneName: z
       .string()
@@ -116,13 +121,6 @@ export const AdminScheduledLocalDateTimeSchema = z
   })
   .strict()
   .superRefine((value, context) => {
-    if (!isCalendarDate(value.localDate)) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["localDate"],
-        message: "Invalid calendar date",
-      });
-    }
     if (!matchesLocalTuple(value)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -157,7 +155,16 @@ export const AdminFlightDraftSchema = z
     seat: z.string().trim().max(50).nullable(),
     customerBookingReference: z.string().trim().max(200).nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (Date.parse(value.departure.instant) >= Date.parse(value.arrival.instant)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["arrival", "instant"],
+        message: "Flight arrival must follow departure",
+      });
+    }
+  });
 
 export const AdminAccommodationDraftSchema = z
   .object({
@@ -170,7 +177,16 @@ export const AdminAccommodationDraftSchema = z
     boardType: z.string().trim().max(200).nullable(),
     customerBookingReference: z.string().trim().max(200).nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (Date.parse(value.checkIn.instant) >= Date.parse(value.checkOut.instant)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["checkOut", "instant"],
+        message: "Accommodation check-out must follow check-in",
+      });
+    }
+  });
 
 export const AdminFlightResponseSchema = z
   .object({
@@ -195,7 +211,16 @@ export const AdminFlightResponseSchema = z
     baggage: z.string().nullable(),
     seat: z.string().nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (Date.parse(value.departure.instant) >= Date.parse(value.arrival.instant)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["arrival", "instant"],
+        message: "Flight arrival must follow departure",
+      });
+    }
+  });
 
 export const AdminAccommodationResponseSchema = z
   .object({
@@ -215,7 +240,16 @@ export const AdminAccommodationResponseSchema = z
     roomDescription: z.string().nullable(),
     boardType: z.string().nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (Date.parse(value.checkIn.instant) >= Date.parse(value.checkOut.instant)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["checkOut", "instant"],
+        message: "Accommodation check-out must follow check-in",
+      });
+    }
+  });
 
 export const AdminAccommodationUpdateRequestSchema = z
   .object({

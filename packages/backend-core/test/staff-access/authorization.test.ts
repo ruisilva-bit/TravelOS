@@ -7,7 +7,7 @@ import {
 } from "../../src/staff-access/authorization.js";
 
 const nowEpochMs = 1_700_000_000_000;
-const agencyId = "00000000-0000-4000-8000-000000000001";
+const agencyId = "00000000-0000-7000-8000-000000000001";
 const principalId = "staff-principal-1";
 
 const request = (
@@ -27,6 +27,7 @@ const request = (
     authorizationEpoch: 7n,
     assignments: [
       {
+        agencyId,
         permissionId: "agency.view",
         scopeKind: "AGENCY",
         organizationUnitId: null,
@@ -61,7 +62,7 @@ describe("Staff authorization default-deny", () => {
       authorizeStaffRequest(
         request({
           target: {
-            agencyId: "00000000-0000-4000-8000-000000000002",
+            agencyId: "00000000-0000-7000-8000-000000000002",
             organizationUnitAncestorIds: [],
             requiredAccessLevel: "ALL",
           },
@@ -79,6 +80,21 @@ describe("Staff authorization default-deny", () => {
       result: "DENY",
       reason: "MISSING_PERMISSION",
     });
+    expect(
+      authorizeStaffRequest(
+        request({
+          snapshot: {
+            ...request().snapshot!,
+            assignments: [
+              {
+                ...request().snapshot!.assignments[0]!,
+                agencyId: "00000000-0000-7000-8000-000000000002",
+              },
+            ],
+          },
+        }),
+      ),
+    ).toEqual({ result: "DENY", reason: "MISSING_PERMISSION" });
   });
 
   it("requires a current MFA proof only when the command declares it", () => {

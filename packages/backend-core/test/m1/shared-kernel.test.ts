@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   addMoney,
+  asOpaqueId,
   createMoney,
   createScheduledLocalDateTime,
+  isOpaqueUuid,
   isUuidV7,
   moneyFromJson,
   moneyToJson,
@@ -30,6 +32,20 @@ describe("Stage 5 exact shared kernel", () => {
     expect(createMoney("9223372036854775807", "EUR").minorUnits).toBe(9223372036854775807n);
     expect(() => createMoney("9223372036854775808", "EUR")).toThrow("signed bigint");
     expect(() => createMoney("-9223372036854775809", "EUR")).toThrow("signed bigint");
+    expect(createMoney("0", "EUR").minorUnits).toBe(0n);
+    for (const nonCanonical of ["00", "0001", "-0", "+1", "1.0", "1\n"]) {
+      expect(() => createMoney(nonCanonical, "EUR")).toThrow("integer string");
+      expect(() => moneyFromJson({ minorUnits: nonCanonical, currency: "EUR", scale: 2 })).toThrow(
+        "integer string",
+      );
+    }
+    const symbolExtra = { ...moneyToJson(price), [Symbol("unexpected")]: true };
+    expect(() => moneyFromJson(symbolExtra)).toThrow("unknown or missing field");
+    const inheritedExtra = Object.assign(
+      Object.create({ unexpected: true }) as Record<string, unknown>,
+      moneyToJson(price),
+    );
+    expect(() => moneyFromJson(inheritedExtra)).toThrow("unknown or missing field");
   });
 
   it("uses an explicit commercial policy and fails closed for unknown policy ids", () => {
@@ -49,6 +65,24 @@ describe("Stage 5 exact shared kernel", () => {
   it("constructs valid UUIDv7 opaque identifiers and rejects malformed values", () => {
     const id = uuidV7FromEntropy(1_700_000_000_000, new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]));
     expect(isUuidV7(id)).toBe(true);
+    expect(isOpaqueUuid(id)).toBe(true);
+    expect(asOpaqueId(id)).toBe(id);
+    for (const invalidId of [
+      id.toUpperCase(),
+      ` ${id}`,
+      "00000000-0000-0000-0000-000000000000",
+      "00000000-0000-4000-8000-000000000001",
+      "00000000-0000-7000-7000-000000000001",
+      "00000000-0000-7000-8000-00000000000g",
+      "00000000-0000-7000-8000-00000000001",
+      `${id}\n`,
+    ]) {
+      expect(isUuidV7(invalidId)).toBe(false);
+      expect(isOpaqueUuid(invalidId)).toBe(false);
+      expect(() => asOpaqueId(invalidId)).toThrow("canonical UUIDv7");
+    }
+    expect(isUuidV7({ toString: () => id })).toBe(false);
+    expect(() => asOpaqueId({ toString: () => id } as never)).toThrow("canonical UUIDv7");
   });
 
   it("retains local civil time, zone and derived instant as separate validated values", () => {
@@ -108,6 +142,28 @@ describe("Stage 5 exact shared kernel", () => {
         instant: "1000-01-01T02:30:00Z",
       }).localDate,
     ).toBe("1000-01-01");
+    for (const invalidTemporalText of [
+      {
+        localDate: "2026-10-25\n",
+        localTime: "02:30",
+        timezoneName: "Europe/Lisbon",
+        instant: "2026-10-25T02:30:00Z",
+      },
+      {
+        localDate: "2026-10-25",
+        localTime: "02:30\n",
+        timezoneName: "Europe/Lisbon",
+        instant: "2026-10-25T02:30:00Z",
+      },
+      {
+        localDate: "2026-10-25",
+        localTime: "02:30",
+        timezoneName: "Europe/Lisbon",
+        instant: "2026-10-25T02:30:00Z\n",
+      },
+    ]) {
+      expect(() => createScheduledLocalDateTime(invalidTemporalText)).toThrow();
+    }
     expect(() =>
       createScheduledLocalDateTime({
         localDate: "2026-10-25",

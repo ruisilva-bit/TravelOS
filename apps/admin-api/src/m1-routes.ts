@@ -2,6 +2,7 @@ import {
   asOpaqueId,
   M1InputValidationError,
   M1OptimisticConflictError,
+  M1TransactionConflictError,
   M1StaffAuthorizationError,
   createMoney,
   moneyToJson,
@@ -306,6 +307,10 @@ const runHandler = (
     }
     if (error instanceof M1OptimisticConflictError) {
       send(response, 409, { error: "optimistic_conflict" });
+      return;
+    }
+    if (error instanceof M1TransactionConflictError) {
+      send(response, 409, { error: "transaction_conflict" });
       return;
     }
     if (error instanceof M1InputValidationError) {

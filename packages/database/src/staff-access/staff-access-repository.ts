@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import {
   OWNER_ROLE_TEMPLATE_KEY,
   PERMISSION_REGISTRY_VERSION,
@@ -13,6 +11,7 @@ import {
 import { sql, type Kysely } from "kysely";
 
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
+import { createUuidV7 } from "../uuidv7.js";
 
 type DatabaseShape = Record<string, never>;
 
@@ -50,6 +49,7 @@ export interface FirstOwnerInvitationConsumptionInput {
 export interface StaffAccessRepository extends RootAgencyBootstrapPort {
   getStaffAuthorizationSnapshot(
     staffPrincipalId: string,
+    agencyId: string,
   ): Promise<StaffAuthorizationSnapshot | null>;
   findStaffPrincipalIdByEmail(email: string): Promise<string | null>;
   issueFirstOwnerInvitation(input: FirstOwnerInvitationInput): Promise<FirstOwnerInvitationResult>;
@@ -66,6 +66,87 @@ interface AgencyRow {
 }
 
 const asSingle = <Row>(rows: readonly Row[]): Row | null => rows[0] ?? null;
+
+const readStaffAuthorizationSnapshot = async (
+  database: Kysely<DatabaseShape>,
+  staffPrincipalId: string,
+  agencyId: string,
+): Promise<StaffAuthorizationSnapshot | null> => {
+  const rows = (
+    await sql<{
+      staffPrincipalId: string;
+      agencyId: string;
+      state: "ACTIVE" | "DISABLED" | "REVOKED";
+      authorizationEpoch: string;
+      permissionId: string | null;
+      scopeKind: "AGENCY" | "ORGANIZATION_UNIT" | null;
+      organizationUnitId: string | null;
+      accessLevel: "OWN" | "TEAM" | "ALL" | null;
+      active: boolean | null;
+    }>`
+      SELECT membership."staffPrincipalId",
+             membership."agencyId",
+             membership."state",
+             membership."authorizationEpoch"::text AS "authorizationEpoch",
+             permission."permissionId",
+             assignment."scopeKind",
+             assignment."organizationUnitId"::text AS "organizationUnitId",
+             permission."accessLevel",
+             assignment."active"
+        FROM "staff_access"."staff_membership" AS membership
+        LEFT JOIN "staff_access"."role_assignment" AS assignment
+          ON assignment."membershipId" = membership."id"
+        LEFT JOIN "staff_access"."role_permission" AS permission
+          ON permission."roleId" = assignment."roleId"
+         AND permission."scopeKind" = assignment."scopeKind"
+       WHERE membership."staffPrincipalId" = ${staffPrincipalId}
+         AND membership."agencyId" = ${agencyId}::uuid
+       ORDER BY permission."permissionId", permission."scopeKind", permission."accessLevel"
+    `.execute(database)
+  ).rows;
+  const first = rows[0];
+  if (first === undefined) return null;
+  return {
+    staffPrincipalId: first.staffPrincipalId,
+    agencyId: first.agencyId,
+    membershipState: first.state,
+    authorizationEpoch: BigInt(first.authorizationEpoch),
+    assignments: rows.flatMap((row) =>
+      row.permissionId === null ||
+      row.scopeKind === null ||
+      row.accessLevel === null ||
+      row.active === null
+        ? []
+        : [
+            {
+              agencyId: row.agencyId,
+              permissionId:
+                row.permissionId as StaffAuthorizationSnapshot["assignments"][number]["permissionId"],
+              scopeKind: row.scopeKind,
+              organizationUnitId: row.organizationUnitId,
+              accessLevel: row.accessLevel,
+              active: row.active,
+            },
+          ],
+    ),
+  };
+};
+
+/** Locks the membership row so revocation/epoch changes serialize with a workspace operation. */
+export const lockStaffAuthorizationSnapshotInTransaction = async (
+  database: Kysely<DatabaseShape>,
+  staffPrincipalId: string,
+  agencyId: string,
+): Promise<StaffAuthorizationSnapshot | null> => {
+  await sql`
+    SELECT "id"
+      FROM "staff_access"."staff_membership"
+     WHERE "staffPrincipalId" = ${staffPrincipalId}
+       AND "agencyId" = ${agencyId}::uuid
+     FOR SHARE
+  `.execute(database);
+  return readStaffAuthorizationSnapshot(database, staffPrincipalId, agencyId);
+};
 
 const normalizeBootstrapEmail = (value: string): string => {
   const normalized = value.trim().toLowerCase();
@@ -133,7 +214,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
           await sql`
             INSERT INTO "organization"."agency_bootstrap_audit"
               ("id", "agencyId", "eventType", "operatorIdentity")
-            VALUES (${randomUUID()}::uuid, ${agency.id}::uuid, 'ROOT_AGENCY_CREATED', 'LOCAL_OPERATOR')
+            VALUES (${createUuidV7()}::uuid, ${agency.id}::uuid, 'ROOT_AGENCY_CREATED', 'LOCAL_OPERATOR')
           `.execute(database);
         } else {
           if (
@@ -146,7 +227,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
           await sql`
             INSERT INTO "organization"."agency_bootstrap_audit"
               ("id", "agencyId", "eventType", "operatorIdentity")
-            VALUES (${randomUUID()}::uuid, ${agency.id}::uuid, 'ROOT_AGENCY_RERUN', 'LOCAL_OPERATOR')
+            VALUES (${createUuidV7()}::uuid, ${agency.id}::uuid, 'ROOT_AGENCY_RERUN', 'LOCAL_OPERATOR')
           `.execute(database);
         }
 
@@ -154,7 +235,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
           INSERT INTO "staff_access"."role"
             ("id", "agencyId", "templateKey", "displayName", "isSystemTemplate")
           VALUES (
-            ${randomUUID()}::uuid,
+            ${createUuidV7()}::uuid,
             ${agency.id}::uuid,
             ${OWNER_ROLE_TEMPLATE_KEY},
             'Owner',
@@ -192,65 +273,11 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
 
   async getStaffAuthorizationSnapshot(
     staffPrincipalId: string,
+    agencyId: string,
   ): Promise<StaffAuthorizationSnapshot | null> {
-    return this.persistence.withConnection(async (database) => {
-      const rows = (
-        await sql<{
-          staffPrincipalId: string;
-          agencyId: string;
-          state: "ACTIVE" | "DISABLED" | "REVOKED";
-          authorizationEpoch: string;
-          permissionId: string | null;
-          scopeKind: "AGENCY" | "ORGANIZATION_UNIT" | null;
-          organizationUnitId: string | null;
-          accessLevel: "OWN" | "TEAM" | "ALL" | null;
-          active: boolean | null;
-        }>`
-          SELECT membership."staffPrincipalId",
-                 membership."agencyId",
-                 membership."state",
-                 membership."authorizationEpoch"::text AS "authorizationEpoch",
-                 permission."permissionId",
-                 assignment."scopeKind",
-                 assignment."organizationUnitId"::text AS "organizationUnitId",
-                 permission."accessLevel",
-                 assignment."active"
-            FROM "staff_access"."staff_membership" AS membership
-            LEFT JOIN "staff_access"."role_assignment" AS assignment
-              ON assignment."membershipId" = membership."id"
-            LEFT JOIN "staff_access"."role_permission" AS permission
-              ON permission."roleId" = assignment."roleId"
-             AND permission."scopeKind" = assignment."scopeKind"
-           WHERE membership."staffPrincipalId" = ${staffPrincipalId}
-           ORDER BY permission."permissionId", permission."scopeKind", permission."accessLevel"
-        `.execute(database)
-      ).rows;
-      const first = rows[0];
-      if (first === undefined) return null;
-      return {
-        staffPrincipalId: first.staffPrincipalId,
-        agencyId: first.agencyId,
-        membershipState: first.state,
-        authorizationEpoch: BigInt(first.authorizationEpoch),
-        assignments: rows.flatMap((row) =>
-          row.permissionId === null ||
-          row.scopeKind === null ||
-          row.accessLevel === null ||
-          row.active === null
-            ? []
-            : [
-                {
-                  permissionId:
-                    row.permissionId as StaffAuthorizationSnapshot["assignments"][number]["permissionId"],
-                  scopeKind: row.scopeKind,
-                  organizationUnitId: row.organizationUnitId,
-                  accessLevel: row.accessLevel,
-                  active: row.active,
-                },
-              ],
-        ),
-      };
-    });
+    return this.persistence.withConnection((database) =>
+      readStaffAuthorizationSnapshot(database, staffPrincipalId, agencyId),
+    );
   }
 
   async findStaffPrincipalIdByEmail(email: string): Promise<string | null> {
@@ -306,7 +333,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
               INSERT INTO "staff_access"."operator_bootstrap_audit"
                 ("id", "agencyId", "invitationId", "eventType", "operatorIdentity")
               VALUES (
-                ${randomUUID()}::uuid,
+                ${createUuidV7()}::uuid,
                 ${input.agencyId}::uuid,
                 ${existing.id}::uuid,
                 'OWNER_INVITATION_REISSUED',
@@ -317,7 +344,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
           }
           return { result: "ALREADY_ISSUED" };
         }
-        const invitationId = randomUUID();
+        const invitationId = createUuidV7();
         await sql`
           INSERT INTO "staff_access"."operator_bootstrap_invitation"
             ("id", "agencyId", "targetEmail", "tokenDigest", "state", "expiresAt")
@@ -334,7 +361,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
           INSERT INTO "staff_access"."operator_bootstrap_audit"
             ("id", "agencyId", "invitationId", "eventType", "operatorIdentity")
           VALUES (
-            ${randomUUID()}::uuid,
+            ${createUuidV7()}::uuid,
             ${input.agencyId}::uuid,
             ${invitationId}::uuid,
             'OWNER_INVITATION_ISSUED',
@@ -425,7 +452,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
             INSERT INTO "staff_access"."operator_bootstrap_audit"
               ("id", "agencyId", "invitationId", "eventType", "operatorIdentity")
             VALUES (
-              ${randomUUID()}::uuid,
+              ${createUuidV7()}::uuid,
               ${invitation.agencyId}::uuid,
               ${invitation.id}::uuid,
               'OWNER_INVITATION_REJECTED',
@@ -446,7 +473,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
           throw new Error("A Staff Principal may not be silently promoted through bootstrap");
         }
         const ownerRoleId = await activeOwnerRole(database, invitation.agencyId);
-        const membershipId = randomUUID();
+        const membershipId = createUuidV7();
         await sql`
           UPDATE "staff_access"."staff_user"
              SET "emailVerified" = true,
@@ -467,7 +494,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
           INSERT INTO "staff_access"."role_assignment"
             ("id", "agencyId", "membershipId", "roleId", "scopeKind", "active")
           VALUES (
-            ${randomUUID()}::uuid,
+            ${createUuidV7()}::uuid,
             ${invitation.agencyId}::uuid,
             ${membershipId}::uuid,
             ${ownerRoleId}::uuid,
@@ -486,7 +513,7 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
           INSERT INTO "staff_access"."operator_bootstrap_audit"
             ("id", "agencyId", "invitationId", "eventType", "operatorIdentity")
           VALUES (
-            ${randomUUID()}::uuid,
+            ${createUuidV7()}::uuid,
             ${invitation.agencyId}::uuid,
             ${invitation.id}::uuid,
             'OWNER_INVITATION_CONSUMED',

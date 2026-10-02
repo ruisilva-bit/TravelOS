@@ -7,6 +7,7 @@ import {
 } from "../../crm/domain/continuity.js";
 import { createScheduledLocalDateTime, createLocalDate } from "../../../shared-kernel/time.js";
 import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
+import type { StaffAuthorizationOperationProof } from "../../../staff-access/authorization.js";
 import {
   validateDifferentAirports,
   validateTripDates,
@@ -62,6 +63,15 @@ export class M1OptimisticConflictError extends Error {
   }
 }
 
+export class M1TransactionConflictError extends Error {
+  readonly code = "TRANSACTION_CONFLICT" as const;
+
+  constructor() {
+    super("The M1 transaction could not be completed; review current state before retrying");
+    this.name = "M1TransactionConflictError";
+  }
+}
+
 export class M1InputValidationError extends Error {
   readonly code = "M1_INPUT_VALIDATION" as const;
 
@@ -86,12 +96,29 @@ const asRecord = (value: unknown, label: string): UnknownRecord => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`${label} must be an object`);
   }
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw new Error(`${label} must be a plain object`);
+  }
   return value as UnknownRecord;
 };
 
 const exactRecord = (value: unknown, keys: readonly string[], label: string): UnknownRecord => {
   const record = asRecord(value, label);
-  const actual = Object.keys(record).toSorted().join("\u0000");
+  const actualKeys = Reflect.ownKeys(record);
+  if (actualKeys.length !== keys.length || actualKeys.some((key) => typeof key !== "string")) {
+    throw new Error(`${label} contains an unknown or missing field`);
+  }
+  const descriptors = actualKeys.map((key) => Object.getOwnPropertyDescriptor(record, key));
+  if (
+    descriptors.some(
+      (descriptor) =>
+        descriptor === undefined || !descriptor.enumerable || !Object.hasOwn(descriptor, "value"),
+    )
+  ) {
+    throw new Error(`${label} must contain only enumerable data fields`);
+  }
+  const actual = (actualKeys as string[]).toSorted().join("\u0000");
   const expected = [...keys].toSorted().join("\u0000");
   if (actual !== expected) throw new Error(`${label} contains an unknown or missing field`);
   return record;
@@ -359,10 +386,23 @@ const parseReservation = (value: unknown): ReservationDraft => {
 };
 
 export interface M1OperationalSliceRepository {
-  createM1TripSlice(input: CreateM1TripSliceInput): Promise<M1TripSlice>;
-  getM1TripSlice(agencyId: OpaqueId, tripId: OpaqueId): Promise<M1TripSlice | null>;
-  updateAccommodation(input: UpdateAccommodationInput): Promise<M1TripSlice>;
-  updateInternalSupplierNote(input: UpdateInternalNoteInput): Promise<M1TripSlice>;
+  createM1TripSlice(
+    input: CreateM1TripSliceInput,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<M1TripSlice>;
+  getM1TripSlice(
+    agencyId: OpaqueId,
+    tripId: OpaqueId,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<M1TripSlice | null>;
+  updateAccommodation(
+    input: UpdateAccommodationInput,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<M1TripSlice>;
+  updateInternalSupplierNote(
+    input: UpdateInternalNoteInput,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<M1TripSlice>;
 }
 
 export const validateCreateM1TripSliceInput = (
@@ -442,17 +482,21 @@ export const validateCreateM1TripSliceInput = (
 export const createM1TripSlice = async (
   repository: M1OperationalSliceRepository,
   input: CreateM1TripSliceInput,
+  authorization: StaffAuthorizationOperationProof,
 ): Promise<M1TripSlice> => {
   const validatedInput = validateCreateM1TripSliceInput(input);
-  return repository.createM1TripSlice(validatedInput);
+  return repository.createM1TripSlice(validatedInput, authorization);
 };
 
 export const readM1TripSlice = async (
   repository: M1OperationalSliceRepository,
   agencyId: OpaqueId,
   tripId: OpaqueId,
+  authorization: StaffAuthorizationOperationProof,
 ): Promise<M1TripSlice | null> =>
-  repository.getM1TripSlice(asOpaqueId(agencyId), asOpaqueId(tripId));
+  runInputValidation(() =>
+    repository.getM1TripSlice(asOpaqueId(agencyId), asOpaqueId(tripId), authorization),
+  );
 
 export const validateUpdateM1AccommodationInput = (input: unknown): UpdateAccommodationInput =>
   runInputValidation(() => {
@@ -481,8 +525,9 @@ export const validateUpdateM1AccommodationInput = (input: unknown): UpdateAccomm
 export const updateM1Accommodation = async (
   repository: M1OperationalSliceRepository,
   input: UpdateAccommodationInput,
+  authorization: StaffAuthorizationOperationProof,
 ): Promise<M1TripSlice> =>
-  repository.updateAccommodation(validateUpdateM1AccommodationInput(input));
+  repository.updateAccommodation(validateUpdateM1AccommodationInput(input), authorization);
 
 export const validateUpdateM1InternalSupplierNoteInput = (
   input: unknown,
@@ -512,8 +557,12 @@ export const validateUpdateM1InternalSupplierNoteInput = (
 export const updateM1InternalSupplierNote = async (
   repository: M1OperationalSliceRepository,
   input: UpdateInternalNoteInput,
+  authorization: StaffAuthorizationOperationProof,
 ): Promise<M1TripSlice> =>
-  repository.updateInternalSupplierNote(validateUpdateM1InternalSupplierNoteInput(input));
+  repository.updateInternalSupplierNote(
+    validateUpdateM1InternalSupplierNoteInput(input),
+    authorization,
+  );
 
 export type M1RepositoryPerson = Person;
 export type M1RepositoryCustomer = Customer;

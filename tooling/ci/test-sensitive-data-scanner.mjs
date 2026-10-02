@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -97,6 +98,20 @@ try {
   });
   assert.equal(approvedSafeFixture.result, "PASS");
   assert.equal(approvedSafeFixture.allowlistedFindingCount, 1);
+  const safeFixtureBytes = Buffer.from(`${fixtureEmail}\n`, "utf8");
+  const safeFixtureSha256 = createHash("sha256").update(safeFixtureBytes).digest("hex");
+  const expectedScopeSerialization = `${safeFixtureFile}\t${safeFixtureBytes.length}\t${safeFixtureSha256}\n`;
+  assert.deepEqual(approvedSafeFixture.fileManifest, [
+    { path: safeFixtureFile, bytes: safeFixtureBytes.length, sha256: safeFixtureSha256 },
+  ]);
+  assert.equal(
+    approvedSafeFixture.scopeSerialization.startsWith("newline-terminated records:"),
+    true,
+  );
+  assert.equal(
+    approvedSafeFixture.scopeAggregateSha256,
+    createHash("sha256").update(expectedScopeSerialization).digest("hex"),
+  );
 
   const safeCodeReference = scanSensitiveText({
     text: `${passwordKey}: runtimeCredentials.portal\n${passwordKey}: runtimeCredentials[role]\n`,

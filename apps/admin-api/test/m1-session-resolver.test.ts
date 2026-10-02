@@ -13,7 +13,7 @@ const session = {
   sessionId: "synthetic-session",
   principalId: "synthetic-staff-principal",
   expiresAtEpochMs: 1_800_000_000_000,
-  agencyId: "00000000-0000-4000-8000-000000000001",
+  agencyId: "00000000-0000-7000-8000-000000000001",
   authorizationEpoch: 7n,
   recentMfaVerifiedAtEpochMs: null,
 };

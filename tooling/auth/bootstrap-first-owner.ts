@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import {
   createLocalOperatorStaffEnrollmentRealm,
   createOneTimeOperatorToken,
@@ -13,6 +11,7 @@ import {
   type DevelopmentInstanceManifest,
 } from "@travelos/config";
 import {
+  createUuidV7,
   createPostgresPersistence,
   createStaffAccessRepository,
   type PostgresPersistence,
@@ -145,7 +144,7 @@ const createRuntime = async (manifestPath: string): Promise<LocalOperatorRuntime
 
 const bootstrapAgency = async (runtime: LocalOperatorRuntime) =>
   bootstrapRootAgency(runtime.repository, {
-    agencyId: randomUUID(),
+    agencyId: createUuidV7(),
     bootstrapReference: runtime.manifest.agencyBootstrap.reference,
     slug: runtime.manifest.agencyBootstrap.slug,
   });

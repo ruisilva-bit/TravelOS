@@ -1,16 +1,16 @@
 export type OpaqueId = string & { readonly __travelosOpaqueId: unique symbol };
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
-const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+const UUID_V7_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/u;
 
-export const isOpaqueUuid = (value: string): boolean => UUID_PATTERN.test(value);
+export const isUuidV7 = (value: unknown): value is string =>
+  typeof value === "string" && value.length === 36 && UUID_V7_PATTERN.test(value);
 
-export const isUuidV7 = (value: string): boolean => UUID_V7_PATTERN.test(value);
+export const isOpaqueUuid = isUuidV7;
 
 export const asOpaqueId = (value: string): OpaqueId => {
-  const normalized = value.trim().toLowerCase();
-  if (!isOpaqueUuid(normalized)) throw new Error("TravelOS identifiers must be canonical UUIDs");
-  return normalized as OpaqueId;
+  if (!isUuidV7(value)) throw new Error("TravelOS identifiers must be canonical UUIDv7");
+  return value as OpaqueId;
 };
 
 const byteToHex = (value: number): string => value.toString(16).padStart(2, "0");

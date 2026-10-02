@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,6 +23,7 @@ import {
 import {
   createPostgresPersistence,
   createStaffAccessRepository,
+  createUuidV7,
   type PostgresPersistence,
   type StaffAccessRepository,
 } from "../../packages/database/src/index.js";
@@ -276,14 +277,14 @@ describe.sequential("TravelOS Stage 4 disposable PostgreSQL qualification", () =
 
   it("serializes one root Agency and stores only the first Owner invitation digest", async () => {
     const first = await bootstrapRootAgency(repository, {
-      agencyId: randomUUID(),
+      agencyId: createUuidV7(),
       bootstrapReference: "agency-bootstrap:stage4-qualification",
       slug: "stage4-qualification",
     });
     rootAgencyId = first.agencyId;
     expect(first.created).toBe(true);
     const rerun = await bootstrapRootAgency(repository, {
-      agencyId: randomUUID(),
+      agencyId: createUuidV7(),
       bootstrapReference: "agency-bootstrap:stage4-qualification",
       slug: "stage4-qualification",
     });
@@ -414,7 +415,7 @@ describe.sequential("TravelOS Stage 4 disposable PostgreSQL qualification", () =
 
   it("rejects stale authorization epochs, missing/inactive memberships and wrong Agency proofs", async () => {
     const ownerSession = await currentOwnerSession();
-    const before = await repository.getStaffAuthorizationSnapshot(ownerPrincipalId);
+    const before = await repository.getStaffAuthorizationSnapshot(ownerPrincipalId, rootAgencyId);
     expect(before).not.toBeNull();
     const membership = await queryAsOwner<{ readonly id: string }>(`
       SELECT "id"::text AS "id" FROM "staff_access"."staff_membership"
@@ -422,15 +423,15 @@ describe.sequential("TravelOS Stage 4 disposable PostgreSQL qualification", () =
     `);
     const membershipId = membership[0]?.id;
     expect(membershipId).toBeDefined();
-    const roleId = randomUUID();
+    const roleId = createUuidV7();
     await queryAsOwner(`
       INSERT INTO "staff_access"."role" ("id", "agencyId", "displayName")
       VALUES ('${roleId}'::uuid, '${rootAgencyId}'::uuid, 'Epoch Probe');
       INSERT INTO "staff_access"."role_assignment"
         ("id", "agencyId", "membershipId", "roleId", "scopeKind")
-      VALUES ('${randomUUID()}'::uuid, '${rootAgencyId}'::uuid, '${membershipId}'::uuid, '${roleId}'::uuid, 'AGENCY');
+      VALUES ('${createUuidV7()}'::uuid, '${rootAgencyId}'::uuid, '${membershipId}'::uuid, '${roleId}'::uuid, 'AGENCY');
     `);
-    const after = await repository.getStaffAuthorizationSnapshot(ownerPrincipalId);
+    const after = await repository.getStaffAuthorizationSnapshot(ownerPrincipalId, rootAgencyId);
     expect(after?.authorizationEpoch).not.toBe(before?.authorizationEpoch);
     expect(
       authorizeStaffRequest({
@@ -456,7 +457,7 @@ describe.sequential("TravelOS Stage 4 disposable PostgreSQL qualification", () =
       authorizeStaffRequest({
         session: {
           staffPrincipalId: ownerSession.principalId,
-          agencyId: "00000000-0000-4000-8000-000000000099",
+          agencyId: "00000000-0000-7000-8000-000000000099",
           authorizationEpoch: after!.authorizationEpoch,
           expiresAtEpochMs: ownerSession.expiresAtEpochMs,
           recentMfaVerifiedAtEpochMs: ownerSession.recentMfaVerifiedAtEpochMs,
@@ -482,15 +483,20 @@ describe.sequential("TravelOS Stage 4 disposable PostgreSQL qualification", () =
     const noMembershipPrincipal = await repository.findStaffPrincipalIdByEmail(
       "nomembership.stage4@example.test",
     );
-    expect(await repository.getStaffAuthorizationSnapshot(noMembershipPrincipal!)).toBeNull();
+    expect(
+      await repository.getStaffAuthorizationSnapshot(noMembershipPrincipal!, rootAgencyId),
+    ).toBeNull();
     await queryAsOwner(`
       INSERT INTO "staff_access"."staff_membership" ("id", "agencyId", "staffPrincipalId", "state")
-      VALUES ('${randomUUID()}'::uuid, '${rootAgencyId}'::uuid, '${noMembershipPrincipal}'::text, 'ACTIVE');
+      VALUES ('${createUuidV7()}'::uuid, '${rootAgencyId}'::uuid, '${noMembershipPrincipal}'::text, 'ACTIVE');
       UPDATE "staff_access"."staff_membership"
          SET "state" = 'DISABLED'
        WHERE "staffPrincipalId" = '${noMembershipPrincipal}'::text;
     `);
-    const inactive = await repository.getStaffAuthorizationSnapshot(noMembershipPrincipal!);
+    const inactive = await repository.getStaffAuthorizationSnapshot(
+      noMembershipPrincipal!,
+      rootAgencyId,
+    );
     expect(inactive?.membershipState).toBe("DISABLED");
   });
 

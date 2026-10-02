@@ -17,3 +17,4 @@ export {
 export { mapPostgresMutationError } from "./trip-operations/m1-operational-slice-repository.js";
 export type { M1OperationalSliceRepository } from "@travelos/backend-core";
 export { createPostgresM1StaffTripOperations } from "./trip-operations/m1-staff-trip-operations.js";
+export { createUuidV7 } from "./uuidv7.js";

@@ -4,6 +4,7 @@ import {
   PERMISSION_REGISTRY_VERSION,
   type StaffPermissionId,
 } from "../staff-access/permission-registry.js";
+import { isUuidV7 } from "../shared-kernel/opaque-id.js";
 
 export interface RootAgencyBootstrapInput {
   readonly agencyId: string;
@@ -47,11 +48,14 @@ export const bootstrapRootAgency = async (
   port: RootAgencyBootstrapPort,
   input: RootAgencyBootstrapInput,
 ): Promise<RootAgencyBootstrapResult> => {
-  nonEmpty(input.agencyId, "Agency ID");
+  if (!isUuidV7(input.agencyId)) {
+    throw new Error("Agency ID must be a canonical lowercase UUIDv7");
+  }
   nonEmpty(input.bootstrapReference, "Agency bootstrap reference");
   nonEmpty(input.slug, "Agency slug");
   const result = await port.ensureRootAgency(input);
   if (
+    !isUuidV7(result.agencyId) ||
     result.bootstrapReference !== input.bootstrapReference ||
     result.slug !== input.slug ||
     result.permissionRegistryVersion !== PERMISSION_REGISTRY_VERSION

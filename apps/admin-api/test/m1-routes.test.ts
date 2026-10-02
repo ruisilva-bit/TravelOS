@@ -6,6 +6,7 @@ import {
   createM1StaffTripOperations,
   createScheduledLocalDateTime,
   M1OptimisticConflictError,
+  M1TransactionConflictError,
   type M1TripSlice,
   type M1OperationalSliceRepository,
   type StaffAuthorizationSnapshot,
@@ -16,9 +17,9 @@ import { registerAdminM1Routes, type AdminM1ExpressApplication } from "../src/m1
 
 const syntheticEmail = ["rui", "example.test"].join(String.fromCharCode(64));
 
-const agencyId = "00000000-0000-4000-8000-000000000001";
+const agencyId = "00000000-0000-7000-8000-000000000001";
 const id = (last: number) =>
-  asOpaqueId(`00000000-0000-4000-8000-${last.toString().padStart(12, "0")}`);
+  asOpaqueId(`00000000-0000-7000-8000-${last.toString().padStart(12, "0")}`);
 const agency = asOpaqueId(agencyId);
 const tripId = id(10);
 const flightId = id(11);
@@ -240,6 +241,7 @@ const snapshot: StaffAuthorizationSnapshot = {
   membershipState: "ACTIVE",
   authorizationEpoch: 1n,
   assignments: grantedPermissions.map((permissionId) => ({
+    agencyId,
     permissionId,
     scopeKind: "AGENCY",
     organizationUnitId: null,
@@ -286,6 +288,7 @@ const makeHarness = (
         ...snapshot,
         agencyId: sessionAgencyId,
         assignments: permissionIds.map((permissionId) => ({
+          agencyId: sessionAgencyId,
           permissionId,
           scopeKind: "AGENCY",
           organizationUnitId: null,
@@ -415,7 +418,7 @@ describe("Admin Stage 5 routes", () => {
   });
 
   it("fails closed for a session bound to a different Agency", async () => {
-    const harness = makeHarness("00000000-0000-4000-8000-000000000099");
+    const harness = makeHarness("00000000-0000-7000-8000-000000000099");
     const response = await harness.invoke("POST /api/admin/trips", requestBody());
     expect(response.statusCode).toBe(403);
     expect(harness.repository.createM1TripSlice).not.toHaveBeenCalled();
@@ -456,6 +459,22 @@ describe("Admin Stage 5 routes", () => {
     expect(response.statusCode).toBe(200);
     expect(harness.repository.updateAccommodation).toHaveBeenCalledWith(
       expect.objectContaining({ expectedLockVersion: 9_007_199_254_740_993n }),
+      expect.objectContaining({
+        session: expect.objectContaining({
+          staffPrincipalId: "staff-1",
+          agencyId,
+          authorizationEpoch: 1n,
+        }),
+        requiredPermissionIds: expect.arrayContaining([
+          "customer.view",
+          "traveller.view_sensitive",
+          "trip.view",
+          "reservation.view",
+          "finance.view_costs",
+          "trip.edit",
+        ]),
+        nowEpochMs: expect.any(Number),
+      }),
     );
     expect(response.body).toMatchObject({
       trip: { lockVersion: "9007199254740993" },
@@ -514,5 +533,27 @@ describe("Admin Stage 5 routes", () => {
       { reservationId },
     );
     expect(response.statusCode).toBe(409);
+  });
+
+  it("maps a deadlock transaction conflict to a safe HTTP 409", async () => {
+    const harness = makeHarness(agencyId, grantedPermissions);
+    harness.repository.updateInternalSupplierNote = vi
+      .fn()
+      .mockRejectedValue(new M1TransactionConflictError());
+    const response = await harness.invoke(
+      "PATCH /api/admin/reservations/:reservationId/internal-note",
+      {
+        agencyId,
+        tripId,
+        reservationId,
+        expectedLockVersion: "0",
+        internalNote: "Updated note",
+      },
+      { reservationId },
+    );
+    expect(response.statusCode).toBe(409);
+    expect(response.body).toEqual({ error: "transaction_conflict" });
+    expect(JSON.stringify(response.body)).not.toContain("40P01");
+    expect(JSON.stringify(response.body)).not.toContain("deadlock");
   });
 });

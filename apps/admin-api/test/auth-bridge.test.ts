@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { STAFF_AUTH_BASE_PATH, type AuthRealm } from "@travelos/auth-adapters";
 
@@ -56,7 +56,7 @@ const staffRealm = (overrides: Partial<AuthRealm> = {}): AuthRealm => ({
       sessionId: "staff-session-1",
       principalId: "staff-principal-1",
       expiresAtEpochMs: Date.now() + 60_000,
-      agencyId: "00000000-0000-4000-8000-000000000001",
+      agencyId: "00000000-0000-7000-8000-000000000001",
       authorizationEpoch: 7n,
       recentMfaVerifiedAtEpochMs: Date.now() - 1_000,
     };
@@ -136,11 +136,15 @@ describe("Admin Staff auth bridge", () => {
       headers: { "cache-control": "private, no-store" },
       body: {
         principalId: "staff-principal-1",
-        agencyId: "00000000-0000-4000-8000-000000000001",
+        agencyId: "00000000-0000-7000-8000-000000000001",
         authorizationEpoch: "7",
         recentMfaVerifiedAtEpochMs: expect.any(Number),
       },
     });
+    expect(options.staffAccessRepository.getStaffAuthorizationSnapshot).toHaveBeenCalledWith(
+      "staff-principal-1",
+      "00000000-0000-7000-8000-000000000001",
+    );
 
     const staleExpress = new FakeExpress();
     registerAdminAuthBridge(
@@ -239,27 +243,27 @@ describe("Admin Staff auth bridge", () => {
 });
 
 function bridgeOptions(epoch = 7n) {
+  const getStaffAuthorizationSnapshot = vi.fn(
+    async (staffPrincipalId: string, requestedAgencyId: string) => ({
+      staffPrincipalId,
+      agencyId: requestedAgencyId,
+      membershipState: "ACTIVE" as const,
+      authorizationEpoch: epoch,
+      assignments: [
+        {
+          agencyId: requestedAgencyId,
+          permissionId: "agency.view" as const,
+          scopeKind: "AGENCY" as const,
+          organizationUnitId: null,
+          accessLevel: "ALL" as const,
+          active: true,
+        },
+      ],
+    }),
+  );
   return {
     realm: staffRealm(),
     policy,
-    staffAccessRepository: {
-      async getStaffAuthorizationSnapshot() {
-        return {
-          staffPrincipalId: "staff-principal-1",
-          agencyId: "00000000-0000-4000-8000-000000000001",
-          membershipState: "ACTIVE" as const,
-          authorizationEpoch: epoch,
-          assignments: [
-            {
-              permissionId: "agency.view" as const,
-              scopeKind: "AGENCY" as const,
-              organizationUnitId: null,
-              accessLevel: "ALL" as const,
-              active: true,
-            },
-          ],
-        };
-      },
-    },
+    staffAccessRepository: { getStaffAuthorizationSnapshot },
   };
 }

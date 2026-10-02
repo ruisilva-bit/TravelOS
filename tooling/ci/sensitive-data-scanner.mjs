@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -181,15 +182,29 @@ export const scanSensitiveFiles = async ({
   const findings = [];
   let allowlistedFindingCount = 0;
   const scannedFiles = [...new Set(files)].sort((left, right) => left.localeCompare(right));
+  const fileManifest = [];
   for (const file of scannedFiles) {
-    const text = await readFile(path.join(root, file), "utf8");
+    const bytes = await readFile(path.join(root, file));
+    const text = bytes.toString("utf8");
     const result = scanSensitiveText({ text, file, allowlist, additionalRules });
     findings.push(...result.findings);
     allowlistedFindingCount += result.allowlistedFindingCount;
+    fileManifest.push({
+      path: file,
+      bytes: bytes.length,
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+    });
   }
+  const scopeSerialization = fileManifest
+    .map((entry) => `${entry.path}\t${entry.bytes}\t${entry.sha256}\n`)
+    .join("");
   return {
     result: findings.length === 0 ? "PASS" : "FAIL",
     filesScanned: scannedFiles,
+    fileManifest,
+    scopeSerialization:
+      "newline-terminated records: relative-path<TAB>bytes<TAB>sha256, sorted by relative path",
+    scopeAggregateSha256: createHash("sha256").update(scopeSerialization).digest("hex"),
     findings,
     allowlistedFindingCount,
   };

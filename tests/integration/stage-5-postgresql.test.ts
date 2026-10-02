@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { createHash } from "node:crypto";
 import { copyFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -11,22 +10,29 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   asOpaqueId,
   bootstrapRootAgency,
+  createM1StaffTripOperations,
   createMoney,
+  M1StaffAuthorizationError,
   M1OptimisticConflictError,
+  M1TransactionConflictError,
   PERMISSION_REGISTRY_VERSION,
   TRAVELOS_CANONICAL_TIMEZONE_NAMES,
+  type StaffAuthorizationOperationProof,
+  type StaffPermissionId,
+  type StaffSessionAuthorizationProof,
   type M1TripSlice,
 } from "../../packages/backend-core/src/index.js";
 import {
-  createM1TripSlice,
-  readM1TripSlice,
-  updateM1Accommodation,
-  updateM1InternalSupplierNote,
+  createM1TripSlice as createM1TripSliceWithAuthorization,
+  readM1TripSlice as readM1TripSliceWithAuthorization,
+  updateM1Accommodation as updateM1AccommodationWithAuthorization,
+  updateM1InternalSupplierNote as updateM1InternalSupplierNoteWithAuthorization,
   type CreateM1TripSliceInput,
 } from "../../packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.js";
 import {
   createPostgresPersistence,
   createStaffAccessRepository,
+  createUuidV7 as randomUUID,
   mapPostgresMutationError,
   type PostgresPersistence,
 } from "../../packages/database/src/index.js";
@@ -43,7 +49,7 @@ const host = process.env["PGHOST"] ?? "";
 const port = Number.parseInt(process.env["PGPORT"] ?? "", 10);
 const postgresBin = process.env["TRAVELOS_STAGE5_PG_BIN"] ?? "";
 const databaseName = "travelos_stage5_qualification";
-const agencyId = asOpaqueId("00000000-0000-4000-8000-000000000001");
+const agencyId = asOpaqueId("00000000-0000-7000-8000-000000000001");
 
 const syntheticEmail = ["rui", "example.test"].join(String.fromCharCode(64));
 
@@ -105,6 +111,86 @@ let staffAccessRepository: ReturnType<typeof createStaffAccessRepository>;
 let slice: M1TripSlice;
 let upgradedSlice: M1TripSlice | null = null;
 let predecessorMigrationDirectory: string | null = null;
+const staffSessions = new Map<string, StaffSessionAuthorizationProof>();
+
+const M1_READ_PERMISSION_IDS = [
+  "customer.view",
+  "traveller.view_sensitive",
+  "trip.view",
+  "reservation.view",
+  "finance.view_costs",
+] as const satisfies readonly StaffPermissionId[];
+const M1_CREATE_PERMISSION_IDS = [
+  ...M1_READ_PERMISSION_IDS,
+  "customer.edit",
+  "traveller.edit",
+  "trip.edit",
+  "reservation.edit",
+  "finance.manage_costs",
+] as const satisfies readonly StaffPermissionId[];
+const M1_ACCOMMODATION_PERMISSION_IDS = [
+  ...M1_READ_PERMISSION_IDS,
+  "trip.edit",
+] as const satisfies readonly StaffPermissionId[];
+const M1_INTERNAL_NOTE_PERMISSION_IDS = [
+  ...M1_READ_PERMISSION_IDS,
+  "finance.manage_costs",
+] as const satisfies readonly StaffPermissionId[];
+
+const authorizationFor = (
+  requestedAgencyId: string,
+  requiredPermissionIds: readonly StaffPermissionId[],
+): StaffAuthorizationOperationProof => {
+  const session = staffSessions.get(requestedAgencyId);
+  if (session === undefined) {
+    throw new Error(
+      `No disposable staff authorization fixture exists for Agency ${requestedAgencyId}`,
+    );
+  }
+  return { session, requiredPermissionIds, nowEpochMs: Date.now() };
+};
+
+const createM1TripSlice = (
+  targetRepository: ReturnType<typeof createM1OperationalSliceRepository>,
+  input: CreateM1TripSliceInput,
+) =>
+  createM1TripSliceWithAuthorization(
+    targetRepository,
+    input,
+    authorizationFor(input.agencyId, M1_CREATE_PERMISSION_IDS),
+  );
+
+const readM1TripSlice = (
+  targetRepository: ReturnType<typeof createM1OperationalSliceRepository>,
+  targetAgencyId: CreateM1TripSliceInput["agencyId"],
+  tripId: CreateM1TripSliceInput["agencyId"],
+) =>
+  readM1TripSliceWithAuthorization(
+    targetRepository,
+    targetAgencyId,
+    tripId,
+    authorizationFor(targetAgencyId, M1_READ_PERMISSION_IDS),
+  );
+
+const updateM1Accommodation = (
+  targetRepository: ReturnType<typeof createM1OperationalSliceRepository>,
+  input: Parameters<typeof updateM1AccommodationWithAuthorization>[1],
+) =>
+  updateM1AccommodationWithAuthorization(
+    targetRepository,
+    input,
+    authorizationFor(input.agencyId, M1_ACCOMMODATION_PERMISSION_IDS),
+  );
+
+const updateM1InternalSupplierNote = (
+  targetRepository: ReturnType<typeof createM1OperationalSliceRepository>,
+  input: Parameters<typeof updateM1InternalSupplierNoteWithAuthorization>[1],
+) =>
+  updateM1InternalSupplierNoteWithAuthorization(
+    targetRepository,
+    input,
+    authorizationFor(input.agencyId, M1_INTERNAL_NOTE_PERMISSION_IDS),
+  );
 
 const primaryFlight = (value: M1TripSlice): M1TripSlice["flights"][number] => {
   const item = value.flights[0];
@@ -208,6 +294,66 @@ const withOwnerTransaction = async <Result>(
   } finally {
     await client.end();
   }
+};
+
+const primaryStaffFixture = {
+  staffPrincipalId: `stage5-authorization-${randomUUID()}`,
+  roleId: randomUUID(),
+  membershipId: randomUUID(),
+  assignmentId: randomUUID(),
+  email: `stage5-authorization-${randomUUID()}@example.test`,
+};
+
+const seedPrimaryStaffAuthorization = async (): Promise<StaffSessionAuthorizationProof> => {
+  await withOwnerTransaction(async (client) => {
+    await client.query(
+      `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified")
+       VALUES ($1, 'Stage 5 Authorization Fixture', $2, true)`,
+      [primaryStaffFixture.staffPrincipalId, primaryStaffFixture.email],
+    );
+    await client.query(
+      `INSERT INTO "staff_access"."staff_membership" ("id", "agencyId", "staffPrincipalId", "state")
+       VALUES ($1::uuid, $2::uuid, $3, 'ACTIVE')`,
+      [primaryStaffFixture.membershipId, agencyId, primaryStaffFixture.staffPrincipalId],
+    );
+    await client.query(
+      `INSERT INTO "staff_access"."role" ("id", "agencyId", "displayName")
+       VALUES ($1::uuid, $2::uuid, 'Stage 5 Authorization Fixture')`,
+      [primaryStaffFixture.roleId, agencyId],
+    );
+    await client.query(
+      `INSERT INTO "staff_access"."role_permission" ("roleId", "permissionId", "scopeKind", "accessLevel")
+       SELECT $1::uuid, permission_id, 'AGENCY', 'ALL'
+         FROM unnest($2::text[]) AS permission_id`,
+      [primaryStaffFixture.roleId, [...M1_CREATE_PERMISSION_IDS]],
+    );
+    await client.query(
+      `INSERT INTO "staff_access"."role_assignment"
+         ("id", "agencyId", "membershipId", "roleId", "scopeKind", "organizationUnitId", "active")
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'AGENCY', NULL, true)`,
+      [
+        primaryStaffFixture.assignmentId,
+        agencyId,
+        primaryStaffFixture.membershipId,
+        primaryStaffFixture.roleId,
+      ],
+    );
+  });
+
+  const snapshot = await staffAccessRepository.getStaffAuthorizationSnapshot(
+    primaryStaffFixture.staffPrincipalId,
+    agencyId,
+  );
+  if (snapshot === null) throw new Error("The Stage 5 authorization fixture was not readable");
+  const session: StaffSessionAuthorizationProof = {
+    staffPrincipalId: primaryStaffFixture.staffPrincipalId,
+    agencyId,
+    authorizationEpoch: snapshot.authorizationEpoch,
+    expiresAtEpochMs: Date.now() + 60 * 60 * 1_000,
+    recentMfaVerifiedAtEpochMs: null,
+  };
+  staffSessions.set(agencyId, session);
+  return session;
 };
 
 const baseInput = (): CreateM1TripSliceInput => ({
@@ -388,6 +534,7 @@ beforeAll(async () => {
     slug: "stage5-upgrade-qualification",
   });
   expect(upgradeBootstrap.created).toBe(true);
+  await seedPrimaryStaffAuthorization();
   const upgradeInput = baseInput();
   const predecessorSlice = await createM1TripSlice(repository, {
     ...upgradeInput,
@@ -521,6 +668,258 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     ]).toEqual([0n, 0n, 0n, 0n, 0n, 0n, 0n]);
   });
 
+  it("keeps authorization snapshots and Trip reads Agency-isolated with two disposable Agency fixtures", async () => {
+    const secondAgencyId = randomUUID();
+    const staffPrincipalId = randomUUID();
+    const rootMembershipId = randomUUID();
+    const secondMembershipId = randomUUID();
+    const rootRoleId = randomUUID();
+    const secondRoleId = randomUUID();
+    const rootAssignmentId = randomUUID();
+    const secondAssignmentId = randomUUID();
+    const syntheticEmailAddress = `stage5-multi-agency-${staffPrincipalId}@example.test`;
+    let syntheticTopologyCreated = false;
+
+    try {
+      await withOwnerTransaction(async (client) => {
+        // Only the disposable qualification DB relaxes the production single-root index.
+        await client.query('DROP INDEX "organization"."agency_single_root_idx"');
+        await client.query(
+          `INSERT INTO "organization"."agency" ("id", "bootstrapReference", "slug")
+           VALUES ($1::uuid, $2, $3)`,
+          [secondAgencyId, `stage5-multi-agency-${secondAgencyId}`, `stage5-${secondAgencyId}`],
+        );
+        await client.query(
+          `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified")
+           VALUES ($1, $2, $3, true)`,
+          [staffPrincipalId, "Stage 5 Multi-Agency Fixture", syntheticEmailAddress],
+        );
+        await client.query(
+          `INSERT INTO "staff_access"."staff_membership" ("id", "agencyId", "staffPrincipalId", "state")
+           VALUES ($1::uuid, $2::uuid, $3, 'ACTIVE'), ($4::uuid, $5::uuid, $3, 'ACTIVE')`,
+          [rootMembershipId, agencyId, staffPrincipalId, secondMembershipId, secondAgencyId],
+        );
+        await client.query(
+          `INSERT INTO "staff_access"."role" ("id", "agencyId", "displayName")
+           VALUES ($1::uuid, $2::uuid, 'Stage 5 Root Qualification'),
+                  ($3::uuid, $4::uuid, 'Stage 5 Second Agency Qualification')`,
+          [rootRoleId, agencyId, secondRoleId, secondAgencyId],
+        );
+        await client.query(
+          `INSERT INTO "staff_access"."role_permission" ("roleId", "permissionId", "scopeKind", "accessLevel")
+           SELECT $1::uuid, permission_id, 'AGENCY', 'ALL'
+             FROM unnest($2::text[]) AS permission_id`,
+          [rootRoleId, [...M1_READ_PERMISSION_IDS, "trip.edit"]],
+        );
+        await client.query(
+          `INSERT INTO "staff_access"."role_permission" ("roleId", "permissionId", "scopeKind", "accessLevel")
+           SELECT $1::uuid, permission_id, 'AGENCY', 'ALL'
+             FROM unnest($2::text[]) AS permission_id`,
+          [secondRoleId, [...M1_READ_PERMISSION_IDS, "finance.manage_costs"]],
+        );
+        await client.query(
+          `INSERT INTO "staff_access"."role_assignment"
+             ("id", "agencyId", "membershipId", "roleId", "scopeKind", "organizationUnitId", "active")
+           VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'AGENCY', NULL, true),
+                  ($5::uuid, $6::uuid, $7::uuid, $8::uuid, 'AGENCY', NULL, true)`,
+          [
+            rootAssignmentId,
+            agencyId,
+            rootMembershipId,
+            rootRoleId,
+            secondAssignmentId,
+            secondAgencyId,
+            secondMembershipId,
+            secondRoleId,
+          ],
+        );
+      });
+      syntheticTopologyCreated = true;
+
+      const rootSnapshot = await staffAccessRepository.getStaffAuthorizationSnapshot(
+        staffPrincipalId,
+        agencyId,
+      );
+      const secondSnapshot = await staffAccessRepository.getStaffAuthorizationSnapshot(
+        staffPrincipalId,
+        secondAgencyId,
+      );
+      expect(rootSnapshot?.agencyId).toBe(agencyId);
+      expect(
+        rootSnapshot?.assignments.every((assignment) => assignment.agencyId === agencyId),
+      ).toBe(true);
+      expect(rootSnapshot?.assignments.map(({ permissionId }) => permissionId).toSorted()).toEqual(
+        [...M1_READ_PERMISSION_IDS, "trip.edit"].toSorted(),
+      );
+      expect(secondSnapshot?.agencyId).toBe(secondAgencyId);
+      expect(
+        secondSnapshot?.assignments.every((assignment) => assignment.agencyId === secondAgencyId),
+      ).toBe(true);
+      expect(
+        secondSnapshot?.assignments.map(({ permissionId }) => permissionId).toSorted(),
+      ).toEqual([...M1_READ_PERMISSION_IDS, "finance.manage_costs"].toSorted());
+      const nowEpochMs = Date.now();
+      const rootAuthorization: StaffAuthorizationOperationProof = {
+        session: {
+          staffPrincipalId,
+          agencyId,
+          authorizationEpoch: rootSnapshot!.authorizationEpoch,
+          expiresAtEpochMs: nowEpochMs + 60 * 60 * 1_000,
+          recentMfaVerifiedAtEpochMs: null,
+        },
+        requiredPermissionIds: M1_READ_PERMISSION_IDS,
+        nowEpochMs,
+      };
+      const secondAuthorization: StaffAuthorizationOperationProof = {
+        session: {
+          staffPrincipalId,
+          agencyId: secondAgencyId,
+          authorizationEpoch: secondSnapshot!.authorizationEpoch,
+          expiresAtEpochMs: nowEpochMs + 60 * 60 * 1_000,
+          recentMfaVerifiedAtEpochMs: null,
+        },
+        requiredPermissionIds: M1_READ_PERMISSION_IDS,
+        nowEpochMs,
+      };
+      expect(
+        await readM1TripSliceWithAuthorization(
+          repository,
+          asOpaqueId(secondAgencyId),
+          slice.trip.id,
+          secondAuthorization,
+        ),
+      ).toBeNull();
+      expect(
+        await readM1TripSliceWithAuthorization(
+          repository,
+          agencyId,
+          slice.trip.id,
+          rootAuthorization,
+        ),
+      ).not.toBeNull();
+    } finally {
+      if (syntheticTopologyCreated) {
+        await withOwnerTransaction(async (client) => {
+          await client.query(
+            `DELETE FROM "staff_access"."role_assignment" WHERE "id" IN ($1::uuid, $2::uuid)`,
+            [rootAssignmentId, secondAssignmentId],
+          );
+          await client.query(
+            `DELETE FROM "staff_access"."staff_membership" WHERE "id" IN ($1::uuid, $2::uuid)`,
+            [rootMembershipId, secondMembershipId],
+          );
+          await client.query(
+            `DELETE FROM "staff_access"."role" WHERE "id" IN ($1::uuid, $2::uuid)`,
+            [rootRoleId, secondRoleId],
+          );
+          await client.query(`DELETE FROM "staff_access"."staff_user" WHERE "id" = $1`, [
+            staffPrincipalId,
+          ]);
+          await client.query(`DELETE FROM "organization"."agency" WHERE "id" = $1::uuid`, [
+            secondAgencyId,
+          ]);
+          await client.query(
+            'CREATE UNIQUE INDEX "agency_single_root_idx" ON "organization"."agency" ((true))',
+          );
+        });
+      }
+    }
+
+    const rootRows = await queryAsOwner<{ readonly count: string }>(
+      `SELECT count(*)::text AS "count" FROM "organization"."agency" WHERE "isRoot"`,
+    );
+    expect(rootRows).toEqual([{ count: "1" }]);
+    const singletonIndex = await queryAsOwner<{ readonly indexName: string | null }>(
+      `SELECT pg_catalog.to_regclass('organization.agency_single_root_idx')::text AS "indexName"`,
+    );
+    expect(singletonIndex[0]?.indexName).toBe("organization.agency_single_root_idx");
+  });
+
+  it("rechecks current Staff authorization inside the mutation transaction", async () => {
+    const session = staffSessions.get(agencyId);
+    if (session === undefined) throw new Error("The primary Staff session fixture is unavailable");
+    const before = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    if (before === null) throw new Error("The authorized Trip is unavailable before revocation");
+    const currentAccommodation = primaryAccommodation(before);
+    const revokingRepository: Parameters<typeof createM1StaffTripOperations>[0]["repository"] = {
+      createM1TripSlice: repository.createM1TripSlice,
+      getM1TripSlice: repository.getM1TripSlice,
+      updateAccommodation: async (input, authorization) => {
+        await withOwnerTransaction(async (client) => {
+          const result = await client.query(
+            `UPDATE "staff_access"."role_assignment"
+              SET "active" = false, "revokedAt" = CURRENT_TIMESTAMP
+            WHERE "id" = $1::uuid AND "active"`,
+            [primaryStaffFixture.assignmentId],
+          );
+          if (result.rowCount !== 1) {
+            throw new Error("The qualification Staff role assignment was not revoked");
+          }
+        });
+        return repository.updateAccommodation(input, authorization);
+      },
+      updateInternalSupplierNote: repository.updateInternalSupplierNote,
+    };
+    const operations = createM1StaffTripOperations({
+      repository: revokingRepository,
+      authorizationRepository: staffAccessRepository,
+      sessionResolver: {
+        resolveStaffSession: async (cookieHeader) =>
+          cookieHeader === "stage5-authorization-session" ? session : null,
+      },
+    });
+
+    let fixtureRestorationFailure: Error | undefined;
+    try {
+      await expect(
+        operations.updateAccommodation("stage5-authorization-session", {
+          agencyId,
+          tripId: before.trip.id,
+          itemId: currentAccommodation.id,
+          expectedLockVersion: currentAccommodation.lockVersion,
+          title: "Must not persist after role revocation",
+          description: "The transaction must recheck current permissions",
+        }),
+      ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
+    } finally {
+      try {
+        await withOwnerTransaction(async (client) => {
+          await client.query(
+            `UPDATE "staff_access"."role_assignment"
+              SET "active" = true, "revokedAt" = NULL
+            WHERE "id" = $1::uuid AND NOT "active"`,
+            [primaryStaffFixture.assignmentId],
+          );
+        });
+        const refreshedSnapshot = await staffAccessRepository.getStaffAuthorizationSnapshot(
+          primaryStaffFixture.staffPrincipalId,
+          agencyId,
+        );
+        if (refreshedSnapshot === null) {
+          fixtureRestorationFailure = new Error(
+            "The restored Staff authorization fixture was not readable",
+          );
+        } else {
+          staffSessions.set(agencyId, {
+            ...session,
+            authorizationEpoch: refreshedSnapshot.authorizationEpoch,
+            expiresAtEpochMs: Date.now() + 60 * 60 * 1_000,
+          });
+        }
+      } catch (error) {
+        fixtureRestorationFailure = new Error("Failed to restore the Staff authorization fixture", {
+          cause: error,
+        });
+      }
+    }
+    if (fixtureRestorationFailure !== undefined) throw fixtureRestorationFailure;
+
+    const after = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    if (after === null) throw new Error("The Trip disappeared after authorization revalidation");
+    expect(after.trip.workspaceRevision).toBe(before.trip.workspaceRevision);
+    expect(primaryAccommodation(after)).toEqual(currentAccommodation);
+  });
+
   it("increments once per committed relevant transaction and returns typed conflicts for stale and racing writes", async () => {
     const edited = await updateM1Accommodation(repository, {
       agencyId,
@@ -577,6 +976,26 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       primarySupplierCost(slice).lockVersion + 1n,
     );
     expect(primarySupplierCost(internal).internalNote).toBe("Updated internal-only note");
+    await expect(
+      updateM1InternalSupplierNote(repository, {
+        agencyId,
+        tripId: slice.trip.id,
+        reservationId: primaryReservation(slice).id,
+        expectedLockVersion: primarySupplierCost(slice).lockVersion,
+        internalNote: "Stale supplier-cost note",
+      }),
+    ).rejects.toBeInstanceOf(M1OptimisticConflictError);
+    const afterStaleSupplierCost = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    if (afterStaleSupplierCost === null) {
+      throw new Error("The Trip disappeared after a stale supplier-cost CAS rejection");
+    }
+    expect(afterStaleSupplierCost.trip.workspaceRevision).toBe(internal.trip.workspaceRevision);
+    expect(primarySupplierCost(afterStaleSupplierCost).lockVersion).toBe(
+      primarySupplierCost(internal).lockVersion,
+    );
+    expect(primarySupplierCost(afterStaleSupplierCost).internalNote).toBe(
+      primarySupplierCost(internal).internalNote,
+    );
 
     const concurrent = await Promise.allSettled([
       updateM1Accommodation(repository, {
@@ -1175,6 +1594,45 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         expect(result.rows[0]?.updated).toBe(true);
         expectedLockVersion += 1n;
       }
+
+      const customerPersonResult = await client.query(
+        `UPDATE "crm"."customer_person"
+            SET "role" = "role"
+          WHERE "agencyId" = $1::uuid
+            AND "customerId" = $2::uuid
+            AND "personId" = $3::uuid
+            AND "role" = 'PRIMARY_CONTACT'`,
+        [agencyId, seeded.customerPerson.customerId, seeded.customerPerson.personId],
+      );
+      expect(customerPersonResult.rowCount).toBe(1);
+
+      const travellerResult = await client.query(
+        `UPDATE "trip_ops"."trip_traveller"
+            SET "role" = "role"
+          WHERE "agencyId" = $1::uuid AND "tripId" = $2::uuid AND "id" = $3::uuid`,
+        [agencyId, seeded.trip.id, seeded.traveller.id],
+      );
+      expect(travellerResult.rowCount).toBe(1);
+
+      const reservationItemLink = seeded.reservationItemLinks[0];
+      if (reservationItemLink === undefined) {
+        throw new Error("The marker-spoof Trip fixture has no Reservation–Item link");
+      }
+      const reservationLinkResult = await client.query(
+        `UPDATE "trip_ops"."reservation_item_link"
+            SET "linkRole" = "linkRole"
+          WHERE "agencyId" = $1::uuid
+            AND "tripId" = $2::uuid
+            AND "reservationId" = $3::uuid
+            AND "itineraryItemId" = $4::uuid`,
+        [
+          agencyId,
+          seeded.trip.id,
+          reservationItemLink.reservationId,
+          reservationItemLink.itineraryItemId,
+        ],
+      );
+      expect(reservationLinkResult.rowCount).toBe(1);
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
@@ -1188,6 +1646,53 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     expect(projected.trip.workspaceRevision).toBe(seeded.trip.workspaceRevision + 1n);
     expect(primaryAccommodation(projected).lockVersion).toBe(accommodation.lockVersion + 2n);
     expect(primaryAccommodation(projected).title).toBe("Marker spoof second edit");
+  });
+
+  it("increments an Admin-created Trip despite a forged transaction-local revision marker", async () => {
+    const input = baseInput();
+    const seeded = await createM1TripSlice(repository, {
+      ...input,
+      trip: { ...input.trip, title: "Trip insert marker spoof qualification" },
+    });
+    const tripId = randomUUID();
+    const travellerId = randomUUID();
+    const markerName = `travelos.revision_touch_${createHash("md5")
+      .update(`${agencyId}:${tripId}`)
+      .digest("hex")}`;
+    const client = await clientFor("travelos_admin_api");
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        "SELECT pg_catalog.set_config($1::text, pg_catalog.txid_current()::text, true)",
+        [markerName],
+      );
+      await client.query(
+        `INSERT INTO "trip_ops"."trip"
+          ("id", "agencyId", "title", "startDate", "endDate", "state")
+         VALUES ($1::uuid, $2::uuid, $3::text, $4::date, $5::date, $6::text)`,
+        [tripId, agencyId, "Forged marker Trip", "2026-09-25", "2026-09-28", "DRAFT"],
+      );
+      await client.query(
+        `INSERT INTO "trip_ops"."trip_traveller"
+          ("id", "agencyId", "tripId", "personId", "role")
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'PRIMARY_TRAVELLER')`,
+        [travellerId, agencyId, tripId, seeded.person.id],
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      await client.end();
+    }
+
+    const rows = await queryAsOwner<{ readonly revision: string }>(
+      `SELECT "workspaceRevision"::text AS "revision"
+         FROM "trip_ops"."trip"
+        WHERE "id" = ${sqlLiteral(tripId)}::uuid
+          AND "agencyId" = ${sqlLiteral(agencyId)}::uuid`,
+    );
+    expect(rows[0]?.revision).toBe("1");
   });
 
   it("serializes continuity writes under READ COMMITTED and REPEATABLE READ", async () => {
@@ -1390,6 +1895,103 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     }
   });
 
+  it("maps a real PostgreSQL deadlock SQLSTATE 40P01 to an M1 transaction conflict", async () => {
+    const predecessor = upgradedSlice;
+    if (predecessor === null || predecessor.trip.id === slice.trip.id) {
+      throw new Error("Two distinct Trip rows are required for the deadlock fixture");
+    }
+    const firstClient = await clientFor("travelos_migrator");
+    const secondClient = await clientFor("travelos_migrator");
+    let firstWaitError: unknown = null;
+    let deadlockError: unknown = null;
+    let firstWait: Promise<void> | null = null;
+    try {
+      await Promise.all([
+        firstClient.query('SET ROLE "travelos_owner"'),
+        secondClient.query('SET ROLE "travelos_owner"'),
+      ]);
+      await Promise.all([firstClient.query("BEGIN"), secondClient.query("BEGIN")]);
+      await firstClient.query(
+        `SELECT "id" FROM "trip_ops"."trip" WHERE "id" = $1::uuid FOR UPDATE`,
+        [slice.trip.id],
+      );
+      await secondClient.query(
+        `SELECT "id" FROM "trip_ops"."trip" WHERE "id" = $1::uuid FOR UPDATE`,
+        [predecessor.trip.id],
+      );
+      const firstPid = Number(
+        (await firstClient.query<{ readonly pid: number }>("SELECT pg_backend_pid() AS pid"))
+          .rows[0]?.pid,
+      );
+      firstWait = firstClient
+        .query(`SELECT "id" FROM "trip_ops"."trip" WHERE "id" = $1::uuid FOR UPDATE`, [
+          predecessor.trip.id,
+        ])
+        .then(() => undefined)
+        .catch((error: unknown) => {
+          firstWaitError = error;
+        });
+      let observedBlocking = false;
+      for (let attempt = 0; attempt < 200; attempt += 1) {
+        const blocking = await secondClient.query<{ readonly blocked: boolean }>(
+          `SELECT cardinality(pg_blocking_pids($1::integer)) > 0 AS "blocked"`,
+          [firstPid],
+        );
+        if (blocking.rows[0]?.blocked === true) {
+          observedBlocking = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(observedBlocking).toBe(true);
+      await secondClient
+        .query(`SELECT "id" FROM "trip_ops"."trip" WHERE "id" = $1::uuid FOR UPDATE`, [
+          slice.trip.id,
+        ])
+        .catch((error: unknown) => {
+          deadlockError = error;
+        });
+      await firstWait;
+      const deadlockVictim = deadlockError ?? firstWaitError;
+      expect((deadlockVictim as { readonly code?: string } | null)?.code).toBe("40P01");
+      expect([deadlockError, firstWaitError].filter((error) => error !== null)).toHaveLength(1);
+      expect(mapPostgresMutationError(deadlockVictim)).toBeInstanceOf(M1TransactionConflictError);
+      const deadlockRepository = createM1OperationalSliceRepository({
+        transaction: {
+          runInTransaction: async () => {
+            throw deadlockVictim;
+          },
+        },
+      } as unknown as Parameters<typeof createM1OperationalSliceRepository>[0]);
+      const deadlockInput = {
+        agencyId,
+        tripId: slice.trip.id,
+        reservationId: primaryReservation(slice).id,
+        expectedLockVersion: 0n,
+        internalNote: "Deadlock mapping",
+      };
+      await expect(
+        deadlockRepository.updateInternalSupplierNote(
+          deadlockInput as unknown as Parameters<
+            typeof deadlockRepository.updateInternalSupplierNote
+          >[0],
+          authorizationFor(agencyId, M1_INTERNAL_NOTE_PERMISSION_IDS),
+        ),
+      ).rejects.toBeInstanceOf(M1TransactionConflictError);
+      if (firstWaitError !== null) {
+        await secondClient.query("COMMIT");
+      } else {
+        await firstClient.query("COMMIT");
+      }
+    } finally {
+      await firstClient.query("ROLLBACK").catch(() => undefined);
+      await secondClient.query("ROLLBACK").catch(() => undefined);
+      await firstWait;
+      await firstClient.end();
+      await secondClient.end();
+    }
+  });
+
   it("increments both workspace revisions when a dependency-free reservation moves between trips", async () => {
     const sourceTripId = randomUUID();
     const targetTripId = randomUUID();
@@ -1434,8 +2036,8 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
   });
 
   it("serializes concurrent opposite-direction child moves without a revision deadlock", async () => {
-    const leftTripId = "00000000-0000-4000-8000-000000000010";
-    const rightTripId = "00000000-0000-4000-8000-000000000011";
+    const leftTripId = "00000000-0000-7000-8000-000000000010";
+    const rightTripId = "00000000-0000-7000-8000-000000000011";
     const leftPrimaryPersonId = randomUUID();
     const rightPrimaryPersonId = randomUUID();
     const leftPrimaryTravellerId = randomUUID();
@@ -2086,7 +2688,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       await queryErrorCode(() =>
         queryAsOwner(
           `INSERT INTO "trip_ops"."reservation_item_link" ("agencyId", "tripId", "reservationId", "itineraryItemId", "linkRole")
-           VALUES ('00000000-0000-4000-8000-000000000099'::uuid, '${slice.trip.id}'::uuid, '${primaryReservation(slice).id}'::uuid, '${primaryFlight(slice).id}'::uuid, 'PRIMARY')`,
+           VALUES ('00000000-0000-7000-8000-000000000099'::uuid, '${slice.trip.id}'::uuid, '${primaryReservation(slice).id}'::uuid, '${primaryFlight(slice).id}'::uuid, 'PRIMARY')`,
         ),
       ),
     ).toBe("23503");
@@ -2131,9 +2733,28 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     expect(floatColumns).toHaveLength(0);
   });
 
-  it("keeps the repository Agency-scoped on reads", async () => {
-    const otherAgency = asOpaqueId("00000000-0000-4000-8000-000000000099");
-    await expect(readM1TripSlice(repository, otherAgency, slice.trip.id)).resolves.toBeNull();
+  it("denies reads without a current Agency membership", async () => {
+    const otherAgency = asOpaqueId("00000000-0000-7000-8000-000000000099");
+    const nowEpochMs = Date.now();
+    const unassignedAgencyAuthorization: StaffAuthorizationOperationProof = {
+      session: {
+        staffPrincipalId: primaryStaffFixture.staffPrincipalId,
+        agencyId: otherAgency,
+        authorizationEpoch: 1n,
+        expiresAtEpochMs: nowEpochMs + 60 * 60 * 1_000,
+        recentMfaVerifiedAtEpochMs: null,
+      },
+      requiredPermissionIds: M1_READ_PERMISSION_IDS,
+      nowEpochMs,
+    };
+    await expect(
+      readM1TripSliceWithAuthorization(
+        repository,
+        otherAgency,
+        slice.trip.id,
+        unassignedAgencyAuthorization,
+      ),
+    ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
   });
 });
 

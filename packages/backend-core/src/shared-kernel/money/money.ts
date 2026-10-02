@@ -27,7 +27,7 @@ export interface MoneyJson {
   readonly scale: number;
 }
 
-const INTEGER_PATTERN = /^-?\d+$/u;
+const INTEGER_PATTERN = /^(?:0|[1-9]\d*|-[1-9]\d*)(?![\s\S])/u;
 const DECIMAL_PATTERN = /^(-?)(\d+)(?:\.(\d+))?$/u;
 const MIN_INT64 = -(2n ** 63n);
 const MAX_INT64 = 2n ** 63n - 1n;
@@ -128,8 +128,24 @@ export const moneyToJson = (money: Money): MoneyJson => ({
   scale: money.scale,
 });
 
-const hasExactKeys = (value: Record<string, unknown>, keys: readonly string[]): boolean =>
-  Object.keys(value).toSorted().join("\u0000") === [...keys].toSorted().join("\u0000");
+const hasExactKeys = (value: Record<string, unknown>, keys: readonly string[]): boolean => {
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  const ownKeys = Reflect.ownKeys(value);
+  if (ownKeys.length !== keys.length || ownKeys.some((key) => typeof key !== "string")) {
+    return false;
+  }
+  const descriptors = ownKeys.map((key) => Object.getOwnPropertyDescriptor(value, key));
+  if (
+    descriptors.some(
+      (descriptor) =>
+        descriptor === undefined || !descriptor.enumerable || !Object.hasOwn(descriptor, "value"),
+    )
+  ) {
+    return false;
+  }
+  return (ownKeys as string[]).toSorted().join("\u0000") === [...keys].toSorted().join("\u0000");
+};
 
 export const moneyFromJson = (value: unknown): Money => {
   if (typeof value !== "object" || value === null) throw new Error("Money JSON must be an object");

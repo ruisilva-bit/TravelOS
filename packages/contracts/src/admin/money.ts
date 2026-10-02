@@ -1,14 +1,15 @@
 import { z } from "zod";
 
-const INTEGER_TEXT = /^-?\d+$/u;
-const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+const INTEGER_TEXT = /^(?:0|[1-9]\d*|-[1-9]\d*)(?![\s\S])/u;
+const UUID_V7_TEXT =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/u;
 const MIN_INT64 = -(2n ** 63n);
 const MAX_INT64 = 2n ** 63n - 1n;
 
 export const AdminOpaqueIdSchema = z
   .string()
-  .regex(UUID_TEXT, "Expected a canonical UUID")
-  .transform((value) => value.toLowerCase());
+  .length(36)
+  .regex(UUID_V7_TEXT, "Expected canonical lowercase UUIDv7");
 export const AdminMoneySchema = z
   .object({
     minorUnits: z.string().regex(INTEGER_TEXT, "Money minorUnits must be an integer string"),
@@ -17,6 +18,7 @@ export const AdminMoneySchema = z
   })
   .strict()
   .superRefine((value, context) => {
+    if (!INTEGER_TEXT.test(value.minorUnits)) return;
     const minorUnits = BigInt(value.minorUnits);
     if (minorUnits < MIN_INT64 || minorUnits > MAX_INT64) {
       context.addIssue({

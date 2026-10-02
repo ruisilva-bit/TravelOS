@@ -16,8 +16,15 @@ const corepack = "corepack";
 const focusedTests = [
   "packages/contracts/test/admin-m1-contracts.test.ts",
   "apps/admin-api/test/m1-routes.test.ts",
+  "apps/admin-api/test/m1-authorization-boundary.test.ts",
+  "apps/admin-api/test/health-live.test.ts",
+  "apps/admin-api/test/host-auth-routing-boundary.test.ts",
+  "apps/admin-api/test/m1-session-resolver.test.ts",
+  "apps/admin-api/test/auth-bridge.test.ts",
   "packages/backend-core/test/m1/application.test.ts",
   "packages/backend-core/test/m1/shared-kernel.test.ts",
+  "packages/backend-core/test/agency-organization/agency-bootstrap.test.ts",
+  "packages/backend-core/test/staff-access/authorization.test.ts",
   "apps/admin-api/test/composed-m1-body-parser.test.ts",
 ];
 const commandArgs = [

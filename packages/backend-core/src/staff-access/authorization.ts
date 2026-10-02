@@ -9,6 +9,7 @@ import {
 export type StaffMembershipState = "ACTIVE" | "DISABLED" | "REVOKED";
 
 export interface StaffAuthorizationAssignment {
+  readonly agencyId: string;
   readonly permissionId: StaffPermissionId;
   readonly scopeKind: AuthorizationScopeKind;
   readonly organizationUnitId: string | null;
@@ -30,6 +31,12 @@ export interface StaffSessionAuthorizationProof {
   readonly authorizationEpoch: bigint;
   readonly expiresAtEpochMs: number;
   readonly recentMfaVerifiedAtEpochMs: number | null;
+}
+
+export interface StaffAuthorizationOperationProof {
+  readonly session: StaffSessionAuthorizationProof;
+  readonly requiredPermissionIds: readonly StaffPermissionId[];
+  readonly nowEpochMs: number;
 }
 
 export interface StaffAuthorizationTarget {
@@ -76,6 +83,7 @@ const scopeAllows = (
   assignment: StaffAuthorizationAssignment,
   target: StaffAuthorizationTarget,
 ): boolean => {
+  if (assignment.agencyId !== target.agencyId) return false;
   if (assignment.scopeKind === "AGENCY") return assignment.organizationUnitId === null;
   return (
     assignment.organizationUnitId !== null &&

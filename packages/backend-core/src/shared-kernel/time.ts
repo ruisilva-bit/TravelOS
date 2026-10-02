@@ -52,10 +52,10 @@ const canonicalTimezoneSet = new Set(TRAVELOS_CANONICAL_TIMEZONE_NAMES);
 export const isCanonicalTravelTimezone = (timezoneName: string): boolean =>
   canonicalTimezoneSet.has(timezoneName);
 
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
-const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/u;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}(?![\s\S])/u;
+const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?![\s\S])/u;
 const RFC3339_PATTERN =
-  /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{3})?(?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$/u;
+  /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{3})?(?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)(?![\s\S])/u;
 
 export const assertIanaTimezone = (timezoneName: string): void => {
   if (timezoneName.trim().length === 0) throw new Error("IANA timezone is required");

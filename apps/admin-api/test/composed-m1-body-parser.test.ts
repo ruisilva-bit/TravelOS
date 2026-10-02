@@ -18,7 +18,7 @@ import {
 import { createAdminApi } from "../src/app.js";
 import { createAdminStaffSessionResolver } from "../src/m1-session-resolver.js";
 
-const agencyId = "00000000-0000-4000-8000-000000000001";
+const agencyId = "00000000-0000-7000-8000-000000000001";
 const syntheticEmail = ["synthetic", "example.test"].join(String.fromCharCode(64));
 const expectedHost = "admin.example.test";
 const canonicalOrigin = `https://${expectedHost}`;
@@ -91,7 +91,7 @@ const validCreateBody = () => ({
 });
 
 const id = (last: number) =>
-  asOpaqueId(`00000000-0000-4000-8000-${last.toString().padStart(12, "0")}`);
+  asOpaqueId(`00000000-0000-7000-8000-${last.toString().padStart(12, "0")}`);
 const agency = asOpaqueId(agencyId);
 const tripId = id(10);
 const personId = id(11);
@@ -117,6 +117,7 @@ const authorizedSnapshot: StaffAuthorizationSnapshot = {
   membershipState: "ACTIVE",
   authorizationEpoch: 1n,
   assignments: createPermissions.map((permissionId) => ({
+    agencyId: agency,
     permissionId,
     scopeKind: "AGENCY",
     organizationUnitId: null,

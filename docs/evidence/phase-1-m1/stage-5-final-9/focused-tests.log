@@ -1,0 +1,67 @@
+
+ RUN  v4.1.10 /home/hermes/projects/TravelOS
+
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > requires strict contracts and authorizes the create path 155ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > accepts only a forwarded host that corroborates the configured Admin host 21ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > does not let cost visibility alone create INTERNAL_ONLY supplier cost 7ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > denies composite reads without the Stage 5 product view capabilities 2ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > fails closed for a session bound to a different Agency 5ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > does not return INTERNAL_ONLY data to a settings-only accommodation editor 3ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > parses and returns bigint accommodation versions without Number coercion 10ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > does not let cost visibility alone mutate an INTERNAL_ONLY note 3ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > requires and accepts the explicit finance mutation capability for an INTERNAL_ONLY note 6ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > maps a persistence serialization conflict to HTTP 409 2ms
+ ✓ apps/admin-api/test/m1-routes.test.ts > Admin Stage 5 routes > maps a deadlock transaction conflict to a safe HTTP 409 2ms
+ ✓ apps/admin-api/test/composed-m1-body-parser.test.ts > Admin Stage 5 composed HTTP body parsing > parses JSON before the raw Stage 5 write routes are reached 438ms
+ ✓ apps/admin-api/test/host-auth-routing-boundary.test.ts > Admin API global host and Staff auth routing boundary > validates the configured Host before body parsing, health, API and unknown-route handling 271ms
+ ✓ apps/admin-api/test/composed-m1-body-parser.test.ts > Admin Stage 5 composed HTTP body parsing > rejects unsafe-origin mutations before parsing and allows an authenticated same-origin create 89ms
+ ✓ apps/admin-api/test/composed-m1-body-parser.test.ts > Admin Stage 5 composed HTTP body parsing > keeps application failures private and non-storable 25ms
+ ✓ apps/admin-api/test/host-auth-routing-boundary.test.ts > Admin API global host and Staff auth routing boundary > never lets an untrusted X-Forwarded-Host replace or disagree with the authoritative Host 39ms
+ ✓ apps/admin-api/test/host-auth-routing-boundary.test.ts > Admin API global host and Staff auth routing boundary > fails closed on missing, malformed, port-bearing and duplicate Host headers at the listener 17ms
+ ✓ apps/admin-api/test/host-auth-routing-boundary.test.ts > Admin API global host and Staff auth routing boundary > routes only canonical Staff auth paths and rejects lookalikes, Portal and path variants 101ms
+ ✓ apps/admin-api/test/host-auth-routing-boundary.test.ts > Admin API global host and Staff auth routing boundary > rejects authentication requests with an invalid Host before parsing their body or invoking Staff auth 13ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > keeps M1 permissions Agency-wide until resource ownership is modelled 6ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > validates the full continuity and structured itinerary input before persistence 7ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > rejects same-airport flights, inverted times and invalid trip dates 4ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > rejects non-primary traveller roles before the repository boundary 1ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > rejects unknown fields and contract-invalid values before the repository boundary 4ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > reconstructs Money at the exported application boundary 4ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > rejects malformed create, read and update inputs before every repository call 56ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > orders supported millisecond instants without precision loss 4ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > keeps application persistence behind the repository port 3ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > passes reconstructed JSON Money to the repository port 5ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > authenticates direct application invocation from a cookie, not caller-supplied identity claims 15ms
+ ✓ packages/backend-core/test/m1/application.test.ts > Stage 5 M1 application invariants > denies inactive, missing-permission and cross-Agency direct calls before workspace access 6ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > accepts the exact create allowlist and rejects unknown fields 41ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > keeps PostgreSQL bigint lock versions as canonical decimal strings 2ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > keeps Money JSON exact and string-valued in the response contract 83ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > enforces pinned Money scales, canonical IDs and coherent civil times 13ms
+ ✓ packages/contracts/test/admin-m1-contracts.test.ts > Stage 5 Admin contracts > keeps the Admin timezone registry byte-equivalent to backend and PostgreSQL policy 7ms
+ ✓ apps/admin-api/test/m1-session-resolver.test.ts > Admin Staff application session resolver > derives identity only from the Staff realm's server-verified session 67ms
+ ✓ apps/admin-api/test/m1-session-resolver.test.ts > Admin Staff application session resolver > fails closed when the Staff realm has no complete active session context 1ms
+ ✓ apps/admin-api/test/m1-session-resolver.test.ts > Admin Staff application session resolver > rejects a Portal realm at the adapter boundary 2ms
+ ✓ apps/admin-api/test/health-live.test.ts > Admin API liveness > boots and exposes only the DEVELOPMENT-safe liveness response 221ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > keeps Money in bigint minor units and serializes only strings 12ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > uses an explicit commercial policy and fails closed for unknown policy ids 4ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > constructs valid UUIDv7 opaque identifiers and rejects malformed values 30ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > retains local civil time, zone and derived instant as separate validated values 29ms
+ ✓ packages/backend-core/test/m1/shared-kernel.test.ts > Stage 5 exact shared kernel > bounds normalized UTC instants to inclusive four-digit calendar years 4ms
+ ✓ packages/backend-core/test/agency-organization/agency-bootstrap.test.ts > root Agency bootstrap identifiers > rejects noncanonical or non-v7 input before persistence 9ms
+ ✓ packages/backend-core/test/agency-organization/agency-bootstrap.test.ts > root Agency bootstrap identifiers > rejects an incompatible persisted Agency identifier 2ms
+ ✓ packages/backend-core/test/agency-organization/agency-bootstrap.test.ts > root Agency bootstrap identifiers > binds the bootstrap Owner template to the bounded Stage 5 cost-mutation capability 3ms
+ ✓ apps/admin-api/test/auth-bridge.test.ts > Admin Staff auth bridge > refuses a Portal realm at composition time 9ms
+ ✓ apps/admin-api/test/auth-bridge.test.ts > Admin Staff auth bridge > refuses a non-canonical Staff authentication prefix at composition time 1ms
+ ✓ apps/admin-api/test/auth-bridge.test.ts > Admin Staff auth bridge > rechecks membership and authorization epoch before returning trusted session context 57ms
+ ✓ apps/admin-api/test/auth-bridge.test.ts > Admin Staff auth bridge > marks every auth-surface rejection and session denial as private and non-storable 3ms
+ ✓ apps/admin-api/test/auth-bridge.test.ts > Admin Staff auth bridge > does not accept a wrong host or allow auth routing outside the Staff prefix 1ms
+ ✓ packages/backend-core/test/staff-access/authorization.test.ts > Staff authorization default-deny > denies unauthenticated, missing, inactive, wrong-Agency, stale-epoch and missing-permission cases 4ms
+ ✓ packages/backend-core/test/staff-access/authorization.test.ts > Staff authorization default-deny > requires a current MFA proof only when the command declares it 0ms
+ ✓ packages/backend-core/test/staff-access/authorization.test.ts > Staff authorization default-deny > protects exactly the last active Owner without blocking unrelated changes 0ms
+ ✓ apps/admin-api/test/m1-authorization-boundary.test.ts > Stage 5 application authorization boundary > exposes only the authorization-enforcing M1 application and database factories 3ms
+ ✓ apps/admin-api/test/m1-authorization-boundary.test.ts > Stage 5 application authorization boundary > limits package subpaths so unguarded use cases and repositories cannot be imported 4ms
+
+ Test Files  12 passed (12)
+      Tests  58 passed (58)
+   Start at  11:25:56
+   Duration  7.44s (transform 1.20s, setup 0ms, import 14.31s, tests 1.98s, environment 4ms)
+

@@ -21,6 +21,7 @@ export {
   type StaffAuthorizationDecision,
   type StaffAuthorizationDenial,
   type StaffAuthorizationRequest,
+  type StaffAuthorizationOperationProof,
   type StaffAuthorizationSnapshot,
   type StaffAuthorizationTarget,
   type StaffMembershipState,
@@ -76,6 +77,7 @@ export {
 } from "./shared-kernel/time.js";
 export {
   M1OptimisticConflictError,
+  M1TransactionConflictError,
   M1InputValidationError,
   type CreateM1TripSliceInput,
   type M1OperationalSliceRepository,

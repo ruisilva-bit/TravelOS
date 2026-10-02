@@ -1,12 +1,22 @@
-import { readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { collectStage2FreezeInputs } from "./stage-2-freeze-inputs.mjs";
 import { collectStage5SourceFiles } from "./stage-5-source-scope.mjs";
+import { createStage5FinalScanProvenance } from "./stage-5-scan-provenance.mjs";
+import { verifyStage5Final9EvidenceIndex } from "./stage-5-evidence-index.mjs";
+import { verifyStage5Final9FindingLineage } from "./stage-5-finding-lineage.mjs";
+import { STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT } from "./stage-5-candidate-contract.mjs";
 import { scanSensitiveFiles } from "./sensitive-data-scanner.mjs";
 
 const preIndexEvidenceScan = process.argv.includes("--pre-index-evidence");
-const stage5FinalScan = process.argv.includes("--stage5-final");
+const stage5FinalEvidenceScan = process.argv.includes("--stage5-final");
+const stage5FinalCandidateScan = process.argv.includes("--stage5-final-candidate");
+if (stage5FinalEvidenceScan && stage5FinalCandidateScan) {
+  throw new Error("Choose only one Stage 5 scan phase");
+}
+const stage5FinalScan = stage5FinalEvidenceScan || stage5FinalCandidateScan;
 const stage3PreIndexScan = process.argv.includes("--stage3-pre-index");
 const stage4PreIndexScan = process.argv.includes("--stage4-pre-index");
 const stage3CorrectedFinalScan = process.argv.includes("--stage3-corrected-final");
@@ -20,7 +30,9 @@ const stage4FinalScan = process.argv.includes("--stage4-final") || stage4PreInde
 const stage3EvidenceDirectory = "docs/evidence/phase-1-m1/stage-3";
 const stage4EvidenceDirectory = "docs/evidence/phase-1-m1/stage-4";
 const ignoredDirectoryNames = new Set([".vite", "coverage", "dist", "node_modules"]);
-const stage4SyntheticFixtureEmailAllowlist = [293, 302, 314, 320, 330, 343, 384, 402, 477, 483].map(
+// These are deliberately line-specific: an unreviewed PII-looking email in the
+// Stage 4 integration fixture must remain a scan failure.
+const stage4SyntheticFixtureEmailAllowlist = [294, 303, 315, 321, 331, 344, 385, 403, 478, 484].map(
   (line) => ({
     path: "tests/integration/stage-4-postgresql.test.ts",
     rule: "email-address",
@@ -46,7 +58,18 @@ const readRegularFiles = async (relativeDirectory) => {
 };
 
 const stage5Scope = stage5FinalScan
-  ? await collectStage5SourceFiles({ requireEvidence: true })
+  ? await collectStage5SourceFiles({
+      phase: stage5FinalCandidateScan ? "FINAL_CANDIDATE" : "FINAL_EVIDENCE",
+    })
+  : null;
+const stage5EvidenceIndexVerification = stage5FinalScan
+  ? await verifyStage5Final9EvidenceIndex({
+      allowedPhases: stage5FinalCandidateScan ? ["FINAL"] : ["PRE_CI", "FINAL"],
+      requiredPhase: stage5FinalCandidateScan ? "FINAL" : undefined,
+    })
+  : null;
+const stage5FindingLineageVerification = stage5FinalScan
+  ? await verifyStage5Final9FindingLineage()
   : null;
 const freezeInputs = stage5FinalScan
   ? null
@@ -107,6 +130,15 @@ const files = stage5FinalScan
     ].toSorted();
 const allowlist = stage4FinalScan || stage5FinalScan ? stage4SyntheticFixtureEmailAllowlist : [];
 const scan = await scanSensitiveFiles({ files, allowlist });
+const stage5FinalScanProvenance = stage5FinalScan
+  ? createStage5FinalScanProvenance({
+      phase: stage5FinalCandidateScan ? "FINAL_CANDIDATE" : "FINAL_EVIDENCE",
+      sourceScopeFiles: stage5Scope.files,
+      scanReport: scan,
+      findingLineage: stage5FindingLineageVerification,
+      evidenceIndexVerification: stage5EvidenceIndexVerification,
+    })
+  : null;
 const coverage = stage5FinalScan
   ? stage5Scope.coverage
   : {
@@ -204,43 +236,70 @@ if (
   throw new Error("Final Stage 4 evidence scan coverage is incomplete");
 }
 
+const scanOutput = {
+  schemaVersion: 5,
+  result: scan.result,
+  scope: stage5FinalScan
+    ? stage5FinalCandidateScan
+      ? "repository-owned-source-plus-final-stage-5-evidence-review-validation-and-freeze"
+      : "repository-owned-source-plus-final-stage-5-evidence-and-review"
+    : stage4FinalScan
+      ? stage4PreIndexScan
+        ? "repository-owned-source-plus-stage-4-evidence-before-index"
+        : "repository-owned-source-plus-final-stage-4-evidence"
+      : stage3CorrectedFrozenScan
+        ? "deterministic-repository-inputs-plus-corrected-stage-3-evidence-validation-and-freeze"
+        : stage3CorrectedFinalScan
+          ? "deterministic-repository-inputs-plus-corrected-stage-3-evidence-and-validation"
+          : stage3PreIndexScan
+            ? "deterministic-repository-inputs-plus-corrected-stage-3-evidence-before-index"
+            : stage3FinalScan
+              ? "deterministic-repository-inputs-plus-final-stage-3-evidence"
+              : preIndexEvidenceScan
+                ? "deterministic-stage-2-freeze-inputs-before-evidence-index"
+                : "deterministic-stage-2-freeze-inputs",
+  ...(stage5FinalScan ? {} : { freezeInputAggregateSha256: freezeInputs.aggregateSha256 }),
+  filesScanned: scan.filesScanned.length,
+  coverage,
+  stage3EvidenceIndexIncluded,
+  stage3CandidateValidationIncluded,
+  stage3CandidateFreezeIncluded,
+  stage3CorrectedCandidateValidationIncluded,
+  stage3CorrectedCandidateFreezeIncluded,
+  stage4EvidenceIndexIncluded,
+  stage5EvidenceIndexes: stage5Scope?.stage5EvidenceIndexes ?? [],
+  stage5ExpectedEvidenceIndexes: stage5Scope?.expectedStage5EvidenceIndexes ?? [],
+  stage5MissingEvidenceIndexes: stage5Scope?.missingStage5EvidenceIndexes ?? [],
+  stage5UnexpectedEvidenceIndexes: stage5Scope?.unexpectedStage5EvidenceIndexes ?? [],
+  stage5SourceCoverage: stage5Scope?.failedRequirementIds ?? [],
+  stage5MissingCurrentGenerationInputs: stage5Scope?.missingFinalCandidateInputs ?? [],
+  stage5PostFreezeScanReceipt: stage5Scope?.postFreezeScanReceipt ?? null,
+  stage5PostFreezeScanReceiptState: stage5Scope?.postFreezeScanReceiptState ?? null,
+  stage5EvidenceIndexVerification,
+  stage5FindingLineageVerification,
+  stage5FinalScanProvenance,
+  explicitAllowlistEntries: allowlist.length,
+  allowlistedFindingCount: scan.allowlistedFindingCount,
+  findings: scan.findings,
+  matchedValuesEmitted: false,
+};
+let scanReceiptSha256 = null;
+if (stage5FinalCandidateScan && scan.result === "PASS") {
+  const reportPath = path.join(process.cwd(), STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT);
+  const reportText = `${JSON.stringify(scanOutput, null, 2)}\n`;
+  await mkdir(path.dirname(reportPath), { recursive: true });
+  await writeFile(reportPath, reportText);
+  const persistedReport = await readFile(reportPath, "utf8");
+  if (persistedReport !== reportText) {
+    throw new Error("Post-freeze Stage 5 scan receipt did not persist byte-for-byte");
+  }
+  scanReceiptSha256 = createHash("sha256").update(persistedReport).digest("hex");
+}
 console.log(
   JSON.stringify(
     {
-      schemaVersion: 3,
-      result: scan.result,
-      scope: stage5FinalScan
-        ? "repository-owned-source-plus-final-stage-5-evidence-and-review"
-        : stage4FinalScan
-          ? stage4PreIndexScan
-            ? "repository-owned-source-plus-stage-4-evidence-before-index"
-            : "repository-owned-source-plus-final-stage-4-evidence"
-          : stage3CorrectedFrozenScan
-            ? "deterministic-repository-inputs-plus-corrected-stage-3-evidence-validation-and-freeze"
-            : stage3CorrectedFinalScan
-              ? "deterministic-repository-inputs-plus-corrected-stage-3-evidence-and-validation"
-              : stage3PreIndexScan
-                ? "deterministic-repository-inputs-plus-corrected-stage-3-evidence-before-index"
-                : stage3FinalScan
-                  ? "deterministic-repository-inputs-plus-final-stage-3-evidence"
-                  : preIndexEvidenceScan
-                    ? "deterministic-stage-2-freeze-inputs-before-evidence-index"
-                    : "deterministic-stage-2-freeze-inputs",
-      ...(stage5FinalScan ? {} : { freezeInputAggregateSha256: freezeInputs.aggregateSha256 }),
-      filesScanned: scan.filesScanned.length,
-      coverage,
-      stage3EvidenceIndexIncluded,
-      stage3CandidateValidationIncluded,
-      stage3CandidateFreezeIncluded,
-      stage3CorrectedCandidateValidationIncluded,
-      stage3CorrectedCandidateFreezeIncluded,
-      stage4EvidenceIndexIncluded,
-      stage5EvidenceIndexes: stage5Scope?.stage5EvidenceIndexes ?? [],
-      stage5SourceCoverage: stage5Scope?.failedRequirementIds ?? [],
-      explicitAllowlistEntries: allowlist.length,
-      allowlistedFindingCount: scan.allowlistedFindingCount,
-      findings: scan.findings,
-      matchedValuesEmitted: false,
+      ...scanOutput,
+      ...(stage5FinalCandidateScan ? { scanReceiptSha256 } : {}),
     },
     null,
     2,

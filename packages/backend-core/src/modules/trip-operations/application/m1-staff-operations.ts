@@ -1,5 +1,6 @@
 import {
   authorizeStaffRequest,
+  type StaffAuthorizationOperationProof,
   type StaffAuthorizationSnapshot,
   type StaffSessionAuthorizationProof,
 } from "../../../staff-access/authorization.js";
@@ -24,6 +25,7 @@ export interface M1StaffSessionResolver {
 export interface M1StaffAuthorizationRepository {
   getStaffAuthorizationSnapshot(
     staffPrincipalId: string,
+    agencyId: OpaqueId,
   ): Promise<StaffAuthorizationSnapshot | null>;
 }
 
@@ -145,7 +147,7 @@ const authorizeM1Operation = async (
   cookieHeader: unknown,
   targetAgencyId: OpaqueId | null,
   permissionIds: readonly StaffPermissionId[],
-): Promise<OpaqueId> => {
+): Promise<StaffAuthorizationOperationProof> => {
   const cookie = cookieFrom(cookieHeader);
   const session = sessionProofFrom(await dependencies.sessionResolver.resolveStaffSession(cookie));
   if (session === null) throw new M1StaffAuthorizationError("UNAUTHENTICATED");
@@ -157,6 +159,7 @@ const authorizeM1Operation = async (
 
   const snapshot = await dependencies.authorizationRepository.getStaffAuthorizationSnapshot(
     session.staffPrincipalId,
+    sessionAgencyId,
   );
   const nowEpochMs = (dependencies.nowEpochMs ?? Date.now)();
   if (!Number.isSafeInteger(nowEpochMs) || nowEpochMs < 0) {
@@ -181,7 +184,11 @@ const authorizeM1Operation = async (
       );
     }
   }
-  return sessionAgencyId;
+  return {
+    session,
+    requiredPermissionIds: permissionIds,
+    nowEpochMs,
+  };
 };
 
 export const createM1StaffTripOperations = (
@@ -190,46 +197,50 @@ export const createM1StaffTripOperations = (
   const operations: M1StaffTripOperations = {
     async createTripSlice(cookieHeader, input) {
       const normalizedInput = validateCreateM1TripSliceInput(input);
-      await authorizeM1Operation(
+      const authorization = await authorizeM1Operation(
         dependencies,
         cookieHeader,
         normalizedInput.agencyId,
         M1_CREATE_PERMISSIONS,
       );
-      return dependencies.repository.createM1TripSlice(normalizedInput);
+      return dependencies.repository.createM1TripSlice(normalizedInput, authorization);
     },
 
     async readTripSlice(cookieHeader, tripId) {
       const normalizedTripId = asOpaqueId(tripId);
-      const agencyId = await authorizeM1Operation(
+      const authorization = await authorizeM1Operation(
         dependencies,
         cookieHeader,
         null,
         M1_COMPOSITE_READ_PERMISSIONS,
       );
-      return dependencies.repository.getM1TripSlice(agencyId, normalizedTripId);
+      return dependencies.repository.getM1TripSlice(
+        asOpaqueId(authorization.session.agencyId),
+        normalizedTripId,
+        authorization,
+      );
     },
 
     async updateAccommodation(cookieHeader, input) {
       const normalizedInput = validateUpdateM1AccommodationInput(input);
-      await authorizeM1Operation(
+      const authorization = await authorizeM1Operation(
         dependencies,
         cookieHeader,
         normalizedInput.agencyId,
         M1_ACCOMMODATION_EDIT_PERMISSIONS,
       );
-      return dependencies.repository.updateAccommodation(normalizedInput);
+      return dependencies.repository.updateAccommodation(normalizedInput, authorization);
     },
 
     async updateInternalSupplierNote(cookieHeader, input) {
       const normalizedInput = validateUpdateM1InternalSupplierNoteInput(input);
-      await authorizeM1Operation(
+      const authorization = await authorizeM1Operation(
         dependencies,
         cookieHeader,
         normalizedInput.agencyId,
         M1_INTERNAL_NOTE_EDIT_PERMISSIONS,
       );
-      return dependencies.repository.updateInternalSupplierNote(normalizedInput);
+      return dependencies.repository.updateInternalSupplierNote(normalizedInput, authorization);
     },
   };
   return Object.freeze(operations);

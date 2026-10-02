@@ -193,6 +193,7 @@ const staffSessionContextHandler =
         }
         const snapshot = await options.staffAccessRepository.getStaffAuthorizationSnapshot(
           proof.staffPrincipalId,
+          proof.agencyId,
         );
         const decision = authorizeStaffRequest({
           session: proof,
