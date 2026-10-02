@@ -1,119 +1,102 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { execFileSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  buildStage5Final9CorrectionMatrix,
+  buildStage5Final10CorrectionMatrix,
   verifyStage5Final8TaggedBytes,
-  verifyStage5Final9FindingLineageData,
+  verifyStage5Final9RejectedTaggedBytes,
 } from "./stage-5-finding-lineage.mjs";
 import {
+  STAGE5_FINAL10_CORRECTION_MATRIX,
   STAGE5_FINAL9_CORRECTION_MATRIX,
-  STAGE5_FINAL9_EVIDENCE_INDEX,
-  STAGE5_FINAL9_EVIDENCE_DIRECTORY,
-  STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT,
+  STAGE5_FINAL9_INDEPENDENT_REVIEW,
+  STAGE5_FINAL9_REJECTED_TAG,
+  STAGE5_FINAL9_REJECTED_TAG_TARGET,
 } from "./stage-5-candidate-contract.mjs";
 
 const projectRoot = process.cwd();
-const protectedPredecessor = await verifyStage5Final8TaggedBytes({ root: projectRoot });
-assert.equal(protectedPredecessor.result, "PASS");
-assert.equal(protectedPredecessor.target, "294657132bf8a5b47181efd90732d5d8f2530c8e");
-assert.equal(protectedPredecessor.files.length, 2);
-assert.ok(protectedPredecessor.files.every((entry) => entry.matchesRejectedTag));
-const reviewBytes = await readFile(path.join(projectRoot, STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT));
-const review = JSON.parse(reviewBytes.toString("utf8"));
-const matrix = buildStage5Final9CorrectionMatrix({ review, reviewBytes });
-const root = await mkdtemp(path.join(os.tmpdir(), "travelos-stage5-finding-lineage-"));
-const evidenceDirectory = path.join(root, STAGE5_FINAL9_EVIDENCE_DIRECTORY);
-const reviewPath = path.join(root, STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT);
-const matrixPath = path.join(root, STAGE5_FINAL9_CORRECTION_MATRIX);
-const indexPath = path.join(root, STAGE5_FINAL9_EVIDENCE_INDEX);
+const readTagBytes = (relativePath) =>
+  execFileSync("git", ["show", `${STAGE5_FINAL9_REJECTED_TAG}:${relativePath}`], {
+    cwd: projectRoot,
+  });
 
-const writeFixture = async () => {
-  await mkdir(evidenceDirectory, { recursive: true });
-  await mkdir(path.dirname(matrixPath), { recursive: true });
-  await writeFile(reviewPath, reviewBytes);
-  await writeFile(matrixPath, `${JSON.stringify(matrix, null, 2)}\n`);
-  await writeFile(
-    indexPath,
-    `${JSON.stringify(
-      {
-        schemaVersion: 1,
-        phase: "PRE_CI",
-        artifacts: [{ path: STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT }],
-      },
-      null,
-      2,
-    )}\n`,
-  );
+const protectedFinal8 = await verifyStage5Final8TaggedBytes({ root: projectRoot });
+const protectedFinal9 = await verifyStage5Final9RejectedTaggedBytes({ root: projectRoot });
+assert.equal(protectedFinal8.result, "PASS");
+assert.equal(protectedFinal9.result, "PASS");
+assert.equal(protectedFinal9.target, STAGE5_FINAL9_REJECTED_TAG_TARGET);
+
+const historicalMatrixBytes = readTagBytes(STAGE5_FINAL9_CORRECTION_MATRIX);
+const historicalMatrix = JSON.parse(historicalMatrixBytes.toString("utf8"));
+const final9ReviewBytes = await readFile(path.join(projectRoot, STAGE5_FINAL9_INDEPENDENT_REVIEW));
+const expectedMatrix = buildStage5Final10CorrectionMatrix({
+  final9Matrix: historicalMatrix,
+  final9MatrixBytes: historicalMatrixBytes,
+  final9ReviewBytes,
+});
+const persistedMatrix = JSON.parse(
+  await readFile(path.join(projectRoot, STAGE5_FINAL10_CORRECTION_MATRIX), "utf8"),
+);
+
+assert.deepEqual(persistedMatrix, expectedMatrix);
+assert.equal(expectedMatrix.summary.carriedFinal9FindingCount, 45);
+assert.equal(expectedMatrix.summary.final9IndependentReviewFindingCount, 3);
+assert.equal(expectedMatrix.summary.totalFindingCount, 48);
+assert.equal(expectedMatrix.summary.authorClosedCount, 0);
+assert.equal(expectedMatrix.summary.independentPendingCount, 48);
+assert.equal(expectedMatrix.stage6Actions, 0);
+assert.ok(
+  expectedMatrix.findings.every(
+    (finding) =>
+      finding.final10Disposition === "PENDING_REMEDIATION_REQUALIFICATION" &&
+      finding.final10IndependentStatus === "PENDING_FINAL10_REVIEW",
+  ),
+);
+
+const omittedHistoricalFinding = {
+  ...historicalMatrix,
+  findings: historicalMatrix.findings.slice(1),
 };
+assert.throws(
+  () =>
+    buildStage5Final10CorrectionMatrix({
+      final9Matrix: omittedHistoricalFinding,
+      final9MatrixBytes: historicalMatrixBytes,
+      final9ReviewBytes,
+    }),
+  /must preserve the exact ordered, duplicate-free finding IDs/u,
+);
 
-try {
-  await writeFixture();
-  const valid = await verifyStage5Final9FindingLineageData({ root });
-  assert.equal(valid.result, "PASS");
-  assert.equal(valid.final8ReviewFindingCount, 19);
-  assert.equal(valid.carriedHistoricalFindingCount, 26);
-  assert.equal(valid.totalFindingCount, 45);
-  assert.equal(valid.authorClosedCount, 0);
-  assert.equal(valid.independentPendingCount, 45);
-  assert.equal(valid.stage6Actions, 0);
+const alteredReviewMatrix = buildStage5Final10CorrectionMatrix({
+  final9Matrix: historicalMatrix,
+  final9MatrixBytes: historicalMatrixBytes,
+  final9ReviewBytes: Buffer.concat([final9ReviewBytes, Buffer.from("\n", "utf8")]),
+});
+assert.notEqual(
+  alteredReviewMatrix.predecessor.independentReview.sha256,
+  persistedMatrix.predecessor.independentReview.sha256,
+);
 
-  const originalMatrixBytes = await readFile(matrixPath);
-  const missing = { ...matrix, findings: matrix.findings.slice(1) };
-  await writeFile(matrixPath, `${JSON.stringify(missing, null, 2)}\n`);
-  await assert.rejects(
-    verifyStage5Final9FindingLineageData({ root }),
-    /omits, changes, closes, or misattributes/u,
-  );
-
-  const closed = {
-    ...matrix,
-    findings: matrix.findings.map((finding, index) =>
-      index === 0 ? { ...finding, final9IndependentStatus: "CLOSED" } : finding,
-    ),
-  };
-  await writeFile(matrixPath, `${JSON.stringify(closed, null, 2)}\n`);
-  await assert.rejects(
-    verifyStage5Final9FindingLineageData({ root }),
-    /omits, changes, closes, or misattributes/u,
-  );
-  await writeFile(matrixPath, originalMatrixBytes);
-
-  await writeFile(reviewPath, Buffer.concat([reviewBytes, Buffer.from(" ", "utf8")]));
-  await assert.rejects(verifyStage5Final9FindingLineageData({ root }), /bytes do not match/u);
-  await writeFile(reviewPath, reviewBytes);
-
-  await writeFile(
-    indexPath,
-    `${JSON.stringify({ schemaVersion: 1, phase: "PRE_CI", artifacts: [] }, null, 2)}\n`,
-  );
-  await assert.rejects(verifyStage5Final9FindingLineageData({ root }), /evidence index omits/u);
-
-  console.log(
-    JSON.stringify(
-      {
-        schemaVersion: 1,
-        result: "PASS",
-        protectedPredecessor: {
-          tag: protectedPredecessor.tag,
-          target: protectedPredecessor.target,
-          matchedProtectedFiles: protectedPredecessor.files.length,
-        },
-        final8ReviewFindings: valid.final8ReviewFindingCount,
-        carriedHistoricalFindings: valid.carriedHistoricalFindingCount,
-        totalFindings: valid.totalFindingCount,
-        omittedFindingRejected: true,
-        authorClosureRejected: true,
-        mutatedSourceRejected: true,
-        unindexedReviewSourceRejected: true,
-        stage6Actions: 0,
-      },
-      null,
-      2,
-    ),
-  );
-} finally {
-  await rm(root, { recursive: true, force: true });
-}
+console.log(
+  JSON.stringify(
+    {
+      schemaVersion: 2,
+      result: "PASS",
+      protectedFinal8Tag: protectedFinal8.tag,
+      protectedFinal9Tag: protectedFinal9.tag,
+      protectedFinal9Target: protectedFinal9.target,
+      carriedFinal9Findings: expectedMatrix.summary.carriedFinal9FindingCount,
+      final9IndependentReviewFindings: expectedMatrix.summary.final9IndependentReviewFindingCount,
+      totalFindings: expectedMatrix.summary.totalFindingCount,
+      omittedHistoricalFindingRejected: true,
+      changedReviewBytesDetected: true,
+      authorClosed: expectedMatrix.summary.authorClosedCount,
+      independentPending: expectedMatrix.summary.independentPendingCount,
+      stage6Actions: 0,
+    },
+    null,
+    2,
+  ),
+);

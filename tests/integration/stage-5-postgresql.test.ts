@@ -5,8 +5,10 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client, type QueryResultRow } from "pg";
+import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { STAFF_AUTH_BASE_PATH, type AuthRealm } from "../../packages/auth-adapters/src/index.js";
 import {
   asOpaqueId,
   bootstrapRootAgency,
@@ -43,6 +45,7 @@ import {
   type MigrationChain,
   type MigrationTarget,
 } from "../../tooling/database/migration-runner.js";
+import { createAdminApi } from "../../apps/admin-api/src/app.js";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const host = process.env["PGHOST"] ?? "";
@@ -1895,7 +1898,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     }
   });
 
-  it("maps a real PostgreSQL deadlock SQLSTATE 40P01 to an M1 transaction conflict", async () => {
+  it("maps a real PostgreSQL deadlock SQLSTATE 40P01 through repository and HTTP as an M1 transaction conflict", async () => {
     const predecessor = upgradedSlice;
     if (predecessor === null || predecessor.trip.id === slice.trip.id) {
       throw new Error("Two distinct Trip rows are required for the deadlock fixture");
@@ -1978,6 +1981,65 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           authorizationFor(agencyId, M1_INTERNAL_NOTE_PERMISSION_IDS),
         ),
       ).rejects.toBeInstanceOf(M1TransactionConflictError);
+
+      const session = staffSessions.get(agencyId);
+      if (session === undefined) {
+        throw new Error("The deadlock-to-HTTP qualification requires a Staff session fixture");
+      }
+      const expectedHost = "admin-stage5-deadlock.example.test";
+      const deadlockRealm: AuthRealm = {
+        kind: "STAFF",
+        basePath: STAFF_AUTH_BASE_PATH,
+        cookieName: "travelos-stage5-deadlock-session",
+        secureTransportRequired: false,
+        async handle() {
+          return new Response(null, { status: 404 });
+        },
+        async getServerSession() {
+          return null;
+        },
+      };
+      const deadlockM1Operations = createM1StaffTripOperations({
+        repository: deadlockRepository as unknown as Parameters<
+          typeof createM1StaffTripOperations
+        >[0]["repository"],
+        authorizationRepository: staffAccessRepository,
+        sessionResolver: {
+          async resolveStaffSession() {
+            return session;
+          },
+        },
+      });
+      const application = await createAdminApi({
+        expectedHost,
+        auth: {
+          realm: deadlockRealm,
+          policy: { canonicalOrigin: `http://${expectedHost}`, expectedHost },
+          staffAccessRepository,
+          m1Operations: deadlockM1Operations as unknown as NonNullable<
+            NonNullable<Parameters<typeof createAdminApi>[0]["auth"]>["m1Operations"]
+          >,
+        },
+      });
+      try {
+        const response = await request(application.getHttpServer())
+          .patch(`/api/admin/reservations/${primaryReservation(slice).id}/internal-note`)
+          .set("Host", expectedHost)
+          .set("Origin", `http://${expectedHost}`)
+          .set("Cookie", "travelos-stage5-deadlock-session=opaque")
+          .send({
+            agencyId,
+            tripId: slice.trip.id,
+            reservationId: primaryReservation(slice).id,
+            expectedLockVersion: "0",
+            internalNote: "Deadlock mapping",
+          })
+          .expect(409);
+        expect(response.body).toEqual({ error: "transaction_conflict" });
+        expect(response.headers["cache-control"]).toBe("private, no-store");
+      } finally {
+        await application.close();
+      }
       if (firstWaitError !== null) {
         await secondClient.query("COMMIT");
       } else {

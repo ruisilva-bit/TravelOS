@@ -27,7 +27,7 @@ const runProcessSmoke = (service) => {
   return { service, exitCode: result.status, events };
 };
 
-const requestAdminHealth = ({ host, port, expectedHost }) =>
+const requestApiHealth = ({ service, host, port, expectedHost }) =>
   new Promise((resolve, reject) => {
     const request = httpRequest(
       {
@@ -56,19 +56,21 @@ const requestAdminHealth = ({ host, port, expectedHost }) =>
         });
       },
     );
-    request.setTimeout(5_000, () => request.destroy(new Error("Admin API health smoke timed out")));
+    request.setTimeout(5_000, () =>
+      request.destroy(new Error(`${service} health smoke timed out`)),
+    );
     request.on("error", reject);
     request.end();
   });
 
-const runAdminApiSmoke = async () => {
+const runApiListenerSmoke = async ({ service, hostKey }) => {
   const developmentManifest = JSON.parse(await readFile(path.join(root, manifest), "utf8"));
-  const expectedHost = developmentManifest.hosts?.admin;
-  assert(typeof expectedHost === "string", "Development manifest Admin host is missing");
+  const expectedHost = developmentManifest.hosts?.[hostKey];
+  assert(typeof expectedHost === "string", `Development manifest ${service} host is missing`);
 
   const child = spawn(
     process.execPath,
-    [path.join(root, "apps/admin-api/dist/main.js"), `--manifest=${manifest}`, "--smoke-listener"],
+    [path.join(root, `apps/${service}/dist/main.js`), `--manifest=${manifest}`, "--smoke-listener"],
     { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
   );
   const events = [];
@@ -101,7 +103,7 @@ const runAdminApiSmoke = async () => {
         resolveReady(event);
       }
     } catch (error) {
-      rejectReady(new Error(`Admin API smoke emitted invalid JSON: ${error.message}`));
+      rejectReady(new Error(`${service} smoke emitted invalid JSON: ${error.message}`));
     }
   });
   child.once("error", rejectReady);
@@ -111,7 +113,7 @@ const runAdminApiSmoke = async () => {
     if (readyEvent === null) {
       rejectReady(
         new Error(
-          `Admin API smoke listener exited before readiness (${JSON.stringify(result)}): ${stderr}`,
+          `${service} smoke listener exited before readiness (${JSON.stringify(result)}): ${stderr}`,
         ),
       );
     }
@@ -119,7 +121,7 @@ const runAdminApiSmoke = async () => {
   });
 
   const startupTimeout = setTimeout(
-    () => rejectReady(new Error(`Admin API smoke listener startup timed out: ${stderr}`)),
+    () => rejectReady(new Error(`${service} smoke listener startup timed out: ${stderr}`)),
     15_000,
   );
   try {
@@ -129,35 +131,36 @@ const runAdminApiSmoke = async () => {
       listening.binding?.boundAddress === "127.0.0.1" &&
         Number.isInteger(listening.binding?.boundPort) &&
         listening.binding.boundPort > 0,
-      "Admin API smoke listener did not bind an ephemeral IPv4 loopback address",
+      `${service} smoke listener did not bind an ephemeral IPv4 loopback address`,
     );
 
-    const health = await requestAdminHealth({
+    const health = await requestApiHealth({
+      service,
       host: listening.binding.boundAddress,
       port: listening.binding.boundPort,
       expectedHost,
     });
-    assert(health.status === 200, `Admin API health smoke returned HTTP ${health.status}`);
+    assert(health.status === 200, `${service} health smoke returned HTTP ${health.status}`);
     child.kill("SIGTERM");
     const exit = await exitPromise;
     assert(
       exit.code === 0 && exit.signal === null,
-      `Admin API smoke did not exit cleanly: ${JSON.stringify(exit)}`,
+      `${service} smoke did not exit cleanly: ${JSON.stringify(exit)}`,
     );
     const shutdown = events.find((event) => event.event === "process_smoke_shutdown");
     assert(
       shutdown?.state === "STOPPED" && shutdown.cleanShutdown === true,
-      "Admin API smoke did not report clean shutdown",
+      `${service} smoke did not report clean shutdown`,
     );
 
     return {
-      service: "admin-api",
+      service,
       exitCode: exit.code,
       events: [
         ...events,
         {
           event: "process_smoke",
-          service: "admin-api",
+          service,
           environment: listening.environment,
           initialized: listening.initialized,
           listening: listening.listening,
@@ -229,8 +232,8 @@ const webBuild = async (app, requiredText, forbiddenText) => {
 const adminWeb = await webBuild("admin-web", "TravelOS", "TravelOS Portal");
 const portalWeb = await webBuild("portal-web", "TravelOS Portal", 'data-routing-root="admin"');
 const processSmokes = [
-  await runAdminApiSmoke(),
-  runProcessSmoke("portal-api"),
+  await runApiListenerSmoke({ service: "admin-api", hostKey: "admin" }),
+  await runApiListenerSmoke({ service: "portal-api", hostKey: "portal" }),
   runProcessSmoke("worker"),
 ];
 assert(

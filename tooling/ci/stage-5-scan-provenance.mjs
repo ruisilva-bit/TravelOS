@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto";
 
 import {
-  STAGE5_FINAL9_CANDIDATE_FREEZE,
-  STAGE5_FINAL9_CANDIDATE_VALIDATION,
-  STAGE5_FINAL9_CORRECTION_MATRIX,
-  STAGE5_FINAL9_EVIDENCE_INDEX,
-  STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT,
-  STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL10_CANDIDATE_FREEZE,
+  STAGE5_FINAL10_CANDIDATE_VALIDATION,
+  STAGE5_FINAL10_CORRECTION_MATRIX,
+  STAGE5_FINAL10_EVIDENCE_INDEX,
+  STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT,
+  STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT,
+  STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
 } from "./stage-5-source-scope.mjs";
 import {
   STAGE5_FINAL8_EVIDENCE_INDEX,
@@ -16,10 +17,15 @@ import {
   STAGE5_FINAL8_INDEPENDENT_REVIEW_SHA256,
   STAGE5_FINAL8_REJECTED_TAG,
   STAGE5_FINAL8_REJECTED_TAG_TARGET,
-  STAGE5_FINAL9_EVIDENCE_DIRECTORY,
-  STAGE5_FINAL9_EVIDENCE_AGGREGATE_SERIALIZATION,
-  STAGE5_FINAL9_EXPECTED_EVIDENCE_ARTIFACT_NAMES,
-  STAGE5_FINAL9_EXPECTED_ALL_FINDING_IDS,
+  STAGE5_FINAL9_EVIDENCE_INDEX,
+  STAGE5_FINAL9_EVIDENCE_INDEX_SHA256,
+  STAGE5_FINAL9_FREEZE_SHA256,
+  STAGE5_FINAL9_REJECTED_TAG,
+  STAGE5_FINAL9_REJECTED_TAG_TARGET,
+  STAGE5_FINAL10_EVIDENCE_DIRECTORY,
+  STAGE5_FINAL10_EVIDENCE_AGGREGATE_SERIALIZATION,
+  STAGE5_FINAL10_EXPECTED_EVIDENCE_ARTIFACT_NAMES,
+  STAGE5_FINAL10_EXPECTED_ALL_FINDING_IDS,
 } from "./stage-5-candidate-contract.mjs";
 
 export const STAGE5_FINAL_SCAN_SCOPE_SERIALIZATION =
@@ -51,14 +57,14 @@ export const createStage5FinalScanProvenance = ({
   }
   if (
     findingLineage?.result !== "PASS" ||
-    findingLineage?.totalFindingCount !== STAGE5_FINAL9_EXPECTED_ALL_FINDING_IDS.length ||
+    findingLineage?.totalFindingCount !== STAGE5_FINAL10_EXPECTED_ALL_FINDING_IDS.length ||
     findingLineage?.authorClosedCount !== 0 ||
-    findingLineage?.independentPendingCount !== STAGE5_FINAL9_EXPECTED_ALL_FINDING_IDS.length ||
+    findingLineage?.independentPendingCount !== STAGE5_FINAL10_EXPECTED_ALL_FINDING_IDS.length ||
     findingLineage?.stage6Actions !== 0
   ) {
     throw new Error("Stage 5 final scan is missing complete fail-closed finding-lineage proof");
   }
-  const predecessorProof = findingLineage.protectedPredecessor;
+  const predecessorProof = findingLineage.protectedFinal8;
   const predecessorFiles = new Map(
     Array.isArray(predecessorProof?.files)
       ? predecessorProof.files.map((entry) => [entry.path, entry])
@@ -86,8 +92,19 @@ export const createStage5FinalScanProvenance = ({
   ) {
     throw new Error("Stage 5 final scan lacks exact protected FINAL-8 tag-byte provenance");
   }
-  const expectedEvidenceArtifactPaths = STAGE5_FINAL9_EXPECTED_EVIDENCE_ARTIFACT_NAMES.map(
-    (name) => `${STAGE5_FINAL9_EVIDENCE_DIRECTORY}/${name}`,
+  const final9Proof = findingLineage.protectedFinal9;
+  if (
+    final9Proof?.result !== "PASS" ||
+    final9Proof.tag !== STAGE5_FINAL9_REJECTED_TAG ||
+    final9Proof.target !== STAGE5_FINAL9_REJECTED_TAG_TARGET ||
+    final9Proof.freeze?.sha256 !== STAGE5_FINAL9_FREEZE_SHA256 ||
+    final9Proof.evidenceIndex?.path !== STAGE5_FINAL9_EVIDENCE_INDEX ||
+    final9Proof.evidenceIndex?.sha256 !== STAGE5_FINAL9_EVIDENCE_INDEX_SHA256
+  ) {
+    throw new Error("Stage 5 final scan lacks exact protected FINAL-9 tag-byte provenance");
+  }
+  const expectedEvidenceArtifactPaths = STAGE5_FINAL10_EXPECTED_EVIDENCE_ARTIFACT_NAMES.map(
+    (name) => `${STAGE5_FINAL10_EVIDENCE_DIRECTORY}/${name}`,
   ).toSorted();
   const indexedEvidenceArtifacts = evidenceIndexVerification?.artifactBytesManifest ?? [];
   const recomputedEvidenceAggregateSha256 = createHash("sha256")
@@ -99,9 +116,9 @@ export const createStage5FinalScanProvenance = ({
     .digest("hex");
   if (
     evidenceIndexVerification?.result !== "PASS" ||
-    evidenceIndexVerification.indexPath !== STAGE5_FINAL9_EVIDENCE_INDEX ||
+    evidenceIndexVerification.indexPath !== STAGE5_FINAL10_EVIDENCE_INDEX ||
     evidenceIndexVerification.aggregateSerialization !==
-      STAGE5_FINAL9_EVIDENCE_AGGREGATE_SERIALIZATION ||
+      STAGE5_FINAL10_EVIDENCE_AGGREGATE_SERIALIZATION ||
     !["PRE_CI", "FINAL"].includes(evidenceIndexVerification.phase) ||
     (phase === "FINAL_CANDIDATE" && evidenceIndexVerification.phase !== "FINAL") ||
     evidenceIndexVerification.artifactCount !== expectedEvidenceArtifactPaths.length ||
@@ -119,7 +136,7 @@ export const createStage5FinalScanProvenance = ({
       (entry, index) => entry.path !== expectedEvidenceArtifactPaths[index],
     )
   ) {
-    throw new Error("Stage 5 final scan lacks exact verified FINAL-9 evidence-index coverage");
+    throw new Error("Stage 5 final scan lacks exact verified FINAL-10 evidence-index coverage");
   }
 
   const expectedFiles = [...sourceScopeFiles].sort((left, right) => left.localeCompare(right));
@@ -127,7 +144,7 @@ export const createStage5FinalScanProvenance = ({
   if (expectedFiles.length !== expectedUniqueFiles.length) {
     throw new Error("Stage 5 source-scope collector returned duplicate file paths");
   }
-  if (expectedUniqueFiles.includes(STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT)) {
+  if (expectedUniqueFiles.includes(STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT)) {
     throw new Error(
       "Stage 5 post-freeze scan report must remain excluded from its own input scope",
     );
@@ -162,10 +179,10 @@ export const createStage5FinalScanProvenance = ({
     throw new Error("Stage 5 final scan aggregate does not match its byte-level file manifest");
   }
 
-  const requiredPaths = [STAGE5_FINAL9_EVIDENCE_INDEX, STAGE5_FINAL9_CORRECTION_MATRIX];
-  requiredPaths.push(STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT);
+  const requiredPaths = [STAGE5_FINAL10_EVIDENCE_INDEX, STAGE5_FINAL10_CORRECTION_MATRIX];
+  requiredPaths.push(STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT, STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT);
   if (phase === "FINAL_CANDIDATE") {
-    requiredPaths.push(STAGE5_FINAL9_CANDIDATE_VALIDATION, STAGE5_FINAL9_CANDIDATE_FREEZE);
+    requiredPaths.push(STAGE5_FINAL10_CANDIDATE_VALIDATION, STAGE5_FINAL10_CANDIDATE_FREEZE);
   }
   const missingRequiredPaths = requiredPaths.filter(
     (filePath) => !expectedUniqueFiles.includes(filePath),
@@ -177,12 +194,12 @@ export const createStage5FinalScanProvenance = ({
   }
 
   const manifestByPath = new Map(scanReport.fileManifest.map((entry) => [entry.path, entry]));
-  const scannedEvidenceIndex = manifestByPath.get(STAGE5_FINAL9_EVIDENCE_INDEX);
+  const scannedEvidenceIndex = manifestByPath.get(STAGE5_FINAL10_EVIDENCE_INDEX);
   if (
     scannedEvidenceIndex?.bytes !== evidenceIndexVerification.indexBytes ||
     scannedEvidenceIndex?.sha256 !== evidenceIndexVerification.indexSha256
   ) {
-    throw new Error("Stage 5 scan did not bind the verified FINAL-9 evidence-index bytes");
+    throw new Error("Stage 5 scan did not bind the verified FINAL-10 evidence-index bytes");
   }
   for (const indexedArtifact of indexedEvidenceArtifacts) {
     const scannedArtifact = manifestByPath.get(indexedArtifact.path);
@@ -191,16 +208,19 @@ export const createStage5FinalScanProvenance = ({
       scannedArtifact?.sha256 !== indexedArtifact.sha256
     ) {
       throw new Error(
-        `Stage 5 scan bytes do not match FINAL-9 evidence index: ${indexedArtifact.path}`,
+        `Stage 5 scan bytes do not match FINAL-10 evidence index: ${indexedArtifact.path}`,
       );
     }
   }
-  const sourceReviewArtifact = manifestByPath.get(STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT);
-  const matrixArtifact = manifestByPath.get(STAGE5_FINAL9_CORRECTION_MATRIX);
+  const final8ReviewArtifact = manifestByPath.get(STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT);
+  const final9ReviewArtifact = manifestByPath.get(STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT);
+  const matrixArtifact = manifestByPath.get(STAGE5_FINAL10_CORRECTION_MATRIX);
   if (
-    sourceReviewArtifact?.sha256 !== STAGE5_FINAL8_INDEPENDENT_REVIEW_SHA256 ||
-    sourceReviewArtifact.bytes !== findingLineage.sourceReview.bytes ||
-    sourceReviewArtifact.sha256 !== findingLineage.sourceReview.sha256 ||
+    final8ReviewArtifact?.sha256 !== STAGE5_FINAL8_INDEPENDENT_REVIEW_SHA256 ||
+    !Number.isSafeInteger(final8ReviewArtifact?.bytes) ||
+    final8ReviewArtifact.bytes <= 0 ||
+    final9ReviewArtifact?.bytes !== findingLineage.sourceReview.bytes ||
+    final9ReviewArtifact?.sha256 !== findingLineage.sourceReview.sha256 ||
     matrixArtifact?.bytes !== findingLineage.correctionMatrix.bytes ||
     matrixArtifact?.sha256 !== findingLineage.correctionMatrix.sha256
   ) {
@@ -223,14 +243,20 @@ export const createStage5FinalScanProvenance = ({
     evidenceIndexSha256: evidenceIndexVerification.indexSha256,
     indexedEvidenceArtifactCount: indexedEvidenceArtifacts.length,
     protectedFinal8TagBytesVerified: true,
-    postFreezeScanReportPath: STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT,
+    protectedFinal9TagBytesVerified: true,
+    postFreezeScanReportPath: STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
     postFreezeScanReportExcludedFromScope: true,
     selfReferencePrevention: "post-freeze report is written only after the final scan completes",
-    evidenceIndexIncluded: expectedUniqueFiles.includes(STAGE5_FINAL9_EVIDENCE_INDEX),
-    historicalReviewIncluded: expectedUniqueFiles.includes(STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT),
-    correctionMatrixIncluded: expectedUniqueFiles.includes(STAGE5_FINAL9_CORRECTION_MATRIX),
-    validationIncluded: expectedUniqueFiles.includes(STAGE5_FINAL9_CANDIDATE_VALIDATION),
-    freezeIncluded: expectedUniqueFiles.includes(STAGE5_FINAL9_CANDIDATE_FREEZE),
+    evidenceIndexIncluded: expectedUniqueFiles.includes(STAGE5_FINAL10_EVIDENCE_INDEX),
+    final8HistoricalReviewIncluded: expectedUniqueFiles.includes(
+      STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT,
+    ),
+    final9IndependentReviewIncluded: expectedUniqueFiles.includes(
+      STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT,
+    ),
+    correctionMatrixIncluded: expectedUniqueFiles.includes(STAGE5_FINAL10_CORRECTION_MATRIX),
+    validationIncluded: expectedUniqueFiles.includes(STAGE5_FINAL10_CANDIDATE_VALIDATION),
+    freezeIncluded: expectedUniqueFiles.includes(STAGE5_FINAL10_CANDIDATE_FREEZE),
     historicalFindingLineage: findingLineage,
     matchedValuesEmitted: false,
   };

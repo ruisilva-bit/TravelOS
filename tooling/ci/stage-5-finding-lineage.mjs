@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { lstat, readFile, writeFile } from "node:fs/promises";
@@ -6,192 +5,342 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  STAGE5_FINAL8_EVIDENCE_AGGREGATE_SHA256,
-  STAGE5_FINAL8_EVIDENCE_INDEX_SHA256,
   STAGE5_FINAL8_EVIDENCE_INDEX,
-  STAGE5_FINAL8_FREEZE_AGGREGATE_SHA256,
+  STAGE5_FINAL8_EVIDENCE_INDEX_SHA256,
   STAGE5_FINAL8_FREEZE,
   STAGE5_FINAL8_FREEZE_SHA256,
-  STAGE5_FINAL8_INDEPENDENT_REVIEW_SHA256,
   STAGE5_FINAL8_REJECTED_TAG,
   STAGE5_FINAL8_REJECTED_TAG_TARGET,
   STAGE5_FINAL9_CANDIDATE_FREEZE,
   STAGE5_FINAL9_CORRECTION_MATRIX,
+  STAGE5_FINAL9_EVIDENCE_AGGREGATE_SHA256,
   STAGE5_FINAL9_EVIDENCE_INDEX,
-  STAGE5_FINAL9_EXPECTED_ALL_FINDING_IDS,
-  STAGE5_FINAL9_EXPECTED_CARRIED_FINDING_IDS,
-  STAGE5_FINAL9_EXPECTED_FINAL8_REVIEW_FINDING_IDS,
-  STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT,
+  STAGE5_FINAL9_EVIDENCE_INDEX_SHA256,
+  STAGE5_FINAL9_FREEZE_AGGREGATE_SHA256,
+  STAGE5_FINAL9_FREEZE_SHA256,
+  STAGE5_FINAL9_INDEPENDENT_REVIEW,
+  STAGE5_FINAL9_REJECTED_TAG,
+  STAGE5_FINAL9_REJECTED_TAG_TARGET,
+  STAGE5_FINAL10_CANDIDATE_FREEZE,
+  STAGE5_FINAL10_CORRECTION_MATRIX,
+  STAGE5_FINAL10_EVIDENCE_INDEX,
+  STAGE5_FINAL10_EXPECTED_ALL_FINDING_IDS,
+  STAGE5_FINAL10_EXPECTED_FINAL9_REVIEW_FINDING_IDS,
+  STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT,
+  STAGE5_FINAL10_FINAL9_REJECTED_TAG_ARTIFACT,
+  STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT,
 } from "./stage-5-candidate-contract.mjs";
 
-const sha256 = (content) => createHash("sha256").update(content).digest("hex");
+const SHA256_PATTERN = /^[a-f0-9]{64}$/u;
+const FINAL9_BASE_FINDING_IDS = STAGE5_FINAL10_EXPECTED_ALL_FINDING_IDS.filter(
+  (id) => !STAGE5_FINAL10_EXPECTED_FINAL9_REVIEW_FINDING_IDS.includes(id),
+);
+
+const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const serializeRows = (rows) =>
+  rows.map((row) => `${row.path}\t${row.bytes}\t${row.sha256}\n`).join("");
+const sameJson = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+
+const assertRegularFile = async (absolutePath, description) => {
+  const metadata = await lstat(absolutePath);
+  if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink !== 1) {
+    throw new Error(`${description} must be a unique regular file: ${absolutePath}`);
+  }
+};
+
+const readGitBlob = (root, revision, relativePath) =>
+  execFileSync("git", ["show", `${revision}:${relativePath}`], { cwd: root });
+
+const readGitTagTarget = (root, tag) =>
+  execFileSync("git", ["rev-parse", `${tag}^{}`], { cwd: root, encoding: "utf8" }).trim();
+
+const parseFreezeRows = (freezeBytes, freezePath) => {
+  const text = freezeBytes.toString("utf8");
+  const rowPattern = /^\|\s*(\d+)\s*\|\s*`([^`]+)`\s*\|\s*(\d+)\s*\|\s*`([a-f0-9]{64})`\s*\|$/gmu;
+  const rows = [...text.matchAll(rowPattern)].map((match) => ({
+    ordinal: Number.parseInt(match[1], 10),
+    path: match[2],
+    bytes: Number.parseInt(match[3], 10),
+    sha256: match[4],
+  }));
+  const declaredRows = Number.parseInt(text.match(/\*\*Rows:\*\*\s*(\d+)/u)?.[1] ?? "", 10);
+  const declaredAggregate = text.match(/\*\*Deterministic aggregate:\*\*\s*`([a-f0-9]{64})`/u)?.[1];
+  if (
+    !Number.isSafeInteger(declaredRows) ||
+    rows.length !== declaredRows ||
+    rows.some((row, index) => row.ordinal !== index + 1) ||
+    new Set(rows.map((row) => row.path)).size !== rows.length ||
+    declaredAggregate === undefined ||
+    !SHA256_PATTERN.test(declaredAggregate)
+  ) {
+    throw new Error(`Rejected candidate freeze has malformed rows or aggregate: ${freezePath}`);
+  }
+  return { declaredAggregate, rows };
+};
+
+const parseJson = (bytes, description) => {
+  try {
+    return JSON.parse(bytes.toString("utf8"));
+  } catch {
+    throw new Error(`${description} is not valid JSON`);
+  }
+};
+
+const assertExactFindingIds = (findings, expectedIds, description) => {
+  const actualIds = findings.map((finding) => finding?.id);
+  const uniqueIds = new Set(actualIds);
+  if (
+    !sameJson(actualIds, expectedIds) ||
+    uniqueIds.size !== expectedIds.length ||
+    actualIds.some((id) => typeof id !== "string")
+  ) {
+    throw new Error(`${description} must preserve the exact ordered, duplicate-free finding IDs`);
+  }
+};
+
+const parseFinal9ReviewFindings = (reviewBytes) => {
+  const text = reviewBytes.toString("utf8");
+  return STAGE5_FINAL10_EXPECTED_FINAL9_REVIEW_FINDING_IDS.map((id) => {
+    const pattern = new RegExp(
+      `^### ${id} — (BLOCKER|HIGH|MEDIUM|LOW) — ([^\\n]+)\\n([\\s\\S]*?)(?=^### |$(?![\\s\\S]))`,
+      "mu",
+    );
+    const match = text.match(pattern);
+    if (match === null) {
+      throw new Error(`FINAL-9 independent review omits or malforms ${id}`);
+    }
+    return {
+      id,
+      severity: match[1],
+      title: match[2],
+      excerpt: match[0].trim(),
+    };
+  });
+};
 
 export const verifyStage5Final8TaggedBytes = async ({ root = process.cwd() } = {}) => {
-  const tagTarget = execFileSync("git", ["rev-parse", `${STAGE5_FINAL8_REJECTED_TAG}^{}`], {
-    cwd: root,
-    encoding: "utf8",
-  }).trim();
-  if (tagTarget !== STAGE5_FINAL8_REJECTED_TAG_TARGET) {
-    throw new Error("Rejected FINAL-8 tag target changed from the protected predecessor");
+  const target = readGitTagTarget(root, STAGE5_FINAL8_REJECTED_TAG);
+  if (target !== STAGE5_FINAL8_REJECTED_TAG_TARGET) {
+    throw new Error("Rejected FINAL-8 tag does not resolve to its protected target");
   }
-  const protectedPaths = [
-    {
-      path: STAGE5_FINAL8_FREEZE,
-      sha256: STAGE5_FINAL8_FREEZE_SHA256,
-    },
-    {
-      path: STAGE5_FINAL8_EVIDENCE_INDEX,
-      sha256: STAGE5_FINAL8_EVIDENCE_INDEX_SHA256,
-    },
+  const protectedFiles = [
+    { path: STAGE5_FINAL8_FREEZE, sha256: STAGE5_FINAL8_FREEZE_SHA256 },
+    { path: STAGE5_FINAL8_EVIDENCE_INDEX, sha256: STAGE5_FINAL8_EVIDENCE_INDEX_SHA256 },
   ];
   const files = [];
-  for (const entry of protectedPaths) {
-    const currentPath = path.join(root, entry.path);
-    const currentMetadata = await lstat(currentPath);
+  for (const protectedFile of protectedFiles) {
+    const currentBytes = await readFile(path.join(root, protectedFile.path));
+    const taggedBytes = readGitBlob(root, STAGE5_FINAL8_REJECTED_TAG, protectedFile.path);
     if (
-      !currentMetadata.isFile() ||
-      currentMetadata.isSymbolicLink() ||
-      currentMetadata.nlink !== 1
+      sha256(currentBytes) !== protectedFile.sha256 ||
+      sha256(taggedBytes) !== protectedFile.sha256 ||
+      !currentBytes.equals(taggedBytes)
     ) {
-      throw new Error(`Protected FINAL-8 input is not a unique regular file: ${entry.path}`);
-    }
-    const currentBytes = await readFile(currentPath);
-    const taggedBytes = execFileSync(
-      "git",
-      ["show", `${STAGE5_FINAL8_REJECTED_TAG}:${entry.path}`],
-      {
-        cwd: root,
-        maxBuffer: 5 * 1024 * 1024,
-      },
-    );
-    const currentSha256 = sha256(currentBytes);
-    if (currentSha256 !== entry.sha256 || !currentBytes.equals(taggedBytes)) {
-      throw new Error(`Protected FINAL-8 bytes differ from the rejected tag: ${entry.path}`);
+      throw new Error(`Protected FINAL-8 bytes diverged: ${protectedFile.path}`);
     }
     files.push({
-      path: entry.path,
+      path: protectedFile.path,
       bytes: currentBytes.length,
-      sha256: currentSha256,
+      sha256: protectedFile.sha256,
       matchesRejectedTag: true,
     });
   }
-  return { result: "PASS", tag: STAGE5_FINAL8_REJECTED_TAG, target: tagTarget, files };
-};
-
-const assertExactIds = (actual, expected, label) => {
-  assert.ok(Array.isArray(actual), `${label} must be an array`);
-  assert.deepEqual(
-    actual.map((entry) => entry?.id),
-    expected,
-    `${label} must contain the complete expected ordered finding lineage`,
-  );
-};
-
-export const validateStage5Final8ReviewSource = (review, reviewBytes) => {
-  if (sha256(reviewBytes) !== STAGE5_FINAL8_INDEPENDENT_REVIEW_SHA256) {
-    throw new Error(
-      "Preserved FINAL-8 independent review bytes do not match their recorded SHA-256",
-    );
-  }
-  if (
-    review.reviewer !== "Hermes Agent (gpt-5.6-sol)" ||
-    review.role !== "independent non-authoring read-only adversarial reviewer" ||
-    !review.recommendation?.startsWith("NO-GO") ||
-    review.worktree_mutated !== false ||
-    review.stage6_actions !== 0
-  ) {
-    throw new Error("Preserved FINAL-8 review identity, decision, or Stage 6 boundary is invalid");
-  }
-  assertExactIds(
-    review.findings,
-    STAGE5_FINAL9_EXPECTED_FINAL8_REVIEW_FINDING_IDS,
-    "FINAL-8 review findings",
-  );
-  assertExactIds(
-    review.prior_findings,
-    STAGE5_FINAL9_EXPECTED_CARRIED_FINDING_IDS,
-    "carried historical findings",
-  );
-
-  const integrity = review.freeze_integrity;
-  if (
-    integrity.candidate !== "docs/reviews/phase-1-m1/STAGE_5_FINAL_8_CANDIDATE_FREEZE.md" ||
-    integrity.candidate_sha256 !== STAGE5_FINAL8_FREEZE_SHA256 ||
-    integrity.declared_rows !== 51 ||
-    integrity.parsed_rows !== 51 ||
-    integrity.matched_rows !== 51 ||
-    integrity.missing_rows !== 0 ||
-    integrity.mismatched_rows !== 0 ||
-    integrity.duplicate_rows !== 0 ||
-    integrity.declared_aggregate !== STAGE5_FINAL8_FREEZE_AGGREGATE_SHA256 ||
-    integrity.recomputed_aggregate !== STAGE5_FINAL8_FREEZE_AGGREGATE_SHA256 ||
-    integrity.evidence_index !== "docs/evidence/phase-1-m1/stage-5-final-8/EVIDENCE_INDEX.json" ||
-    integrity.evidence_artifacts_declared !== 14 ||
-    integrity.evidence_artifacts_matched !== 14 ||
-    integrity.evidence_mismatches !== 0 ||
-    integrity.evidence_declared_aggregate !== STAGE5_FINAL8_EVIDENCE_AGGREGATE_SHA256 ||
-    integrity.evidence_recomputed_aggregate !== STAGE5_FINAL8_EVIDENCE_AGGREGATE_SHA256
-  ) {
-    throw new Error(
-      "Preserved FINAL-8 independent integrity report does not match the frozen predecessor",
-    );
-  }
   return {
-    sourcePath: STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT,
-    bytes: reviewBytes.length,
-    sha256: sha256(reviewBytes),
-    reviewer: review.reviewer,
-    recommendation: "NO-GO",
-    final8FreezeSha256: integrity.candidate_sha256,
-    final8FreezeAggregateSha256: integrity.recomputed_aggregate,
-    final8EvidenceIndexSha256: STAGE5_FINAL8_EVIDENCE_INDEX_SHA256,
-    final8EvidenceAggregateSha256: integrity.evidence_recomputed_aggregate,
-    currentFindingCount: review.findings.length,
-    carriedFindingCount: review.prior_findings.length,
-    stage6Actions: review.stage6_actions,
+    result: "PASS",
+    tag: STAGE5_FINAL8_REJECTED_TAG,
+    target,
+    files,
   };
 };
 
-export const buildStage5Final9CorrectionMatrix = ({ review, reviewBytes }) => {
-  const source = validateStage5Final8ReviewSource(review, reviewBytes);
-  const currentFindings = review.findings.map((record) => ({
-    id: record.id,
-    sourceType: "FINAL_8_INDEPENDENT_REVIEW_FINDING",
-    priorStatus: "OPEN",
-    final9Disposition: "PENDING_REQUALIFICATION",
-    final9IndependentStatus: "PENDING_FINAL9_REVIEW",
-    sourceRecord: record,
+export const verifyStage5Final9RejectedTaggedBytes = async ({ root = process.cwd() } = {}) => {
+  const target = readGitTagTarget(root, STAGE5_FINAL9_REJECTED_TAG);
+  if (target !== STAGE5_FINAL9_REJECTED_TAG_TARGET) {
+    throw new Error("Rejected FINAL-9 tag does not resolve to its protected target");
+  }
+  const freezeBytes = readGitBlob(root, STAGE5_FINAL9_REJECTED_TAG, STAGE5_FINAL9_CANDIDATE_FREEZE);
+  if (sha256(freezeBytes) !== STAGE5_FINAL9_FREEZE_SHA256) {
+    throw new Error("Rejected FINAL-9 freeze document hash diverged");
+  }
+  const freeze = parseFreezeRows(freezeBytes, STAGE5_FINAL9_CANDIDATE_FREEZE);
+  if (freeze.declaredAggregate !== STAGE5_FINAL9_FREEZE_AGGREGATE_SHA256) {
+    throw new Error("Rejected FINAL-9 freeze aggregate does not match its protected declaration");
+  }
+  for (const row of freeze.rows) {
+    const bytes = readGitBlob(root, STAGE5_FINAL9_REJECTED_TAG, row.path);
+    if (bytes.length !== row.bytes || sha256(bytes) !== row.sha256) {
+      throw new Error(`Rejected FINAL-9 tag does not reproduce frozen input: ${row.path}`);
+    }
+  }
+  if (sha256(serializeRows(freeze.rows)) !== STAGE5_FINAL9_FREEZE_AGGREGATE_SHA256) {
+    throw new Error("Rejected FINAL-9 freeze rows do not reproduce the protected aggregate");
+  }
+
+  const indexBytes = readGitBlob(root, STAGE5_FINAL9_REJECTED_TAG, STAGE5_FINAL9_EVIDENCE_INDEX);
+  if (sha256(indexBytes) !== STAGE5_FINAL9_EVIDENCE_INDEX_SHA256) {
+    throw new Error("Rejected FINAL-9 evidence index hash diverged");
+  }
+  const index = parseJson(indexBytes, "Rejected FINAL-9 evidence index");
+  const artifacts = Array.isArray(index.artifacts) ? index.artifacts : [];
+  const artifactPaths = artifacts.map((artifact) => artifact?.path);
+  if (
+    index.schemaVersion !== 1 ||
+    index.result !== "PASS" ||
+    index.candidate !== "FINAL-9" ||
+    index.phase !== "FINAL" ||
+    index.artifactCount !== 16 ||
+    artifacts.length !== 16 ||
+    new Set(artifactPaths).size !== artifacts.length ||
+    artifacts.some(
+      (artifact) =>
+        typeof artifact?.path !== "string" ||
+        !Number.isSafeInteger(artifact?.bytes) ||
+        artifact.bytes < 0 ||
+        !SHA256_PATTERN.test(artifact?.sha256 ?? ""),
+    )
+  ) {
+    throw new Error("Rejected FINAL-9 evidence index metadata is invalid");
+  }
+  for (const artifact of artifacts) {
+    const bytes = readGitBlob(root, STAGE5_FINAL9_REJECTED_TAG, artifact.path);
+    if (bytes.length !== artifact.bytes || sha256(bytes) !== artifact.sha256) {
+      throw new Error(
+        `Rejected FINAL-9 tag does not reproduce evidence artifact: ${artifact.path}`,
+      );
+    }
+  }
+  if (sha256(serializeRows(artifacts)) !== STAGE5_FINAL9_EVIDENCE_AGGREGATE_SHA256) {
+    throw new Error("Rejected FINAL-9 evidence artifacts do not reproduce the protected aggregate");
+  }
+  return {
+    result: "PASS",
+    tag: STAGE5_FINAL9_REJECTED_TAG,
+    target,
+    freeze: {
+      path: STAGE5_FINAL9_CANDIDATE_FREEZE,
+      bytes: freezeBytes.length,
+      sha256: STAGE5_FINAL9_FREEZE_SHA256,
+      rows: freeze.rows.length,
+      aggregateSha256: STAGE5_FINAL9_FREEZE_AGGREGATE_SHA256,
+    },
+    evidenceIndex: {
+      path: STAGE5_FINAL9_EVIDENCE_INDEX,
+      bytes: indexBytes.length,
+      sha256: STAGE5_FINAL9_EVIDENCE_INDEX_SHA256,
+      artifactCount: artifacts.length,
+      aggregateSha256: STAGE5_FINAL9_EVIDENCE_AGGREGATE_SHA256,
+    },
+  };
+};
+
+const readFinal9ReviewInputs = async (root) => {
+  const matrixBytes = readGitBlob(
+    root,
+    STAGE5_FINAL9_REJECTED_TAG,
+    STAGE5_FINAL9_CORRECTION_MATRIX,
+  );
+  const matrix = parseJson(matrixBytes, "Rejected FINAL-9 correction matrix");
+  const findings = Array.isArray(matrix.findings) ? matrix.findings : [];
+  if (
+    matrix.schemaVersion !== 1 ||
+    matrix.result !== "PASS" ||
+    matrix.candidate !== "FINAL-9" ||
+    matrix.stage6Actions !== 0 ||
+    matrix.summary?.totalFindingCount !== FINAL9_BASE_FINDING_IDS.length ||
+    matrix.summary?.authorClosedCount !== 0 ||
+    matrix.summary?.independentPendingCount !== FINAL9_BASE_FINDING_IDS.length
+  ) {
+    throw new Error("Rejected FINAL-9 correction matrix has invalid lineage metadata");
+  }
+  assertExactFindingIds(findings, FINAL9_BASE_FINDING_IDS, "Rejected FINAL-9 correction matrix");
+
+  const reviewPath = path.join(root, STAGE5_FINAL9_INDEPENDENT_REVIEW);
+  await assertRegularFile(reviewPath, "FINAL-9 independent review record");
+  const reviewBytes = await readFile(reviewPath);
+  return { matrix, matrixBytes, reviewBytes };
+};
+
+export const buildStage5Final10CorrectionMatrix = ({
+  final9Matrix,
+  final9MatrixBytes,
+  final9ReviewBytes,
+}) => {
+  const final9Findings = Array.isArray(final9Matrix?.findings) ? final9Matrix.findings : [];
+  assertExactFindingIds(
+    final9Findings,
+    FINAL9_BASE_FINDING_IDS,
+    "FINAL-10 predecessor finding input",
+  );
+  const reviewFindings = parseFinal9ReviewFindings(final9ReviewBytes);
+  const carriedFindings = final9Findings.map((finding) => ({
+    id: finding.id,
+    sourceType: "REJECTED_FINAL_9_CARRY_FORWARD",
+    final9Disposition: finding.final9Disposition,
+    final9IndependentStatus: finding.final9IndependentStatus,
+    final10Disposition: "PENDING_REMEDIATION_REQUALIFICATION",
+    final10IndependentStatus: "PENDING_FINAL10_REVIEW",
+    sourceRecord: finding.sourceRecord,
   }));
-  const carriedFindings = review.prior_findings.map((record) => ({
-    id: record.id,
-    sourceType: "HISTORICAL_FINDING_CARRY_FORWARD",
-    priorStatus: record.status,
-    final9Disposition: "PENDING_REQUALIFICATION",
-    final9IndependentStatus: "PENDING_FINAL9_REVIEW",
-    sourceRecord: record,
+  const final9ReviewFindingRows = reviewFindings.map((finding) => ({
+    id: finding.id,
+    sourceType: "FINAL_9_INDEPENDENT_REVIEW_FINDING",
+    final10Disposition: "PENDING_REMEDIATION_REQUALIFICATION",
+    final10IndependentStatus: "PENDING_FINAL10_REVIEW",
+    sourceRecord: {
+      id: finding.id,
+      severity: finding.severity,
+      title: finding.title,
+      sourcePath: STAGE5_FINAL9_INDEPENDENT_REVIEW,
+      bytes: final9ReviewBytes.length,
+      sha256: sha256(final9ReviewBytes),
+      excerpt: finding.excerpt,
+    },
   }));
-  const findings = [...currentFindings, ...carriedFindings];
-  assert.deepEqual(
-    findings.map((finding) => finding.id),
-    STAGE5_FINAL9_EXPECTED_ALL_FINDING_IDS,
-    "combined FINAL-9 finding lineage must be exact and duplicate-free",
+  const findings = [...carriedFindings, ...final9ReviewFindingRows];
+  assertExactFindingIds(
+    findings,
+    STAGE5_FINAL10_EXPECTED_ALL_FINDING_IDS,
+    "FINAL-10 correction matrix",
   );
   return {
     schemaVersion: 1,
     result: "PASS",
     stage: "PHASE_1_M1_STAGE_5",
-    candidate: "FINAL-9",
-    sourceReview: source,
+    candidate: "FINAL-10",
+    predecessor: {
+      rejectedFinal9Tag: STAGE5_FINAL9_REJECTED_TAG,
+      target: STAGE5_FINAL9_REJECTED_TAG_TARGET,
+      freeze: {
+        path: STAGE5_FINAL9_CANDIDATE_FREEZE,
+        sha256: STAGE5_FINAL9_FREEZE_SHA256,
+        aggregateSha256: STAGE5_FINAL9_FREEZE_AGGREGATE_SHA256,
+      },
+      evidenceIndex: {
+        path: STAGE5_FINAL9_EVIDENCE_INDEX,
+        sha256: STAGE5_FINAL9_EVIDENCE_INDEX_SHA256,
+        aggregateSha256: STAGE5_FINAL9_EVIDENCE_AGGREGATE_SHA256,
+      },
+      correctionMatrix: {
+        path: STAGE5_FINAL9_CORRECTION_MATRIX,
+        bytes: final9MatrixBytes.length,
+        sha256: sha256(final9MatrixBytes),
+      },
+      independentReview: {
+        path: STAGE5_FINAL9_INDEPENDENT_REVIEW,
+        bytes: final9ReviewBytes.length,
+        sha256: sha256(final9ReviewBytes),
+      },
+    },
     stage6Actions: 0,
     statusPolicy: {
       authorMayCloseFindings: false,
-      final9IndependentReviewRequired: true,
-      authorDisposition: "PENDING_REQUALIFICATION",
-      independentDisposition: "PENDING_FINAL9_REVIEW",
+      final10IndependentReviewRequired: true,
+      authorDisposition: "PENDING_REMEDIATION_REQUALIFICATION",
+      independentDisposition: "PENDING_FINAL10_REVIEW",
     },
     summary: {
-      final8ReviewFindingCount: currentFindings.length,
-      carriedHistoricalFindingCount: carriedFindings.length,
+      carriedFinal9FindingCount: FINAL9_BASE_FINDING_IDS.length,
+      final9IndependentReviewFindingCount: reviewFindings.length,
       totalFindingCount: findings.length,
       authorClosedCount: 0,
       independentPendingCount: findings.length,
@@ -200,111 +349,141 @@ export const buildStage5Final9CorrectionMatrix = ({ review, reviewBytes }) => {
   };
 };
 
-export const verifyStage5Final9FindingLineageData = async ({ root = process.cwd() } = {}) => {
-  const reviewPath = path.join(root, STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT);
-  const reviewMetadata = await lstat(reviewPath);
-  if (!reviewMetadata.isFile() || reviewMetadata.isSymbolicLink()) {
-    throw new Error("Preserved FINAL-8 review source is not a regular file");
-  }
-  const reviewBytes = await readFile(reviewPath);
-  let review;
-  try {
-    review = JSON.parse(reviewBytes.toString("utf8"));
-  } catch {
-    throw new Error("Preserved FINAL-8 review source is not valid JSON");
-  }
-  const expectedMatrix = buildStage5Final9CorrectionMatrix({ review, reviewBytes });
-  const matrixPath = path.join(root, STAGE5_FINAL9_CORRECTION_MATRIX);
-  const matrixMetadata = await lstat(matrixPath);
-  if (!matrixMetadata.isFile() || matrixMetadata.isSymbolicLink()) {
-    throw new Error("FINAL-9 correction matrix is not a regular file");
-  }
-  const matrixBytes = await readFile(matrixPath);
-  let matrix;
-  try {
-    matrix = JSON.parse(matrixBytes.toString("utf8"));
-  } catch {
-    throw new Error("FINAL-9 correction matrix is not valid JSON");
-  }
-  if (JSON.stringify(matrix) !== JSON.stringify(expectedMatrix)) {
+export const verifyStage5Final10FindingLineageData = async ({ root = process.cwd() } = {}) => {
+  const protectedFinal8 = await verifyStage5Final8TaggedBytes({ root });
+  const protectedFinal9 = await verifyStage5Final9RejectedTaggedBytes({ root });
+  const {
+    matrix: final9Matrix,
+    matrixBytes: final9MatrixBytes,
+    reviewBytes: final9ReviewBytes,
+  } = await readFinal9ReviewInputs(root);
+  const expectedMatrix = buildStage5Final10CorrectionMatrix({
+    final9Matrix,
+    final9MatrixBytes,
+    final9ReviewBytes,
+  });
+  const matrixPath = path.join(root, STAGE5_FINAL10_CORRECTION_MATRIX);
+  await assertRegularFile(matrixPath, "FINAL-10 correction matrix");
+  const actualMatrix = parseJson(await readFile(matrixPath), "FINAL-10 correction matrix");
+  if (!sameJson(actualMatrix, expectedMatrix)) {
     throw new Error(
-      "FINAL-9 correction matrix omits, changes, closes, or misattributes historical findings",
+      "FINAL-10 correction matrix omits, changes, closes, or misattributes carried findings",
     );
   }
 
-  const evidenceIndexPath = path.join(root, STAGE5_FINAL9_EVIDENCE_INDEX);
-  const evidenceIndexMetadata = await lstat(evidenceIndexPath);
-  if (!evidenceIndexMetadata.isFile() || evidenceIndexMetadata.isSymbolicLink()) {
-    throw new Error("FINAL-9 evidence index is not a regular file");
+  const evidenceIndexPath = path.join(root, STAGE5_FINAL10_EVIDENCE_INDEX);
+  await assertRegularFile(evidenceIndexPath, "FINAL-10 evidence index");
+  const evidenceIndex = parseJson(await readFile(evidenceIndexPath), "FINAL-10 evidence index");
+  const indexedPaths = new Set(
+    Array.isArray(evidenceIndex.artifacts)
+      ? evidenceIndex.artifacts.map((artifact) => artifact?.path)
+      : [],
+  );
+  const requiredArtifacts = [
+    STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT,
+    STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT,
+    STAGE5_FINAL10_FINAL9_REJECTED_TAG_ARTIFACT,
+  ];
+  if (requiredArtifacts.some((artifactPath) => !indexedPaths.has(artifactPath))) {
+    throw new Error("FINAL-10 evidence index omits a required predecessor-lineage artifact");
   }
-  const sourceFiles = await readFile(evidenceIndexPath);
-  const evidenceIndex = JSON.parse(sourceFiles.toString("utf8"));
-  const indexedPaths = new Set((evidenceIndex.artifacts ?? []).map((artifact) => artifact.path));
-  if (!indexedPaths.has(STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT)) {
-    throw new Error("FINAL-9 evidence index omits the immutable FINAL-8 independent review source");
+  const final9ArtifactBytes = await readFile(
+    path.join(root, STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT),
+  );
+  if (!final9ArtifactBytes.equals(final9ReviewBytes)) {
+    throw new Error(
+      "FINAL-10 evidence does not preserve the reviewed FINAL-9 independent-review bytes",
+    );
+  }
+  const rejectedTagArtifactPath = path.join(root, STAGE5_FINAL10_FINAL9_REJECTED_TAG_ARTIFACT);
+  await assertRegularFile(rejectedTagArtifactPath, "FINAL-10 rejected FINAL-9 tag artifact");
+  const rejectedTagArtifactBytes = await readFile(rejectedTagArtifactPath);
+  const rejectedTagArtifact = parseJson(
+    rejectedTagArtifactBytes,
+    "FINAL-10 rejected FINAL-9 tag artifact",
+  );
+  if (
+    rejectedTagArtifact.schemaVersion !== 1 ||
+    rejectedTagArtifact.candidate !== "FINAL-10" ||
+    rejectedTagArtifact.result !== "PASS" ||
+    rejectedTagArtifact.predecessor?.tag !== STAGE5_FINAL9_REJECTED_TAG ||
+    rejectedTagArtifact.predecessor?.target !== protectedFinal9.target ||
+    rejectedTagArtifact.predecessor?.status !== "REJECTED_PRESERVED" ||
+    rejectedTagArtifact.predecessor?.freeze?.sha256 !== protectedFinal9.freeze.sha256 ||
+    rejectedTagArtifact.predecessor?.evidenceIndex?.sha256 !== protectedFinal9.evidenceIndex.sha256
+  ) {
+    throw new Error("FINAL-10 evidence does not bind the rejected FINAL-9 predecessor tag");
   }
 
   return {
     schemaVersion: 1,
     result: "PASS",
-    sourceReview: reviewMetadataReport(reviewBytes, review),
-    correctionMatrix: {
-      path: STAGE5_FINAL9_CORRECTION_MATRIX,
-      bytes: matrixBytes.length,
-      sha256: sha256(matrixBytes),
-      findingCount: matrix.findings.length,
-    },
-    evidenceIndexIncludesReviewSource: true,
+    candidate: "FINAL-10",
     totalFindingCount: expectedMatrix.summary.totalFindingCount,
-    final8ReviewFindingCount: expectedMatrix.summary.final8ReviewFindingCount,
-    carriedHistoricalFindingCount: expectedMatrix.summary.carriedHistoricalFindingCount,
     authorClosedCount: 0,
     independentPendingCount: expectedMatrix.summary.independentPendingCount,
     stage6Actions: 0,
+    correctionMatrix: {
+      path: STAGE5_FINAL10_CORRECTION_MATRIX,
+      bytes: (await readFile(matrixPath)).length,
+      sha256: sha256(await readFile(matrixPath)),
+    },
+    sourceReview: {
+      path: STAGE5_FINAL9_INDEPENDENT_REVIEW,
+      bytes: final9ReviewBytes.length,
+      sha256: sha256(final9ReviewBytes),
+    },
+    rejectedFinal9TagArtifact: {
+      path: STAGE5_FINAL10_FINAL9_REJECTED_TAG_ARTIFACT,
+      bytes: rejectedTagArtifactBytes.length,
+      sha256: sha256(rejectedTagArtifactBytes),
+    },
+    protectedFinal8,
+    protectedFinal9,
   };
 };
 
-export const verifyStage5Final9FindingLineage = async ({ root = process.cwd() } = {}) => {
-  const protectedPredecessor = await verifyStage5Final8TaggedBytes({ root });
-  const lineage = await verifyStage5Final9FindingLineageData({ root });
-  return { ...lineage, protectedPredecessor };
-};
+export const verifyStage5Final10FindingLineage = async ({ root = process.cwd() } = {}) =>
+  verifyStage5Final10FindingLineageData({ root });
 
-const reviewMetadataReport = (reviewBytes, review) => ({
-  path: STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT,
-  bytes: reviewBytes.length,
-  sha256: sha256(reviewBytes),
-  reviewer: review.reviewer,
-  recommendation: "NO-GO",
-  currentFindingCount: review.findings.length,
-  carriedFindingCount: review.prior_findings.length,
-});
-
-export const writeStage5Final9CorrectionMatrix = async ({ root = process.cwd() } = {}) => {
-  const protectedPredecessor = await verifyStage5Final8TaggedBytes({ root });
-  const freezePath = path.join(root, STAGE5_FINAL9_CANDIDATE_FREEZE);
+export const writeStage5Final10CorrectionMatrix = async ({ root = process.cwd() } = {}) => {
+  const freezePath = path.join(root, STAGE5_FINAL10_CANDIDATE_FREEZE);
   try {
     await lstat(freezePath);
-    throw new Error("FINAL-9 freeze exists; do not rewrite its correction matrix");
+    throw new Error("FINAL-10 freeze exists; do not rewrite its correction matrix");
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
-  const reviewBytes = await readFile(path.join(root, STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT));
-  const review = JSON.parse(reviewBytes.toString("utf8"));
-  const matrix = buildStage5Final9CorrectionMatrix({ review, reviewBytes });
-  await writeFile(
-    path.join(root, STAGE5_FINAL9_CORRECTION_MATRIX),
-    `${JSON.stringify(matrix, null, 2)}\n`,
-  );
+  await verifyStage5Final8TaggedBytes({ root });
+  await verifyStage5Final9RejectedTaggedBytes({ root });
+  const {
+    matrix: final9Matrix,
+    matrixBytes: final9MatrixBytes,
+    reviewBytes: final9ReviewBytes,
+  } = await readFinal9ReviewInputs(root);
+  const matrix = buildStage5Final10CorrectionMatrix({
+    final9Matrix,
+    final9MatrixBytes,
+    final9ReviewBytes,
+  });
+  const matrixPath = path.join(root, STAGE5_FINAL10_CORRECTION_MATRIX);
+  const expectedBytes = Buffer.from(`${JSON.stringify(matrix, null, 2)}\n`, "utf8");
+  try {
+    const existingBytes = await readFile(matrixPath);
+    if (!existingBytes.equals(expectedBytes)) {
+      throw new Error("FINAL-10 correction matrix already exists with non-reproducible bytes");
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    await writeFile(matrixPath, expectedBytes, { flag: "wx" });
+  }
   return {
-    schemaVersion: 1,
     result: "PASS",
-    matrixPath: STAGE5_FINAL9_CORRECTION_MATRIX,
-    bytes: Buffer.byteLength(`${JSON.stringify(matrix, null, 2)}\n`),
-    sha256: sha256(Buffer.from(`${JSON.stringify(matrix, null, 2)}\n`)),
-    findingCount: matrix.findings.length,
+    matrixPath: STAGE5_FINAL10_CORRECTION_MATRIX,
+    totalFindingCount: matrix.summary.totalFindingCount,
+    authorClosedCount: 0,
+    independentPendingCount: matrix.summary.independentPendingCount,
     stage6Actions: 0,
-    protectedPredecessor,
   };
 };
 
@@ -312,7 +491,7 @@ const isDirectExecution =
   process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isDirectExecution) {
   const report = process.argv.includes("--write")
-    ? await writeStage5Final9CorrectionMatrix()
-    : await verifyStage5Final9FindingLineage();
+    ? await writeStage5Final10CorrectionMatrix()
+    : await verifyStage5Final10FindingLineage();
   console.log(JSON.stringify(report, null, 2));
 }

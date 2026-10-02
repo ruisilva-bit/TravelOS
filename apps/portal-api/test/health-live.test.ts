@@ -3,11 +3,16 @@ import { describe, expect, it } from "vitest";
 
 import { createPortalApi } from "../src/app.js";
 
+const expectedHost = "portal.travelos.test";
+
 describe("Portal API liveness", () => {
   it("boots and exposes only the DEVELOPMENT-safe liveness response", async () => {
-    const application = await createPortalApi();
+    const application = await createPortalApi({ expectedHost });
     try {
-      const response = await request(application.getHttpServer()).get("/health/live").expect(200);
+      const response = await request(application.getHttpServer())
+        .get("/health/live")
+        .set("Host", expectedHost)
+        .expect(200);
       expect(response.body).toEqual({
         status: "ok",
         service: "portal-api",

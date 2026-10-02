@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-10",
+  "result": "PASS",
+  "command": "vitest run --config tooling/testing/vitest.config.ts --reporter=verbose apps/admin-api/test/auth-bridge.test.ts apps/portal-api/test/auth-bridge.test.ts apps/portal-api/test/health-live.test.ts apps/portal-api/test/host-routing-boundary.test.ts",
+  "exitCode": 0,
+  "stdoutSha256": "7bc941009181639cbd5d23a7a10ab228b417b57547115f67028805423729703d",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "coverage": "Admin and Portal Host/auth routing boundaries, including Portal health route",
+  "redaction": "No passwords, tokens, or credential-bearing URLs emitted."
+}

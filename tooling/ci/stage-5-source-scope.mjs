@@ -2,23 +2,25 @@ import { lstat, readdir } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  STAGE5_FINAL9_CANDIDATE_FREEZE,
-  STAGE5_FINAL9_CANDIDATE_VALIDATION,
-  STAGE5_FINAL9_CORRECTION_MATRIX,
-  STAGE5_FINAL9_EVIDENCE_INDEX,
-  STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT,
-  STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL10_CANDIDATE_FREEZE,
+  STAGE5_FINAL10_CANDIDATE_VALIDATION,
+  STAGE5_FINAL10_CORRECTION_MATRIX,
+  STAGE5_FINAL10_EVIDENCE_INDEX,
+  STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT,
+  STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT,
+  STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
 } from "./stage-5-candidate-contract.mjs";
 
 const IGNORED_DIRECTORY_NAMES = new Set([".git", ".vite", "coverage", "dist", "node_modules"]);
 
 export {
-  STAGE5_FINAL9_CANDIDATE_FREEZE,
-  STAGE5_FINAL9_CANDIDATE_VALIDATION,
-  STAGE5_FINAL9_CORRECTION_MATRIX,
-  STAGE5_FINAL9_EVIDENCE_INDEX,
-  STAGE5_FINAL9_FINAL8_REVIEW_ARTIFACT,
-  STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL10_CANDIDATE_FREEZE,
+  STAGE5_FINAL10_CANDIDATE_VALIDATION,
+  STAGE5_FINAL10_CORRECTION_MATRIX,
+  STAGE5_FINAL10_EVIDENCE_INDEX,
+  STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT,
+  STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT,
+  STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
 };
 export const STAGE5_HISTORICAL_EVIDENCE_INDEXES = Object.freeze(
   [
@@ -32,19 +34,24 @@ export const STAGE5_HISTORICAL_EVIDENCE_INDEXES = Object.freeze(
     "docs/evidence/phase-1-m1/stage-5-final-6/EVIDENCE_INDEX.json",
     "docs/evidence/phase-1-m1/stage-5-final-7/EVIDENCE_INDEX.json",
     "docs/evidence/phase-1-m1/stage-5-final-8/EVIDENCE_INDEX.json",
+    "docs/evidence/phase-1-m1/stage-5-final-9/EVIDENCE_INDEX.json",
   ].toSorted(),
 );
 export const STAGE5_EXPECTED_EVIDENCE_INDEXES = Object.freeze(
-  [...STAGE5_HISTORICAL_EVIDENCE_INDEXES, STAGE5_FINAL9_EVIDENCE_INDEX].toSorted(),
+  [...STAGE5_HISTORICAL_EVIDENCE_INDEXES, STAGE5_FINAL10_EVIDENCE_INDEX].toSorted(),
 );
 
 const STAGE5_SOURCE_SCOPE_PHASES = new Set(["PRE_INDEX", "FINAL_EVIDENCE", "FINAL_CANDIDATE"]);
+const STAGE5_HISTORICAL_POST_FREEZE_SCAN_REPORTS = Object.freeze([
+  "docs/evidence/phase-1-m1/post-freeze-scan-reports/STAGE_5_FINAL_9.json",
+]);
 const STAGE5_ADDITIONAL_DOCUMENT_PATHS = Object.freeze([
   "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
 ]);
 
 export const STAGE5_REQUIRED_SOURCE_PATHS = Object.freeze([
   "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_9_INDEPENDENT_REVIEW.md",
   "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json",
   "migrations/0007_stage5_m1_domain_slice.cjs",
   "migrations/0008_stage5_cardinality_only.cjs",
@@ -68,15 +75,26 @@ export const STAGE5_REQUIRED_SOURCE_PATHS = Object.freeze([
   "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
   "packages/database/src/staff-access/staff-access-repository.ts",
   "apps/admin-api/src/auth-bridge.ts",
+  "apps/admin-api/src/app.ts",
+  "apps/admin-api/src/host-validation.ts",
   "apps/admin-api/src/m1-routes.ts",
+  "apps/admin-api/test/host-auth-routing-boundary.test.ts",
   "apps/admin-api/test/m1-authorization-boundary.test.ts",
   "apps/admin-api/test/composed-m1-body-parser.test.ts",
   "apps/admin-api/test/m1-routes.test.ts",
+  "apps/portal-api/src/app.ts",
+  "apps/portal-api/src/auth-bridge.ts",
+  "apps/portal-api/src/host-validation.ts",
+  "apps/portal-api/src/main.ts",
+  "apps/portal-api/test/health-live.test.ts",
+  "apps/portal-api/test/host-routing-boundary.test.ts",
   "tests/integration/stage-5-postgresql.test.ts",
   "package.json",
   "pnpm-lock.yaml",
   "tooling/ci/run-stage-5-focused.mjs",
   "tooling/ci/run-stage-5-authoritative-ci.mjs",
+  "tooling/ci/run-stage-5-final10-authoritative-ci.mjs",
+  "tooling/ci/prepare-stage-5-final10-evidence.mjs",
   "tooling/ci/scan-source-secrets.mjs",
   "tooling/ci/stage-5-candidate-contract.mjs",
   "tooling/ci/stage-5-evidence-index.mjs",
@@ -144,41 +162,41 @@ const readStage5EvidenceFiles = async (root) => {
   return files;
 };
 
-export const validateStage5Final9ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
-  const receiptDirectory = path.dirname(STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT);
+export const validateStage5Final10ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
+  const receiptDirectory = path.dirname(STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT);
   const absoluteReceiptDirectory = path.join(root, receiptDirectory);
   let entries;
   try {
     const directoryMetadata = await lstat(absoluteReceiptDirectory);
     if (!directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink()) {
-      throw new Error(`FINAL-9 scan receipt root is not a regular directory: ${receiptDirectory}`);
+      throw new Error(`FINAL-10 scan receipt root is not a regular directory: ${receiptDirectory}`);
     }
     entries = await readdir(absoluteReceiptDirectory, { withFileTypes: true });
   } catch (error) {
     if (error.code === "ENOENT") {
-      return { path: STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
+      return { path: STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
     }
     throw error;
   }
+  const allowedNames = new Set([
+    ...STAGE5_HISTORICAL_POST_FREEZE_SCAN_REPORTS.map((filePath) => path.basename(filePath)),
+    path.basename(STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT),
+  ]);
   const invalidEntries = entries
-    .filter(
-      (entry) =>
-        entry.name !== path.basename(STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT) ||
-        !entry.isFile() ||
-        entry.isSymbolicLink(),
-    )
+    .filter((entry) => !allowedNames.has(entry.name) || !entry.isFile() || entry.isSymbolicLink())
     .map((entry) => entry.name)
     .toSorted();
   if (invalidEntries.length > 0) {
     throw new Error(
-      `FINAL-9 post-freeze scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
+      `FINAL-10 post-freeze scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
     );
   }
   return {
-    path: STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT,
+    path: STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
     exists: entries.some(
-      (entry) => entry.name === path.basename(STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT),
+      (entry) => entry.name === path.basename(STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT),
     ),
+    historicalReports: STAGE5_HISTORICAL_POST_FREEZE_SCAN_REPORTS,
     result: "PASS",
   };
 };
@@ -241,12 +259,12 @@ export const validateStage5SourceCoverage = (files, { phase = "FINAL_EVIDENCE" }
   const requiredFinalCandidateInputs =
     phase === "FINAL_CANDIDATE"
       ? [
-          STAGE5_FINAL9_CORRECTION_MATRIX,
-          STAGE5_FINAL9_CANDIDATE_VALIDATION,
-          STAGE5_FINAL9_CANDIDATE_FREEZE,
+          STAGE5_FINAL10_CORRECTION_MATRIX,
+          STAGE5_FINAL10_CANDIDATE_VALIDATION,
+          STAGE5_FINAL10_CANDIDATE_FREEZE,
         ]
       : phase === "FINAL_EVIDENCE"
-        ? [STAGE5_FINAL9_CORRECTION_MATRIX]
+        ? [STAGE5_FINAL10_CORRECTION_MATRIX]
         : [];
   const missingFinalCandidateInputs = requiredFinalCandidateInputs.filter(
     (filePath) => !pathSet.has(filePath),
@@ -254,8 +272,8 @@ export const validateStage5SourceCoverage = (files, { phase = "FINAL_EVIDENCE" }
   const failedRequirementIds = [
     ...missingRequiredSourcePaths.map((filePath) => `required:${filePath}`),
     ...failedCoverage,
-    ...(pathSet.has(STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT)
-      ? [`stage5-scan-receipt-self-inclusion:${STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT}`]
+    ...(pathSet.has(STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT)
+      ? [`stage5-scan-receipt-self-inclusion:${STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT}`]
       : []),
     ...missingFinalCandidateInputs.map(
       (filePath) => `stage5-final-candidate-input-missing:${filePath}`,
@@ -272,7 +290,7 @@ export const validateStage5SourceCoverage = (files, { phase = "FINAL_EVIDENCE" }
     unexpectedStage5EvidenceIndexes,
     finalCandidateInputs: requiredFinalCandidateInputs,
     postFreezeScanReceipt: {
-      path: STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT,
+      path: STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
       excludedFromScan: true,
       reason: "generated after the final candidate scan to avoid self-reference",
     },
@@ -286,7 +304,7 @@ export const collectStage5SourceFiles = async ({
   root = process.cwd(),
   phase = "FINAL_EVIDENCE",
 } = {}) => {
-  const postFreezeScanReceipt = await validateStage5Final9ScanReceiptDirectory({ root });
+  const postFreezeScanReceipt = await validateStage5Final10ScanReceiptDirectory({ root });
   const sourceDirectories = [
     "apps",
     "packages",

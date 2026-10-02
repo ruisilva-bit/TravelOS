@@ -1,16 +1,16 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 
 const repositoryRoot = process.cwd();
 const outputPath = path.resolve(
   process.env["TRAVELOS_STAGE5_FOCUSED_OUTPUT"] ??
-    "docs/evidence/phase-1-m1/stage-5-final-9/focused-test-execution.json",
+    "docs/evidence/phase-1-m1/stage-5-final-10/focused-test-execution.json",
 );
 const logPath = path.resolve(
   process.env["TRAVELOS_STAGE5_FOCUSED_LOG"] ??
-    "docs/evidence/phase-1-m1/stage-5-final-9/focused-tests.log",
+    "docs/evidence/phase-1-m1/stage-5-final-10/focused-tests.log",
 );
 const corepack = "corepack";
 const focusedTests = [
@@ -21,6 +21,8 @@ const focusedTests = [
   "apps/admin-api/test/host-auth-routing-boundary.test.ts",
   "apps/admin-api/test/m1-session-resolver.test.ts",
   "apps/admin-api/test/auth-bridge.test.ts",
+  "apps/portal-api/test/health-live.test.ts",
+  "apps/portal-api/test/host-routing-boundary.test.ts",
   "packages/backend-core/test/m1/application.test.ts",
   "packages/backend-core/test/m1/shared-kernel.test.ts",
   "packages/backend-core/test/agency-organization/agency-bootstrap.test.ts",
@@ -55,7 +57,8 @@ const combined = `${stdout}${stderr}`;
 const testFilesMatch = combined.match(/Test Files\s+(\d+) passed/iu);
 const testsMatch = combined.match(/Tests\s+(\d+) passed/iu);
 const report = {
-  schemaVersion: 2,
+  schemaVersion: 3,
+  candidate: "FINAL-10",
   result: execution.status === 0 ? "PASS" : "FAIL",
   command: `corepack ${commandArgs.join(" ")}`,
   exitCode: execution.status ?? 1,

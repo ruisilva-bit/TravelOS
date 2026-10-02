@@ -1,0 +1,228 @@
+import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { once } from "node:events";
+import { createWriteStream } from "node:fs";
+import { mkdir, mkdtemp, open, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
+import {
+  STAGE5_FINAL10_CI_EXECUTION_PLACEHOLDER,
+  STAGE5_FINAL10_CI_LOG_PLACEHOLDER,
+  STAGE5_FINAL10_EVIDENCE_DIRECTORY,
+} from "./stage-5-candidate-contract.mjs";
+import {
+  verifyStage5Final10EvidenceIndex,
+  writeStage5Final10EvidenceIndex,
+} from "./stage-5-evidence-index.mjs";
+import { verifyStage5Final10FindingLineage } from "./stage-5-finding-lineage.mjs";
+import { collectStage5SourceFiles } from "./stage-5-source-scope.mjs";
+
+const REQUIRED_NODE_VERSION = "v24.19.0";
+const REQUIRED_COREPACK_VERSION = "0.35.0";
+const REQUIRED_PNPM_VERSION = "11.21.0";
+const COMMAND = "corepack pnpm ci:verify";
+const FINAL10_GUARD_PATH = ".hermes/state/stage5-final10-ci-verify-invocation.json";
+const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const evidenceFile = (name) => path.join(process.cwd(), STAGE5_FINAL10_EVIDENCE_DIRECTORY, name);
+
+const readCommandVersion = (executable, args) => {
+  const result = spawnSync(executable, args, { encoding: "utf8", cwd: process.cwd() });
+  if (result.error || result.status !== 0) {
+    throw new Error(
+      `${executable} ${args.join(" ")} preflight failed: ${result.error?.message ?? result.stderr}`,
+    );
+  }
+  return result.stdout.trim();
+};
+
+const verifyToolchain = async () => {
+  if (process.version !== REQUIRED_NODE_VERSION) {
+    throw new Error(
+      `FINAL-10 authoritative CI requires Node ${REQUIRED_NODE_VERSION}, received ${process.version}`,
+    );
+  }
+  const packageManifest = JSON.parse(
+    await readFile(path.join(process.cwd(), "package.json"), "utf8"),
+  );
+  if (packageManifest.packageManager !== `pnpm@${REQUIRED_PNPM_VERSION}`) {
+    throw new Error("Repository packageManager pin does not match the required FINAL-10 toolchain");
+  }
+  const corepackVersion = readCommandVersion("corepack", ["--version"]);
+  const pnpmVersion = readCommandVersion("corepack", ["pnpm", "--version"]);
+  if (corepackVersion !== REQUIRED_COREPACK_VERSION || pnpmVersion !== REQUIRED_PNPM_VERSION) {
+    throw new Error(
+      `FINAL-10 authoritative CI requires Corepack ${REQUIRED_COREPACK_VERSION}/pnpm ${REQUIRED_PNPM_VERSION}; received ${corepackVersion}/${pnpmVersion}`,
+    );
+  }
+  return {
+    nodeVersion: process.version,
+    nodeExecutable: process.execPath,
+    corepackVersion,
+    pnpmVersion,
+  };
+};
+
+const captureAuthoritativeCi = async ({ logPath }) => {
+  const temporaryRoot = process.env.TMPDIR ?? path.join(os.homedir(), ".hermes/cache/scratch");
+  await mkdir(temporaryRoot, { recursive: true });
+  const temporaryDirectory = await mkdtemp(path.join(temporaryRoot, "travelos-stage5-final10-ci-"));
+  const temporaryLogPath = path.join(temporaryDirectory, "ci-verify.log");
+  const logStream = createWriteStream(temporaryLogPath, { flags: "wx" });
+  const child = spawn("corepack", ["pnpm", "ci:verify"], {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  child.stdout.pipe(logStream, { end: false });
+  child.stderr.pipe(logStream, { end: false });
+
+  let spawnError = null;
+  child.once("error", (error) => {
+    spawnError = error;
+  });
+  const [exitCode, signal] = await once(child, "close");
+  logStream.end();
+  await once(logStream, "finish");
+  if (spawnError) await writeFile(temporaryLogPath, `${spawnError.message}\n`, { flag: "a" });
+
+  const logBytes = await readFile(temporaryLogPath);
+  await writeFile(logPath, logBytes);
+  const persistedBytes = await readFile(logPath);
+  if (!persistedBytes.equals(logBytes)) {
+    throw new Error("Authoritative CI log did not persist byte-for-byte into FINAL-10 evidence");
+  }
+  return {
+    exitCode: typeof exitCode === "number" ? exitCode : 1,
+    signal: signal ?? null,
+    spawnError: spawnError?.message ?? null,
+    logBytes: persistedBytes.length,
+    logSha256: sha256(persistedBytes),
+    temporaryDirectory,
+  };
+};
+
+const writeExecution = async ({ executionPath, execution }) => {
+  const serialized = `${JSON.stringify(execution, null, 2)}\n`;
+  await writeFile(executionPath, serialized);
+  const persisted = await readFile(executionPath, "utf8");
+  if (persisted !== serialized) {
+    throw new Error("Authoritative CI execution metadata did not persist byte-for-byte");
+  }
+};
+
+const execute = async () => {
+  const root = process.cwd();
+  const versions = await verifyToolchain();
+  await verifyStage5Final10EvidenceIndex({
+    root,
+    allowedPhases: ["PRE_CI"],
+    requiredPhase: "PRE_CI",
+  });
+  await verifyStage5Final10FindingLineage({ root });
+  const scope = await collectStage5SourceFiles({ root, phase: "FINAL_EVIDENCE" });
+  if (scope.result !== "PASS") throw new Error("FINAL-10 pre-CI source scope is incomplete");
+
+  const logPath = evidenceFile("ci-verify.log");
+  const executionPath = evidenceFile("ci-verify-execution.json");
+  if ((await readFile(logPath, "utf8")) !== STAGE5_FINAL10_CI_LOG_PLACEHOLDER) {
+    throw new Error("FINAL-10 authoritative CI log is not the exact unused PRE_CI placeholder");
+  }
+  if ((await readFile(executionPath, "utf8")) !== STAGE5_FINAL10_CI_EXECUTION_PLACEHOLDER) {
+    throw new Error("FINAL-10 invocation evidence is not the exact unused PRE_CI placeholder");
+  }
+
+  const guardPath = path.join(root, FINAL10_GUARD_PATH);
+  await mkdir(path.dirname(guardPath), { recursive: true });
+  const startedAtUtc = new Date().toISOString();
+  const guard = await open(guardPath, "wx");
+  await guard.writeFile(
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        candidate: "FINAL-10",
+        command: COMMAND,
+        phase: "RUNNING",
+        startedAtUtc,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await guard.close();
+
+  let run;
+  let ciResult = "FAIL";
+  let executionError = null;
+  try {
+    run = await captureAuthoritativeCi({ logPath });
+    ciResult = run.exitCode === 0 && run.spawnError === null ? "PASS" : "FAIL";
+  } catch (error) {
+    executionError = error instanceof Error ? error.message : String(error);
+    const fallbackLog = Buffer.from(
+      `${error instanceof Error ? (error.stack ?? error.message) : error}\n`,
+      "utf8",
+    );
+    await writeFile(logPath, fallbackLog);
+    run = {
+      exitCode: 1,
+      signal: null,
+      spawnError: executionError,
+      logBytes: fallbackLog.length,
+      logSha256: sha256(fallbackLog),
+      temporaryDirectory: null,
+    };
+  }
+
+  const finishedAtUtc = new Date().toISOString();
+  const execution = {
+    schemaVersion: 1,
+    candidate: "FINAL-10",
+    phase: "FINAL",
+    invocationCount: 1,
+    result: ciResult,
+    exitCode: run.exitCode,
+    command: COMMAND,
+    cwd: root,
+    ...versions,
+    startedAtUtc,
+    finishedAtUtc,
+    signal: run.signal,
+    spawnError: run.spawnError,
+    executionError,
+    logBytes: run.logBytes,
+    logSha256: run.logSha256,
+  };
+  await writeExecution({ executionPath, execution });
+
+  let finalEvidenceIndex = null;
+  let finalEvidenceError = null;
+  if (ciResult === "PASS") {
+    try {
+      finalEvidenceIndex = await writeStage5Final10EvidenceIndex({ root, phase: "FINAL" });
+    } catch (error) {
+      finalEvidenceError = error instanceof Error ? error.message : String(error);
+    }
+  }
+  if (run.temporaryDirectory) await rm(run.temporaryDirectory, { recursive: true, force: true });
+
+  const guardReport = {
+    ...execution,
+    candidate: "FINAL-10",
+    guardPath: FINAL10_GUARD_PATH,
+    finalEvidenceIndex:
+      finalEvidenceIndex === null
+        ? null
+        : {
+            result: finalEvidenceIndex.result,
+            indexSha256: finalEvidenceIndex.indexSha256,
+            aggregateSha256: finalEvidenceIndex.recomputedAggregateSha256,
+          },
+    finalEvidenceError,
+  };
+  await writeFile(guardPath, `${JSON.stringify(guardReport, null, 2)}\n`);
+  console.log(JSON.stringify(guardReport, null, 2));
+  if (ciResult !== "PASS" || finalEvidenceError !== null) process.exitCode = 1;
+};
+
+await execute();

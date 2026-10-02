@@ -4,12 +4,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  STAGE5_FINAL9_CI_EXECUTION_PLACEHOLDER,
-  STAGE5_FINAL9_CI_LOG_PLACEHOLDER,
-  STAGE5_FINAL9_EVIDENCE_AGGREGATE_SERIALIZATION,
-  STAGE5_FINAL9_EVIDENCE_DIRECTORY,
-  STAGE5_FINAL9_EVIDENCE_INDEX,
-  STAGE5_FINAL9_EXPECTED_EVIDENCE_ARTIFACT_NAMES,
+  STAGE5_FINAL10_CI_EXECUTION_PLACEHOLDER,
+  STAGE5_FINAL10_CI_LOG_PLACEHOLDER,
+  STAGE5_FINAL10_EVIDENCE_AGGREGATE_SERIALIZATION,
+  STAGE5_FINAL10_EVIDENCE_DIRECTORY,
+  STAGE5_FINAL10_EVIDENCE_INDEX,
+  STAGE5_FINAL10_EXPECTED_EVIDENCE_ARTIFACT_NAMES,
 } from "./stage-5-candidate-contract.mjs";
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/u;
@@ -20,7 +20,7 @@ const sameArray = (left, right) =>
   left.length === right.length && left.every((value, index) => value === right[index]);
 const serializeArtifacts = (artifacts) =>
   artifacts.map((entry) => `${entry.path}\t${entry.bytes}\t${entry.sha256}\n`).join("");
-const artifactPath = (name) => `${STAGE5_FINAL9_EVIDENCE_DIRECTORY}/${name}`;
+const artifactPath = (name) => `${STAGE5_FINAL10_EVIDENCE_DIRECTORY}/${name}`;
 
 export const parseCiVerifyGateLabels = (verifySource) => {
   const match = verifySource.match(/const\s+gates\s*=\s*\[([\s\S]*?)\n\];/u);
@@ -34,7 +34,7 @@ export const parseCiVerifyGateLabels = (verifySource) => {
   return labels;
 };
 
-export const verifyStage5Final9CiExecution = async ({ root, phase }) => {
+export const verifyStage5Final10CiExecution = async ({ root, phase }) => {
   const logPath = path.join(root, artifactPath("ci-verify.log"));
   const executionPath = path.join(root, artifactPath("ci-verify-execution.json"));
   const logBytes = await readFile(logPath);
@@ -42,10 +42,10 @@ export const verifyStage5Final9CiExecution = async ({ root, phase }) => {
   const executionBytes = await readFile(executionPath);
 
   if (phase === "PRE_CI") {
-    if (log !== STAGE5_FINAL9_CI_LOG_PLACEHOLDER) {
+    if (log !== STAGE5_FINAL10_CI_LOG_PLACEHOLDER) {
       throw new Error("PRE_CI index requires the exact non-evidence CI-log placeholder");
     }
-    if (executionBytes.toString("utf8") !== STAGE5_FINAL9_CI_EXECUTION_PLACEHOLDER) {
+    if (executionBytes.toString("utf8") !== STAGE5_FINAL10_CI_EXECUTION_PLACEHOLDER) {
       throw new Error("PRE_CI index requires the exact zero-invocation execution placeholder");
     }
     return {
@@ -106,6 +106,7 @@ export const verifyStage5Final9CiExecution = async ({ root, phase }) => {
 
   if (
     execution.schemaVersion !== 1 ||
+    execution.candidate !== "FINAL-10" ||
     execution.phase !== "FINAL" ||
     execution.invocationCount !== 1 ||
     execution.result !== "PASS" ||
@@ -162,15 +163,15 @@ export const verifyStage5Final9CiExecution = async ({ root, phase }) => {
   };
 };
 
-export const verifyStage5Final9EvidenceIndex = async ({
+export const verifyStage5Final10EvidenceIndex = async ({
   root = process.cwd(),
   allowedPhases = ["PRE_CI", "FINAL"],
   requiredPhase,
 } = {}) => {
-  const evidenceDirectory = path.join(root, STAGE5_FINAL9_EVIDENCE_DIRECTORY);
+  const evidenceDirectory = path.join(root, STAGE5_FINAL10_EVIDENCE_DIRECTORY);
   const evidenceDirectoryMetadata = await lstat(evidenceDirectory);
   if (!evidenceDirectoryMetadata.isDirectory() || evidenceDirectoryMetadata.isSymbolicLink()) {
-    throw new Error("FINAL-9 evidence root must be a regular directory");
+    throw new Error("FINAL-10 evidence root must be a regular directory");
   }
   const directoryEntries = await readdir(evidenceDirectory, { withFileTypes: true });
   const invalidDirectoryEntries = directoryEntries
@@ -182,7 +183,7 @@ export const verifyStage5Final9EvidenceIndex = async ({
     .map((entry) => entry.name)
     .toSorted();
   const expectedNames = sort([
-    ...STAGE5_FINAL9_EXPECTED_EVIDENCE_ARTIFACT_NAMES,
+    ...STAGE5_FINAL10_EXPECTED_EVIDENCE_ARTIFACT_NAMES,
     "EVIDENCE_INDEX.json",
   ]);
   const missing = expectedNames.filter((name) => !actualNames.includes(name));
@@ -194,27 +195,28 @@ export const verifyStage5Final9EvidenceIndex = async ({
     actualNames.length !== expectedNames.length
   ) {
     throw new Error(
-      `FINAL-9 evidence directory is not exact: ${JSON.stringify({ missing, unexpected, invalidDirectoryEntries })}`,
+      `FINAL-10 evidence directory is not exact: ${JSON.stringify({ missing, unexpected, invalidDirectoryEntries })}`,
     );
   }
 
-  const indexPath = path.join(root, STAGE5_FINAL9_EVIDENCE_INDEX);
+  const indexPath = path.join(root, STAGE5_FINAL10_EVIDENCE_INDEX);
   const indexBytes = await readFile(indexPath);
   let index;
   try {
     index = JSON.parse(indexBytes.toString("utf8"));
   } catch {
-    throw new Error("FINAL-9 evidence index is not valid JSON");
+    throw new Error("FINAL-10 evidence index is not valid JSON");
   }
   if (!ALLOWED_PHASES.has(index.phase) || !allowedPhases.includes(index.phase)) {
-    throw new Error(`FINAL-9 evidence index phase is not allowed: ${index.phase}`);
+    throw new Error(`FINAL-10 evidence index phase is not allowed: ${index.phase}`);
   }
   if (requiredPhase !== undefined && index.phase !== requiredPhase) {
-    throw new Error(`FINAL-9 evidence index must be ${requiredPhase}, received ${index.phase}`);
+    throw new Error(`FINAL-10 evidence index must be ${requiredPhase}, received ${index.phase}`);
   }
 
   const indexedArtifacts = Array.isArray(index.artifacts) ? index.artifacts : [];
-  const expectedPaths = STAGE5_FINAL9_EXPECTED_EVIDENCE_ARTIFACT_NAMES.map(artifactPath).toSorted();
+  const expectedPaths =
+    STAGE5_FINAL10_EXPECTED_EVIDENCE_ARTIFACT_NAMES.map(artifactPath).toSorted();
   const indexedPaths = indexedArtifacts.map((artifact) => artifact?.path);
   const duplicatePaths = indexedPaths.filter(
     (filePath, position) => indexedPaths.indexOf(filePath) !== position,
@@ -223,14 +225,14 @@ export const verifyStage5Final9EvidenceIndex = async ({
     index.schemaVersion !== 1 ||
     index.result !== "PASS" ||
     index.stage !== "PHASE_1_M1_STAGE_5" ||
-    index.candidate !== "FINAL-9" ||
+    index.candidate !== "FINAL-10" ||
     index.artifactCount !== expectedPaths.length ||
     indexedArtifacts.length !== expectedPaths.length ||
     !sameArray(indexedPaths, expectedPaths) ||
     duplicatePaths.length > 0 ||
-    index.aggregateSerialization !== STAGE5_FINAL9_EVIDENCE_AGGREGATE_SERIALIZATION
+    index.aggregateSerialization !== STAGE5_FINAL10_EVIDENCE_AGGREGATE_SERIALIZATION
   ) {
-    throw new Error("FINAL-9 evidence index metadata or expected artifact path set is invalid");
+    throw new Error("FINAL-10 evidence index metadata or expected artifact path set is invalid");
   }
 
   const sizeMismatches = [];
@@ -245,7 +247,7 @@ export const verifyStage5Final9EvidenceIndex = async ({
       !SHA256_PATTERN.test(artifact.sha256)
     ) {
       throw new Error(
-        `FINAL-9 evidence index has an invalid artifact row: ${String(artifact.path)}`,
+        `FINAL-10 evidence index has an invalid artifact row: ${String(artifact.path)}`,
       );
     }
     const artifactBytes = await readFile(path.join(root, artifact.path));
@@ -259,16 +261,16 @@ export const verifyStage5Final9EvidenceIndex = async ({
     recomputedAggregateSha256 !== index.aggregateSha256
   ) {
     throw new Error(
-      `FINAL-9 evidence byte/aggregate verification failed: ${JSON.stringify({ sizeMismatches, hashMismatches, declaredAggregateSha256: index.aggregateSha256, recomputedAggregateSha256 })}`,
+      `FINAL-10 evidence byte/aggregate verification failed: ${JSON.stringify({ sizeMismatches, hashMismatches, declaredAggregateSha256: index.aggregateSha256, recomputedAggregateSha256 })}`,
     );
   }
 
-  const ciExecution = await verifyStage5Final9CiExecution({ root, phase: index.phase });
+  const ciExecution = await verifyStage5Final10CiExecution({ root, phase: index.phase });
   return {
     schemaVersion: 1,
     result: "PASS",
     phase: index.phase,
-    indexPath: STAGE5_FINAL9_EVIDENCE_INDEX,
+    indexPath: STAGE5_FINAL10_EVIDENCE_INDEX,
     indexBytes: indexBytes.length,
     indexSha256: sha256(indexBytes),
     artifactCount: indexedArtifacts.length,
@@ -279,19 +281,20 @@ export const verifyStage5Final9EvidenceIndex = async ({
     invalidDirectoryEntries,
     sizeMismatches,
     hashMismatches,
-    aggregateSerialization: STAGE5_FINAL9_EVIDENCE_AGGREGATE_SERIALIZATION,
+    aggregateSerialization: STAGE5_FINAL10_EVIDENCE_AGGREGATE_SERIALIZATION,
     declaredAggregateSha256: index.aggregateSha256,
     recomputedAggregateSha256,
     ciExecution,
   };
 };
 
-export const writeStage5Final9EvidenceIndex = async ({ root = process.cwd(), phase } = {}) => {
-  if (!ALLOWED_PHASES.has(phase)) throw new Error(`Invalid FINAL-9 evidence-index phase: ${phase}`);
-  const evidenceDirectory = path.join(root, STAGE5_FINAL9_EVIDENCE_DIRECTORY);
+export const writeStage5Final10EvidenceIndex = async ({ root = process.cwd(), phase } = {}) => {
+  if (!ALLOWED_PHASES.has(phase))
+    throw new Error(`Invalid FINAL-10 evidence-index phase: ${phase}`);
+  const evidenceDirectory = path.join(root, STAGE5_FINAL10_EVIDENCE_DIRECTORY);
   const evidenceDirectoryMetadata = await lstat(evidenceDirectory);
   if (!evidenceDirectoryMetadata.isDirectory() || evidenceDirectoryMetadata.isSymbolicLink()) {
-    throw new Error("FINAL-9 evidence root must be a regular directory");
+    throw new Error("FINAL-10 evidence root must be a regular directory");
   }
   if (phase === "PRE_CI") {
     const ciLogPath = path.join(evidenceDirectory, "ci-verify.log");
@@ -301,33 +304,33 @@ export const writeStage5Final9EvidenceIndex = async ({ root = process.cwd(), pha
       existingLog = await readFile(ciLogPath, "utf8");
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
-      await writeFile(ciLogPath, STAGE5_FINAL9_CI_LOG_PLACEHOLDER, { flag: "wx" });
-      existingLog = STAGE5_FINAL9_CI_LOG_PLACEHOLDER;
+      await writeFile(ciLogPath, STAGE5_FINAL10_CI_LOG_PLACEHOLDER, { flag: "wx" });
+      existingLog = STAGE5_FINAL10_CI_LOG_PLACEHOLDER;
     }
     let existingExecution;
     try {
       existingExecution = await readFile(ciExecutionPath, "utf8");
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
-      await writeFile(ciExecutionPath, STAGE5_FINAL9_CI_EXECUTION_PLACEHOLDER, { flag: "wx" });
-      existingExecution = STAGE5_FINAL9_CI_EXECUTION_PLACEHOLDER;
+      await writeFile(ciExecutionPath, STAGE5_FINAL10_CI_EXECUTION_PLACEHOLDER, { flag: "wx" });
+      existingExecution = STAGE5_FINAL10_CI_EXECUTION_PLACEHOLDER;
     }
     if (
-      existingLog !== STAGE5_FINAL9_CI_LOG_PLACEHOLDER ||
-      existingExecution !== STAGE5_FINAL9_CI_EXECUTION_PLACEHOLDER
+      existingLog !== STAGE5_FINAL10_CI_LOG_PLACEHOLDER ||
+      existingExecution !== STAGE5_FINAL10_CI_EXECUTION_PLACEHOLDER
     ) {
       throw new Error("PRE_CI cannot replace existing authoritative CI execution evidence");
     }
   }
-  await verifyStage5Final9CiExecution({ root, phase });
+  await verifyStage5Final10CiExecution({ root, phase });
 
   const artifacts = [];
-  for (const name of STAGE5_FINAL9_EXPECTED_EVIDENCE_ARTIFACT_NAMES) {
+  for (const name of STAGE5_FINAL10_EXPECTED_EVIDENCE_ARTIFACT_NAMES) {
     const relativePath = artifactPath(name);
     const absolutePath = path.join(root, relativePath);
     const metadata = await lstat(absolutePath);
     if (!metadata.isFile() || metadata.isSymbolicLink()) {
-      throw new Error(`FINAL-9 evidence artifact is not a regular file: ${relativePath}`);
+      throw new Error(`FINAL-10 evidence artifact is not a regular file: ${relativePath}`);
     }
     const bytes = await readFile(absolutePath);
     artifacts.push({ path: relativePath, bytes: bytes.length, sha256: sha256(bytes) });
@@ -337,30 +340,30 @@ export const writeStage5Final9EvidenceIndex = async ({ root = process.cwd(), pha
     schemaVersion: 1,
     result: "PASS",
     stage: "PHASE_1_M1_STAGE_5",
-    candidate: "FINAL-9",
+    candidate: "FINAL-10",
     phase,
     artifactCount: artifacts.length,
-    aggregateSerialization: STAGE5_FINAL9_EVIDENCE_AGGREGATE_SERIALIZATION,
+    aggregateSerialization: STAGE5_FINAL10_EVIDENCE_AGGREGATE_SERIALIZATION,
     aggregateSha256: sha256(serializeArtifacts(artifacts)),
     artifacts,
   };
-  const indexPath = path.join(root, STAGE5_FINAL9_EVIDENCE_INDEX);
+  const indexPath = path.join(root, STAGE5_FINAL10_EVIDENCE_INDEX);
   try {
     const indexMetadata = await lstat(indexPath);
     if (!indexMetadata.isFile() || indexMetadata.isSymbolicLink() || indexMetadata.nlink !== 1) {
-      throw new Error("FINAL-9 evidence index output must be a unique regular file");
+      throw new Error("FINAL-10 evidence index output must be a unique regular file");
     }
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
   await writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
-  return verifyStage5Final9EvidenceIndex({ root, allowedPhases: [phase], requiredPhase: phase });
+  return verifyStage5Final10EvidenceIndex({ root, allowedPhases: [phase], requiredPhase: phase });
 };
 
 const isDirectExecution =
   process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isDirectExecution) {
   const phase = process.argv[2] ?? "PRE_CI";
-  const report = await writeStage5Final9EvidenceIndex({ phase });
+  const report = await writeStage5Final10EvidenceIndex({ phase });
   console.log(JSON.stringify(report, null, 2));
 }

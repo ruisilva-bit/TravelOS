@@ -5,9 +5,9 @@ import path from "node:path";
 import { collectStage2FreezeInputs } from "./stage-2-freeze-inputs.mjs";
 import { collectStage5SourceFiles } from "./stage-5-source-scope.mjs";
 import { createStage5FinalScanProvenance } from "./stage-5-scan-provenance.mjs";
-import { verifyStage5Final9EvidenceIndex } from "./stage-5-evidence-index.mjs";
-import { verifyStage5Final9FindingLineage } from "./stage-5-finding-lineage.mjs";
-import { STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT } from "./stage-5-candidate-contract.mjs";
+import { verifyStage5Final10EvidenceIndex } from "./stage-5-evidence-index.mjs";
+import { verifyStage5Final10FindingLineage } from "./stage-5-finding-lineage.mjs";
+import { STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT } from "./stage-5-candidate-contract.mjs";
 import { scanSensitiveFiles } from "./sensitive-data-scanner.mjs";
 
 const preIndexEvidenceScan = process.argv.includes("--pre-index-evidence");
@@ -63,13 +63,13 @@ const stage5Scope = stage5FinalScan
     })
   : null;
 const stage5EvidenceIndexVerification = stage5FinalScan
-  ? await verifyStage5Final9EvidenceIndex({
+  ? await verifyStage5Final10EvidenceIndex({
       allowedPhases: stage5FinalCandidateScan ? ["FINAL"] : ["PRE_CI", "FINAL"],
       requiredPhase: stage5FinalCandidateScan ? "FINAL" : undefined,
     })
   : null;
 const stage5FindingLineageVerification = stage5FinalScan
-  ? await verifyStage5Final9FindingLineage()
+  ? await verifyStage5Final10FindingLineage()
   : null;
 const freezeInputs = stage5FinalScan
   ? null
@@ -285,7 +285,7 @@ const scanOutput = {
 };
 let scanReceiptSha256 = null;
 if (stage5FinalCandidateScan && scan.result === "PASS") {
-  const reportPath = path.join(process.cwd(), STAGE5_FINAL9_POST_FREEZE_SCAN_REPORT);
+  const reportPath = path.join(process.cwd(), STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT);
   const reportText = `${JSON.stringify(scanOutput, null, 2)}\n`;
   await mkdir(path.dirname(reportPath), { recursive: true });
   await writeFile(reportPath, reportText);
