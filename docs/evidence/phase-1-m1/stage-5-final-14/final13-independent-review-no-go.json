@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-13",
+  "decision": "NO-GO",
+  "reviewType": "independent-read-only",
+  "readOnly": true,
+  "stage6Actions": 0,
+  "freeze": {
+    "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CANDIDATE_FREEZE.md",
+    "sha256": "ededb602b9b52db3696c5e896fd3350d87c83b7878e16c32d16b13402119be5a",
+    "rowsDeclared": 634,
+    "rowsRecomputed": 634,
+    "mismatches": 0,
+    "duplicates": 0,
+    "missingOrExtra": 0,
+    "sorted": true,
+    "aggregateSha256": "8cb2467ab8dc3077f279e467c2086b0993ce9aebdcc1da3701e153e9541192f8",
+    "selfExclusionVerified": true
+  },
+  "evidence": {
+    "finalIndexVerified": true,
+    "finalIndexArtifacts": 54,
+    "finalIndexSha256": "3896d13368b2688c583357f806cc79b62c06c20d6f9b7c4998c559d035eeb7f8",
+    "finalIndexAggregateSha256": "2bfc4592b04df786e49a883f65473e433dfb5be0235e6a7b8efac1cceafaf336",
+    "baselineSha256": "2fb65b6fa0d14875f9c756496f75b2b9fed3a446409295f5bdff46e5deae70cb",
+    "ciCommand": "corepack pnpm ci:verify",
+    "ciInvocationCount": 1,
+    "ciResult": "PASS",
+    "ciExitCode": 0,
+    "ciLogSha256": "f014f4c7559003a0374118d4170ef9817fdf4c3db340650b23bb4e02992ced76",
+    "finalScanPath": "docs/evidence/phase-1-m1/final13-scan-reports/STAGE_5_FINAL_13_POST_FREEZE.json",
+    "finalScanSha256": "c3dbed82a7f156736dbb61e49571a65e7772415400ea0824998ae08657389bfb",
+    "finalScanReportedResult": "PASS",
+    "finalScanReportedFiles": 635,
+    "finalScanFindings": 0,
+    "finalScanProvenanceConsistent": false,
+    "historicalFailuresPreserved": ["FINAL-10", "FINAL-11", "FINAL-12"]
+  },
+  "adjudicatedFindingIds": [
+    "S5F8-HOST-001", "S5F8-AUTHZ-001", "S5F8-REVISION-GUC-001", "S5F8-CACHE-PREHANDLER-001", "S5F8-CACHE-OVERRIDE-001", "S5F8-CSRF-001", "S5F8-AUTH-PREFIX-001", "S5F8-AUTH-SCOPE-001", "S5F8-LOCKVERSION-001", "S5F8-ID-001", "S5F8-RESPONSE-COHERENCE-001", "S5F8-DEADLOCK-001", "S5F8-MULTIAGENCY-QUAL-001", "S5F8-SCAN-PROVENANCE-001", "S5F8-TEMPORAL-CONTRACT-001", "S5F8-MONEY-CANON-001", "S5F8-PERMISSION-DOC-001", "S5F8-INPUT-EVIDENCE-001", "S5F8-STALE-COST-EVIDENCE-001",
+    "S5F4-PRIMARY-001", "S5F4-TIME-001", "S5F4-INTERNAL-001", "S5F4-EVIDENCE-001", "S5F4-QUAL-001",
+    "S5F5-PRIMARY-CARDINALITY-001", "S5F5-TIME-001", "S5F5-PRIMARY-TYPE-001", "S5F5-WORKSPACE-REVISION-001", "S5F5-MONEY-VALIDATION-001",
+    "S5F6-EVIDENCE-PROVENANCE-001", "S5F6-EVIDENCE-COVERAGE-001", "S5F6-TIMEZONE-CONTRACT-PARITY-001", "S5F6-AUTH-REGISTRY-VERSION-001", "S5F6-PRIMARY-CONTINUITY-001", "S5F6-MONEY-NORMALIZATION-001", "S5F6-PRIMARY-REPARENT-QUAL-001", "S5F6-FOCUSED-TOOLCHAIN-ATTRIBUTION-001",
+    "S5F7-PRIMARY-CONTINUITY-CONCURRENCY-001", "S5F7-WORKSPACE-REVISION-MONOTONICITY-001", "S5F7-WORKSPACE-REVISION-CHILD-FIRST-001", "S5F7-APPLICATION-INPUT-COMPLETENESS-001", "S5F7-TEMPORAL-RANGE-PARITY-001", "S5F7-SOURCE-SCAN-ORDER-001", "S5F7-ADJUDICATION-PROVENANCE-001", "S5F7-AUTH-CACHE-001",
+    "S5F9-SEC-001", "S5F9-DATA-DEADLOCK-HTTP-E2E-001", "S5F9-EVID-CLOSURE-001"
+  ],
+  "findings": [
+    {
+      "id": "S5F8-REVISION-GUC-001",
+      "severity": "HIGH",
+      "evidence": ["migrations/0009_stage5_revision_and_lock_version_hardening.cjs:81-132", "tests/integration/stage-5-postgresql.test.ts:1503-1537,1562-1652", "docs/evidence/phase-1-m1/stage-5-final-13/EVIDENCE_INDEX.json:362,462,738-743,868-873", "docs/evidence/phase-1-m1/stage-5-final-13/ci-verify.log:2007-2015"],
+      "consequence": "The Admin-role custom-GUC poisoning protection has no execution evidence for the frozen FINAL-13 candidate.",
+      "requiredCorrection": "Run and index current-candidate PostgreSQL qualification using the actual Admin login, including forged revision-state probes across publication-relevant write families."
+    },
+    {
+      "id": "S5F8-LOCKVERSION-001",
+      "severity": "MEDIUM",
+      "evidence": ["packages/contracts/src/admin/lock-version.ts:3-11", "migrations/0009_stage5_revision_and_lock_version_hardening.cjs:14-79", "tests/integration/stage-5-postgresql.test.ts:1031-1078", "docs/evidence/phase-1-m1/stage-5-final-13/EVIDENCE_INDEX.json:362,462,738-743,868-873"],
+      "consequence": "Bigint lock-version migration/runtime compatibility and high-value compare-and-swap are not demonstrated on FINAL-13's PostgreSQL path.",
+      "requiredCorrection": "Run and retain current-candidate PostgreSQL migration/CAS qualification, including the high-bigint round trip."
+    },
+    {
+      "id": "S5F8-DEADLOCK-001",
+      "severity": "MEDIUM",
+      "evidence": ["tests/integration/stage-5-postgresql.test.ts:1901-1961,1962-2042", "docs/evidence/phase-1-m1/stage-5-final-13/EVIDENCE_INDEX.json:362,462,738-743,868-873", "docs/evidence/phase-1-m1/stage-5-final-13/ci-verify.log:2007-2015"],
+      "consequence": "The real PostgreSQL 40P01-to-repository/HTTP conflict mapping lacks a FINAL-13 execution receipt.",
+      "requiredCorrection": "Run and index the current-candidate PostgreSQL deadlock/repository/HTTP regression."
+    },
+    {
+      "id": "S5F8-SCAN-PROVENANCE-001",
+      "severity": "MEDIUM",
+      "evidence": ["docs/evidence/phase-1-m1/final13-scan-reports/STAGE_5_FINAL_13_POST_FREEZE.json:62-79", "docs/evidence/phase-1-m1/final13-scan-reports/STAGE_5_FINAL_13_POST_FREEZE.json:3728-3736", "docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CANDIDATE_FREEZE.md:11", "docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CANDIDATE_VALIDATION.md:47"],
+      "consequence": "The scan's embedded provenance binds FINAL-11 and denies validation/freeze coverage, contradicting the FINAL-13 post-freeze claims.",
+      "requiredCorrection": "Generate a successor candidate's post-freeze receipt with consistent candidate, current index, receipt path, and validation/freeze coverage; preserve the FINAL-13 receipt."
+    },
+    {
+      "id": "S5F7-SOURCE-SCAN-ORDER-001",
+      "severity": "MEDIUM",
+      "evidence": ["docs/evidence/phase-1-m1/final13-scan-reports/STAGE_5_FINAL_13_POST_FREEZE.json:62-79", "docs/evidence/phase-1-m1/final13-scan-reports/STAGE_5_FINAL_13_POST_FREEZE.json:3728-3736", "docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CANDIDATE_VALIDATION.md:47"],
+      "consequence": "The scan receipt does not establish the required order/scope over the FINAL-13 validation and freeze.",
+      "requiredCorrection": "Use candidate-specific final-scan mode after validation/freeze exist; preserve the superseded scan."
+    },
+    {
+      "id": "S5F8-STALE-COST-EVIDENCE-001",
+      "severity": "LOW",
+      "evidence": ["tests/integration/stage-5-postgresql.test.ts:982-1001", "apps/admin-api/test/m1-routes.test.ts:519-536"],
+      "consequence": "A regression connecting a real stale supplier-cost write to the registered HTTP route could evade separate repository-level and mocked-route tests.",
+      "requiredCorrection": "Add a real PostgreSQL stale supplier-cost write exercised through the registered HTTP route; assert 409 and private/no-store."
+    },
+    {
+      "id": "FINAL13-MATRIX-CITATIONS-001",
+      "severity": "LOW",
+      "evidence": ["docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CORRECTION_MATRIX.json:564,676,690,704", "tests/integration/stage-5-postgresql.test.ts:1215-1426,2643-2687", "packages/backend-core/test/m1/application.test.ts:683-709"],
+      "consequence": "Several frozen matrix citations point to locations that no longer contain the asserted timezone, continuity, normalization, or reparenting qualification.",
+      "requiredCorrection": "Keep FINAL-13 immutable and cite the actual current locations in the FINAL-14 carry-forward/adjudication evidence."
+    }
+  ],
+  "summary": "Independent reviewer verified all 634 freeze rows and the aggregate, current evidence index/baseline, one pinned PASS CI invocation, scan receipt bytes, and preservation of FINAL-10/11/12 failure receipts. NO-GO because current-candidate PostgreSQL execution evidence is missing for critical revision-GUC, lock-version, deadlock/HTTP, and stale-cost composition paths; FINAL-13 post-freeze scan provenance is internally bound to FINAL-11 and says validation/freeze are absent; frozen citation locations are stale. No project files were modified by the reviewer."
+}

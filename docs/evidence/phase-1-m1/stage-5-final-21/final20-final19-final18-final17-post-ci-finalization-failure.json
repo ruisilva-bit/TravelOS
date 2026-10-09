@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-17",
+  "event": "POST_CI_EVIDENCE_INDEX_FINALIZATION_FAILURE",
+  "timestampUtc": "2026-10-08T10:34:27.598Z",
+  "wrapperCommand": "corepack pnpm run evidence:stage5:ci",
+  "wrapperExitCode": 1,
+  "canonicalCi": {
+    "command": "corepack pnpm ci:verify",
+    "invocationCount": 1,
+    "result": "PASS",
+    "exitCode": 0,
+    "startedAtUtc": "2026-10-08T10:31:16.440Z",
+    "finishedAtUtc": "2026-10-08T10:34:27.598Z",
+    "gateCounts": {
+      "started": 27,
+      "passed": 27,
+      "failed": 0
+    },
+    "toolchain": {
+      "node": "v24.19.0",
+      "corepack": "0.35.0",
+      "pnpm": "11.21.0"
+    },
+    "executionReceiptPath": "docs/evidence/phase-1-m1/stage-5-final-17/ci-verify-execution.json",
+    "executionReceiptOriginalSha256": "adfa16042dbf7603ac743f660b49ea1afdb879a1477b7410fed41e25f7a535cc",
+    "logPath": "docs/evidence/phase-1-m1/stage-5-final-17/ci-verify.log",
+    "logBytes": 634727,
+    "logSha256": "72dba7387ff20879533847197bdd7f16bb9358e8f6add2c4fde57cec40e48a92"
+  },
+  "invocationGuardReference": {
+    "path": ".hermes/state/stage5-final17-ci-verify-invocation.json",
+    "sha256": "a6e5d8e23498936691747f56153196e23c375e5521fb13c446cca982fd6cc6fb",
+    "state": "CONSUMED",
+    "invocationCount": 1,
+    "stage6Actions": 0
+  },
+  "preCiFreezeGuardReference": {
+    "path": ".hermes/state/stage5-final17-pre-ci-freeze-guard.json",
+    "sha256": "da7dd5669c95c54073674789a6c786d394b22b344aeb5be3fa6840f46662ae34"
+  },
+  "failure": {
+    "stage": "post-CI evidence index write/verification",
+    "attemptedIndexPath": "docs/evidence/phase-1-m1/stage-5-final-17/EVIDENCE_INDEX.json",
+    "attemptedIndexSha256": "c33a01a4fce38f9c8ffa21e440873f6ac4c097f0ae2f6b18f199206997fc8317",
+    "preservedAttemptCopy": ".hermes/state/stage5-final17-invalid-final-index-attempt.json",
+    "file": "tooling/ci/stage-5-final17-evidence-index.mjs",
+    "line": 264,
+    "message": "verifyStage5Final17EvidenceIndex asserted invocationCount 1 but the writer received the default ciVerify invocationCount 0; the FINAL index write had ciVerify NOT_RUN and verification failed.",
+    "canonicalCiOutcomeUnaffected": true,
+    "ciAuthorizationConsumed": true,
+    "retryCiVerifyForbidden": true
+  },
+  "preservation": {
+    "originalExecutionReceiptUnmodified": true,
+    "ciVerifyLogUnmodified": true,
+    "failedWrapperAttemptPreserved": true
+  },
+  "stage6Actions": 0
+}

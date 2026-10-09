@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-12",
+  "phase": "PRE_CI",
+  "result": "PASS",
+  "ciVerifyInvoked": false,
+  "invocationCount": 0,
+  "checks": [
+    {
+      "name": "toolchain",
+      "result": "PASS"
+    },
+    {
+      "name": "full format:check",
+      "result": "PASS"
+    },
+    {
+      "name": "baseline verifier",
+      "result": "PASS"
+    },
+    {
+      "name": "baseline regression tests",
+      "result": "PASS"
+    },
+    {
+      "name": "source-scope regression tests",
+      "result": "PASS"
+    },
+    {
+      "name": "post-index sensitive-data scan",
+      "result": "PASS"
+    }
+  ],
+  "formatCheck": {
+    "command": "corepack pnpm run format:check",
+    "result": "PASS",
+    "exitCode": 0,
+    "logSha256": "f46f87e51e9512ec94ab5c1c738c42d1c3fde11a2d9e833b09889c5d0f8e655f"
+  },
+  "baselineSha256": "9fdab6bd8c88c33ad492ca97ba294041b8754e4c465b95ef05a4f71e4d21893a",
+  "packageSha256": "fdcca2b04737195409fd1c00fc60c94fb007c1af21931c4a1cf6cfae137ae133",
+  "runnerSha256": "cf972c1347d1cd6c712a79548dcc52047b919b64b7490503833bf8900655e3a4",
+  "final11RejectedCiLogSha256": "6e686ec0cf07bee47a155a5fc167f8ad9e55caa9ac2bb9564b755e90745db109",
+  "final11RejectedIndexSha256": "620c4019206ffa97e8456cdb8e6fb3689d27ab1ae86720db5ccabb7e7269b46a",
+  "stage6Actions": 0
+}

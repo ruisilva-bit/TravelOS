@@ -1,0 +1,398 @@
+{
+  "schemaVersion": 1,
+  "chainAnchor": {
+    "candidate": "FINAL-8",
+    "lifecycleState": "FROZEN_REJECTED",
+    "record": "docs/reviews/phase-1-m1/STAGE_5_FINAL_8_CANDIDATE_FREEZE.md",
+    "expectedArtifacts": [
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_2_CANDIDATE_VALIDATION.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_2_CANDIDATE_FREEZE.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_3_CANDIDATE_VALIDATION.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_3_CANDIDATE_FREEZE.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_4_CANDIDATE_VALIDATION.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_4_CANDIDATE_FREEZE.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_5_CANDIDATE_VALIDATION.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_5_CANDIDATE_FREEZE.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_6_CANDIDATE_VALIDATION.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_6_CANDIDATE_FREEZE.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_7_CANDIDATE_VALIDATION.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_7_CANDIDATE_FREEZE.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_8_CANDIDATE_VALIDATION.md",
+        "requirement": "REQUIRED"
+      },
+      {
+        "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_8_CANDIDATE_FREEZE.md",
+        "requirement": "REQUIRED"
+      }
+    ]
+  },
+  "generations": [
+    {
+      "candidate": "FINAL-9",
+      "lifecycleState": "FROZEN_REJECTED",
+      "predecessor": "FINAL-8",
+      "ciStatus": "PASS",
+      "validationStatus": "CREATED",
+      "freezeStatus": "VERIFIED",
+      "reviewStatus": "NO_GO",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_9_CANDIDATE_VALIDATION.md",
+          "requirement": "REQUIRED"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_9_CANDIDATE_FREEZE.md",
+          "requirement": "REQUIRED",
+          "sha256": "641b05029e8888c529b01fe0e5805d4ae083a46b544bb1bdfcf1756e8126a33a"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-10",
+      "lifecycleState": "CI_FAILED",
+      "predecessor": "FINAL-9",
+      "ciStatus": "FAIL",
+      "validationStatus": "NOT_CREATED",
+      "freezeStatus": "NOT_CREATED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": []
+    },
+    {
+      "candidate": "FINAL-11",
+      "lifecycleState": "CI_FAILED",
+      "predecessor": "FINAL-10",
+      "ciStatus": "FAIL",
+      "validationStatus": "CREATED",
+      "freezeStatus": "RETROSPECTIVE_ONLY",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_11_CANDIDATE_VALIDATION.md",
+          "requirement": "REQUIRED"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_11_CANDIDATE_FREEZE.md",
+          "requirement": "REQUIRED"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-12",
+      "lifecycleState": "CI_FAILED",
+      "predecessor": "FINAL-11",
+      "ciStatus": "FAIL",
+      "validationStatus": "NOT_CREATED",
+      "freezeStatus": "NOT_CREATED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": []
+    },
+    {
+      "candidate": "FINAL-13",
+      "lifecycleState": "FROZEN_REJECTED",
+      "predecessor": "FINAL-12",
+      "ciStatus": "PASS",
+      "validationStatus": "CREATED",
+      "freezeStatus": "VERIFIED",
+      "reviewStatus": "NO_GO",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CANDIDATE_VALIDATION.md",
+          "requirement": "REQUIRED"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CANDIDATE_FREEZE.md",
+          "requirement": "REQUIRED"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-14",
+      "lifecycleState": "FROZEN_REJECTED",
+      "predecessor": "FINAL-13",
+      "ciStatus": "PASS",
+      "validationStatus": "CREATED",
+      "freezeStatus": "VERIFIED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_14_CANDIDATE_VALIDATION.md",
+          "requirement": "REQUIRED"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_14_CANDIDATE_FREEZE.md",
+          "requirement": "REQUIRED"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-15",
+      "lifecycleState": "REJECTED_PRE_CI",
+      "predecessor": "FINAL-14",
+      "ciStatus": "NOT_RUN",
+      "validationStatus": "NOT_CREATED",
+      "freezeStatus": "NOT_CREATED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_15_CANDIDATE_VALIDATION.md",
+          "requirement": "FORBIDDEN"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_15_CANDIDATE_FREEZE.md",
+          "requirement": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-16",
+      "lifecycleState": "REJECTED_PRE_CI",
+      "predecessor": "FINAL-15",
+      "ciStatus": "NOT_RUN",
+      "validationStatus": "NOT_CREATED",
+      "freezeStatus": "NOT_CREATED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_16_CANDIDATE_VALIDATION.md",
+          "requirement": "FORBIDDEN"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_16_CANDIDATE_FREEZE.md",
+          "requirement": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-17",
+      "lifecycleState": "CI_PASSED_PRE_FREEZE",
+      "predecessor": "FINAL-16",
+      "ciStatus": "PASS",
+      "validationStatus": "CREATED",
+      "freezeStatus": "NOT_CREATED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_17_CANDIDATE_VALIDATION.md",
+          "requirement": "REQUIRED"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_17_CANDIDATE_FREEZE.md",
+          "requirement": "REQUIRED",
+          "sha256": "a7e08191a01a36f99d031a6fd935961506f65915d1fa6c32d72839db823e08f0"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-18",
+      "lifecycleState": "REJECTED_PRE_CI",
+      "predecessor": "FINAL-17",
+      "ciStatus": "NOT_RUN",
+      "validationStatus": "NOT_CREATED",
+      "freezeStatus": "NOT_CREATED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_18_CANDIDATE_VALIDATION.md",
+          "requirement": "FORBIDDEN"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_18_CANDIDATE_FREEZE.md",
+          "requirement": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-19",
+      "lifecycleState": "REJECTED_PRE_CI",
+      "predecessor": "FINAL-18",
+      "ciStatus": "NOT_RUN",
+      "validationStatus": "NOT_CREATED",
+      "freezeStatus": "NOT_CREATED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_19_CANDIDATE_VALIDATION.md",
+          "requirement": "FORBIDDEN"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_19_CANDIDATE_FREEZE.md",
+          "requirement": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-20",
+      "lifecycleState": "FROZEN_REJECTED",
+      "predecessor": "FINAL-19",
+      "ciStatus": "PASS",
+      "validationStatus": "CREATED",
+      "freezeStatus": "VERIFIED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_20_CANDIDATE_VALIDATION.md",
+          "requirement": "REQUIRED",
+          "sha256": "3bb32b315298fcbcdab45d20f38f59a5a31401ed4e08c863faf7f61ad9ac11e9"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_20_CANDIDATE_FREEZE.json",
+          "requirement": "REQUIRED",
+          "sha256": "c1f43d4abea1df95bfc12434168ada8a66c3d84161d89afbde7a508fff3af0fa"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-21",
+      "lifecycleState": "PREPARING",
+      "predecessor": "FINAL-20",
+      "ciStatus": "NOT_RUN",
+      "validationStatus": "IN_PROGRESS",
+      "freezeStatus": "IN_PROGRESS",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_21_CANDIDATE_VALIDATION.md",
+          "requirement": "OPTIONAL"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_21_CANDIDATE_FREEZE.json",
+          "requirement": "OPTIONAL"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-22",
+      "lifecycleState": "REJECTED_PRE_CI",
+      "predecessor": "FINAL-21",
+      "ciStatus": "NOT_RUN",
+      "validationStatus": "NOT_CREATED",
+      "freezeStatus": "NOT_CREATED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_22_CANDIDATE_VALIDATION.md",
+          "requirement": "FORBIDDEN"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_22_CANDIDATE_FREEZE.json",
+          "requirement": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-23",
+      "lifecycleState": "FROZEN_REJECTED",
+      "predecessor": "FINAL-22",
+      "ciStatus": "PASS",
+      "validationStatus": "CREATED",
+      "freezeStatus": "VERIFIED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_23_CANDIDATE_VALIDATION.md",
+          "requirement": "REQUIRED",
+          "sha256": "a523215a9cbc543422c976bd41f45dd20d1647d581a9c482ed223feca873edf3"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_23_CANDIDATE_FREEZE.json",
+          "requirement": "REQUIRED",
+          "sha256": "a27ef7cff42f49418cdd6822c4b3004e24315f5ece856523376a69fefd9acc4e"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-24",
+      "lifecycleState": "FROZEN_REJECTED",
+      "predecessor": "FINAL-23",
+      "ciStatus": "PASS",
+      "validationStatus": "CREATED",
+      "freezeStatus": "VERIFIED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_24_CANDIDATE_VALIDATION.md",
+          "requirement": "REQUIRED",
+          "sha256": "42df4cf99c261a4b2763d5ea6e64a1bfebfdd2b3d2e2077482976f10472af002"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_24_CANDIDATE_FREEZE.json",
+          "requirement": "REQUIRED",
+          "sha256": "7333b7e03db98378279fab0452afc363829c9fe832c47e942d342922f510af8c"
+        }
+      ]
+    },
+    {
+      "candidate": "FINAL-25",
+      "lifecycleState": "PREPARING",
+      "predecessor": "FINAL-24",
+      "ciStatus": "NOT_RUN",
+      "validationStatus": "NOT_CREATED",
+      "freezeStatus": "NOT_CREATED",
+      "reviewStatus": "NOT_RUN",
+      "closureStatus": "NOT_CLOSED",
+      "expectedArtifacts": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_25_CANDIDATE_VALIDATION.md",
+          "requirement": "OPTIONAL"
+        },
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_25_CANDIDATE_FREEZE.json",
+          "requirement": "OPTIONAL"
+        }
+      ]
+    }
+  ]
+}

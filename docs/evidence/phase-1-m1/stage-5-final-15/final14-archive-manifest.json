@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-14",
+  "source": "docs/reviews/phase-1-m1/STAGE_5_FINAL_14_CANDIDATE_FREEZE.md",
+  "freezeSha256": "282be00d175690e7e42ab925d09dd601cd7d310648b38b4ca475b1ba2a5b05bf",
+  "rowCount": 734,
+  "archive": "docs/evidence/phase-1-m1/final14-scan-reports/STAGE_5_FINAL_14_FROZEN_SOURCE_SNAPSHOT.tar.gz",
+  "archiveBytes": 2618455,
+  "archiveSha256": "bab884c2013697ca2dc636175c59df6c029c113af49b4bb2b5bf2ee07bcf9466",
+  "verifiedMemberCount": 734,
+  "allMembersMatchedFreeze": true,
+  "stage6Actions": 0
+}

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-17",
+  "event": "REJECTED_BEFORE_DETERMINISTIC_FREEZE",
+  "gitCommit": "27184b598ae2be2eaf35616d4a9b6c2e623ccd42",
+  "ci": {
+    "command": "corepack pnpm ci:verify",
+    "invocationCount": 1,
+    "result": "PASS",
+    "exitCode": 0,
+    "gatesPassed": 27,
+    "gatesFailed": 0,
+    "authorizationConsumed": true,
+    "retryForbidden": true
+  },
+  "failedGate": {
+    "name": "Stage 5 FINAL_CANDIDATE source-scope collection",
+    "result": "FAIL",
+    "source": "tooling/ci/stage-5-source-scope.mjs:539-560,571-590,614-671",
+    "missingHistoricalInputs": [
+      "docs/reviews/phase-1-m1/STAGE_5_FINAL_15_CANDIDATE_VALIDATION.md",
+      "docs/reviews/phase-1-m1/STAGE_5_FINAL_15_CANDIDATE_FREEZE.md",
+      "docs/reviews/phase-1-m1/STAGE_5_FINAL_16_CANDIDATE_VALIDATION.md",
+      "docs/reviews/phase-1-m1/STAGE_5_FINAL_16_CANDIDATE_FREEZE.md"
+    ],
+    "historicalReason": "FINAL-15 was rejected during baseline verification and FINAL-16 was rejected before CI; neither has a candidate validation or candidate freeze. Creating those files now would fabricate historical artifacts.",
+    "otherCoverage": "The collector reported the expected evidence-index set with missing=0 and unexpected=0; it failed only on the four absent historical validation/freeze paths."
+  },
+  "preservedFinal17Artifacts": {
+    "evidenceIndexPath": "docs/evidence/phase-1-m1/stage-5-final-17/EVIDENCE_INDEX.json",
+    "evidenceIndexSha256": "240013b0927a9083f744c48983c619b8aa2379e1f14c995259009acd1169e4e6",
+    "evidenceAggregateSha256": "0dcd6b167b0fb1795c4efd2688c603058f419a932177c7ec3a0bdcdd04bcccd4",
+    "candidateValidationPath": "docs/reviews/phase-1-m1/STAGE_5_FINAL_17_CANDIDATE_VALIDATION.md",
+    "candidateValidationPreFailureSha256": "a42348107dfac33c154945fb0f27bf5cd40934c7614b2c1849c18fa1270916b9",
+    "candidateValidationPreFailureCopy": ".hermes/state/stage5-final17-candidate-validation-pre-scope-failure.md",
+    "candidateFreezePath": "docs/reviews/phase-1-m1/STAGE_5_FINAL_17_CANDIDATE_FREEZE.md",
+    "candidateFreezePlaceholderSha256": "a7e08191a01a36f99d031a6fd935961506f65915d1fa6c32d72839db823e08f0",
+    "candidateFreezeStatus": "PROVISIONAL PLACEHOLDER ONLY; NO VALID FREEZE CREATED",
+    "ciReceiptAndLogUnmodified": true,
+    "finalEvidenceScan": {
+      "result": "PASS",
+      "filesScanned": 1573,
+      "findings": 0,
+      "matchedValuesEmitted": false,
+      "scopeAggregateSha256": "f87b406083c6d49daf8c2d9f73468260041e5e9a7e13865422b569941e2bd1db"
+    }
+  },
+  "disposition": "REJECTED BEFORE FREEZE; no final-candidate security scan or independent review was run; candidate must not be frozen or closed.",
+  "nextCandidate": "FINAL-18",
+  "requiredRemediation": "Correct FINAL_CANDIDATE source coverage so pre-CI rejected generations without validation/freeze artifacts remain represented by their immutable rejection evidence, not fabricated candidate validation/freeze documents. Regenerate baseline and run a fresh one-shot CI for FINAL-18.",
+  "stage6Actions": 0
+}

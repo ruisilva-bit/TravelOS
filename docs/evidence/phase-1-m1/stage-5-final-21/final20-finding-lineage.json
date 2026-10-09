@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "candidate": "FINAL-20",
+  "predecessor": {
+    "candidate": "FINAL-19",
+    "disposition": "REJECTED / PRE-CI EVIDENCE INDEX INCOMPLETE / CI NOT STARTED",
+    "baselineSha256": "a88ff3bf204ec9a56b02f6fbd242061ccf0cf0b85569395835b406c0f7c8fe76",
+    "correctionMatrixPath": "docs/reviews/phase-1-m1/STAGE_5_FINAL_19_CORRECTION_MATRIX.json",
+    "correctionMatrixSha256": "6a18bb31f030cfa03a1ae5ca7e99fa1785566ee7a2223131e1171f3ebd0355b6",
+    "readinessPath": "docs/evidence/phase-1-m1/stage-5-final-19/readiness-preflight.json",
+    "readinessSha256": "0189fe0e57df9f6f08e071e14a095c37c62354a7aa488135b15f44acad4e5828",
+    "failureReceiptPath": ".hermes/state/stage5-final19-preflight-failure-01.json",
+    "failureReceiptSha256": "89664dd1c8a3538ca16badd6b3d1d8e25a40dab4192f00fefa076bc2b625d009",
+    "missingArtifact": "docs/evidence/phase-1-m1/stage-5-final-19/migration-checksums.json",
+    "evidenceIndexCreated": false,
+    "copiedEvidenceArtifactCount": 78,
+    "copiedEvidenceAggregateSha256": "9bfccebe45e804843d364b350324af537348219b0f377650c96954971a18ada5",
+    "ciVerifyInvoked": false,
+    "ciVerifyInvocationCount": 0,
+    "stage6Actions": 0
+  },
+  "findings": {
+    "total": 49,
+    "authorClosed": 0,
+    "pendingIndependent": 49
+  },
+  "correctionMatrix": {
+    "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_20_CORRECTION_MATRIX.json",
+    "bytes": 78808,
+    "sha256": "4d2df960ec341bb7b0604926facb179ebed0fe3eb0d492a3c28cd5357ca1bb25"
+  },
+  "stage6Actions": 0
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "status": "REJECTED_PRESERVED",
+  "candidate": "FINAL-10",
+  "tag": "phase-1-stage-5-final-10-rejected",
+  "tagObject": "8e2a7bc0939edb5d98ec13a740280d1bc1f5c980",
+  "target": "27184b598ae2be2eaf35616d4a9b6c2e623ccd42",
+  "stage6Actions": 0,
+  "authoritativeCi": {
+    "phase": "FINAL",
+    "invocationCount": 1,
+    "command": "corepack pnpm ci:verify",
+    "result": "FAIL",
+    "exitCode": 1,
+    "failedGate": "stage5-security-extension:pre",
+    "startedAtUtc": "2026-10-02T13:53:26.590Z",
+    "finishedAtUtc": "2026-10-02T13:53:28.825Z",
+    "toolchain": {
+      "node": "v24.19.0",
+      "corepack": "0.35.0",
+      "pnpm": "11.21.0"
+    }
+  },
+  "failureProvenance": {
+    "packageSha256AtCi": "3aa9dd1807679cc39fe1801ee83f1d72fd398df45c5a0881e8e49a16a6c07ca1",
+    "staleBaselinePackageSha256": "5682673b28e8e47cd05a6b95af63fcc01370a966a588b308736d2669a3ccdefb",
+    "ciLog": {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/ci-verify.log",
+      "bytes": 1946,
+      "sha256": "511223cac393ae64fb700b6b884cc4c468e74c377ac7502fc20cf53f10db1ad6"
+    },
+    "ciExecution": {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/ci-verify-execution.json",
+      "bytes": 677,
+      "sha256": "09ee0779646e4c300c4408f1d527580d78f13e79220f6319f27c979aa9e5591b"
+    }
+  },
+  "predecessorBaseline": {
+    "path": "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json",
+    "bytes": 3286,
+    "sha256": "a8769309d7708174419e94407d2d5226c6bd72b982856a831f3e7df5dbb27ceb",
+    "packageSha256": "5682673b28e8e47cd05a6b95af63fcc01370a966a588b308736d2669a3ccdefb",
+    "preservedInTag": true
+  },
+  "localOnlyInvocationGuard": {
+    "path": ".hermes/state/stage5-final10-ci-verify-invocation.json",
+    "bytes": 810,
+    "sha256": "ca2a2b7e9c9615c90c0bf87a9b34234ec31f228214d2bc892369e2a26ab001e8",
+    "invocationCount": 1,
+    "result": "FAIL",
+    "committed": false
+  }
+}

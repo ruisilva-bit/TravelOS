@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 3,
+  "candidate": "FINAL-11",
+  "result": "PASS",
+  "command": "corepack pnpm exec vitest run --config tooling/testing/vitest.config.ts --reporter=verbose packages/contracts/test/admin-m1-contracts.test.ts apps/admin-api/test/m1-routes.test.ts apps/admin-api/test/m1-authorization-boundary.test.ts apps/admin-api/test/health-live.test.ts apps/admin-api/test/host-auth-routing-boundary.test.ts apps/admin-api/test/m1-session-resolver.test.ts apps/admin-api/test/auth-bridge.test.ts apps/portal-api/test/health-live.test.ts apps/portal-api/test/host-routing-boundary.test.ts packages/backend-core/test/m1/application.test.ts packages/backend-core/test/m1/shared-kernel.test.ts packages/backend-core/test/agency-organization/agency-bootstrap.test.ts packages/backend-core/test/staff-access/authorization.test.ts apps/admin-api/test/composed-m1-body-parser.test.ts",
+  "exitCode": 0,
+  "toolchain": {
+    "node": "v24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0",
+    "processExecPath": "/home/hermes/.hermes/cache/scratch/travelos-final11-toolchain/node_modules/node/bin/node"
+  },
+  "files": 14,
+  "tests": 64,
+  "stdoutSha256": "24e37d6177c205a90e511a68c9fff10b0cc777fd9cfd90cf0644891a280a8a18",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "redaction": "No passwords, tokens or credential-bearing URLs emitted.",
+  "ct200Actions": 0
+}

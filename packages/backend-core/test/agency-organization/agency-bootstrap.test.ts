@@ -53,12 +53,19 @@ describe("root Agency bootstrap identifiers", () => {
   });
 
   it("binds the bootstrap Owner template to the bounded Stage 5 cost-mutation capability", () => {
-    expect(PERMISSION_REGISTRY_VERSION).toBe(2);
+    expect(PERMISSION_REGISTRY_VERSION).toBe(3);
     expect(permissionDefinitionFor("finance.manage_costs")).toEqual({
       id: "finance.manage_costs",
       allowedScopeKinds: ["AGENCY"],
       allowedAccessLevels: ["ALL"],
     });
     expect(ROOT_AGENCY_OWNER_TEMPLATE.permissionIds).toContain("finance.manage_costs");
+    for (const permissionId of ["staff.view", "finance.view_prices"] as const) {
+      expect(permissionDefinitionFor(permissionId)).toEqual({
+        id: permissionId,
+        allowedScopeKinds: ["AGENCY"],
+        allowedAccessLevels: ["ALL"],
+      });
+    }
   });
 });

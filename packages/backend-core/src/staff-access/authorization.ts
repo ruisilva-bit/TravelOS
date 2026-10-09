@@ -26,6 +26,8 @@ export interface StaffAuthorizationSnapshot {
 }
 
 export interface StaffSessionAuthorizationProof {
+  /** Better Auth Staff session identifier, revalidated against PostgreSQL in each command transaction. */
+  readonly sessionId: string;
   readonly staffPrincipalId: string;
   readonly agencyId: string;
   readonly authorizationEpoch: bigint;

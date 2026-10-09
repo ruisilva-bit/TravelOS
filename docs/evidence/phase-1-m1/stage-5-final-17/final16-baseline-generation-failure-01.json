@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-16",
+  "attempt": 1,
+  "command": "corepack pnpm run evidence:stage5:baseline",
+  "result": "FAILED_BEFORE_ACTIVE_BASELINE_WRITE",
+  "failureClass": "candidate-tooling defect in in-memory semantic baseline verification",
+  "error": "TypeError: assert.equal is not a function",
+  "location": "tooling/ci/verify-stage-5-security-extension-baseline.mjs:386",
+  "activeBaselineSha256AfterFailure": "5346753a67e853838b8132d8521c1cfad52b6825729e5bd1039609290e41dd02",
+  "activeBaselineUnchanged": true,
+  "baselineGenerationReceiptCreated": false,
+  "ciVerifyInvocationCount": 0,
+  "ciAuthorizationConsumed": false,
+  "stage6Actions": 0,
+  "diagnosis": "The shared verifier defines a local assert(condition, message) helper but the FINAL-16 predecessor-integrity branch incorrectly calls assert.equal. The semantic verifier fails before writing the active manifest."
+}

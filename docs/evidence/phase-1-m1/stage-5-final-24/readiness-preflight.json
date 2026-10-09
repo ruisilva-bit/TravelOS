@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-24",
+  "predecessor": "FINAL-23",
+  "result": "PASS",
+  "ciConsumed": "NO",
+  "ciVerifyCommand": "corepack pnpm ci:verify",
+  "gitHead": "27184b598ae2be2eaf35616d4a9b6c2e623ccd42",
+  "toolchain": {
+    "node": "v24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0",
+    "nodeExecutable": "/home/hermes/.hermes/cache/scratch/travelos-final24-toolchain/node_modules/node/bin/node"
+  },
+  "packageJsonSha256": "7a0ef727ca8335ddef09d75cf493b81900ca6339dfc947764630e56cbc0d178b",
+  "candidateManifestSha256": "0dc52823383e89f9215514693d38c6e752133474cfc9f1e79d3a390218cfcf4d",
+  "runnerSha256": "695731f1473d5d26894aeb2b68227ff13664a5e06ba93a13ffed56077f8f4955",
+  "verifierSha256": "b0fc4f7e8c9a00bc6f563769b6a3265d313e2a5f3a3d7ff7c80e5afa747a5713",
+  "baselineSha256": "76bd12114eafa7d0b12dff00b0988eb15046a82887a5a31c194720c083682284",
+  "baselineReceiptSha256": "084b48ff6ecc0daa4a862b1c84d75af35d3d4a6c7d74af8978f04264388179bb",
+  "migrationHead": {
+    "file": "0010_stage5_temporal_persistence_parity.cjs",
+    "sha256": "d7961fbf06cda8b222fd1219de6d9aec85a0205fb1d186e809260d579c598030",
+    "manifestSha256": "ff717238a33a7f83ee5668fce56ea7d09a4a9a446075c0ef7500f14a65c6c522"
+  },
+  "gateCount": 17,
+  "gates": [
+    {
+      "name": "protected-baseline",
+      "command": "corepack pnpm run protected-baseline:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 1010,
+      "outputSha256": "b8d8b676303beb67ceedb96a0bf06417aeb5dd3cbf3d33c5fc30ddc498f1031c",
+      "error": null
+    },
+    {
+      "name": "candidate-coherence",
+      "command": "corepack pnpm run stage5:candidate-coherence:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 66064,
+      "outputSha256": "6dd0feaadb87d9f22f6a8ebe387242cc8140b2b7a2bc09a5e0902191388f374d",
+      "error": null
+    },
+    {
+      "name": "stage5-security-extension-pre",
+      "command": "corepack pnpm run stage5:security-extension:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 2916,
+      "outputSha256": "8b5cdd5c60908fb6cba5255fd1e760122cf7f7986f32818b3276266d10543d4c",
+      "error": null
+    },
+    {
+      "name": "baseline-verification-regression",
+      "command": "corepack pnpm run test:stage5-security-extension-baseline",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 326,
+      "outputSha256": "ace885594672b1bd47a29b4e3d39d4cfa5191c58983af160a035cd1c327d2e78",
+      "error": null
+    },
+    {
+      "name": "pinned-toolchain",
+      "command": "corepack pnpm run verify:pins",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 982,
+      "outputSha256": "2ef3d57b1938e6c2d1207efd406c7af501353aa12a06b59a4cb210d88a42f11d",
+      "error": null
+    },
+    {
+      "name": "migration-checksums",
+      "command": "corepack pnpm run db:migrations:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 1622,
+      "outputSha256": "7f9d0a5bc97c9473d5fa106dcc4131382e06a7ee6feafd26c61f7eb249969758",
+      "error": null
+    },
+    {
+      "name": "auth-schema",
+      "command": "corepack pnpm run auth:schema:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 346,
+      "outputSha256": "9b0c4a20ccc7f2cb8c9b4932711af0acad3580fa74b224de0b4d69a9878b0390",
+      "error": null
+    },
+    {
+      "name": "lifecycle-policy",
+      "command": "corepack pnpm run test:lifecycle-policy",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 1555,
+      "outputSha256": "a5fdcb4c63805948c80ac6d510f897cd71949b9f8fd4bd8c4bf54dc732b3eec4",
+      "error": null
+    },
+    {
+      "name": "security-scanner-regressions",
+      "command": "corepack pnpm run test:security-scanner",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 1147,
+      "outputSha256": "ffd2512b0b51be65b8114dd782aed7fc5a7f13910818d136d256d09b2dd43523",
+      "error": null
+    },
+    {
+      "name": "architecture",
+      "command": "corepack pnpm run architecture:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 73277,
+      "outputSha256": "b5807330fd5468eb876ee1d6d455005f89f43de4aa81e92b263d2bfd3ce1f20e",
+      "error": null
+    },
+    {
+      "name": "typecheck",
+      "command": "corepack pnpm run typecheck",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 116,
+      "outputSha256": "96f5eb240cd202d7a65114b3b6a39fb54c71a29a4d051bd1c50692f96be1349f",
+      "error": null
+    },
+    {
+      "name": "lint",
+      "command": "corepack pnpm run lint",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 59,
+      "outputSha256": "802937fa94a645dbb185960a85971ffdd310535c810ffc2b45c0488780079091",
+      "error": null
+    },
+    {
+      "name": "format",
+      "command": "corepack pnpm run format:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 1244,
+      "outputSha256": "df223e620c4657cf9f4850108da5c1005567f7e4a65c3f4e99c6464583606453",
+      "error": null
+    },
+    {
+      "name": "focused-tests",
+      "command": "verify indexed focused-test-execution.json and source-bound execution log",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 14608,
+      "outputSha256": "783480f7250101b145ad66c5f8853152eabded2851d3ebab2f252c386017e775",
+      "error": null
+    },
+    {
+      "name": "source-scope-pre-index",
+      "command": "corepack pnpm run test:stage5-source-scope -- --pre-index",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 74241,
+      "outputSha256": "d51c481ca6261622350f77c2d28a9e67d6ab14449e937f7e3cdec3cbcced4242",
+      "error": null
+    },
+    {
+      "name": "postgresql-qualification",
+      "command": "verify indexed postgresql-qualification.json and source-bound execution log",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 11492,
+      "outputSha256": "16b5d48b4598624b023647f77a30a38cc16b35fa8bd9d927586971f7e4681a0e",
+      "error": null
+    },
+    {
+      "name": "git-diff-check",
+      "command": "git diff --check",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputBytes": 0,
+      "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    }
+  ],
+  "stage6Actions": 0
+}

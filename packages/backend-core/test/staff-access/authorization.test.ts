@@ -14,6 +14,7 @@ const request = (
   overrides: Partial<StaffAuthorizationRequest> = {},
 ): StaffAuthorizationRequest => ({
   session: {
+    sessionId: "session-1",
     staffPrincipalId: principalId,
     agencyId,
     authorizationEpoch: 7n,

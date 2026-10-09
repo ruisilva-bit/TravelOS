@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-20",
+  "phase": "PRE_CI",
+  "command": "corepack pnpm run lint",
+  "result": "PASS",
+  "exitCode": 0,
+  "startedAtUtc": "2026-10-08T14:47:52.151Z",
+  "finishedAtUtc": "2026-10-08T14:48:00.531Z",
+  "logBytes": 59,
+  "logSha256": "802937fa94a645dbb185960a85971ffdd310535c810ffc2b45c0488780079091",
+  "stage6Actions": 0
+}

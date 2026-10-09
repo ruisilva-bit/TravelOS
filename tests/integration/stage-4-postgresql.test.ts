@@ -436,6 +436,7 @@ describe.sequential("TravelOS Stage 4 disposable PostgreSQL qualification", () =
     expect(
       authorizeStaffRequest({
         session: {
+          sessionId: ownerSession.sessionId,
           staffPrincipalId: ownerSession.principalId,
           agencyId: ownerSession.agencyId!,
           authorizationEpoch: ownerSession.authorizationEpoch!,
@@ -456,6 +457,7 @@ describe.sequential("TravelOS Stage 4 disposable PostgreSQL qualification", () =
     expect(
       authorizeStaffRequest({
         session: {
+          sessionId: ownerSession.sessionId,
           staffPrincipalId: ownerSession.principalId,
           agencyId: "00000000-0000-7000-8000-000000000099",
           authorizationEpoch: after!.authorizationEpoch,

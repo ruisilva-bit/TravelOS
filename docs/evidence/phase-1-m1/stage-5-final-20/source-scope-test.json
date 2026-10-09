@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-20",
+  "phase": "PRE_CI",
+  "result": "PASS",
+  "command": "node tooling/ci/test-stage-5-source-scope.mjs",
+  "exitCode": 0,
+  "logBytes": 428,
+  "logSha256": "896a39073181de748687046f47e067de543b1a75c85494c658521ce121793d4c",
+  "stage6Actions": 0
+}

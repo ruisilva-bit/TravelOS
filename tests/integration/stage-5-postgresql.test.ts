@@ -16,7 +16,6 @@ import {
   createMoney,
   M1StaffAuthorizationError,
   M1OptimisticConflictError,
-  M1TransactionConflictError,
   PERMISSION_REGISTRY_VERSION,
   TRAVELOS_CANONICAL_TIMEZONE_NAMES,
   type StaffAuthorizationOperationProof,
@@ -304,20 +303,30 @@ const primaryStaffFixture = {
   roleId: randomUUID(),
   membershipId: randomUUID(),
   assignmentId: randomUUID(),
+  sessionId: `stage5-session-${randomUUID()}`,
   email: `stage5-authorization-${randomUUID()}@example.test`,
 };
 
 const seedPrimaryStaffAuthorization = async (): Promise<StaffSessionAuthorizationProof> => {
   await withOwnerTransaction(async (client) => {
     await client.query(
-      `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified")
-       VALUES ($1, 'Stage 5 Authorization Fixture', $2, true)`,
+      `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified", "twoFactorEnabled")
+       VALUES ($1, 'Stage 5 Authorization Fixture', $2, true, true)`,
       [primaryStaffFixture.staffPrincipalId, primaryStaffFixture.email],
     );
     await client.query(
       `INSERT INTO "staff_access"."staff_membership" ("id", "agencyId", "staffPrincipalId", "state")
        VALUES ($1::uuid, $2::uuid, $3, 'ACTIVE')`,
       [primaryStaffFixture.membershipId, agencyId, primaryStaffFixture.staffPrincipalId],
+    );
+    await client.query(
+      `INSERT INTO "staff_access"."staff_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+       VALUES ($1, now() + interval '1 hour', $2, now(), $3)`,
+      [
+        primaryStaffFixture.sessionId,
+        `token-${randomUUID()}`,
+        primaryStaffFixture.staffPrincipalId,
+      ],
     );
     await client.query(
       `INSERT INTO "staff_access"."role" ("id", "agencyId", "displayName")
@@ -341,6 +350,14 @@ const seedPrimaryStaffAuthorization = async (): Promise<StaffSessionAuthorizatio
         primaryStaffFixture.roleId,
       ],
     );
+    await client.query(
+      `INSERT INTO "staff_access"."staff_session_context"
+         ("sessionId", "staffPrincipalId", "agencyId", "authorizationEpoch", "recentMfaVerifiedAt")
+       SELECT $1, membership."staffPrincipalId", membership."agencyId", membership."authorizationEpoch", NULL
+         FROM "staff_access"."staff_membership" AS membership
+        WHERE membership."id" = $2::uuid`,
+      [primaryStaffFixture.sessionId, primaryStaffFixture.membershipId],
+    );
   });
 
   const snapshot = await staffAccessRepository.getStaffAuthorizationSnapshot(
@@ -349,6 +366,7 @@ const seedPrimaryStaffAuthorization = async (): Promise<StaffSessionAuthorizatio
   );
   if (snapshot === null) throw new Error("The Stage 5 authorization fixture was not readable");
   const session: StaffSessionAuthorizationProof = {
+    sessionId: primaryStaffFixture.sessionId,
     staffPrincipalId: primaryStaffFixture.staffPrincipalId,
     agencyId,
     authorizationEpoch: snapshot.authorizationEpoch,
@@ -676,6 +694,8 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const staffPrincipalId = randomUUID();
     const rootMembershipId = randomUUID();
     const secondMembershipId = randomUUID();
+    const rootSessionId = `stage5-root-session-${randomUUID()}`;
+    const secondSessionId = `stage5-second-session-${randomUUID()}`;
     const rootRoleId = randomUUID();
     const secondRoleId = randomUUID();
     const rootAssignmentId = randomUUID();
@@ -693,14 +713,26 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           [secondAgencyId, `stage5-multi-agency-${secondAgencyId}`, `stage5-${secondAgencyId}`],
         );
         await client.query(
-          `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified")
-           VALUES ($1, $2, $3, true)`,
+          `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified", "twoFactorEnabled")
+           VALUES ($1, $2, $3, true, true)`,
           [staffPrincipalId, "Stage 5 Multi-Agency Fixture", syntheticEmailAddress],
         );
         await client.query(
           `INSERT INTO "staff_access"."staff_membership" ("id", "agencyId", "staffPrincipalId", "state")
            VALUES ($1::uuid, $2::uuid, $3, 'ACTIVE'), ($4::uuid, $5::uuid, $3, 'ACTIVE')`,
           [rootMembershipId, agencyId, staffPrincipalId, secondMembershipId, secondAgencyId],
+        );
+        await client.query(
+          `INSERT INTO "staff_access"."staff_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+           VALUES ($1, now() + interval '1 hour', $2, now(), $4),
+                  ($3, now() + interval '1 hour', $5, now(), $4)`,
+          [
+            rootSessionId,
+            `token-${randomUUID()}`,
+            secondSessionId,
+            staffPrincipalId,
+            `token-${randomUUID()}`,
+          ],
         );
         await client.query(
           `INSERT INTO "staff_access"."role" ("id", "agencyId", "displayName")
@@ -736,6 +768,17 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
             secondRoleId,
           ],
         );
+        await client.query(
+          `INSERT INTO "staff_access"."staff_session_context"
+             ("sessionId", "staffPrincipalId", "agencyId", "authorizationEpoch", "recentMfaVerifiedAt")
+           SELECT session.id, membership."staffPrincipalId", membership."agencyId", membership."authorizationEpoch", NULL
+             FROM (VALUES ($1::text, $2::uuid), ($3::text, $4::uuid)) AS sessions(id, "agencyId")
+             JOIN "staff_access"."staff_session" AS session ON session."id" = sessions.id
+             JOIN "staff_access"."staff_membership" AS membership
+               ON membership."staffPrincipalId" = session."userId"
+              AND membership."agencyId" = sessions."agencyId"`,
+          [rootSessionId, agencyId, secondSessionId, secondAgencyId],
+        );
       });
       syntheticTopologyCreated = true;
 
@@ -764,6 +807,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       const nowEpochMs = Date.now();
       const rootAuthorization: StaffAuthorizationOperationProof = {
         session: {
+          sessionId: rootSessionId,
           staffPrincipalId,
           agencyId,
           authorizationEpoch: rootSnapshot!.authorizationEpoch,
@@ -775,6 +819,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       };
       const secondAuthorization: StaffAuthorizationOperationProof = {
         session: {
+          sessionId: secondSessionId,
           staffPrincipalId,
           agencyId: secondAgencyId,
           authorizationEpoch: secondSnapshot!.authorizationEpoch,
@@ -807,6 +852,10 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
             `DELETE FROM "staff_access"."role_assignment" WHERE "id" IN ($1::uuid, $2::uuid)`,
             [rootAssignmentId, secondAssignmentId],
           );
+          await client.query(`DELETE FROM "staff_access"."staff_session" WHERE "id" IN ($1, $2)`, [
+            rootSessionId,
+            secondSessionId,
+          ]);
           await client.query(
             `DELETE FROM "staff_access"."staff_membership" WHERE "id" IN ($1::uuid, $2::uuid)`,
             [rootMembershipId, secondMembershipId],
@@ -903,6 +952,14 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
             "The restored Staff authorization fixture was not readable",
           );
         } else {
+          await withOwnerTransaction(async (client) => {
+            await client.query(
+              `UPDATE "staff_access"."staff_session_context"
+                  SET "authorizationEpoch" = $1::bigint
+                WHERE "sessionId" = $2`,
+              [refreshedSnapshot.authorizationEpoch.toString(), session.sessionId],
+            );
+          });
           staffSessions.set(agencyId, {
             ...session,
             authorizationEpoch: refreshedSnapshot.authorizationEpoch,
@@ -921,6 +978,61 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     if (after === null) throw new Error("The Trip disappeared after authorization revalidation");
     expect(after.trip.workspaceRevision).toBe(before.trip.workspaceRevision);
     expect(primaryAccommodation(after)).toEqual(currentAccommodation);
+  });
+
+  it("rejects fabricated Staff session metadata at the database boundary before creating rows", async () => {
+    const input = baseInput();
+    const tripTitle = `Rejected forged session ${randomUUID()}`;
+    const forgedAuthorization = authorizationFor(agencyId, M1_CREATE_PERMISSION_IDS);
+    const unbackedAuthorization: StaffAuthorizationOperationProof = {
+      ...forgedAuthorization,
+      session: {
+        ...forgedAuthorization.session,
+        sessionId: `nonexistent-${randomUUID()}`,
+        expiresAtEpochMs: Number.MAX_SAFE_INTEGER,
+        recentMfaVerifiedAtEpochMs: Date.now(),
+      },
+    };
+
+    await expect(
+      createM1TripSliceWithAuthorization(
+        repository,
+        { ...input, trip: { ...input.trip, title: tripTitle } },
+        unbackedAuthorization,
+      ),
+    ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
+
+    const rows = await queryAsOwner<{ readonly count: string }>(
+      `SELECT count(*)::text AS "count" FROM "trip_ops"."trip" WHERE "title" = '${tripTitle}'`,
+    );
+    expect(rows).toEqual([{ count: "0" }]);
+  });
+
+  it("rejects caller-selected weak permissions at the repository boundary before mutation", async () => {
+    const before = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    if (before === null)
+      throw new Error("The authorized Trip is unavailable before weak-permission probe");
+    const accommodation = primaryAccommodation(before);
+    const weakAuthorization = authorizationFor(agencyId, ["trip.view"]);
+
+    await expect(
+      repository.updateAccommodation(
+        {
+          agencyId,
+          tripId: before.trip.id,
+          itemId: accommodation.id,
+          expectedLockVersion: accommodation.lockVersion,
+          title: "Must not persist under read-only permission",
+          description: "Repository policy must require trip.edit",
+        },
+        weakAuthorization,
+      ),
+    ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
+
+    const after = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    if (after === null) throw new Error("The Trip disappeared after weak-permission rejection");
+    expect(after.trip.workspaceRevision).toBe(before.trip.workspaceRevision);
+    expect(primaryAccommodation(after)).toEqual(accommodation);
   });
 
   it("increments once per committed relevant transaction and returns typed conflicts for stale and racing writes", async () => {
@@ -1898,94 +2010,74 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     }
   });
 
-  it("maps a real PostgreSQL deadlock SQLSTATE 40P01 through repository and HTTP as an M1 transaction conflict", async () => {
-    const predecessor = upgradedSlice;
-    if (predecessor === null || predecessor.trip.id === slice.trip.id) {
-      throw new Error("Two distinct Trip rows are required for the deadlock fixture");
-    }
-    const firstClient = await clientFor("travelos_migrator");
-    const secondClient = await clientFor("travelos_migrator");
-    let firstWaitError: unknown = null;
-    let deadlockError: unknown = null;
-    let firstWait: Promise<void> | null = null;
+  it("maps a real repository PostgreSQL deadlock SQLSTATE 40P01 through the registered Admin HTTP route", async () => {
+    const current = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    if (current === null) throw new Error("The deadlock Trip fixture is unavailable");
+    const cost = primarySupplierCost(current);
+    const reservation = primaryReservation(current);
+    const session = staffSessions.get(agencyId);
+    if (session === undefined)
+      throw new Error("The deadlock fixture requires an active Staff session");
+    const activePersistence = persistence;
+    if (activePersistence === null) throw new Error("The PostgreSQL persistence is unavailable");
+
+    const blockerClient = await clientFor("travelos_migrator");
+    const observerClient = await clientFor("travelos_migrator");
+    const dummySessionIds = Array.from({ length: 64 }, () => `deadlock-${randomUUID()}`);
+    let application: Awaited<ReturnType<typeof createAdminApi>> | null = null;
+    let requestCompletion: Promise<void> | null = null;
+    let requestError: unknown;
+    let responseStatus: number | undefined;
+    let responseBody: unknown;
+    let responseCacheControl: string | undefined;
+    let routeSqlState: string | undefined;
+    let blockerSqlState: string | undefined;
+    let observedRouteBlocking = false;
+
     try {
-      await Promise.all([
-        firstClient.query('SET ROLE "travelos_owner"'),
-        secondClient.query('SET ROLE "travelos_owner"'),
-      ]);
-      await Promise.all([firstClient.query("BEGIN"), secondClient.query("BEGIN")]);
-      await firstClient.query(
-        `SELECT "id" FROM "trip_ops"."trip" WHERE "id" = $1::uuid FOR UPDATE`,
-        [slice.trip.id],
+      await blockerClient.query('SET ROLE "travelos_owner"');
+      await blockerClient.query("BEGIN");
+      await blockerClient.query(
+        `INSERT INTO "staff_access"."staff_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+         SELECT dummy."sessionId", now() + interval '1 hour', 'deadlock-token-' || dummy."sessionId", now(), $1
+           FROM unnest($2::text[]) AS dummy("sessionId")`,
+        [primaryStaffFixture.staffPrincipalId, dummySessionIds],
       );
-      await secondClient.query(
-        `SELECT "id" FROM "trip_ops"."trip" WHERE "id" = $1::uuid FOR UPDATE`,
-        [predecessor.trip.id],
+      await blockerClient.query(
+        `SELECT "id" FROM "staff_access"."staff_session" WHERE "id" = ANY($1::text[]) FOR UPDATE`,
+        [dummySessionIds],
       );
-      const firstPid = Number(
-        (await firstClient.query<{ readonly pid: number }>("SELECT pg_backend_pid() AS pid"))
+      await blockerClient.query(
+        `SELECT "id" FROM "staff_access"."staff_membership"
+          WHERE "agencyId" = $1::uuid AND "staffPrincipalId" = $2 FOR UPDATE`,
+        [agencyId, session.staffPrincipalId],
+      );
+      const blockerPid = Number(
+        (await blockerClient.query<{ readonly pid: number }>("SELECT pg_backend_pid() AS pid"))
           .rows[0]?.pid,
       );
-      firstWait = firstClient
-        .query(`SELECT "id" FROM "trip_ops"."trip" WHERE "id" = $1::uuid FOR UPDATE`, [
-          predecessor.trip.id,
-        ])
-        .then(() => undefined)
-        .catch((error: unknown) => {
-          firstWaitError = error;
-        });
-      let observedBlocking = false;
-      for (let attempt = 0; attempt < 200; attempt += 1) {
-        const blocking = await secondClient.query<{ readonly blocked: boolean }>(
-          `SELECT cardinality(pg_blocking_pids($1::integer)) > 0 AS "blocked"`,
-          [firstPid],
-        );
-        if (blocking.rows[0]?.blocked === true) {
-          observedBlocking = true;
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      }
-      expect(observedBlocking).toBe(true);
-      await secondClient
-        .query(`SELECT "id" FROM "trip_ops"."trip" WHERE "id" = $1::uuid FOR UPDATE`, [
-          slice.trip.id,
-        ])
-        .catch((error: unknown) => {
-          deadlockError = error;
-        });
-      await firstWait;
-      const deadlockVictim = deadlockError ?? firstWaitError;
-      expect((deadlockVictim as { readonly code?: string } | null)?.code).toBe("40P01");
-      expect([deadlockError, firstWaitError].filter((error) => error !== null)).toHaveLength(1);
-      expect(mapPostgresMutationError(deadlockVictim)).toBeInstanceOf(M1TransactionConflictError);
-      const deadlockRepository = createM1OperationalSliceRepository({
+
+      const observedPersistence: PostgresPersistence<Record<string, never>> = {
         transaction: {
-          runInTransaction: async () => {
-            throw deadlockVictim;
+          runInTransaction: async (work) => {
+            try {
+              return await activePersistence.transaction.runInTransaction(work);
+            } catch (error) {
+              const code =
+                typeof error === "object" && error !== null && "code" in error
+                  ? (error as { readonly code?: unknown }).code
+                  : undefined;
+              if (code === "40P01") routeSqlState = code;
+              throw error;
+            }
           },
         },
-      } as unknown as Parameters<typeof createM1OperationalSliceRepository>[0]);
-      const deadlockInput = {
-        agencyId,
-        tripId: slice.trip.id,
-        reservationId: primaryReservation(slice).id,
-        expectedLockVersion: 0n,
-        internalNote: "Deadlock mapping",
+        withConnection: activePersistence.withConnection.bind(activePersistence),
+        withTransactionContext: activePersistence.withTransactionContext.bind(activePersistence),
+        poolMetrics: activePersistence.poolMetrics.bind(activePersistence),
+        destroy: activePersistence.destroy.bind(activePersistence),
       };
-      await expect(
-        deadlockRepository.updateInternalSupplierNote(
-          deadlockInput as unknown as Parameters<
-            typeof deadlockRepository.updateInternalSupplierNote
-          >[0],
-          authorizationFor(agencyId, M1_INTERNAL_NOTE_PERMISSION_IDS),
-        ),
-      ).rejects.toBeInstanceOf(M1TransactionConflictError);
-
-      const session = staffSessions.get(agencyId);
-      if (session === undefined) {
-        throw new Error("The deadlock-to-HTTP qualification requires a Staff session fixture");
-      }
+      const deadlockRepository = createM1OperationalSliceRepository(observedPersistence);
       const expectedHost = "admin-stage5-deadlock.example.test";
       const deadlockRealm: AuthRealm = {
         kind: "STAFF",
@@ -1999,7 +2091,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           return null;
         },
       };
-      const deadlockM1Operations = createM1StaffTripOperations({
+      const operations = createM1StaffTripOperations({
         repository: deadlockRepository as unknown as Parameters<
           typeof createM1StaffTripOperations
         >[0]["repository"],
@@ -2010,48 +2102,169 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           },
         },
       });
-      const application = await createAdminApi({
+      application = await createAdminApi({
         expectedHost,
         auth: {
           realm: deadlockRealm,
           policy: { canonicalOrigin: `http://${expectedHost}`, expectedHost },
           staffAccessRepository,
-          m1Operations: deadlockM1Operations as unknown as NonNullable<
+          m1Operations: operations as unknown as NonNullable<
             NonNullable<Parameters<typeof createAdminApi>[0]["auth"]>["m1Operations"]
           >,
         },
       });
-      try {
-        const response = await request(application.getHttpServer())
-          .patch(`/api/admin/reservations/${primaryReservation(slice).id}/internal-note`)
-          .set("Host", expectedHost)
-          .set("Origin", `http://${expectedHost}`)
-          .set("Cookie", "travelos-stage5-deadlock-session=opaque")
-          .send({
-            agencyId,
-            tripId: slice.trip.id,
-            reservationId: primaryReservation(slice).id,
-            expectedLockVersion: "0",
-            internalNote: "Deadlock mapping",
-          })
-          .expect(409);
-        expect(response.body).toEqual({ error: "transaction_conflict" });
-        expect(response.headers["cache-control"]).toBe("private, no-store");
-      } finally {
-        await application.close();
+
+      requestCompletion = request(application.getHttpServer())
+        .patch(`/api/admin/reservations/${reservation.id}/internal-note`)
+        .set("Host", expectedHost)
+        .set("Origin", `http://${expectedHost}`)
+        .set("Cookie", "travelos-stage5-deadlock-session=opaque")
+        .send({
+          agencyId,
+          tripId: current.trip.id,
+          reservationId: reservation.id,
+          expectedLockVersion: cost.lockVersion.toString(),
+          internalNote: "Real PostgreSQL deadlock qualification",
+        })
+        .then((response) => {
+          responseStatus = response.status;
+          responseBody = response.body;
+          responseCacheControl = response.headers["cache-control"];
+        })
+        .catch((error: unknown) => {
+          requestError = error;
+        });
+
+      for (let attempt = 0; attempt < 200; attempt += 1) {
+        const blocked = await observerClient.query<{ readonly pid: number }>(
+          `SELECT activity.pid::integer AS "pid"
+             FROM pg_catalog.pg_stat_activity AS activity
+            WHERE $1::integer = ANY(pg_catalog.pg_blocking_pids(activity.pid))`,
+          [blockerPid],
+        );
+        if (blocked.rows.length > 0) {
+          observedRouteBlocking = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
-      if (firstWaitError !== null) {
-        await secondClient.query("COMMIT");
-      } else {
-        await firstClient.query("COMMIT");
-      }
+      expect(
+        observedRouteBlocking,
+        `Admin request did not wait on the blocker; status=${String(responseStatus)}, body=${JSON.stringify(responseBody)}, requestError=${String(requestError)}`,
+      ).toBe(true);
+
+      await blockerClient
+        .query(`SELECT "id" FROM "staff_access"."staff_session" WHERE "id" = $1 FOR UPDATE`, [
+          session.sessionId,
+        ])
+        .catch((error: unknown) => {
+          const code =
+            typeof error === "object" && error !== null && "code" in error
+              ? (error as { readonly code?: unknown }).code
+              : undefined;
+          if (code === "40P01") blockerSqlState = code;
+        });
+
+      if (requestCompletion !== null) await requestCompletion;
+      expect(blockerSqlState).not.toBe("40P01");
+      expect(routeSqlState).toBe("40P01");
+      expect(requestError).toBeUndefined();
+      expect(responseStatus).toBe(409);
+      expect(responseBody).toEqual({ error: "transaction_conflict" });
+      expect(responseCacheControl).toBe("private, no-store");
+      await blockerClient.query("ROLLBACK");
+
+      const after = await readM1TripSlice(repository, agencyId, current.trip.id);
+      if (after === null) throw new Error("The Trip disappeared after deadlock rollback");
+      expect(after.trip.workspaceRevision).toBe(current.trip.workspaceRevision);
+      expect(primarySupplierCost(after)).toEqual(cost);
     } finally {
-      await firstClient.query("ROLLBACK").catch(() => undefined);
-      await secondClient.query("ROLLBACK").catch(() => undefined);
-      await firstWait;
-      await firstClient.end();
-      await secondClient.end();
+      await blockerClient.query("ROLLBACK").catch(() => undefined);
+      if (requestCompletion !== null) await requestCompletion.catch(() => undefined);
+      await application?.close();
+      await observerClient.end();
+      await blockerClient.end();
     }
+  });
+
+  it("maps a real stale supplier-cost compare-and-swap through the registered Admin HTTP route", async () => {
+    const input = baseInput();
+    const seeded = await createM1TripSlice(repository, {
+      ...input,
+      trip: { ...input.trip, title: "Real stale supplier-cost HTTP qualification" },
+    });
+    const current = await updateM1InternalSupplierNote(repository, {
+      agencyId,
+      tripId: seeded.trip.id,
+      reservationId: primaryReservation(seeded).id,
+      expectedLockVersion: primarySupplierCost(seeded).lockVersion,
+      internalNote: "Current supplier-cost note",
+    });
+    const session = staffSessions.get(agencyId);
+    if (session === undefined) {
+      throw new Error(
+        "The stale supplier-cost HTTP qualification requires a Staff session fixture",
+      );
+    }
+    const expectedHost = "admin-stage5-stale-cost.example.test";
+    const staleCostRealm: AuthRealm = {
+      kind: "STAFF",
+      basePath: STAFF_AUTH_BASE_PATH,
+      cookieName: "travelos-stage5-stale-cost-session",
+      secureTransportRequired: false,
+      async handle() {
+        return new Response(null, { status: 404 });
+      },
+      async getServerSession() {
+        return null;
+      },
+    };
+    const operations = createM1StaffTripOperations({
+      repository: repository as unknown as Parameters<
+        typeof createM1StaffTripOperations
+      >[0]["repository"],
+      authorizationRepository: staffAccessRepository,
+      sessionResolver: {
+        async resolveStaffSession() {
+          return session;
+        },
+      },
+    });
+    const application = await createAdminApi({
+      expectedHost,
+      auth: {
+        realm: staleCostRealm,
+        policy: { canonicalOrigin: `http://${expectedHost}`, expectedHost },
+        staffAccessRepository,
+        m1Operations: operations as unknown as NonNullable<
+          NonNullable<Parameters<typeof createAdminApi>[0]["auth"]>["m1Operations"]
+        >,
+      },
+    });
+    try {
+      const response = await request(application.getHttpServer())
+        .patch(`/api/admin/reservations/${primaryReservation(current).id}/internal-note`)
+        .set("Host", expectedHost)
+        .set("Origin", `http://${expectedHost}`)
+        .set("Cookie", "travelos-stage5-stale-cost-session=opaque")
+        .send({
+          agencyId,
+          tripId: current.trip.id,
+          reservationId: primaryReservation(current).id,
+          expectedLockVersion: primarySupplierCost(seeded).lockVersion.toString(),
+          internalNote: "Stale supplier-cost note must not persist",
+        })
+        .expect(409);
+      expect(response.body).toEqual({ error: "optimistic_conflict" });
+      expect(response.headers["cache-control"]).toBe("private, no-store");
+    } finally {
+      await application.close();
+    }
+    const after = await readM1TripSlice(repository, agencyId, current.trip.id);
+    if (after === null) throw new Error("The stale supplier-cost HTTP fixture disappeared");
+    expect(primarySupplierCost(after).lockVersion).toBe(primarySupplierCost(current).lockVersion);
+    expect(primarySupplierCost(after).internalNote).toBe("Current supplier-cost note");
+    expect(after.trip.workspaceRevision).toBe(current.trip.workspaceRevision);
   });
 
   it("increments both workspace revisions when a dependency-free reservation moves between trips", async () => {
@@ -2800,6 +3013,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const nowEpochMs = Date.now();
     const unassignedAgencyAuthorization: StaffAuthorizationOperationProof = {
       session: {
+        sessionId: primaryStaffFixture.sessionId,
         staffPrincipalId: primaryStaffFixture.staffPrincipalId,
         agencyId: otherAgency,
         authorizationEpoch: 1n,

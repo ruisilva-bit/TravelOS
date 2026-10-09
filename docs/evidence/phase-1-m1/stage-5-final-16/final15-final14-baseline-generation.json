@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-14",
+  "result": "PASS",
+  "generationOrder": [
+    "FINAL-14 runner/script references finalized",
+    "package.json finalized",
+    "candidate-specific tooling/configuration finalized",
+    "Phase 1 baseline computed and written",
+    "baseline verified against current protected bytes"
+  ],
+  "previousBaselineSha256": "2fb65b6fa0d14875f9c756496f75b2b9fed3a446409295f5bdff46e5deae70cb",
+  "baselineSha256": "a93a9b37ffa6923b7e06a66411551b3ce4f81cbefbb6ec5e37454a03327497d8",
+  "baselineBytes": 11474,
+  "protectedPathCount": 10,
+  "permittedDeltaPaths": [
+    "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
+    "package.json"
+  ],
+  "packageJsonSha256": "2fb980804df0328c69fe7641d76c50daf7f460e7feb9121baee26c13123da595",
+  "runnerSha256": "37aba1f952e7f20230126c35e1e595a3668419c43635ede31117ca25db40686c",
+  "final13ReviewNoGoSha256": "f800f37a60a0e83268b5ee22bf32e466cbd1c6168610eca508a7ea434481a0c5",
+  "toolchain": {
+    "node": "v24.19.0"
+  },
+  "stage6Actions": 0
+}

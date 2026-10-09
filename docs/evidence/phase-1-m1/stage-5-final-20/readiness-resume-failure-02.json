@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-20",
+  "attempt": 2,
+  "phase": "POST_INDEX_SOURCE_SCAN",
+  "result": "FAILED_RESUMABLE",
+  "command": "node tooling/ci/stage-5-final20-readiness-preflight.mjs --resume",
+  "failure": {
+    "gate": "indexed source scan",
+    "exitCode": 1,
+    "assertion": "FINAL-20 scan provenance requires scanReport.result === PASS",
+    "observedResult": "FAIL",
+    "finding": {
+      "file": "tooling/ci/test-stage-5-working-tree-snapshot.mjs",
+      "rule": "email-address",
+      "line": 14
+    },
+    "cause": "Synthetic Git fixture email was not in the scanner allowlist. The test fixture will be changed to a non-email identity string."
+  },
+  "preservedPreResumeIndexSha256": "504793328e5c65474cadf34aeea003e27b2b9e5f56a81487bfd8526676a057ab",
+  "preservedResumeIndex": {
+    "path": "docs/evidence/phase-1-m1/stage-5-final-20/EVIDENCE_INDEX.json",
+    "sha256": "82c5e3bac49e7e93b7b701afe03a06a0f0550669029b4e19c26e5a36f51703a9",
+    "aggregateSha256": "382870f5d08eb4a0b5b7ca7b1715e4f9d7d6a4a3a9180e9013dadb29cd460921",
+    "artifactCount": 115
+  },
+  "preservedReadinessReportSha256": "cc5fa1a2a0694e37f2d53e3f84df38a70b69bd7c34e1d3e4e7cd951954619ac0",
+  "ciVerifyInvoked": false,
+  "ciVerifyInvocationCount": 0,
+  "stage6Actions": 0
+}

@@ -4,6 +4,7 @@ import {
   createMoney,
   createScheduledLocalDateTime,
   M1OptimisticConflictError,
+  M1_OPERATION_PERMISSION_REQUIREMENTS,
   M1StaffAuthorizationError,
   M1TransactionConflictError,
   isStaffPermissionId,
@@ -13,6 +14,7 @@ import {
   type ScheduledLocalDateTime,
   type CreateM1TripSliceInput,
   type StaffAuthorizationOperationProof,
+  type StaffPermissionId,
   type UpdateAccommodationInput,
   type UpdateInternalNoteInput,
 } from "@travelos/backend-core";
@@ -28,21 +30,19 @@ const assertStaffAuthorizationInTransaction = async (
   database: Kysely<DatabaseShape>,
   authorization: StaffAuthorizationOperationProof,
   targetAgencyId: OpaqueId,
+  requiredPermissionIds: readonly StaffPermissionId[],
 ): Promise<void> => {
   const session = authorization?.session;
   if (
     typeof session !== "object" ||
     session === null ||
+    typeof session.sessionId !== "string" ||
+    session.sessionId.length === 0 ||
     typeof session.staffPrincipalId !== "string" ||
     session.staffPrincipalId.length === 0 ||
     typeof session.agencyId !== "string" ||
     typeof session.authorizationEpoch !== "bigint" ||
     session.authorizationEpoch < 0n ||
-    typeof session.expiresAtEpochMs !== "number" ||
-    !Number.isFinite(session.expiresAtEpochMs) ||
-    (session.recentMfaVerifiedAtEpochMs !== null &&
-      (typeof session.recentMfaVerifiedAtEpochMs !== "number" ||
-        !Number.isFinite(session.recentMfaVerifiedAtEpochMs))) ||
     !Number.isSafeInteger(authorization.nowEpochMs) ||
     authorization.nowEpochMs < 0 ||
     !Array.isArray(authorization.requiredPermissionIds) ||
@@ -50,6 +50,14 @@ const assertStaffAuthorizationInTransaction = async (
     !authorization.requiredPermissionIds.every(isStaffPermissionId)
   ) {
     throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+  }
+  const suppliedPermissions = new Set(authorization.requiredPermissionIds);
+  if (
+    suppliedPermissions.size !== authorization.requiredPermissionIds.length ||
+    suppliedPermissions.size !== requiredPermissionIds.length ||
+    requiredPermissionIds.some((permissionId) => !suppliedPermissions.has(permissionId))
+  ) {
+    throw new M1StaffAuthorizationError("FORBIDDEN");
   }
 
   let sessionAgencyId: OpaqueId;
@@ -62,14 +70,51 @@ const assertStaffAuthorizationInTransaction = async (
     throw new M1StaffAuthorizationError("FORBIDDEN");
   }
 
+  const liveSession = (
+    await sql<{
+      readonly staffPrincipalId: string;
+      readonly agencyId: string;
+      readonly authorizationEpoch: string;
+      readonly expiresAtEpochMs: number;
+      readonly recentMfaVerifiedAtEpochMs: number | null;
+    }>`
+      SELECT active_session."userId" AS "staffPrincipalId",
+             context."agencyId"::text AS "agencyId",
+             context."authorizationEpoch"::text AS "authorizationEpoch",
+             (EXTRACT(EPOCH FROM active_session."expiresAt") * 1000)::double precision AS "expiresAtEpochMs",
+             (EXTRACT(EPOCH FROM context."recentMfaVerifiedAt") * 1000)::double precision AS "recentMfaVerifiedAtEpochMs"
+        FROM "staff_access"."staff_session" AS active_session
+        JOIN "staff_access"."staff_session_context" AS context
+          ON context."sessionId" = active_session."id"
+         AND context."staffPrincipalId" = active_session."userId"
+       WHERE active_session."id" = ${session.sessionId}
+         AND active_session."userId" = ${session.staffPrincipalId}
+         AND active_session."expiresAt" > clock_timestamp()
+         AND context."agencyId" = ${sessionAgencyId}::uuid
+         AND context."authorizationEpoch" = ${session.authorizationEpoch}
+       FOR SHARE OF active_session, context
+    `.execute(database)
+  ).rows[0];
+  if (liveSession === undefined) {
+    throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+  }
+  const verifiedSession = {
+    sessionId: session.sessionId,
+    staffPrincipalId: liveSession.staffPrincipalId,
+    agencyId: liveSession.agencyId,
+    authorizationEpoch: BigInt(liveSession.authorizationEpoch),
+    expiresAtEpochMs: liveSession.expiresAtEpochMs,
+    recentMfaVerifiedAtEpochMs: liveSession.recentMfaVerifiedAtEpochMs,
+  };
+
   const snapshot = await lockStaffAuthorizationSnapshotInTransaction(
     database,
-    session.staffPrincipalId,
-    sessionAgencyId,
+    verifiedSession.staffPrincipalId,
+    verifiedSession.agencyId,
   );
-  for (const permissionId of authorization.requiredPermissionIds) {
+  for (const permissionId of requiredPermissionIds) {
     const decision = authorizeStaffRequest({
-      session,
+      session: verifiedSession,
       snapshot,
       permissionId,
       target: {
@@ -582,7 +627,12 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
       this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
           await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`.execute(database);
-          await assertStaffAuthorizationInTransaction(database, authorization, input.agencyId);
+          await assertStaffAuthorizationInTransaction(
+            database,
+            authorization,
+            input.agencyId,
+            M1_OPERATION_PERMISSION_REQUIREMENTS.CREATE,
+          );
           const personId = createUuidV7();
           const customerId = createUuidV7();
           const tripId = createUuidV7();
@@ -679,7 +729,12 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
       this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
           await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`.execute(database);
-          await assertStaffAuthorizationInTransaction(database, authorization, agencyId);
+          await assertStaffAuthorizationInTransaction(
+            database,
+            authorization,
+            agencyId,
+            M1_OPERATION_PERMISSION_REQUIREMENTS.READ,
+          );
           return readSlice(database, agencyId, tripId);
         }),
       ),
@@ -694,7 +749,12 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
       return await this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
           await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`.execute(database);
-          await assertStaffAuthorizationInTransaction(database, authorization, input.agencyId);
+          await assertStaffAuthorizationInTransaction(
+            database,
+            authorization,
+            input.agencyId,
+            M1_OPERATION_PERMISSION_REQUIREMENTS.ACCOMMODATION_EDIT,
+          );
           const result = await sql<{ readonly updated: boolean }>`
             SELECT "trip_ops"."cas_update_accommodation_presentation"(
               ${input.agencyId}::uuid,
@@ -725,7 +785,12 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
       return await this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
           await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`.execute(database);
-          await assertStaffAuthorizationInTransaction(database, authorization, input.agencyId);
+          await assertStaffAuthorizationInTransaction(
+            database,
+            authorization,
+            input.agencyId,
+            M1_OPERATION_PERMISSION_REQUIREMENTS.INTERNAL_NOTE_EDIT,
+          );
           const result = await sql<{ readonly updated: boolean }>`
             SELECT "trip_ops"."cas_update_supplier_cost_internal_note"(
               ${input.agencyId}::uuid,

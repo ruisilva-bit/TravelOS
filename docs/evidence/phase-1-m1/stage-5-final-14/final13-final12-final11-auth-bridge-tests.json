@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-11",
+  "result": "PASS",
+  "command": "corepack pnpm exec vitest run --config tooling/testing/vitest.config.ts --reporter=verbose apps/admin-api/test/auth-bridge.test.ts apps/portal-api/test/auth-bridge.test.ts",
+  "exitCode": 0,
+  "stdoutSha256": "f3e2c6933fda442388d4930415c7e689df65062339e01d58060ad2fc32450133",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "outputBytes": 1363,
+  "nodeVersion": "v24.19.0"
+}

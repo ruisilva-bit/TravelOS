@@ -1,0 +1,324 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "candidate": "FINAL-23",
+  "phase": "PRE_CI",
+  "sourceCount": 60,
+  "scopeAggregateSha256": "13ea1d594b90a2492809672a2c419af04faf66f6a73b98b05235bf28f8fba69a",
+  "files": [
+    {
+      "path": "apps/admin-api/src/m1-routes.ts",
+      "bytes": 15009,
+      "sha256": "117cd1278635cc283f9913eaccf736d7db597be2d8bf1901f13f90896fa343f4"
+    },
+    {
+      "path": "apps/admin-api/test/m1-authorization-boundary.test.ts",
+      "bytes": 2285,
+      "sha256": "95da54434c26a4c6741788a7676581bc6a62d24c445f1a3b1da4077d3bf88767"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/current-correction-matrix.json",
+      "bytes": 89561,
+      "sha256": "a24d87b734762a26f31f0229f4cd77313fd51887f76950d4737bc8279e7e92a2"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/final22-baseline-generation.json",
+      "bytes": 4673,
+      "sha256": "8663291470e3146b71ba45c1bd9a123a3e6cd3eba472daf84de3538eb22ac253"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/final22-correction-matrix.json",
+      "bytes": 86843,
+      "sha256": "d62e2d84337c38f0377653c5700d300bbeb675313362a2bc011e3f1842ad3e9a"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/final22-readiness-failure.json",
+      "bytes": 803,
+      "sha256": "b995fd3f9ead2ee330996e92ea7679aa641538c761807fdf80034a1c279b9b67"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/final22-rejection-record.md",
+      "bytes": 1467,
+      "sha256": "6ad36531476155c9071f6e2145094c459cdbe80ddb7ed8884bc8984ddde8a606"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/final22-security-extension-baseline.json",
+      "bytes": 31663,
+      "sha256": "9f797baf2843710ee7bb90d0d714db0749b4eb6a14dad7946f844817e227c63b"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/finding-lineage.json",
+      "bytes": 3006,
+      "sha256": "b2418b5335de93763849e94b4585e882af43965ec772e0e7c41bcc07589cc467"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/focused-test-execution.json",
+      "bytes": 3419,
+      "sha256": "542f918dd44a207043828b646e67c90b8e6b3dfded3e76b370b31ac8543f6b28"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/focused-tests.log",
+      "bytes": 11190,
+      "sha256": "36bb2e5e46b590e94f868042ae503582e4677803a1309c5ed0a959bba6c4e008"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/lifecycle-state.json",
+      "bytes": 384,
+      "sha256": "a15281b4dd234aa96e8cec36c1affeae22caa09864170945eec08d0ad1a974d5"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/postgresql-disposable-cleanup.json",
+      "bytes": 311,
+      "sha256": "fcb09fce5b5e324eae0be6544eb0cf5cb88c60afeab4eb79a8e877bf01702efe"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/postgresql-integration-test-execution.json",
+      "bytes": 457,
+      "sha256": "438c97cb68c752079b0d78bc2ed364d86b11fcf4a5f5ee1fa69727aa6258055c"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/postgresql-integration-tests.log",
+      "bytes": 5871,
+      "sha256": "5bbe177cdb73745f2ea509a873357586ff02dec27c7d1d1e139c60639a3f86cc"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/postgresql-package-build.json",
+      "bytes": 219,
+      "sha256": "349c032ca8c8f513c4a24978eb760c92a11f5c25b41a7fed89abd1ccaa89f3c4"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/postgresql-qualification-execution.json",
+      "bytes": 1028,
+      "sha256": "5066261575caf2e3424d50c0dc063c4e048e3210fbc3aef03ec4b6e0c2d14088"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/postgresql-qualification-runner.log",
+      "bytes": 5924,
+      "sha256": "413540c6797bad5a54d80a55dae2ee8685fb45a584ccd4775fd3b76b49851a69"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/postgresql-qualification.json",
+      "bytes": 5617,
+      "sha256": "7f5cf6b3a413235c0d200aaf687b6adaa594329586d3c2793c0f8b2e9798f505"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/postgresql-runtime.json",
+      "bytes": 292,
+      "sha256": "690483dc28f7f67dac2545f08e60b0793ee5e7b56db9ae397bd91f5947dc7aea"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-23/security-extension-baseline-generation.json",
+      "bytes": 4473,
+      "sha256": "5eac046ef7e91f9e5d60bd9dcdeb79b0c7b1a94bbecc1e41788e6e071f97e96b"
+    },
+    {
+      "path": "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
+      "bytes": 18593,
+      "sha256": "2f51e4bdddcd976d272b58b8448d914337d7dedb90703c14bcc1f2765b883c90"
+    },
+    {
+      "path": "docs/PERMISSIONS.md",
+      "bytes": 10010,
+      "sha256": "ad036b8647f4482bc5e59bff09e5adbf653a4d3ed3994a20cd5b201d104ea1d9"
+    },
+    {
+      "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_23_CORRECTION_MATRIX.json",
+      "bytes": 89561,
+      "sha256": "a24d87b734762a26f31f0229f4cd77313fd51887f76950d4737bc8279e7e92a2"
+    },
+    {
+      "path": "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json",
+      "bytes": 34986,
+      "sha256": "a15d1abd1191ca24d22f6802d06ecf8ad23ae3b89f7aef0f24e0d07001295939"
+    },
+    {
+      "path": "package.json",
+      "bytes": 10103,
+      "sha256": "7a0ef727ca8335ddef09d75cf493b81900ca6339dfc947764630e56cbc0d178b"
+    },
+    {
+      "path": "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+      "bytes": 2229,
+      "sha256": "9c51d90ec28bbd8437ea7389f39372d519f016ce23a82337901419979c1d391c"
+    },
+    {
+      "path": "packages/backend-core/src/index.ts",
+      "bytes": 3384,
+      "sha256": "02b8f62219e5d1cf31a66a883ec361222e4ac2d6e374bac6547d600e757875ee"
+    },
+    {
+      "path": "packages/backend-core/src/modules/trip-operations/application/m1-staff-operations.ts",
+      "bytes": 8658,
+      "sha256": "1f373a6fc31742cb59d174e842de6345d97183e62388e239a33839cc1d9bd82e"
+    },
+    {
+      "path": "packages/backend-core/src/staff-access/permission-registry.ts",
+      "bytes": 3453,
+      "sha256": "7d251514a8692e6ad1df309d1a774f6a4eb55d9a5c888c31e542153320364f98"
+    },
+    {
+      "path": "packages/backend-core/test/agency-organization/agency-bootstrap.test.ts",
+      "bytes": 2338,
+      "sha256": "253f1055fb16443c952f5c272c4e71fa324c14d31662225ba5bbffad80c35ea4"
+    },
+    {
+      "path": "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+      "bytes": 33127,
+      "sha256": "0829cbdd529e5dc60684380665c4a650e8248d3318c5d05a666641e98bfad5e1"
+    },
+    {
+      "path": "tooling/ci/generate-stage-5-current-invocation-guard.mjs",
+      "bytes": 6928,
+      "sha256": "e63899fbd7001bf3c9c14ee5af60ba114a47b962f031bcb99c56b43fc59781ae"
+    },
+    {
+      "path": "tooling/ci/generate-stage-5-current-security-extension-baseline.mjs",
+      "bytes": 9034,
+      "sha256": "74388f28e414f639c01f1d76b320e2ac3019403821b5e37ea12ed48c64ad4102"
+    },
+    {
+      "path": "tooling/ci/prepare-stage-5-current-correction-matrix.mjs",
+      "bytes": 9226,
+      "sha256": "157fc5c4e6854b542d30bb63a47288735ea214e7e0bf0838344dc8b5da1e330e"
+    },
+    {
+      "path": "tooling/ci/prepare-stage-5-current-evidence.mjs",
+      "bytes": 7307,
+      "sha256": "c8040b0de2c45bc9c08b60f7cda4b7038a53140cbbf2a2f4740f552efc4c8ded"
+    },
+    {
+      "path": "tooling/ci/run-stage-5-current-authoritative-ci.mjs",
+      "bytes": 15064,
+      "sha256": "695731f1473d5d26894aeb2b68227ff13664a5e06ba93a13ffed56077f8f4955"
+    },
+    {
+      "path": "tooling/ci/run-stage-5-current-focused.mjs",
+      "bytes": 4149,
+      "sha256": "52a2866af2af9641aece2e2be337931efcf615a908315d81d5de31f800035722"
+    },
+    {
+      "path": "tooling/ci/run-stage-5-current-postgresql-qualification.mjs",
+      "bytes": 7982,
+      "sha256": "9ce9910dd256561cd7ca0e391616c8752a2acca94c1ca45398dca08516c2e6ca"
+    },
+    {
+      "path": "tooling/ci/run-stage-5-current-source-scope.mjs",
+      "bytes": 5255,
+      "sha256": "3e523e66339a567ab387c6ec0f513f0b9b25cd8aea6a7e4284fcf45b284d2c2f"
+    },
+    {
+      "path": "tooling/ci/scan-stage-5-current-source.mjs",
+      "bytes": 5643,
+      "sha256": "dafdc7a1d86a1f510d162190f5a3629ade196bc78d1dc45e2ea02ce31b0fa617"
+    },
+    {
+      "path": "tooling/ci/stage-5-candidate-coherence.mjs",
+      "bytes": 14636,
+      "sha256": "4f735408426c89704831e505d7f455f29d31a4cc1d2fcb5441da77fad69d52ce"
+    },
+    {
+      "path": "tooling/ci/stage-5-current-candidate-freeze.mjs",
+      "bytes": 5582,
+      "sha256": "7eca38e6653afdea3affeeaa5a7715880e00934f959ae37f8d34da13e61ae361"
+    },
+    {
+      "path": "tooling/ci/stage-5-current-candidate.json",
+      "bytes": 8730,
+      "sha256": "9590a20086bd39fce86608b91130955317a9209d54a8ee2946889ea2b442ade2"
+    },
+    {
+      "path": "tooling/ci/stage-5-current-evidence-index.mjs",
+      "bytes": 9340,
+      "sha256": "6507d6101172bea1b1dab100337feed99c5f0bad7be42b79b192bc07d2cf4972"
+    },
+    {
+      "path": "tooling/ci/stage-5-current-finding-lineage.mjs",
+      "bytes": 5517,
+      "sha256": "0706a343c3f69b13fa1bb24bfaa29bf84a2a94bdf9d94a7377bc9772ff7e3b9e"
+    },
+    {
+      "path": "tooling/ci/stage-5-current-readiness-preflight.mjs",
+      "bytes": 11823,
+      "sha256": "d0f5056acef42c7723e2fd58d430378d0c543d0be37521e888d1f7640e5bd367"
+    },
+    {
+      "path": "tooling/ci/stage-5-current-scan-provenance.mjs",
+      "bytes": 4116,
+      "sha256": "bc0f290fdd4d87aa4bd9f2a40c8e71d36dd68cd429d7ebb4f1645d94bffb72b0"
+    },
+    {
+      "path": "tooling/ci/stage-5-generation-lifecycle-ledger.json",
+      "bytes": 11030,
+      "sha256": "490f2d2229fcbc6f63cf34c52a910790c9aeeb2f1e234994a9f8f4f9813cb225"
+    },
+    {
+      "path": "tooling/ci/stage-5-source-scope.mjs",
+      "bytes": 39244,
+      "sha256": "c734cc14736684bfd8da562638a4ac00a464eee7d409caa3e540b6142418e0a7"
+    },
+    {
+      "path": "tooling/ci/test-stage-5-candidate-coherence.mjs",
+      "bytes": 2602,
+      "sha256": "84ae9c2346d530e2e76cfe894ba147875fc1d1dd74355559dea1fdfa2c008d3a"
+    },
+    {
+      "path": "tooling/ci/test-stage-5-current-scan-provenance.mjs",
+      "bytes": 2095,
+      "sha256": "a2a2c8460de34e63b04aa1f586a89337b626ef392b862cefd2ed9808da3abd8e"
+    },
+    {
+      "path": "tooling/ci/test-stage-5-current-security-extension-baseline.mjs",
+      "bytes": 4500,
+      "sha256": "6165459fc9077a120fe800e1ed5867cc16a2ee0ce06c5f7a8e3a2872b5352cd7"
+    },
+    {
+      "path": "tooling/ci/test-stage-5-generation-lifecycle-ledger.mjs",
+      "bytes": 6700,
+      "sha256": "4b842e252cca1c2cb621aa3850a7fe90dd8a7935d6a4a7d31f9f57c827c2cc05"
+    },
+    {
+      "path": "tooling/ci/test-stage-5-source-scope.mjs",
+      "bytes": 23054,
+      "sha256": "5709455af2c1c8ef940b82f6e5b8a2912f619dc709d42157b2896c691c6be9f1"
+    },
+    {
+      "path": "tooling/ci/verify-stage-5-candidate-coherence.mjs",
+      "bytes": 566,
+      "sha256": "514f02eaa23223ce76fd9a50fabb8507c56300cc3fbb307de2d68d0ef598456d"
+    },
+    {
+      "path": "tooling/ci/verify-stage-5-current-security-extension-baseline.mjs",
+      "bytes": 4564,
+      "sha256": "b0fc4f7e8c9a00bc6f563769b6a3265d313e2a5f3a3d7ff7c80e5afa747a5713"
+    },
+    {
+      "path": "tooling/ci/verify-stage-5-security-extension-baseline.mjs",
+      "bytes": 83766,
+      "sha256": "abc55b7489742c4a9c46e47bd636f52d1b517435afc4fb1d4f262e94d0a272cf"
+    },
+    {
+      "path": "tooling/ci/verify.mjs",
+      "bytes": 2016,
+      "sha256": "2c423fa98b661d92983f12ff993cd7d4aad1268c29779391acfef52608107b5e"
+    }
+  ],
+  "findingCount": 0,
+  "allowlistedFindingCount": 0,
+  "findings": [],
+  "exclusions": [
+    "docs/evidence/phase-1-m1/stage-5-final-23/EVIDENCE_INDEX.json",
+    "docs/evidence/phase-1-m1/stage-5-final-23/PRE_CI_EVIDENCE_INDEX.json",
+    "docs/evidence/phase-1-m1/stage-5-final-23/source-security-scan-pre-ci.json",
+    "docs/evidence/phase-1-m1/stage-5-final-23/source-security-scan-final.json",
+    "docs/evidence/phase-1-m1/stage-5-final-23/source-security-scan-final-candidate.json",
+    "docs/evidence/phase-1-m1/stage-5-final-23/readiness-preflight.json",
+    "docs/evidence/phase-1-m1/stage-5-final-23/ci-verify.log",
+    "docs/evidence/phase-1-m1/stage-5-final-23/ci-verify-execution.json"
+  ],
+  "stage6Actions": 0
+}

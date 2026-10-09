@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "serverVersionNumber": 180006,
+  "dataChecksums": "on",
+  "listenAddresses": "127.0.0.1",
+  "bindScope": "loopback-only",
+  "tls": "disabled only inside disposable loopback qualification",
+  "globalHostInstallation": false,
+  "ct200Actions": 0
+}

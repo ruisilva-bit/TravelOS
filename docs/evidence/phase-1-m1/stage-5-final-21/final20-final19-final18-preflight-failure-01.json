@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-18",
+  "result": "REJECTED / PRE-CI FINAL VERIFICATION FAILURE / CI NOT STARTED",
+  "failureClass": "candidate readiness guard self-inclusion",
+  "failure": {
+    "command": "corepack pnpm run evidence:stage5:preflight",
+    "exitCode": 1,
+    "assertion": "verifyStage5Final18Readiness workingTreeState deep equality",
+    "detail": "The pre-CI snapshot was captured before writing stage5-final18-pre-ci-freeze-guard.json, but the final verifier included that newly written file in Git status and the untracked-file manifest. The guard could not verify its own snapshot."
+  },
+  "evidence": {
+    "baselinePath": "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json",
+    "baselineSha256": "be645da572d2b461daabe96fdd173334d7878e387859b6b00fd225c81c8b03fa",
+    "readinessPath": "docs/evidence/phase-1-m1/stage-5-final-18/readiness-preflight.json",
+    "readinessSha256": "000b95c809548d2ad36ff7cbd46f0961d21c9a271a1e3cc3d72a5642244d61bb",
+    "evidenceIndexPath": "docs/evidence/phase-1-m1/stage-5-final-18/EVIDENCE_INDEX.json",
+    "evidenceIndexSha256": "5f68a3838f555de7beb6e35ee6a51e6f9f946b90e6ceb7cceae89d6383be7c13",
+    "failedPreCiGuardPath": ".hermes/state/stage5-final18-pre-ci-freeze-guard.json",
+    "failedPreCiGuardSha256": "ac4a722ed0095b8bfed9a1dba6e70df22a7ffc96ae59a6d0ddc95ef89809e8f5",
+    "preflightLocalStatePath": ".hermes/state/stage5-final18-readiness-preflight.json"
+  },
+  "ciVerifyInvoked": false,
+  "ciVerifyInvocationCount": 0,
+  "ciInvocationGuardExists": false,
+  "stage6Actions": 0,
+  "successorRequired": true,
+  "note": "Do not rewrite FINAL-18 receipts or reuse its failed pre-CI guard. Later guard self-exclusion changes also changed the runner bytes after the FINAL-18 baseline, so the FINAL-18 runner no longer matches its pinned hash."
+}

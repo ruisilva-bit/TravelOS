@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-22",
+  "attempt": "02",
+  "result": "FAIL",
+  "phase": "PRE_CI_READINESS",
+  "failedGate": "format",
+  "failedCommand": "corepack pnpm run format:check",
+  "exitCode": 1,
+  "diagnostic": "Prettier reported tooling/ci/generate-stage-5-current-security-extension-baseline.mjs as unformatted after the candidate baseline was generated.",
+  "baselineSha256": "9f797baf2843710ee7bb90d0d714db0749b4eb6a14dad7946f844817e227c63b",
+  "baselineReceiptSha256": "8663291470e3146b71ba45c1bd9a123a3e6cd3eba472daf84de3538eb22ac253",
+  "ciConsumed": "NO",
+  "stage6Actions": 0,
+  "disposition": "REJECTED_BEFORE_CI",
+  "note": "This is a failure record, not a passed readiness receipt or authorization to run CI. Preserve the attempt-02 baseline and generation receipt."
+}

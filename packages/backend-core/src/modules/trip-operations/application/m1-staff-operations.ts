@@ -60,32 +60,40 @@ export class M1StaffAuthorizationError extends Error {
   }
 }
 
-const M1_COMPOSITE_READ_PERMISSIONS = [
+const M1_COMPOSITE_READ_PERMISSIONS = Object.freeze([
   "customer.view",
   "traveller.view_sensitive",
   "trip.view",
   "reservation.view",
   "finance.view_costs",
-] as const satisfies readonly StaffPermissionId[];
+] as const satisfies readonly StaffPermissionId[]);
 
-const M1_CREATE_PERMISSIONS = [
+const M1_CREATE_PERMISSIONS = Object.freeze([
   ...M1_COMPOSITE_READ_PERMISSIONS,
   "customer.edit",
   "traveller.edit",
   "trip.edit",
   "reservation.edit",
   "finance.manage_costs",
-] as const satisfies readonly StaffPermissionId[];
+] as const satisfies readonly StaffPermissionId[]);
 
-const M1_ACCOMMODATION_EDIT_PERMISSIONS = [
+const M1_ACCOMMODATION_EDIT_PERMISSIONS = Object.freeze([
   ...M1_COMPOSITE_READ_PERMISSIONS,
   "trip.edit",
-] as const satisfies readonly StaffPermissionId[];
+] as const satisfies readonly StaffPermissionId[]);
 
-const M1_INTERNAL_NOTE_EDIT_PERMISSIONS = [
+const M1_INTERNAL_NOTE_EDIT_PERMISSIONS = Object.freeze([
   ...M1_COMPOSITE_READ_PERMISSIONS,
   "finance.manage_costs",
-] as const satisfies readonly StaffPermissionId[];
+] as const satisfies readonly StaffPermissionId[]);
+
+/** Fixed policy per operation; persistence adapters enforce it independently of caller input. */
+export const M1_OPERATION_PERMISSION_REQUIREMENTS = Object.freeze({
+  CREATE: M1_CREATE_PERMISSIONS,
+  READ: M1_COMPOSITE_READ_PERMISSIONS,
+  ACCOMMODATION_EDIT: M1_ACCOMMODATION_EDIT_PERMISSIONS,
+  INTERNAL_NOTE_EDIT: M1_INTERNAL_NOTE_EDIT_PERMISSIONS,
+});
 
 const sessionProofFrom = (value: unknown): StaffSessionAuthorizationProof | null => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
@@ -96,12 +104,15 @@ const sessionProofFrom = (value: unknown): StaffSessionAuthorizationProof | null
     "authorizationEpoch",
     "expiresAtEpochMs",
     "recentMfaVerifiedAtEpochMs",
+    "sessionId",
     "staffPrincipalId",
   ]
     .toSorted()
     .join("\u0000");
   if (actualKeys !== expectedKeys) return null;
   if (
+    typeof record.sessionId !== "string" ||
+    record.sessionId.length === 0 ||
     typeof record.staffPrincipalId !== "string" ||
     record.staffPrincipalId.length === 0 ||
     typeof record.agencyId !== "string" ||
@@ -121,6 +132,7 @@ const sessionProofFrom = (value: unknown): StaffSessionAuthorizationProof | null
     return null;
   }
   return {
+    sessionId: record.sessionId,
     staffPrincipalId: record.staffPrincipalId,
     agencyId: record.agencyId,
     authorizationEpoch: record.authorizationEpoch,

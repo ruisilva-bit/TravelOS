@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-12",
+  "result": "PASS",
+  "previousBaselineSha256": "33aed369ec4346a517a969b60611c32583c69170d53c4c46dbb51c7c343282c7",
+  "baselineSha256": "9fdab6bd8c88c33ad492ca97ba294041b8754e4c465b95ef05a4f71e4d21893a",
+  "baselineBytes": 7507,
+  "protectedPathCount": 10,
+  "permittedDeltaPaths": [
+    "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
+    "package.json"
+  ],
+  "final11RejectedCiLogSha256": "6e686ec0cf07bee47a155a5fc167f8ad9e55caa9ac2bb9564b755e90745db109",
+  "final11RejectedInvocationGuardSha256": "15a3d5fac1a61e1b354c88a53ca870a0a22d898a06c398622f908738bdf2f473",
+  "toolchain": {
+    "node": "v24.19.0"
+  },
+  "stage6Actions": 0
+}

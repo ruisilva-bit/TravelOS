@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-17",
+  "result": "PASS",
+  "generationOrder": [
+    "FINAL-17 runner/script references finalized",
+    "package.json finalized",
+    "candidate-specific tooling/configuration finalized",
+    "in-memory FINAL-17 manifest built from final candidate bytes",
+    "full semantic baseline verifier passed in-memory before the active manifest was touched",
+    "active Phase 1 baseline written once",
+    "read-only verification against the written baseline passed"
+  ],
+  "preWriteVerification": {
+    "result": "PASS",
+    "baselineSha256": "7378975380066e296df1f4617b2771d104a0697e87480f217638bdbe030b1802",
+    "candidate": "FINAL-17"
+  },
+  "previousBaselineSha256": "a9ac910fc6275da9b3c957a6c280fa8eeb4b5bc03a383d935f08dde2662cdab5",
+  "baselineSha256": "7378975380066e296df1f4617b2771d104a0697e87480f217638bdbe030b1802",
+  "baselineBytes": 18952,
+  "protectedPathCount": 12,
+  "permittedDeltaPaths": [
+    "package.json"
+  ],
+  "packageJsonSha256": "04f8da42afd7aa1c6cc093d532662dd9befcad8a5b7ca8b89b88edba7a8c5dda",
+  "runnerSha256": "16cad57999013469cf67f11e8a9bb3a5b0baac2585b83c782255969d38b30009",
+  "predecessorFailure": {
+    "receiptSha256": "febf0eacb4a193eae4a85fc681808549f9f67134e37af67aa021b8d06ded0a99",
+    "logSha256": "74b5bf57c7e3b35e5c68fd63ff36489bfc102fa446f4b6f37bb051ce1ed93176",
+    "preflightReadinessSha256": "fd3c060bba288390aa9dc2e6f125c76a74a7164bdcccdead1c01cf376cdd907b",
+    "evidenceIndexSha256": "dec1584cd914cb28b93bce7566b77c4ca7f549e33c75f73330cc22e767846bc3"
+  },
+  "final16RejectedGeneration": {
+    "candidate": "FINAL-16",
+    "status": "REJECTED / PRE-CI PREFLIGHT FAILURE / CI NOT STARTED",
+    "baselineSha256": "a9ac910fc6275da9b3c957a6c280fa8eeb4b5bc03a383d935f08dde2662cdab5",
+    "evidenceIndexSha256": "dec1584cd914cb28b93bce7566b77c4ca7f549e33c75f73330cc22e767846bc3",
+    "readinessSha256": "fd3c060bba288390aa9dc2e6f125c76a74a7164bdcccdead1c01cf376cdd907b",
+    "failureReceiptSha256": "febf0eacb4a193eae4a85fc681808549f9f67134e37af67aa021b8d06ded0a99",
+    "failureLogSha256": "74b5bf57c7e3b35e5c68fd63ff36489bfc102fa446f4b6f37bb051ce1ed93176",
+    "ciInvocationCount": 0,
+    "authorizationConsumed": false,
+    "authorizationTransferred": false,
+    "stage6Actions": 0
+  },
+  "final15RejectedGeneration": {
+    "candidate": "FINAL-15",
+    "status": "REJECTED / BASELINE VERIFICATION FAILURE / CI NOT STARTED",
+    "failureClass": "candidate-generation / baseline-semantic verification",
+    "failedBaselineSha256": "5346753a67e853838b8132d8521c1cfad52b6825729e5bd1039609290e41dd02",
+    "failureReceiptSha256": "e86d4221ac72da2e5e9823839e3bbfb2962255fde48a7056afc8f256e049a247",
+    "failureLogSha256": "3476f54c927e18b284d1e9e9983cfb37001da22b3b67aeedc323847f75ee8598",
+    "ciInvocationCount": 0,
+    "authorizationConsumed": false,
+    "authorizationTransferred": false,
+    "stage6Actions": 0
+  },
+  "final14ReviewNoGoSha256": "ff696612eb0776ca002b7042522e0f291a71f2fd7968ce787a95ab8afc1b5509",
+  "toolchain": {
+    "node": "v24.19.0"
+  },
+  "stage6Actions": 0
+}

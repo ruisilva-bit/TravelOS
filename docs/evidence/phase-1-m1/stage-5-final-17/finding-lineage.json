@@ -1,0 +1,134 @@
+{
+  "result": "PASS",
+  "candidate": "FINAL-17",
+  "predecessor": {
+    "candidate": "FINAL-14",
+    "indexSha256": "4c82b8f68547c3ec3b00673a9afcfd265b06013f51c01c78145fbe586add6478",
+    "reviewSha256": "ff696612eb0776ca002b7042522e0f291a71f2fd7968ce787a95ab8afc1b5509"
+  },
+  "totalFindingCount": 49,
+  "authorClosedCount": 0,
+  "independentPendingCount": 49,
+  "rejectedFinal15Candidate": {
+    "candidate": "FINAL-15",
+    "status": "REJECTED / BASELINE VERIFICATION FAILURE / CI NOT STARTED",
+    "failureClass": "candidate-generation / baseline-semantic verification",
+    "failedBaselineSha256": "5346753a67e853838b8132d8521c1cfad52b6825729e5bd1039609290e41dd02",
+    "failureReceiptSha256": "e86d4221ac72da2e5e9823839e3bbfb2962255fde48a7056afc8f256e049a247",
+    "failureLogSha256": "3476f54c927e18b284d1e9e9983cfb37001da22b3b67aeedc323847f75ee8598",
+    "ciInvocationCount": 0,
+    "authorizationConsumed": false,
+    "authorizationTransferred": false,
+    "stage6Actions": 0
+  },
+  "rejectedFinal16Candidate": {
+    "candidate": "FINAL-16",
+    "status": "REJECTED / PRE-CI PREFLIGHT FAILURE / CI NOT STARTED",
+    "baselineSha256": "a9ac910fc6275da9b3c957a6c280fa8eeb4b5bc03a383d935f08dde2662cdab5",
+    "evidenceIndexSha256": "dec1584cd914cb28b93bce7566b77c4ca7f549e33c75f73330cc22e767846bc3",
+    "readinessSha256": "fd3c060bba288390aa9dc2e6f125c76a74a7164bdcccdead1c01cf376cdd907b",
+    "failureReceiptSha256": "febf0eacb4a193eae4a85fc681808549f9f67134e37af67aa021b8d06ded0a99",
+    "failureLogSha256": "74b5bf57c7e3b35e5c68fd63ff36489bfc102fa446f4b6f37bb051ce1ed93176",
+    "ciInvocationCount": 0,
+    "authorizationConsumed": false,
+    "authorizationTransferred": false,
+    "stage6Actions": 0
+  },
+  "reconciliation": {
+    "uniqueFindingCount": 49,
+    "evidenceSupportedCorrection": [
+      "S5F7-SOURCE-SCAN-ORDER-001",
+      "S5F8-DEADLOCK-001",
+      "S5F8-LOCKVERSION-001",
+      "S5F8-REVISION-GUC-001",
+      "S5F8-SCAN-PROVENANCE-001",
+      "S5F8-STALE-COST-EVIDENCE-001"
+    ],
+    "open": [
+      "S5F4-INTERNAL-001",
+      "S5F5-WORKSPACE-REVISION-001",
+      "S5F7-APPLICATION-INPUT-COMPLETENESS-001",
+      "S5F7-AUTH-CACHE-001",
+      "S5F7-WORKSPACE-REVISION-MONOTONICITY-001"
+    ],
+    "unverified": [
+      "S5F8-HOST-001",
+      "S5F8-AUTHZ-001",
+      "S5F8-CACHE-PREHANDLER-001",
+      "S5F8-CACHE-OVERRIDE-001",
+      "S5F8-CSRF-001",
+      "S5F8-AUTH-PREFIX-001",
+      "S5F8-AUTH-SCOPE-001",
+      "S5F8-ID-001",
+      "S5F8-RESPONSE-COHERENCE-001",
+      "S5F8-MULTIAGENCY-QUAL-001",
+      "S5F8-TEMPORAL-CONTRACT-001",
+      "S5F8-MONEY-CANON-001",
+      "S5F8-PERMISSION-DOC-001",
+      "S5F8-INPUT-EVIDENCE-001",
+      "S5F4-PRIMARY-001",
+      "S5F4-TIME-001",
+      "S5F4-EVIDENCE-001",
+      "S5F4-QUAL-001",
+      "S5F5-PRIMARY-CARDINALITY-001",
+      "S5F5-TIME-001",
+      "S5F5-PRIMARY-TYPE-001",
+      "S5F5-MONEY-VALIDATION-001",
+      "S5F6-EVIDENCE-PROVENANCE-001",
+      "S5F6-EVIDENCE-COVERAGE-001",
+      "S5F6-TIMEZONE-CONTRACT-PARITY-001",
+      "S5F6-AUTH-REGISTRY-VERSION-001",
+      "S5F6-PRIMARY-CONTINUITY-001",
+      "S5F6-MONEY-NORMALIZATION-001",
+      "S5F6-PRIMARY-REPARENT-QUAL-001",
+      "S5F6-FOCUSED-TOOLCHAIN-ATTRIBUTION-001",
+      "S5F7-PRIMARY-CONTINUITY-CONCURRENCY-001",
+      "S5F7-WORKSPACE-REVISION-CHILD-FIRST-001",
+      "S5F7-TEMPORAL-RANGE-PARITY-001",
+      "S5F7-ADJUDICATION-PROVENANCE-001",
+      "S5F9-SEC-001",
+      "S5F9-DATA-DEADLOCK-HTTP-E2E-001",
+      "S5F9-EVID-CLOSURE-001",
+      "FINAL13-MATRIX-CITATIONS-001"
+    ],
+    "sourceReportedCounts": {
+      "evidenceSupportedCorrection": 6,
+      "open": 5,
+      "unverified": 38
+    },
+    "sourceListedCounts": {
+      "evidenceSupportedCorrection": 6,
+      "open": 5,
+      "unverified": 39
+    },
+    "sourceOverlapIds": [
+      "S5F7-AUTH-CACHE-001"
+    ],
+    "normalizedCounts": {
+      "evidenceSupportedCorrection": 6,
+      "open": 5,
+      "unverified": 38
+    },
+    "normalizedCategoriesAreDisjoint": true,
+    "allFindingsClassified": true
+  },
+  "correctionMatrix": {
+    "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_17_CORRECTION_MATRIX.json",
+    "sha256": "34c9143f66b1fa77dfcca0a6ea784fc3e2d2e09a16524cfc6bfd08185fabab32"
+  },
+  "runner": {
+    "path": "tooling/ci/run-stage-5-final17-authoritative-ci.mjs",
+    "sha256": "16cad57999013469cf67f11e8a9bb3a5b0baac2585b83c782255969d38b30009"
+  },
+  "final14": {
+    "ciLogSha256": "c5bb877222dbfdc5b2a2f46350b116c8f5e1244f181368880c20e36188ccd64a",
+    "ciExecutionSha256": "176a08deff1e4caeca9a7563bca7664f4430b99444a4814a74788196e48d2a9d",
+    "invocationGuardSha256": "e968c7d20df89a807cf489d36cdb998d6e04dc425cdee3b3367a80db38b0bfed"
+  },
+  "qualification": {
+    "result": "PASS",
+    "integrationTestsPassed": 29,
+    "cleanupResult": "PASS"
+  },
+  "stage6Actions": 0
+}

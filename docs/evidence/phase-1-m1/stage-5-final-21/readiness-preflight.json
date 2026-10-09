@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-21",
+  "phase": "PRE_CI",
+  "result": "PASS",
+  "ciVerifyInvoked": false,
+  "ciVerifyInvocations": 0,
+  "expectedCommand": "corepack pnpm ci:verify",
+  "toolchain": {
+    "node": "v24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0",
+    "nodeExecutable": "/home/hermes/.hermes/cache/scratch/travelos-final17-toolchain/node_modules/node/bin/node"
+  },
+  "checks": [
+    {
+      "name": "pinned Node/Corepack/pnpm",
+      "result": "PASS"
+    },
+    {
+      "name": "predecessor finding lineage",
+      "result": "PASS",
+      "findingCount": 49
+    },
+    {
+      "name": "successor security baseline",
+      "result": "PASS"
+    },
+    {
+      "name": "focused tests",
+      "result": "PASS",
+      "files": 14,
+      "tests": 65
+    },
+    {
+      "name": "disposable PostgreSQL",
+      "result": "PASS",
+      "tests": 29
+    },
+    {
+      "schemaVersion": 1,
+      "candidate": "FINAL-21",
+      "phase": "PRE_CI",
+      "command": "corepack pnpm run format:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "startedAtUtc": "2026-10-08T16:42:11.270Z",
+      "finishedAtUtc": "2026-10-08T16:42:23.334Z",
+      "logBytes": 1244,
+      "logSha256": "839dd5a50bda19fa1a8705a17df578ae1db72e8a93aa2c40d09adbd900c7e4ab",
+      "stage6Actions": 0
+    },
+    {
+      "schemaVersion": 1,
+      "candidate": "FINAL-21",
+      "phase": "PRE_CI",
+      "command": "corepack pnpm run lint",
+      "result": "PASS",
+      "exitCode": 0,
+      "startedAtUtc": "2026-10-08T16:42:23.335Z",
+      "finishedAtUtc": "2026-10-08T16:42:41.967Z",
+      "logBytes": 59,
+      "logSha256": "802937fa94a645dbb185960a85971ffdd310535c810ffc2b45c0488780079091",
+      "stage6Actions": 0
+    },
+    {
+      "schemaVersion": 1,
+      "candidate": "FINAL-21",
+      "phase": "PRE_CI",
+      "command": "corepack pnpm run typecheck",
+      "result": "PASS",
+      "exitCode": 0,
+      "startedAtUtc": "2026-10-08T16:42:41.967Z",
+      "finishedAtUtc": "2026-10-08T16:42:56.105Z",
+      "logBytes": 116,
+      "logSha256": "96f5eb240cd202d7a65114b3b6a39fb54c71a29a4d051bd1c50692f96be1349f",
+      "stage6Actions": 0
+    },
+    {
+      "schemaVersion": 1,
+      "candidate": "FINAL-21",
+      "phase": "PRE_CI",
+      "command": "corepack pnpm run db:migrations:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "startedAtUtc": "2026-10-08T16:42:56.105Z",
+      "finishedAtUtc": "2026-10-08T16:42:57.575Z",
+      "logBytes": 1622,
+      "logSha256": "7f9d0a5bc97c9473d5fa106dcc4131382e06a7ee6feafd26c61f7eb249969758",
+      "stage6Actions": 0
+    },
+    {
+      "name": "migration checksum materialization",
+      "result": "PASS",
+      "path": "docs/evidence/phase-1-m1/stage-5-final-21/migration-checksums.json",
+      "sha256": "ff717238a33a7f83ee5668fce56ea7d09a4a9a446075c0ef7500f14a65c6c522"
+    },
+    {
+      "name": "source-scope regression",
+      "result": "PASS",
+      "outputSha256": "316fd7f061bb0315f4f3e306f4ee08b5342c57b8827db2e3bd863b93b5b802df",
+      "sourceFiles": 2017,
+      "expectedEvidenceIndexes": 21
+    },
+    {
+      "name": "baseline regression suite",
+      "result": "PASS",
+      "outputSha256": "216c8fd1e8fe62b8a01ea9401824c0ad54d3bd5770b93514d5a80ccdda29d0aa"
+    },
+    {
+      "name": "source/evidence suite",
+      "result": "PASS",
+      "outputSha256": "1c95c93dca30b1dcc4baaee0f134e33dc285d9b2499476c495365cc1439dda20"
+    },
+    {
+      "name": "indexed evidence source scan",
+      "result": "PASS",
+      "filesScanned": 2020,
+      "findings": 0
+    }
+  ],
+  "candidateInputs": {
+    "packageJsonSha256": "8c8ba2e19a4629dc4ddafacec44080434c6c85220525944d07ee64b979cb9308",
+    "runnerSha256": "00678d68058401bb8daaab2552314e4ab2a586a93728a417ddc58b24ae1f015d",
+    "migrationHead": {
+      "file": "0010_stage5_temporal_persistence_parity.cjs",
+      "sha256": "d7961fbf06cda8b222fd1219de6d9aec85a0205fb1d186e809260d579c598030",
+      "checksumsSha256": "ff717238a33a7f83ee5668fce56ea7d09a4a9a446075c0ef7500f14a65c6c522"
+    }
+  },
+  "stage6Actions": 0
+}

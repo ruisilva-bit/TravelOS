@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-14",
+  "result": "PASS",
+  "command": "node tooling/database/run-stage-5-disposable.mjs",
+  "startedAt": "2026-10-06T15:58:11.582Z",
+  "endedAt": "2026-10-06T15:58:35.884Z",
+  "exitCode": 0,
+  "runnerLogBytes": 5534,
+  "runnerLogSha256": "5c39b12df8d05c5a5b8684e54b39f5619e4983b1f267cd9f7988a79772a5017f",
+  "integrationLogBytes": 5481,
+  "integrationLogSha256": "2cf653de5322391d927f48181559c8e6248fbbb8dc1f01918f1699902262115b",
+  "integrationTestsPassed": 27,
+  "node": "v24.19.0",
+  "cwd": "/home/hermes/projects/TravelOS",
+  "evidenceDirectory": "/home/hermes/.hermes/cache/scratch/travelos-stage5-final14-qualification",
+  "stage6Actions": 0
+}

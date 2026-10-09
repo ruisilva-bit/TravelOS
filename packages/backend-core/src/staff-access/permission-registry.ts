@@ -1,4 +1,4 @@
-export const PERMISSION_REGISTRY_VERSION = 2 as const;
+export const PERMISSION_REGISTRY_VERSION = 3 as const;
 
 export type AuthorizationScopeKind = "AGENCY" | "ORGANIZATION_UNIT";
 export type ResourceAccessLevel = "OWN" | "TEAM" | "ALL";
@@ -26,8 +26,8 @@ export const STAGE_5_PERMISSION_REGISTRY = [
   },
   {
     id: "staff.view",
-    allowedScopeKinds: ["AGENCY", "ORGANIZATION_UNIT"],
-    allowedAccessLevels: ["OWN", "TEAM", "ALL"],
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
   },
   {
     id: "staff.invite",
@@ -46,8 +46,8 @@ export const STAGE_5_PERMISSION_REGISTRY = [
   },
   {
     id: "finance.view_prices",
-    allowedScopeKinds: ["AGENCY", "ORGANIZATION_UNIT"],
-    allowedAccessLevels: ["OWN", "TEAM", "ALL"],
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
   },
   {
     id: "finance.view_costs",

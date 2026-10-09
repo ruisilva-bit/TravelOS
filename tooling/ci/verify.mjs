@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 
 const gates = [
   ["protected-baseline:pre", "protected-baseline:check"],
+  ["stage5-candidate-coherence:pre", "stage5:candidate-coherence:verify"],
   ["stage5-security-extension:pre", "stage5:security-extension:verify"],
   ["verify:pins", "verify:pins"],
   ["db:migrations:verify", "db:migrations:verify"],

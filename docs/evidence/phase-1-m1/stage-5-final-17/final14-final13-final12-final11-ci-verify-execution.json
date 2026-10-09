@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-11",
+  "phase": "FINAL",
+  "invocationCount": 1,
+  "result": "FAIL",
+  "exitCode": 1,
+  "command": "corepack pnpm ci:verify",
+  "cwd": "/home/hermes/projects/TravelOS",
+  "nodeExecutable": "/home/hermes/.hermes/cache/scratch/travelos-final11-toolchain/node_modules/node/bin/node",
+  "nodeVersion": "v24.19.0",
+  "corepackVersion": "0.35.0",
+  "pnpmVersion": "11.21.0",
+  "startedAtUtc": "2026-10-06T11:54:30.204Z",
+  "finishedAtUtc": "2026-10-06T11:54:53.070Z",
+  "logBytes": 8558,
+  "logSha256": "6e686ec0cf07bee47a155a5fc167f8ad9e55caa9ac2bb9564b755e90745db109"
+}

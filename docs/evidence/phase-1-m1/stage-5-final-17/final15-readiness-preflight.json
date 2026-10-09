@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-15",
+  "phase": "PRE_CI",
+  "result": "PENDING",
+  "ciVerifyInvoked": false,
+  "invocationCount": 0,
+  "expectedCommand": "corepack pnpm ci:verify",
+  "stage6Actions": 0
+}

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-19",
+  "phase": "PRE_CI",
+  "command": "corepack pnpm run format:check",
+  "result": "PASS",
+  "exitCode": 0,
+  "startedAtUtc": "2026-10-08T13:48:13.678Z",
+  "finishedAtUtc": "2026-10-08T13:48:22.396Z",
+  "logBytes": 1244,
+  "logSha256": "5cfe9122563b711a89b52c1e2068089b542a10d600294839c2ec5ddff05f7278",
+  "stage6Actions": 0
+}

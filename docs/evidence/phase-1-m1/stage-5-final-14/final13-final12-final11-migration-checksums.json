@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-11",
+  "result": "PASS",
+  "command": "corepack pnpm exec tsx tooling/database/verify-migration-checksums.ts",
+  "exitCode": 0,
+  "stdoutSha256": "6fe77c6b3b6d88cc7917dfe487fba765cb5175bb6861181f0a565a14a18a46f3",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "outputBytes": 1569,
+  "nodeVersion": "v24.19.0",
+  "verifiedMigrationChain": "migrations/checksums.json",
+  "output": "{\n  \"schemaVersion\": 1,\n  \"result\": \"PASS\",\n  \"migrations\": [\n    {\n      \"file\": \"0001_foundation_schemas.cjs\",\n      \"sha256\": \"a5cc693a28129686f83fd4f8fbaddd754348e167f1de931a296b6f22abc23482\"\n    },\n    {\n      \"file\": \"0002_runtime_schema_boundaries.cjs\",\n      \"sha256\": \"bc5b9f0a4439a80b2167af4722b1245a9982c6226fbc8f7cfefae10fa1fce4fd\"\n    },\n    {\n      \"file\": \"0003_creator_default_privileges.cjs\",\n      \"sha256\": \"7c4ecf09cdaabef7aa96d38af8d46ad4405d31c0b340cfcabd89e3c6ce5f0138\"\n    },\n    {\n      \"file\": \"0004_authentication_realms.cjs\",\n      \"sha256\": \"76f5ac720afdcd4fd7aa8a16790c7c24e08a9fb97341c00e7de62d21303e9c62\"\n    },\n    {\n      \"file\": \"0005_root_agency_staff_authorization.cjs\",\n      \"sha256\": \"b6be1816bd5751f08cfabd8399cbc8b4b374042ba97edb912fb37953cae34661\"\n    },\n    {\n      \"file\": \"0006_stage4_authorization_hardening.cjs\",\n      \"sha256\": \"51f3f8a59028e5650990de79332b05a5a9249c72dadcae567e522e819619f93f\"\n    },\n    {\n      \"file\": \"0007_stage5_m1_domain_slice.cjs\",\n      \"sha256\": \"e52672ef7d720488b7b274cef30f3c89d68d8dd88fc616dc8baf356ac5265ddf\"\n    },\n    {\n      \"file\": \"0008_stage5_cardinality_only.cjs\",\n      \"sha256\": \"8120a68cd1f8b9799029b818d8431f0c18fdd8683cf0554966263c43c9922d20\"\n    },\n    {\n      \"file\": \"0009_stage5_revision_and_lock_version_hardening.cjs\",\n      \"sha256\": \"ce927a10e9001098d9cac648d74032d2bf73bb6d5dbee5844cd01cf963c3ab2c\"\n    },\n    {\n      \"file\": \"0010_stage5_temporal_persistence_parity.cjs\",\n      \"sha256\": \"d7961fbf06cda8b222fd1219de6d9aec85a0205fb1d186e809260d579c598030\"\n    }\n  ]\n}"
+}

@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-25",
+  "predecessor": "FINAL-24",
+  "generationKey": "final25Generation",
+
+  "evidenceDirectory": "docs/evidence/phase-1-m1/stage-5-final-25",
+  "correctionMatrix": "docs/reviews/phase-1-m1/STAGE_5_FINAL_25_CORRECTION_MATRIX.json",
+  "finalization": {
+    "validation": "docs/reviews/phase-1-m1/STAGE_5_FINAL_25_CANDIDATE_VALIDATION.md",
+    "freeze": "docs/reviews/phase-1-m1/STAGE_5_FINAL_25_CANDIDATE_FREEZE.json",
+    "scan": "docs/evidence/phase-1-m1/stage-5-final-25/source-security-scan-final-candidate.json"
+  },
+  "invocationGuard": ".hermes/state/stage5-final25-ci-verify-invocation.json",
+  "readinessReceipt": ".hermes/state/stage5-final25-readiness.json",
+  "historicalReferenceExceptions": [
+    {
+      "path": "tooling/ci/verify-stage-5-security-extension-baseline.mjs",
+      "reason": "Retains explicit predecessor verification branches; current-candidate verification is driven by the manifest override."
+    }
+  ],
+  "protectedPathDelta": {
+    "added": [],
+    "changed": [
+      "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
+      "tooling/ci/prepare-stage-5-current-correction-matrix.mjs",
+      "tooling/ci/stage-5-current-candidate-freeze.mjs",
+      "tooling/ci/stage-5-current-candidate.json",
+      "tooling/ci/stage-5-generation-lifecycle-ledger.json",
+      "tooling/ci/stage-5-source-scope.mjs",
+      "tooling/ci/test-stage-5-current-scan-provenance.mjs",
+      "tooling/ci/test-stage-5-generation-lifecycle-ledger.mjs"
+    ],
+    "removed": []
+  },
+  "paths": {
+    "manifest": "tooling/ci/stage-5-current-candidate.json",
+    "coherenceLibrary": "tooling/ci/stage-5-candidate-coherence.mjs",
+    "coherenceVerifier": "tooling/ci/verify-stage-5-candidate-coherence.mjs",
+    "ciConfig": "tooling/ci/verify.mjs",
+    "correctionMatrixGenerator": "tooling/ci/prepare-stage-5-current-correction-matrix.mjs",
+    "findingLineage": "tooling/ci/stage-5-current-finding-lineage.mjs",
+    "runner": "tooling/ci/run-stage-5-current-authoritative-ci.mjs",
+    "preflight": "tooling/ci/stage-5-current-readiness-preflight.mjs",
+    "baselineGenerator": "tooling/ci/generate-stage-5-current-security-extension-baseline.mjs",
+    "baselineVerifier": "tooling/ci/verify-stage-5-current-security-extension-baseline.mjs",
+    "sharedBaselineVerifier": "tooling/ci/verify-stage-5-security-extension-baseline.mjs",
+    "baselineRegression": "tooling/ci/test-stage-5-current-security-extension-baseline.mjs",
+    "sourceScopeRunner": "tooling/ci/run-stage-5-current-source-scope.mjs",
+    "sourceScanner": "tooling/ci/scan-stage-5-current-source.mjs",
+    "scanRegression": "tooling/ci/test-stage-5-current-scan-provenance.mjs",
+    "scanProvenance": "tooling/ci/stage-5-current-scan-provenance.mjs",
+    "freezeCollector": "tooling/ci/stage-5-current-candidate-freeze.mjs",
+    "postgresqlRunner": "tooling/ci/run-stage-5-current-postgresql-qualification.mjs",
+    "evidenceIndex": "tooling/ci/stage-5-current-evidence-index.mjs",
+    "evidenceCollector": "tooling/ci/prepare-stage-5-current-evidence.mjs",
+    "focusedRunner": "tooling/ci/run-stage-5-current-focused.mjs",
+    "invocationGuardGenerator": "tooling/ci/generate-stage-5-current-invocation-guard.mjs"
+  },
+  "historicalInputs": {
+    "predecessorEvidenceDirectory": "docs/evidence/phase-1-m1/stage-5-final-24",
+    "predecessorFailureReceipt": ".hermes/state/stage5-final24-post-freeze-provenance-failure.json",
+    "predecessorFailureReceiptSha256": "43bd6a4c895ae5f53c4ff2c3804ab230df6a0f599eef51e999683fe7fea66b36",
+    "predecessorRejectionRecord": "docs/reviews/phase-1-m1/STAGE_5_FINAL_24_REJECTION_RECORD.md",
+    "predecessorRejectionRecordSha256": "676e62c73c1a79ee533d2040fbe65bdff85c16c36ee01172344d4932a4aef3fa",
+    "predecessorCorrectionMatrix": "docs/reviews/phase-1-m1/STAGE_5_FINAL_24_CORRECTION_MATRIX.json",
+    "predecessorCorrectionMatrixSha256": "f23fbae476fbd101d1af963f316ffb103a27ec6db3ce91531b1d62fbb507f74d",
+    "predecessorBaselineGenerationSha256": "084b48ff6ecc0daa4a862b1c84d75af35d3d4a6c7d74af8978f04264388179bb",
+    "predecessorBaselinePath": "docs/evidence/phase-1-m1/final24-scan-reports/final24-security-extension-baseline.json",
+    "predecessorBaselineSha256": "76bd12114eafa7d0b12dff00b0988eb15046a82887a5a31c194720c083682284",
+    "predecessorCiReceipt": "docs/evidence/phase-1-m1/stage-5-final-24/ci-verify-execution.json",
+    "predecessorCiReceiptSha256": "8b060c32dc5b17f2652ce569c6215cb4e13575303d6730d99e62ff6e259f7e14",
+    "predecessorEvidenceIndex": "docs/evidence/phase-1-m1/stage-5-final-24/EVIDENCE_INDEX.json",
+    "predecessorEvidenceIndexSha256": "312af21cc5746462bae1b53f63eca30e4d2a067eed09157171d879edbedba519",
+    "predecessorValidation": "docs/reviews/phase-1-m1/STAGE_5_FINAL_24_CANDIDATE_VALIDATION.md",
+    "predecessorValidationSha256": "42df4cf99c261a4b2763d5ea6e64a1bfebfdd2b3d2e2077482976f10472af002",
+    "predecessorFreeze": "docs/reviews/phase-1-m1/STAGE_5_FINAL_24_CANDIDATE_FREEZE.json",
+    "predecessorFreezeSha256": "7333b7e03db98378279fab0452afc363829c9fe832c47e942d342922f510af8c",
+    "predecessorFinalScan": "docs/evidence/phase-1-m1/stage-5-final-24/source-security-scan-final-candidate.json",
+    "predecessorFinalScanSha256": "0b4db8424dd89d31b9170e917f91a78cd2325dd09f0287517b021d2744ad3464",
+    "predecessorArchiveManifest": "docs/evidence/phase-1-m1/final24-scan-reports/STAGE_5_FINAL_24_ARCHIVE_MANIFEST.json",
+    "predecessorArchiveManifestSha256": "138e606b1d57ad82c7da8c6511eaacfb5cc5f22aa2f3276f90b5a3b2b1d51798"
+  },
+  "historicalScriptExceptions": [
+    {
+      "script": "historical:evidence:stage5:final21:baseline",
+      "reason": "Never-run historical FINAL-21 baseline command; retained, not active."
+    },
+    {
+      "script": "historical:evidence:stage5:final21:ci",
+      "reason": "Never-run historical FINAL-21 CI runner; must not be invoked."
+    },
+    {
+      "script": "historical:evidence:stage5:final21:index",
+      "reason": "Never-run historical FINAL-21 index command; retained, not active."
+    },
+    {
+      "script": "historical:evidence:stage5:final21:matrix",
+      "reason": "Never-run historical FINAL-21 evidence preparation command; retained, not active."
+    },
+    {
+      "script": "historical:evidence:stage5:final21:preflight",
+      "reason": "Never-run historical FINAL-21 preflight command; retained, not active."
+    },
+    {
+      "script": "historical:evidence:stage5:final21:prepare",
+      "reason": "Never-run historical FINAL-21 evidence preparation command; retained, not active."
+    },
+    {
+      "script": "historical:test:stage5:focused:final20",
+      "reason": "Immutable historical focused runner."
+    },
+    {
+      "script": "security:scan:source:historical-final21",
+      "reason": "Immutable FINAL-21 source-scan entrypoint."
+    },
+    {
+      "script": "stage5:security-extension:verify:historical-final21",
+      "reason": "Immutable FINAL-21 verifier entrypoint."
+    },
+    {
+      "script": "test:stage5-security-extension-baseline:historical",
+      "reason": "Regression suite for immutable predecessor generations."
+    },
+    {
+      "script": "test:stage5-source-scope:historical",
+      "reason": "Read-only lifecycle and evidence verification for immutable predecessor generations."
+    }
+  ],
+  "protectedPaths": [
+    "apps/admin-api/src/m1-routes.ts",
+    "apps/admin-api/test/m1-authorization-boundary.test.ts",
+    "docs/PERMISSIONS.md",
+    "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
+    "package.json",
+    "packages/backend-core/src/agency-organization/agency-bootstrap.ts",
+    "packages/backend-core/src/index.ts",
+    "packages/backend-core/src/modules/trip-operations/application/m1-staff-operations.ts",
+    "packages/backend-core/src/staff-access/permission-registry.ts",
+    "packages/backend-core/test/agency-organization/agency-bootstrap.test.ts",
+    "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+    "tooling/ci/generate-stage-5-current-invocation-guard.mjs",
+    "tooling/ci/generate-stage-5-current-security-extension-baseline.mjs",
+    "tooling/ci/prepare-stage-5-current-correction-matrix.mjs",
+    "tooling/ci/prepare-stage-5-current-evidence.mjs",
+    "tooling/ci/run-stage-5-current-authoritative-ci.mjs",
+    "tooling/ci/run-stage-5-current-focused.mjs",
+    "tooling/ci/run-stage-5-current-postgresql-qualification.mjs",
+    "tooling/ci/run-stage-5-current-source-scope.mjs",
+    "tooling/ci/scan-stage-5-current-source.mjs",
+    "tooling/ci/stage-5-candidate-coherence.mjs",
+    "tooling/ci/stage-5-current-candidate-freeze.mjs",
+    "tooling/ci/stage-5-current-candidate.json",
+    "tooling/ci/stage-5-current-evidence-index.mjs",
+    "tooling/ci/stage-5-current-finding-lineage.mjs",
+    "tooling/ci/stage-5-current-readiness-preflight.mjs",
+    "tooling/ci/stage-5-current-scan-provenance.mjs",
+    "tooling/ci/stage-5-generation-lifecycle-ledger.json",
+    "tooling/ci/stage-5-source-scope.mjs",
+    "tooling/ci/test-stage-5-candidate-coherence.mjs",
+    "tooling/ci/test-stage-5-current-scan-provenance.mjs",
+    "tooling/ci/test-stage-5-current-security-extension-baseline.mjs",
+    "tooling/ci/test-stage-5-generation-lifecycle-ledger.mjs",
+    "tooling/ci/test-stage-5-source-scope.mjs",
+    "tooling/ci/verify-stage-5-candidate-coherence.mjs",
+    "tooling/ci/verify-stage-5-current-security-extension-baseline.mjs",
+    "tooling/ci/verify-stage-5-security-extension-baseline.mjs",
+    "tooling/ci/verify.mjs"
+  ],
+  "stage6Actions": 0
+}

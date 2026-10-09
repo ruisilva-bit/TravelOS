@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "stage": "PHASE_1_M1_STAGE_5",
+  "candidate": "FINAL-10",
+  "phase": "PRE_CI",
+  "artifactCount": 18,
+  "aggregateSerialization": "newline-terminated records: relative-path<TAB>bytes<TAB>sha256, sorted by relative path",
+  "aggregateSha256": "2b3db58c4e595cdd52a8beb503483f1241f7fa9614adaf9017cb1fd5588c5e2b",
+  "artifacts": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/auth-bridge-tests.json",
+      "bytes": 692,
+      "sha256": "a2145f349d3d2ad0fa0207960954ea537967182e3ab49e7f68f8d68c671f1954"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/auth-bridge-tests.log",
+      "bytes": 2522,
+      "sha256": "7bc941009181639cbd5d23a7a10ab228b417b57547115f67028805423729703d"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/ci-verify-execution.json",
+      "bytes": 113,
+      "sha256": "6f74edbc8970cb9dfe89ae44600b170bca599a37c795c422ebb291945f614173"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/ci-verify.log",
+      "bytes": 95,
+      "sha256": "662051339883a73416433db3e8537237ef18a6703ceb3139e0c21f78f3f7093a"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/disposable-cleanup.json",
+      "bytes": 311,
+      "sha256": "fcb09fce5b5e324eae0be6544eb0cf5cb88c60afeab4eb79a8e877bf01702efe"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/final8-independent-review.json",
+      "bytes": 38123,
+      "sha256": "d343aae5ea315cb524b5e0a4afb3f4b7b452827543def934f3c4825011d316d3"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/final9-independent-review.md",
+      "bytes": 5821,
+      "sha256": "ebdbc4327e0f02f5b9efa7a730bd5e3997d9668559b5d59624806eaf2bb7cfe3"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/final9-rejected-tag.json",
+      "bytes": 955,
+      "sha256": "c5e515b86dcc5817ec827ef5f903af7a2cfb177ee0edc7aae1f977201fa8d450"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/focused-test-execution.json",
+      "bytes": 1408,
+      "sha256": "6589824203409ca14cc200a7ced69f1624320a0ea2de15f5987178d32652f30f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/focused-tests.log",
+      "bytes": 11015,
+      "sha256": "6059c6fc4e9d72753117a02e4e9645565170a171bd5d66bf60fd3e639fbefc40"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/integration-test-execution.json",
+      "bytes": 457,
+      "sha256": "bd0bb40daf17442c1480860fab0efb6a5754caad31df4295515fee5f05976e64"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/integration-tests.log",
+      "bytes": 5280,
+      "sha256": "d717120e14c17b01cf764987d161435d78c33e88a810ed96f8dd9ae52d6a4a4c"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/migration-checksums.json",
+      "bytes": 1569,
+      "sha256": "6fe77c6b3b6d88cc7917dfe487fba765cb5175bb6861181f0a565a14a18a46f3"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/package-build.json",
+      "bytes": 219,
+      "sha256": "f1d4d0b17e1085793bf945ca1e2abb9cc4e3dd42e47c10a8cea1c4fdf34ef00e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/postgresql-runtime.json",
+      "bytes": 292,
+      "sha256": "690483dc28f7f67dac2545f08e60b0793ee5e7b56db9ae397bd91f5947dc7aea"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/qualification-summary.json",
+      "bytes": 1518,
+      "sha256": "e584f56ad2cad8f77a47cca20d1d6ca93f04a487603fe9256bc32994a867bfc2"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-10/stage5-source-scope-test.log",
+      "bytes": 427,
+      "sha256": "546c81002bcc81302cc10b3674b0993f318305612d7769be05ca9dcf5b70a357"
+    }
+  ]
+}

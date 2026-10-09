@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-23",
+  "predecessor": "FINAL-22",
+  "lifecycleState": "CI_PASS",
+  "ciStatus": "PASS",
+  "invocationCount": 1,
+  "ciReceiptSha256": "dbd3aa1e7b280d3cdf6564cf9e265b799bd5604f9740ec06b79cfc8a547568f1",
+  "ciLogSha256": "307b7a74ab10cafd0c159d1ee7973d68c220ce570e04bf1d2993b24eb65c4c1e",
+  "validationStatus": "PENDING_FINAL_EVIDENCE",
+  "freezeStatus": "NOT_CREATED",
+  "reviewStatus": "NOT_RUN",
+  "closureStatus": "NOT_CLOSED",
+  "stage6Actions": 0
+}

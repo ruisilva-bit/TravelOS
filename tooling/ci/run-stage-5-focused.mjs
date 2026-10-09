@@ -6,11 +6,11 @@ import path from "node:path";
 const repositoryRoot = process.cwd();
 const outputPath = path.resolve(
   process.env["TRAVELOS_STAGE5_FOCUSED_OUTPUT"] ??
-    "docs/evidence/phase-1-m1/stage-5-final-10/focused-test-execution.json",
+    "docs/evidence/phase-1-m1/stage-5-final-11/focused-test-execution.json",
 );
 const logPath = path.resolve(
   process.env["TRAVELOS_STAGE5_FOCUSED_LOG"] ??
-    "docs/evidence/phase-1-m1/stage-5-final-10/focused-tests.log",
+    "docs/evidence/phase-1-m1/stage-5-final-11/focused-tests.log",
 );
 const corepack = "corepack";
 const focusedTests = [
@@ -58,7 +58,7 @@ const testFilesMatch = combined.match(/Test Files\s+(\d+) passed/iu);
 const testsMatch = combined.match(/Tests\s+(\d+) passed/iu);
 const report = {
   schemaVersion: 3,
-  candidate: "FINAL-10",
+  candidate: "FINAL-11",
   result: execution.status === 0 ? "PASS" : "FAIL",
   command: `corepack ${commandArgs.join(" ")}`,
   exitCode: execution.status ?? 1,

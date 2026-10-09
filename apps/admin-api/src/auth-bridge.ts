@@ -181,6 +181,7 @@ const staffSessionContextHandler =
           session === null || session.agencyId === null || session.authorizationEpoch === null
             ? null
             : {
+                sessionId: session.sessionId,
                 staffPrincipalId: session.principalId,
                 agencyId: session.agencyId,
                 authorizationEpoch: session.authorizationEpoch,

@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-12",
+  "status": "REJECTED / CI CONSUMED / LINT-GATE FAILURE",
+  "failedGate": "lint",
+  "command": "corepack pnpm ci:verify",
+  "invocationCount": 1,
+  "exitCode": 1,
+  "classification": "CANDIDATE_GENERATION_PREFLIGHT_DEFECT",
+  "stage6Actions": 0,
+  "ciLog": {
+    "path": "docs/evidence/phase-1-m1/stage-5-final-12/ci-verify.log",
+    "bytes": 13896,
+    "sha256": "4aae8ee4619ddf75ec89d4feaae0ab6a342b22f95cc638beca01d88ce5039aa5"
+  },
+  "executionReceipt": {
+    "path": "docs/evidence/phase-1-m1/stage-5-final-12/ci-verify-execution.json",
+    "sha256": "c1fd59bbb7a1331507977bb8f874d9eb6416324b20e3b53d24d33f69db13c9e9"
+  },
+  "invocationGuard": {
+    "path": ".hermes/state/stage5-final12-ci-verify-invocation.json",
+    "sha256": "9f57c975cc393f19ec1cb1ea043ae9da5fb9e5159ac838b76705125cff7bb61c"
+  },
+  "lintSummary": {
+    "totalErrors": 30,
+    "rules": {
+      "@typescript-eslint/no-unused-vars": 21,
+      "no-undef": 9
+    },
+    "files": [
+      {
+        "path": "tooling/ci/generate-stage-5-final11-security-extension-baseline.mjs",
+        "errorCount": 9
+      },
+      {
+        "path": "tooling/ci/generate-stage-5-final12-security-extension-baseline.mjs",
+        "errorCount": 2
+      },
+      {
+        "path": "tooling/ci/stage-5-final11-finding-lineage.mjs",
+        "errorCount": 10
+      },
+      {
+        "path": "tooling/ci/stage-5-final11-readiness-preflight.mjs",
+        "errorCount": 1
+      },
+      {
+        "path": "tooling/ci/stage-5-final12-readiness-preflight.mjs",
+        "errorCount": 1
+      },
+      {
+        "path": "tooling/ci/test-stage-5-final11-finding-lineage.mjs",
+        "errorCount": 4
+      },
+      {
+        "path": "tooling/ci/test-stage-5-final11-security-extension-baseline.mjs",
+        "errorCount": 3
+      }
+    ]
+  },
+  "correctiveActionsForFinal13": [
+    "remove unused imports and locals from the Stage 5 candidate tooling",
+    "replace undeclared structuredClone uses with JSON-safe fixture/baseline cloning",
+    "explicitly import URL from node:url where used",
+    "require full pnpm lint to pass in candidate readiness before arming CI"
+  ],
+  "preRemediationSnapshot": {
+    "path": "/home/hermes/.hermes/cache/scratch/travelos-final12-consumed-snapshot.tar",
+    "bytes": 1105920,
+    "sha256": "1842b9566a245e1e8fa1c9ceae836d11f9c8639ec32ce662be5c545400888320",
+    "fileCount": 96
+  }
+}

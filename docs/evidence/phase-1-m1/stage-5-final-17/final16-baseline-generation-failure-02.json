@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-16",
+  "attempt": 2,
+  "command": "corepack pnpm run evidence:stage5:baseline",
+  "result": "FAILED_BEFORE_ACTIVE_BASELINE_WRITE",
+  "failureClass": "candidate-tooling defect in in-memory semantic baseline verification",
+  "error": "AssertionError: FINAL-16 runner hash differs from its baseline lineage (actual undefined)",
+  "location": "tooling/ci/verify-stage-5-security-extension-baseline.mjs:1176",
+  "activeBaselineSha256AfterFailure": "5346753a67e853838b8132d8521c1cfad52b6825729e5bd1039609290e41dd02",
+  "activeBaselineUnchanged": true,
+  "baselineGenerationReceiptCreated": false,
+  "ciVerifyInvocationCount": 0,
+  "ciAuthorizationConsumed": false,
+  "stage6Actions": 0,
+  "diagnosis": "The in-memory manifest override was parsed for protected-file verification, but verifyExtensionSemantics read the old active FINAL-15 manifest from disk instead of checking the candidate manifest. Pass the already-parsed candidate manifest into semantic verification."
+}

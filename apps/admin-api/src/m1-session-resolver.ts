@@ -25,6 +25,7 @@ export const createAdminStaffSessionResolver = (
         return null;
       }
       return {
+        sessionId: session.sessionId,
         staffPrincipalId: session.principalId,
         agencyId: session.agencyId,
         authorizationEpoch: session.authorizationEpoch,

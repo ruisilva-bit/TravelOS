@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-13",
+  "phase": "PRE_CI",
+  "command": "corepack pnpm run lint",
+  "result": "PASS",
+  "exitCode": 0,
+  "startedAtUtc": "2026-10-06T13:49:06.441Z",
+  "finishedAtUtc": "2026-10-06T13:49:12.562Z",
+  "toolchain": {
+    "node": "v24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0",
+    "nodeExecutable": "/home/hermes/.hermes/cache/scratch/travelos-final11-toolchain/node_modules/node/bin/node"
+  },
+  "logBytes": 59,
+  "logSha256": "802937fa94a645dbb185960a85971ffdd310535c810ffc2b45c0488780079091",
+  "stage6Actions": 0
+}

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-14",
+  "phase": "PRE_CI",
+  "result": "PASS",
+  "ciVerifyInvoked": false,
+  "invocationCount": 0,
+  "expectedCommand": "corepack pnpm ci:verify",
+  "toolchain": {
+    "node": "v24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0",
+    "nodeExecutable": "/home/hermes/.hermes/cache/scratch/travelos-final11-toolchain/node_modules/node/bin/node"
+  },
+  "checks": [
+    {
+      "name": "phase-0 and predecessor lineage",
+      "result": "PASS"
+    },
+    {
+      "name": "candidate-specific protected baseline",
+      "result": "PASS",
+      "sha256": "a93a9b37ffa6923b7e06a66411551b3ce4f81cbefbb6ec5e37454a03327497d8"
+    },
+    {
+      "name": "full format:check",
+      "result": "PASS",
+      "logSha256": "ca519f5dfcd6954389fbd53309c4025cbec7a49b0de9838d7f42530b556e470d"
+    },
+    {
+      "name": "full lint",
+      "result": "PASS",
+      "logSha256": "802937fa94a645dbb185960a85971ffdd310535c810ffc2b45c0488780079091"
+    },
+    {
+      "name": "stage-5 regression suite",
+      "result": "PASS",
+      "baselineSuiteSha256": "8cfe936c1b54cc054c1543949c54a7fb7a983751a7a180df4ba8c0d22ac9ba0f",
+      "sourceScopeSuiteSha256": "bbcdc86ecf7ce3f7af3971b9289a2494fb51d3fff5d235ec7a8c9f21d9562530"
+    },
+    {
+      "name": "post-index candidate source scan",
+      "result": "PASS"
+    }
+  ],
+  "candidateInputs": {
+    "packageSha256": "2fb980804df0328c69fe7641d76c50daf7f460e7feb9121baee26c13123da595",
+    "baselineSha256": "a93a9b37ffa6923b7e06a66411551b3ce4f81cbefbb6ec5e37454a03327497d8",
+    "runnerSha256": "37aba1f952e7f20230126c35e1e595a3668419c43635ede31117ca25db40686c",
+    "migrationHead": {
+      "file": "0010_stage5_temporal_persistence_parity.cjs",
+      "sha256": "d7961fbf06cda8b222fd1219de6d9aec85a0205fb1d186e809260d579c598030",
+      "checksumsSha256": "ff717238a33a7f83ee5668fce56ea7d09a4a9a446075c0ef7500f14a65c6c522"
+    }
+  },
+  "stage6Actions": 0
+}

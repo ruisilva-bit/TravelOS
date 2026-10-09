@@ -1,0 +1,28 @@
+{
+  "result": "PASS",
+  "candidate": "FINAL-21",
+  "previousBaselineSha256": "553894689208af9aec37b7814112baa1b4616d2253e863ef1cf47a8e2befa9a3",
+  "baselineSha256": "54e4583bd7884c1ab8dfd067dc7fc8214548559bf5f5a0dc79043686e588abb0",
+  "protectedPathCount": 12,
+  "protectedPathDeltas": [
+    {
+      "path": "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
+      "previousSha256": "a1386a41e89ffd6b49bcf107b298d3696a32a0cf332f0cc43bc3a1a1b9fcfafa",
+      "currentSha256": "8ed6e5034775d1b8119a84514e2657a96c0b54af541da752b10599ae7defee3a"
+    },
+    {
+      "path": "package.json",
+      "previousSha256": "e48a26088b01186fa96e16b9cd48ee31dd065898148238e97d43fe2f2730d2f5",
+      "currentSha256": "8c8ba2e19a4629dc4ddafacec44080434c6c85220525944d07ee64b979cb9308"
+    }
+  ],
+  "permittedDeltaPaths": [
+    "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
+    "package.json"
+  ],
+  "lineageFindingCount": 49,
+  "predecessorFailureReceiptSha256": "df9795fcdc9fb54280dce078ef49758476d0655e5b999c42fe6425cdea5faa79",
+  "stage6Actions": 0,
+  "phase": "IN_MEMORY_VERIFICATION",
+  "writeVerified": false
+}

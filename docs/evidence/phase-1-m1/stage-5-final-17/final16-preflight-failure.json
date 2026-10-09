@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-16",
+  "phase": "PRE_CI",
+  "result": "REJECTED",
+  "classification": "CANDIDATE_GENERATION_DEFECT",
+  "gate": "FINAL-16 baseline regression suite",
+  "command": "corepack pnpm run evidence:stage5:preflight",
+  "exitCode": 1,
+  "failure": {
+    "rootCause": "The shared security-extension baseline regression test selected the default FINAL-14 CI-script contract when the active baseline was FINAL-16. It only set requireCandidate for FINAL-14, so verification compared package.json's valid FINAL-16 stage5:security-extension:verify command against the stale default contract and failed.",
+    "evidence": "tooling/ci/test-stage-5-security-extension-baseline.mjs selects requireCandidate only when activeBaseline.lineage.final14Generation?.candidate === FINAL-14; package.json points stage5:security-extension:verify to tooling/ci/verify-stage-5-final16-security-extension-baseline.mjs.",
+    "impact": "Preflight stopped during the baseline regression suite. It did not reach GREEN readiness or create a pre-CI freeze guard. FINAL-16 candidate is rejected; the regression test must be corrected in a sequential successor."
+  },
+  "baseline": {
+    "path": "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json",
+    "sha256": "a9ac910fc6275da9b3c957a6c280fa8eeb4b5bc03a383d935f08dde2662cdab5",
+    "readinessPreflightSha256": "fd3c060bba288390aa9dc2e6f125c76a74a7164bdcccdead1c01cf376cdd907b",
+    "evidenceIndexSha256": "dec1584cd914cb28b93bce7566b77c4ca7f549e33c75f73330cc22e767846bc3",
+    "evidenceIndexArtifactCount": 230,
+    "evidenceIndexAggregateSha256": "9e0796d290a5d4bbea311b5fd84b858ac2204b1b8a235bac0c719b682eb2bbe0"
+  },
+  "ci": {
+    "invocationCount": 0,
+    "authorizationConsumed": false,
+    "invocationGuardPresent": false,
+    "preCiFreezeGuardPresent": false
+  },
+  "stage6Actions": 0,
+  "disposition": "Do not rerun or overwrite FINAL-16 preflight/index receipts. Preserve docs/evidence/phase-1-m1/stage-5-final-16/ unchanged and create FINAL-17 as the sequential successor."
+}

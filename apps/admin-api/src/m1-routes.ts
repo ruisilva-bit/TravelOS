@@ -79,6 +79,7 @@ const routeUrlFor = (request: IncomingHttpRequest, policy: AuthSurfacePolicy): U
 const surfaceRejectionStatus = (
   request: IncomingHttpRequest,
   policy: AuthSurfacePolicy,
+  requireCanonicalOrigin: boolean,
 ): 403 | 404 | null => {
   const headers = headersFor(request);
   if (routeUrlFor(request, policy) === null) return 404;
@@ -86,6 +87,7 @@ const surfaceRejectionStatus = (
   const forwardedHost = headers.get("x-forwarded-host");
   if (
     headers.has("authorization") ||
+    (requireCanonicalOrigin && headers.get("origin") !== policy.canonicalOrigin) ||
     (forwardedHost !== null && !hostHeaderMatchesExpectedHost(forwardedHost, policy.expectedHost))
   ) {
     return 403;
@@ -333,7 +335,7 @@ export const registerAdminM1Routes = (
           badRequest(response);
           return;
         }
-        const rejection = surfaceRejectionStatus(request, options.policy);
+        const rejection = surfaceRejectionStatus(request, options.policy, true);
         if (rejection !== null) {
           response.status(rejection).end();
           return;
@@ -357,7 +359,7 @@ export const registerAdminM1Routes = (
           badRequest(response);
           return;
         }
-        const rejection = surfaceRejectionStatus(request, options.policy);
+        const rejection = surfaceRejectionStatus(request, options.policy, false);
         if (rejection !== null) {
           response.status(rejection).end();
           return;
@@ -386,7 +388,7 @@ export const registerAdminM1Routes = (
           badRequest(response);
           return;
         }
-        const rejection = surfaceRejectionStatus(request, options.policy);
+        const rejection = surfaceRejectionStatus(request, options.policy, true);
         if (rejection !== null) {
           response.status(rejection).end();
           return;
@@ -424,7 +426,7 @@ export const registerAdminM1Routes = (
             badRequest(response);
             return;
           }
-          const rejection = surfaceRejectionStatus(request, options.policy);
+          const rejection = surfaceRejectionStatus(request, options.policy, true);
           if (rejection !== null) {
             response.status(rejection).end();
             return;

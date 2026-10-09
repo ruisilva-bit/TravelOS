@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-20",
+  "result": "PASS",
+  "qualificationEvidence": {
+    "path": "docs/evidence/phase-1-m1/stage-5-final-20/postgresql-qualification.json",
+    "sha256": "851a6a6d4fed66b87d198617dbb76cb293a6fd698d18f257aa93241235cfb777"
+  },
+  "integrationTest": {
+    "path": "tests/integration/stage-5-postgresql.test.ts",
+    "sha256": "258a288d5e01c569c53d9313c81e0c169143baa9a8686b9bb83caab9708ff4f7",
+    "testsPassed": 29,
+    "requiredRegressionMarkers": [
+      "29 passed (29)",
+      "forged transaction-local revision marker",
+      "bigint lock versions beyond JavaScript safe integer",
+      "real repository PostgreSQL deadlock SQLSTATE 40P01 through the registered Admin HTTP route",
+      "stale supplier-cost compare-and-swap through the registered Admin HTTP route"
+    ]
+  },
+  "migrationChecksumsSha256": "ff717238a33a7f83ee5668fce56ea7d09a4a9a446075c0ef7500f14a65c6c522",
+  "disposableCleanup": "PASS",
+  "stage6Actions": 0
+}

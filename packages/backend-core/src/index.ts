@@ -86,6 +86,7 @@ export {
 } from "./modules/trip-operations/application/m1-trip-slice.js";
 export {
   createM1StaffTripOperations,
+  M1_OPERATION_PERMISSION_REQUIREMENTS,
   M1StaffAuthorizationError,
   type M1StaffAuthorizationRepository,
   type M1StaffSessionResolver,

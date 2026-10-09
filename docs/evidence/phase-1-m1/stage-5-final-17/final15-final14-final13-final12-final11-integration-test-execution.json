@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "command": "vitest run --config tooling/testing/vitest.stage-5.config.ts --reporter=verbose",
+  "exitCode": 0,
+  "stdoutSha256": "a2bcaaad619c9c90b7fd05bf4ac4cef5a30b48fae47d9ce1cb2fafd4f92d34fc",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "redaction": "Synthetic loopback trust-auth cluster; no passwords or credential-bearing URLs emitted.",
+  "ct200Actions": 0
+}

@@ -25,6 +25,7 @@ describe("Admin Staff application session resolver", () => {
     const resolver = createAdminStaffSessionResolver(realm, policy);
 
     await expect(resolver.resolveStaffSession("travelos_staff=opaque-session")).resolves.toEqual({
+      sessionId: session.sessionId,
       staffPrincipalId: session.principalId,
       agencyId: session.agencyId,
       authorizationEpoch: session.authorizationEpoch,

@@ -268,6 +268,7 @@ const makeHarness = (
   };
   const sessionResolver = {
     resolveStaffSession: vi.fn().mockResolvedValue({
+      sessionId: "synthetic-session",
       staffPrincipalId: "staff-1",
       agencyId: sessionAgencyId,
       authorizationEpoch: 1n,
@@ -309,6 +310,7 @@ const makeHarness = (
     params: Readonly<Record<string, string>> = {},
     headers: Record<string, string | string[] | undefined> = {
       host: "admin.example.test",
+      origin: "https://admin.example.test",
       cookie: "session=opaque",
     },
   ) => {
@@ -381,6 +383,7 @@ describe("Admin Stage 5 routes", () => {
       {},
       {
         host: "admin.example.test",
+        origin: "https://admin.example.test",
         cookie: "session=opaque",
         "x-forwarded-host": "admin.example.test",
       },
@@ -395,12 +398,40 @@ describe("Admin Stage 5 routes", () => {
       {},
       {
         host: "admin.example.test",
+        origin: "https://admin.example.test",
         cookie: "session=opaque",
         "x-forwarded-host": "attacker.example.test",
       },
     );
     expect(rejected.statusCode).toBe(403);
     expect(conflicting.repository.createM1TripSlice).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing, opaque, duplicate, or sibling Origins before resolving a mutation session", async () => {
+    const invalidOrigins: readonly (string | string[] | undefined)[] = [
+      undefined,
+      "null",
+      "https://attacker.example.test",
+      "https://admin.example.test/path",
+      ["https://admin.example.test", "https://attacker.example.test"],
+    ];
+
+    for (const origin of invalidOrigins) {
+      const harness = makeHarness();
+      const response = await harness.invoke(
+        "POST /api/admin/trips",
+        requestBody(),
+        {},
+        {
+          host: "admin.example.test",
+          origin,
+          cookie: "session=opaque",
+        },
+      );
+      expect(response.statusCode).toBe(403);
+      expect(harness.sessionResolver.resolveStaffSession).not.toHaveBeenCalled();
+      expect(harness.repository.createM1TripSlice).not.toHaveBeenCalled();
+    }
   });
 
   it("does not let cost visibility alone create INTERNAL_ONLY supplier cost", async () => {
@@ -461,6 +492,7 @@ describe("Admin Stage 5 routes", () => {
       expect.objectContaining({ expectedLockVersion: 9_007_199_254_740_993n }),
       expect.objectContaining({
         session: expect.objectContaining({
+          sessionId: "synthetic-session",
           staffPrincipalId: "staff-1",
           agencyId,
           authorizationEpoch: 1n,

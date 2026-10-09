@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-25",
+  "predecessor": "FINAL-24",
+  "lifecycleState": "READY_FOR_CI",
+  "ciStatus": "NOT_RUN",
+  "validationStatus": "PENDING_CI",
+  "freezeStatus": "NOT_CREATED",
+  "reviewStatus": "NOT_RUN",
+  "closureStatus": "NOT_CLOSED",
+  "readinessSha256": "beed7642b6a638b1faa491fb3b2ea9001da6b468462a19c443c8f2c44fecdb93",
+  "stage6Actions": 0
+}

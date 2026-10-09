@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-20",
+  "attempt": 1,
+  "phase": "POST_INDEX_CHECKS",
+  "result": "FAILED_RESUMABLE",
+  "command": "node tooling/ci/stage-5-final20-readiness-preflight.mjs --write",
+  "failure": {
+    "gate": "test:stage5-security-extension-baseline",
+    "exitCode": 1,
+    "assertion": "Phase 1 extension CI script is missing or changed: test:stage5:focused",
+    "expected": "node tooling/ci/run-stage-5-final18-focused.mjs",
+    "actual": "node tooling/ci/run-stage-5-final20-focused.mjs",
+    "cause": "The generic active-baseline regression test selected FINAL-18 semantics instead of the active FINAL-20 candidate."
+  },
+  "preservedPreResumeIndex": {
+    "path": "docs/evidence/phase-1-m1/stage-5-final-20/EVIDENCE_INDEX.json",
+    "sha256": "504793328e5c65474cadf34aeea003e27b2b9e5f56a81487bfd8526676a057ab",
+    "aggregateSha256": "b05d535c471bbeb2242cfb7bf81e72f43f6403687b1c74434fddef97fee47608",
+    "artifactCount": 112
+  },
+  "preservedReadinessReport": {
+    "path": "docs/evidence/phase-1-m1/stage-5-final-20/readiness-preflight.json",
+    "sha256": "cc5fa1a2a0694e37f2d53e3f84df38a70b69bd7c34e1d3e4e7cd951954619ac0",
+    "result": "PENDING_POST_INDEX_CHECKS"
+  },
+  "ciVerifyInvoked": false,
+  "ciVerifyInvocationCount": 0,
+  "stage6Actions": 0
+}

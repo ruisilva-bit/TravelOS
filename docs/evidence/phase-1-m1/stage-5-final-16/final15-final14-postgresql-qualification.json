@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-14",
+  "result": "PASS",
+  "integrationExecution": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "command": "vitest run --config tooling/testing/vitest.stage-5.config.ts --reporter=verbose",
+    "exitCode": 0,
+    "stdoutSha256": "2cf653de5322391d927f48181559c8e6248fbbb8dc1f01918f1699902262115b",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redaction": "Synthetic loopback trust-auth cluster; no passwords or credential-bearing URLs emitted.",
+    "ct200Actions": 0,
+    "sha256": "06f20305c5a3d87dcef329b86d9354da006398fb74cb4f433c87691c3b59c846"
+  },
+  "disposableCleanup": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "clusterStartAttempted": true,
+    "clusterStarted": true,
+    "clusterStopped": true,
+    "stopExitCode": 0,
+    "immediateStopExitCode": null,
+    "disposableRootAbsent": true,
+    "retainedPostgresqlDataDirectories": 0,
+    "retainedPackageArchives": 0,
+    "ct200Actions": 0,
+    "sha256": "fcb09fce5b5e324eae0be6544eb0cf5cb88c60afeab4eb79a8e877bf01702efe"
+  },
+  "packageBuild": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "command": "pnpm --filter @travelos/admin-api... build",
+    "nodeVersion": "v24.19.0",
+    "stdoutSha256": "4f31f0654a1e3ef06357ba9cfb2511dfcedbd3c3583e84534404d14605aac22f"
+  },
+  "packageProvenance": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "method": "checksum-verified PGDG/Debian packages extracted into disposable storage; no host package installation",
+    "platform": {
+      "distribution": "Debian 13 (trixie)",
+      "architecture": "amd64"
+    },
+    "postgresql": {
+      "major": 18,
+      "serverVersion": "18.6",
+      "packageVersion": "18.6-1.pgdg13+2"
+    },
+    "sourceIndex": "https://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/main/binary-amd64/Packages.gz",
+    "releaseNotes": "https://www.postgresql.org/docs/18/release-18-6.html",
+    "packages": [
+      {
+        "name": "postgresql-18",
+        "version": "18.6-1.pgdg13+2",
+        "url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-18_18.6-1.pgdg13+2_amd64.deb",
+        "expectedSha256": "bf4062a44757c3f7a207a1b9e20c2bf93f9847257516c2ce0befc1257d3dcf8e",
+        "actualSha256": "bf4062a44757c3f7a207a1b9e20c2bf93f9847257516c2ce0befc1257d3dcf8e",
+        "checksumMatch": true
+      },
+      {
+        "name": "postgresql-client-18",
+        "version": "18.6-1.pgdg13+2",
+        "url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-client-18_18.6-1.pgdg13+2_amd64.deb",
+        "expectedSha256": "9af40c99f7074f8ff3798155af2f07f1a4e1e3bd4edce44ef928c1e03aea620e",
+        "actualSha256": "9af40c99f7074f8ff3798155af2f07f1a4e1e3bd4edce44ef928c1e03aea620e",
+        "checksumMatch": true
+      },
+      {
+        "name": "libpq5",
+        "version": "18.6-1.pgdg13+2",
+        "url": "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/libpq5_18.6-1.pgdg13+2_amd64.deb",
+        "expectedSha256": "c6cc459bb499db4697686533e50bf5943f7e7d6929c04ef55eec184d5436859b",
+        "actualSha256": "c6cc459bb499db4697686533e50bf5943f7e7d6929c04ef55eec184d5436859b",
+        "checksumMatch": true
+      },
+      {
+        "name": "liburing2",
+        "version": "2.9-1",
+        "url": "https://deb.debian.org/debian/pool/main/libu/liburing/liburing2_2.9-1_amd64.deb",
+        "expectedSha256": "4b589c00c7a51172aace2cb2fb3d3ff32daf86c644023126dcfcaa840cc941ea",
+        "actualSha256": "4b589c00c7a51172aace2cb2fb3d3ff32daf86c644023126dcfcaa840cc941ea",
+        "checksumMatch": true
+      }
+    ]
+  },
+  "postgresqlRuntime": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "serverVersionNumber": 180006,
+    "dataChecksums": "on",
+    "listenAddresses": "127.0.0.1",
+    "bindScope": "loopback-only",
+    "tls": "disabled only inside disposable loopback qualification",
+    "globalHostInstallation": false,
+    "ct200Actions": 0
+  },
+  "qualificationExecution": {
+    "schemaVersion": 1,
+    "candidate": "FINAL-14",
+    "result": "PASS",
+    "command": "node tooling/database/run-stage-5-disposable.mjs",
+    "startedAt": "2026-10-06T15:58:11.582Z",
+    "endedAt": "2026-10-06T15:58:35.884Z",
+    "exitCode": 0,
+    "runnerLogBytes": 5534,
+    "runnerLogSha256": "5c39b12df8d05c5a5b8684e54b39f5619e4983b1f267cd9f7988a79772a5017f",
+    "integrationLogBytes": 5481,
+    "integrationLogSha256": "2cf653de5322391d927f48181559c8e6248fbbb8dc1f01918f1699902262115b",
+    "integrationTestsPassed": 27,
+    "node": "v24.19.0",
+    "cwd": "/home/hermes/projects/TravelOS",
+    "evidenceDirectory": "/home/hermes/.hermes/cache/scratch/travelos-stage5-final14-qualification",
+    "stage6Actions": 0
+  },
+  "integrationLog": {
+    "bytes": 5481,
+    "sha256": "2cf653de5322391d927f48181559c8e6248fbbb8dc1f01918f1699902262115b"
+  },
+  "runnerLog": {
+    "bytes": 5534,
+    "sha256": "5c39b12df8d05c5a5b8684e54b39f5619e4983b1f267cd9f7988a79772a5017f"
+  },
+  "sourceTestPath": "tests/integration/stage-5-postgresql.test.ts",
+  "sourceTestSha256": "5f92727fe81264d8074633eb2d87534c5341af64e0b86c26f9a9f2e3848951a0",
+  "stage6Actions": 0
+}

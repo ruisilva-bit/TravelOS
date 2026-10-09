@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-24",
+  "predecessor": "FINAL-23",
+  "phase": "FINAL",
+  "ciVerify": {
+    "invocationCount": 1,
+    "result": "PASS",
+    "exitCode": 0
+  },
+  "artifactCount": 30,
+  "artifacts": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/ci-verify-execution.json",
+      "bytes": 5151,
+      "sha256": "8b060c32dc5b17f2652ce569c6215cb4e13575303d6730d99e62ff6e259f7e14"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/ci-verify.log",
+      "bytes": 320896,
+      "sha256": "00813618d1a390d7846a50286b9f638a97ef4f99a38cf45ba0195728ad330f58"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/current-correction-matrix.json",
+      "bytes": 93714,
+      "sha256": "f23fbae476fbd101d1af963f316ffb103a27ec6db3ce91531b1d62fbb507f74d"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/final23-baseline-generation.json",
+      "bytes": 4473,
+      "sha256": "5eac046ef7e91f9e5d60bd9dcdeb79b0c7b1a94bbecc1e41788e6e071f97e96b"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/final23-correction-matrix.json",
+      "bytes": 89561,
+      "sha256": "a24d87b734762a26f31f0229f4cd77313fd51887f76950d4737bc8279e7e92a2"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/final23-readiness-failure.json",
+      "bytes": 1920,
+      "sha256": "c7f53fe12e6a308284af131b0bc8be3ee835066616af7e26cce10cd89cd9f795"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/final23-rejection-record.md",
+      "bytes": 1993,
+      "sha256": "baa4626cde8a65b170fa1cbc66b9488d578c61d060c5482e431f18e3b9ed0f75"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/final23-security-extension-baseline.json",
+      "bytes": 34986,
+      "sha256": "a15d1abd1191ca24d22f6802d06ecf8ad23ae3b89f7aef0f24e0d07001295939"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/finding-lineage.json",
+      "bytes": 3230,
+      "sha256": "4cd87a10e2c1dd5c42c1980252979269ad2bdcd869f5780b48373adc4234c2a4"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/focused-test-execution.json",
+      "bytes": 3419,
+      "sha256": "432d8697b86074e0f88236fc614340dfa67cf57a35f9cfb1849be358c13a8367"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/focused-tests.log",
+      "bytes": 11189,
+      "sha256": "f9b56db6490014ce40c5d93bc86d5b7f0909b7e5b70f0a5cc01cba4929296baf"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/lifecycle-state-final.json",
+      "bytes": 497,
+      "sha256": "99adfdb6d877cf1f3184d141d2c912be967c42de01e181e04350f76a96958744"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/lifecycle-state.json",
+      "bytes": 384,
+      "sha256": "5cb16e07918f926d04353010030e4b2429e922093016bfeac4b8712803eb2ff6"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/postgresql-disposable-cleanup.json",
+      "bytes": 311,
+      "sha256": "fcb09fce5b5e324eae0be6544eb0cf5cb88c60afeab4eb79a8e877bf01702efe"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/postgresql-integration-test-execution.json",
+      "bytes": 457,
+      "sha256": "b128ddf67575015723dcc3e97d0f3be8c79ff6f8d77f840270ae7f352e6251c1"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/postgresql-integration-tests.log",
+      "bytes": 5875,
+      "sha256": "5d1e656c0c2cdc2a48e947b7cc752e65581c4b8aabd6d411756673ea0797a149"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/postgresql-package-build.json",
+      "bytes": 219,
+      "sha256": "f1d4d0b17e1085793bf945ca1e2abb9cc4e3dd42e47c10a8cea1c4fdf34ef00e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/postgresql-qualification-execution.json",
+      "bytes": 1028,
+      "sha256": "7a8b7aa9ba4b501ef7eeba0fea3c3ecafd8cb08294bf780605a023fb41336183"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/postgresql-qualification-runner.log",
+      "bytes": 5928,
+      "sha256": "3cf31bc5e5256f3f9462c550ef5e4330a58d357b97cc5933f13ec4c8194023d5"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/postgresql-qualification.json",
+      "bytes": 5617,
+      "sha256": "12d84696984570e3dca16f8a3ed2e67e5c21257420e5ca9c6637fd7b4b4e36d5"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/postgresql-runtime.json",
+      "bytes": 292,
+      "sha256": "690483dc28f7f67dac2545f08e60b0793ee5e7b56db9ae397bd91f5947dc7aea"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/PRE_CI_EVIDENCE_INDEX.json",
+      "bytes": 5488,
+      "sha256": "03e34524b3e1defdec14f89a4e3244e78411f9ffab9b705186aa7d4f50b0678c"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/readiness-preflight.json",
+      "bytes": 6278,
+      "sha256": "14928a9e737f1e4c229cb6d206141df8936d6502d10080c7493a9bad420818e5"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/security-extension-baseline-generation.json",
+      "bytes": 4206,
+      "sha256": "084b48ff6ecc0daa4a862b1c84d75af35d3d4a6c7d74af8978f04264388179bb"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/source-security-scan-final.json",
+      "bytes": 13099,
+      "sha256": "50b508d0511bf0a9cd57d896ba1ee337d36f84551f98f320203a1d86c0b5eea8"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-5-final-24/source-security-scan-pre-ci.json",
+      "bytes": 12515,
+      "sha256": "1acad03dbf831551296abd18bf0513e955432be462617a29df83afae53877cdc"
+    },
+    {
+      "path": "docs/reviews/phase-1-m1/STAGE_5_FINAL_24_CORRECTION_MATRIX.json",
+      "bytes": 93714,
+      "sha256": "f23fbae476fbd101d1af963f316ffb103a27ec6db3ce91531b1d62fbb507f74d"
+    },
+    {
+      "path": "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json",
+      "bytes": 36746,
+      "sha256": "76bd12114eafa7d0b12dff00b0988eb15046a82887a5a31c194720c083682284"
+    },
+    {
+      "path": "tooling/ci/stage-5-current-candidate.json",
+      "bytes": 9757,
+      "sha256": "0dc52823383e89f9215514693d38c6e752133474cfc9f1e79d3a390218cfcf4d"
+    }
+  ],
+  "aggregateSha256": "60ffe0eb30bcc974f690892d7a80ca421a48205f517e24a066cc6bfd0dce6305",
+  "stage6Actions": 0
+}

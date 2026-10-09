@@ -1,0 +1,5 @@
+# Archived Stage 5 evidence preserves original Markdown hard-break bytes.
+# Keep git diff --check focused on unintended whitespace outside these records.
+docs/evidence/phase-1-m1/stage-5-final-*/*.md whitespace=-blank-at-eol,-blank-at-eof
+docs/reviews/phase-1-m1/STAGE_5_FINAL_*_REJECTION_RECORD.md whitespace=-blank-at-eol,-blank-at-eof
+docs/reviews/phase-1-m1/STAGE_5_FINAL_14_CANDIDATE_FREEZE.md whitespace=-blank-at-eol,-blank-at-eof

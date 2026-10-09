@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-11",
+  "result": "PASS",
+  "nodeVersion": "v24.19.0",
+  "commands": [
+    "corepack pnpm run build",
+    "corepack pnpm run test:smoke"
+  ],
+  "build": {
+    "exitCode": 0,
+    "stdoutSha256": "4d4962ae6f4766d1506fff6b56db47b5f47ac2e10d37c479eb14fc585dbb3003",
+    "stderrSha256": "e519a33a9a396f0ee48c3e1263a833876b70955ab01135bdb21f4386f4233777",
+    "outputBytes": 2806
+  },
+  "smoke": {
+    "exitCode": 0,
+    "stdoutSha256": "576939ff41919fa6d1c112ed4d50b65b991e4bfc74307813f88769edeeb9dddb",
+    "stderrSha256": "9d384b7277f13442b205aba7888e4b09181b7062a4583f5c0024d33b7e814b5c",
+    "outputBytes": 5294
+  }
+}

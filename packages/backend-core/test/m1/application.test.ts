@@ -52,6 +52,7 @@ const testAuthorization = (
   const nowEpochMs = Date.now();
   return {
     session: {
+      sessionId: "test-session",
       staffPrincipalId: "staff-principal-unit-test",
       agencyId: authorizationAgencyId,
       authorizationEpoch: 1n,
@@ -726,6 +727,7 @@ describe("Stage 5 M1 application invariants", () => {
       "finance.manage_costs",
     ] as const satisfies readonly StaffPermissionId[];
     const session: StaffSessionAuthorizationProof = {
+      sessionId: "session-1",
       staffPrincipalId: "staff-principal-1",
       agencyId,
       authorizationEpoch: 7n,
@@ -807,6 +809,7 @@ describe("Stage 5 M1 application invariants", () => {
   it("denies inactive, missing-permission and cross-Agency direct calls before workspace access", async () => {
     const nowEpochMs = 1_700_000_000_000;
     const session: StaffSessionAuthorizationProof = {
+      sessionId: "session-1",
       staffPrincipalId: "staff-principal-1",
       agencyId,
       authorizationEpoch: 7n,

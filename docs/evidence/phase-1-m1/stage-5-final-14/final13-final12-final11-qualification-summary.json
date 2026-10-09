@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "candidate": "FINAL-11",
+  "result": "PASS",
+  "toolchain": {
+    "node": "v24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0",
+    "processExecPath": "/home/hermes/.hermes/cache/scratch/travelos-final11-toolchain/node_modules/node/bin/node"
+  },
+  "focused": {
+    "result": "PASS",
+    "files": 14,
+    "tests": 64,
+    "logBytes": 11037
+  },
+  "authBridge": {
+    "schemaVersion": 1,
+    "candidate": "FINAL-11",
+    "result": "PASS",
+    "command": "corepack pnpm exec vitest run --config tooling/testing/vitest.config.ts --reporter=verbose apps/admin-api/test/auth-bridge.test.ts apps/portal-api/test/auth-bridge.test.ts",
+    "exitCode": 0,
+    "stdoutSha256": "f3e2c6933fda442388d4930415c7e689df65062339e01d58060ad2fc32450133",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputBytes": 1363,
+    "nodeVersion": "v24.19.0"
+  },
+  "postgres": {
+    "serverVersionNumber": 180006,
+    "integrationTests": {
+      "schemaVersion": 1,
+      "result": "PASS",
+      "command": "vitest run --config tooling/testing/vitest.stage-5.config.ts --reporter=verbose",
+      "exitCode": 0,
+      "stdoutSha256": "a2bcaaad619c9c90b7fd05bf4ac4cef5a30b48fae47d9ce1cb2fafd4f92d34fc",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "redaction": "Synthetic loopback trust-auth cluster; no passwords or credential-bearing URLs emitted.",
+      "ct200Actions": 0
+    },
+    "cleanup": {
+      "schemaVersion": 1,
+      "result": "PASS",
+      "clusterStartAttempted": true,
+      "clusterStarted": true,
+      "clusterStopped": true,
+      "stopExitCode": 0,
+      "immediateStopExitCode": null,
+      "disposableRootAbsent": true,
+      "retainedPostgresqlDataDirectories": 0,
+      "retainedPackageArchives": 0,
+      "ct200Actions": 0
+    }
+  },
+  "migration": {
+    "schemaVersion": 1,
+    "candidate": "FINAL-11",
+    "result": "PASS",
+    "command": "corepack pnpm exec tsx tooling/database/verify-migration-checksums.ts",
+    "exitCode": 0,
+    "stdoutSha256": "6fe77c6b3b6d88cc7917dfe487fba765cb5175bb6861181f0a565a14a18a46f3",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputBytes": 1569,
+    "nodeVersion": "v24.19.0"
+  },
+  "packageBuild": {
+    "result": "PASS",
+    "buildStdoutSha256": "4d4962ae6f4766d1506fff6b56db47b5f47ac2e10d37c479eb14fc585dbb3003",
+    "smokeStdoutSha256": "576939ff41919fa6d1c112ed4d50b65b991e4bfc74307813f88769edeeb9dddb"
+  },
+  "stage6Actions": 0,
+  "artifacts": [
+    {
+      "name": "auth-bridge-tests.json",
+      "bytes": 501,
+      "sha256": "2295db1629d20f4b19b25455dd36e4c09cbc4bf3baed70130cc3b4c43501663e",
+      "result": "PASS"
+    },
+    {
+      "name": "disposable-cleanup.json",
+      "bytes": 311,
+      "sha256": "fcb09fce5b5e324eae0be6544eb0cf5cb88c60afeab4eb79a8e877bf01702efe",
+      "result": "PASS"
+    },
+    {
+      "name": "focused-test-execution.json",
+      "bytes": 1409,
+      "sha256": "d98c8d3edf1521ced9fff98666a032875ab3ffb5d1671d55728b263c37c753e9",
+      "result": "PASS"
+    },
+    {
+      "name": "integration-test-execution.json",
+      "bytes": 457,
+      "sha256": "2a396f1c3745caf13fd949716c90fb87a77cc92d7951d9e648db5e61506c4bdb",
+      "result": "PASS"
+    },
+    {
+      "name": "migration-checksums.json",
+      "bytes": 2173,
+      "sha256": "fd2484f65e9cbe75b0732e606284dfeaccdcb858cc74975edcc8c8f99935d331",
+      "result": "PASS"
+    },
+    {
+      "name": "package-build.json",
+      "bytes": 662,
+      "sha256": "788aba21890c84cc98f50150da6cc154bf914bc09510c9b1a1b173e975118e05",
+      "result": "PASS"
+    },
+    {
+      "name": "postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0",
+      "result": "PASS"
+    },
+    {
+      "name": "postgresql-runtime.json",
+      "bytes": 292,
+      "sha256": "690483dc28f7f67dac2545f08e60b0793ee5e7b56db9ae397bd91f5947dc7aea",
+      "result": "PASS"
+    },
+    {
+      "name": "security-extension-baseline.json",
+      "bytes": 2597,
+      "sha256": "e8f601902e59cf6392d0a7cd6b017ac0e4bd0526a293575407801df0abce5f00",
+      "result": "PASS"
+    },
+    {
+      "name": "stage5-source-scope-test.log",
+      "bytes": 1977,
+      "sha256": "3a7231004245950224f32e26c820bda3443f05dd3a06f2d8a903bd19ffeca121",
+      "result": "CAPTURED"
+    }
+  ]
+}

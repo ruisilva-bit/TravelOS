@@ -1,26 +1,113 @@
-import { lstat, readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { lstat, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import currentCandidateManifest from "./stage-5-current-candidate.json" with { type: "json" };
 
 import {
-  STAGE5_FINAL10_CANDIDATE_FREEZE,
-  STAGE5_FINAL10_CANDIDATE_VALIDATION,
-  STAGE5_FINAL10_CORRECTION_MATRIX,
-  STAGE5_FINAL10_EVIDENCE_INDEX,
-  STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT,
-  STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT,
-  STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL11_CANDIDATE_FREEZE,
+  STAGE5_FINAL11_CANDIDATE_VALIDATION,
+  STAGE5_FINAL11_CORRECTION_MATRIX,
+  STAGE5_FINAL11_EVIDENCE_INDEX,
+  STAGE5_FINAL11_FINAL8_REVIEW_ARTIFACT,
+  STAGE5_FINAL11_FINAL9_REVIEW_ARTIFACT,
+  STAGE5_FINAL11_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL12_EVIDENCE_INDEX,
+  STAGE5_FINAL13_CORRECTION_MATRIX,
+  STAGE5_FINAL13_EVIDENCE_INDEX,
+  STAGE5_FINAL14_CANDIDATE_VALIDATION,
+  STAGE5_FINAL14_CANDIDATE_FREEZE,
+  STAGE5_FINAL14_CORRECTION_MATRIX,
+  STAGE5_FINAL14_EVIDENCE_INDEX,
+  STAGE5_FINAL14_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL15_CANDIDATE_VALIDATION,
+  STAGE5_FINAL15_CANDIDATE_FREEZE,
+  STAGE5_FINAL15_CORRECTION_MATRIX,
+  STAGE5_FINAL15_EVIDENCE_INDEX,
+  STAGE5_FINAL15_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL16_CANDIDATE_VALIDATION,
+  STAGE5_FINAL16_CANDIDATE_FREEZE,
+  STAGE5_FINAL16_CORRECTION_MATRIX,
+  STAGE5_FINAL16_EVIDENCE_INDEX,
+  STAGE5_FINAL16_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL17_CANDIDATE_VALIDATION,
+  STAGE5_FINAL17_CANDIDATE_FREEZE,
+  STAGE5_FINAL17_CORRECTION_MATRIX,
+  STAGE5_FINAL17_EVIDENCE_INDEX,
+  STAGE5_FINAL17_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL18_CANDIDATE_FREEZE,
+  STAGE5_FINAL18_CANDIDATE_VALIDATION,
+  STAGE5_FINAL18_CORRECTION_MATRIX,
+  STAGE5_FINAL18_EVIDENCE_INDEX,
+  STAGE5_FINAL18_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL19_CANDIDATE_FREEZE,
+  STAGE5_FINAL19_CANDIDATE_VALIDATION,
+  STAGE5_FINAL19_CORRECTION_MATRIX,
+  STAGE5_FINAL20_CANDIDATE_FREEZE,
+  STAGE5_FINAL20_CANDIDATE_VALIDATION,
+  STAGE5_FINAL20_CORRECTION_MATRIX,
+  STAGE5_FINAL20_EVIDENCE_INDEX,
+  STAGE5_FINAL20_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL21_CANDIDATE_FREEZE,
+  STAGE5_FINAL21_CANDIDATE_VALIDATION,
+  STAGE5_FINAL21_CORRECTION_MATRIX,
+  STAGE5_FINAL21_EVIDENCE_INDEX,
+  STAGE5_FINAL21_POST_FREEZE_SCAN_REPORT,
 } from "./stage-5-candidate-contract.mjs";
+import {
+  STAGE5_GENERATION_LIFECYCLE_LEDGER,
+  validateStage5GenerationLifecycleLedger,
+} from "./stage-5-generation-lifecycle-ledger.mjs";
 
 const IGNORED_DIRECTORY_NAMES = new Set([".git", ".vite", "coverage", "dist", "node_modules"]);
 
 export {
-  STAGE5_FINAL10_CANDIDATE_FREEZE,
-  STAGE5_FINAL10_CANDIDATE_VALIDATION,
-  STAGE5_FINAL10_CORRECTION_MATRIX,
-  STAGE5_FINAL10_EVIDENCE_INDEX,
-  STAGE5_FINAL10_FINAL8_REVIEW_ARTIFACT,
-  STAGE5_FINAL10_FINAL9_REVIEW_ARTIFACT,
-  STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL11_CANDIDATE_FREEZE,
+  STAGE5_FINAL11_CANDIDATE_VALIDATION,
+  STAGE5_FINAL11_CORRECTION_MATRIX,
+  STAGE5_FINAL11_EVIDENCE_INDEX,
+  STAGE5_FINAL11_FINAL8_REVIEW_ARTIFACT,
+  STAGE5_FINAL11_FINAL9_REVIEW_ARTIFACT,
+  STAGE5_FINAL11_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL12_EVIDENCE_INDEX,
+  STAGE5_FINAL13_CORRECTION_MATRIX,
+  STAGE5_FINAL13_EVIDENCE_INDEX,
+  STAGE5_FINAL14_CANDIDATE_VALIDATION,
+  STAGE5_FINAL14_CANDIDATE_FREEZE,
+  STAGE5_FINAL14_CORRECTION_MATRIX,
+  STAGE5_FINAL14_EVIDENCE_INDEX,
+  STAGE5_FINAL14_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL15_CANDIDATE_VALIDATION,
+  STAGE5_FINAL15_CANDIDATE_FREEZE,
+  STAGE5_FINAL15_CORRECTION_MATRIX,
+  STAGE5_FINAL15_EVIDENCE_INDEX,
+  STAGE5_FINAL15_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL16_CANDIDATE_VALIDATION,
+  STAGE5_FINAL16_CANDIDATE_FREEZE,
+  STAGE5_FINAL16_CORRECTION_MATRIX,
+  STAGE5_FINAL16_EVIDENCE_INDEX,
+  STAGE5_FINAL16_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL17_CANDIDATE_VALIDATION,
+  STAGE5_FINAL17_CANDIDATE_FREEZE,
+  STAGE5_FINAL17_CORRECTION_MATRIX,
+  STAGE5_FINAL17_EVIDENCE_INDEX,
+  STAGE5_FINAL17_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL18_CANDIDATE_FREEZE,
+  STAGE5_FINAL18_CANDIDATE_VALIDATION,
+  STAGE5_FINAL18_CORRECTION_MATRIX,
+  STAGE5_FINAL18_EVIDENCE_INDEX,
+  STAGE5_FINAL19_CANDIDATE_FREEZE,
+  STAGE5_FINAL19_CANDIDATE_VALIDATION,
+  STAGE5_FINAL19_CORRECTION_MATRIX,
+  STAGE5_FINAL20_CANDIDATE_FREEZE,
+  STAGE5_FINAL20_CANDIDATE_VALIDATION,
+  STAGE5_FINAL20_CORRECTION_MATRIX,
+  STAGE5_FINAL20_EVIDENCE_INDEX,
+  STAGE5_FINAL20_POST_FREEZE_SCAN_REPORT,
+  STAGE5_FINAL21_CANDIDATE_FREEZE,
+  STAGE5_FINAL21_CANDIDATE_VALIDATION,
+  STAGE5_FINAL21_CORRECTION_MATRIX,
+  STAGE5_FINAL21_EVIDENCE_INDEX,
+  STAGE5_FINAL21_POST_FREEZE_SCAN_REPORT,
 };
 export const STAGE5_HISTORICAL_EVIDENCE_INDEXES = Object.freeze(
   [
@@ -35,10 +122,22 @@ export const STAGE5_HISTORICAL_EVIDENCE_INDEXES = Object.freeze(
     "docs/evidence/phase-1-m1/stage-5-final-7/EVIDENCE_INDEX.json",
     "docs/evidence/phase-1-m1/stage-5-final-8/EVIDENCE_INDEX.json",
     "docs/evidence/phase-1-m1/stage-5-final-9/EVIDENCE_INDEX.json",
+    "docs/evidence/phase-1-m1/stage-5-final-10/EVIDENCE_INDEX.json",
   ].toSorted(),
 );
 export const STAGE5_EXPECTED_EVIDENCE_INDEXES = Object.freeze(
-  [...STAGE5_HISTORICAL_EVIDENCE_INDEXES, STAGE5_FINAL10_EVIDENCE_INDEX].toSorted(),
+  [
+    ...STAGE5_HISTORICAL_EVIDENCE_INDEXES,
+    STAGE5_FINAL11_EVIDENCE_INDEX,
+    STAGE5_FINAL12_EVIDENCE_INDEX,
+    STAGE5_FINAL13_EVIDENCE_INDEX,
+    STAGE5_FINAL14_EVIDENCE_INDEX,
+    STAGE5_FINAL16_EVIDENCE_INDEX,
+    STAGE5_FINAL17_EVIDENCE_INDEX,
+    STAGE5_FINAL18_EVIDENCE_INDEX,
+    STAGE5_FINAL20_EVIDENCE_INDEX,
+    STAGE5_FINAL21_EVIDENCE_INDEX,
+  ].toSorted(),
 );
 
 const STAGE5_SOURCE_SCOPE_PHASES = new Set(["PRE_INDEX", "FINAL_EVIDENCE", "FINAL_CANDIDATE"]);
@@ -52,7 +151,98 @@ const STAGE5_ADDITIONAL_DOCUMENT_PATHS = Object.freeze([
 export const STAGE5_REQUIRED_SOURCE_PATHS = Object.freeze([
   "docs/implementation/M1_STAGE_5_SECURITY_EXTENSION.md",
   "docs/reviews/phase-1-m1/STAGE_5_FINAL_9_INDEPENDENT_REVIEW.md",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_10_CORRECTION_MATRIX.json",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_10_REJECTION_RECORD.md",
   "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json",
+  "docs/evidence/phase-1-m1/stage-5-final-10/ci-verify.log",
+  "docs/evidence/phase-1-m1/stage-5-final-10/ci-verify-execution.json",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_11_REJECTION_RECORD.md",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_12_CORRECTION_MATRIX.json",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CORRECTION_MATRIX.json",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CANDIDATE_VALIDATION.md",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_13_CANDIDATE_FREEZE.md",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_14_CORRECTION_MATRIX.json",
+  "docs/evidence/phase-1-m1/stage-5-final-14/EVIDENCE_INDEX.json",
+  "docs/reviews/phase-1-m1/STAGE_5_FINAL_15_CORRECTION_MATRIX.json",
+  "tooling/ci/run-stage-5-final15-authoritative-ci.mjs",
+  "tooling/ci/generate-stage-5-final15-security-extension-baseline.mjs",
+  "tooling/ci/verify-stage-5-final15-security-extension-baseline.mjs",
+  "tooling/ci/stage-5-final15-evidence-index.mjs",
+  "tooling/ci/stage-5-final15-finding-lineage.mjs",
+  "tooling/ci/stage-5-final15-readiness-preflight.mjs",
+  "tooling/ci/prepare-stage-5-final15-evidence.mjs",
+  "tooling/ci/stage-5-final15-scan-provenance.mjs",
+  "tooling/ci/run-stage-5-final16-authoritative-ci.mjs",
+  "tooling/ci/run-stage-5-final16-focused.mjs",
+  "tooling/ci/run-stage-5-final16-postgresql-qualification.mjs",
+  "tooling/ci/generate-stage-5-final16-security-extension-baseline.mjs",
+  "tooling/ci/verify-stage-5-final16-security-extension-baseline.mjs",
+  "tooling/ci/stage-5-final16-evidence-index.mjs",
+  "tooling/ci/stage-5-final16-finding-lineage.mjs",
+  "tooling/ci/stage-5-final16-readiness-preflight.mjs",
+  "tooling/ci/prepare-stage-5-final16-evidence.mjs",
+  "tooling/ci/stage-5-final16-scan-provenance.mjs",
+  "tooling/ci/test-stage-5-final16-evidence-index.mjs",
+  "tooling/ci/test-stage-5-final16-security-extension-baseline.mjs",
+  "tooling/ci/run-stage-5-final17-authoritative-ci.mjs",
+  "tooling/ci/run-stage-5-final17-focused.mjs",
+  "tooling/ci/run-stage-5-final17-postgresql-qualification.mjs",
+  "tooling/ci/generate-stage-5-final17-security-extension-baseline.mjs",
+  "tooling/ci/verify-stage-5-final17-security-extension-baseline.mjs",
+  "tooling/ci/stage-5-final17-evidence-index.mjs",
+  "tooling/ci/stage-5-final17-finding-lineage.mjs",
+  "tooling/ci/stage-5-final17-readiness-preflight.mjs",
+  "tooling/ci/prepare-stage-5-final17-evidence.mjs",
+  "tooling/ci/stage-5-final17-scan-provenance.mjs",
+  "tooling/ci/test-stage-5-final17-evidence-index.mjs",
+  "tooling/ci/test-stage-5-final17-security-extension-baseline.mjs",
+  "tooling/ci/run-stage-5-final18-authoritative-ci.mjs",
+  "tooling/ci/run-stage-5-final18-focused.mjs",
+  "tooling/ci/run-stage-5-final18-postgresql-qualification.mjs",
+  "tooling/ci/generate-stage-5-final18-security-extension-baseline.mjs",
+  "tooling/ci/verify-stage-5-final18-security-extension-baseline.mjs",
+  "tooling/ci/stage-5-final18-evidence-index.mjs",
+  "tooling/ci/test-stage-5-final18-evidence-index.mjs",
+  "tooling/ci/stage-5-final18-finding-lineage.mjs",
+  "tooling/ci/stage-5-final18-readiness-preflight.mjs",
+  "tooling/ci/prepare-stage-5-final18-evidence.mjs",
+  "tooling/ci/prepare-stage-5-final18-correction-matrix.mjs",
+  "tooling/ci/stage-5-final18-scan-provenance.mjs",
+  "tooling/ci/test-stage-5-final18-security-extension-baseline.mjs",
+  "tooling/ci/run-stage-5-final19-authoritative-ci.mjs",
+  "tooling/ci/run-stage-5-final19-focused.mjs",
+  "tooling/ci/run-stage-5-final19-postgresql-qualification.mjs",
+  "tooling/ci/generate-stage-5-final19-security-extension-baseline.mjs",
+  "tooling/ci/verify-stage-5-final19-security-extension-baseline.mjs",
+  "tooling/ci/stage-5-final19-evidence-index.mjs",
+  "tooling/ci/test-stage-5-final19-evidence-index.mjs",
+  "tooling/ci/stage-5-final19-finding-lineage.mjs",
+  "tooling/ci/stage-5-final19-readiness-preflight.mjs",
+  "tooling/ci/prepare-stage-5-final19-evidence.mjs",
+  "tooling/ci/prepare-stage-5-final19-correction-matrix.mjs",
+  "tooling/ci/stage-5-final19-scan-provenance.mjs",
+  "tooling/ci/test-stage-5-final19-security-extension-baseline.mjs",
+  "tooling/ci/run-stage-5-final20-authoritative-ci.mjs",
+  "tooling/ci/run-stage-5-final20-focused.mjs",
+  "tooling/ci/run-stage-5-final20-postgresql-qualification.mjs",
+  "tooling/ci/generate-stage-5-final20-security-extension-baseline.mjs",
+  "tooling/ci/verify-stage-5-final20-security-extension-baseline.mjs",
+  "tooling/ci/stage-5-final20-evidence-index.mjs",
+  "tooling/ci/test-stage-5-final20-evidence-index.mjs",
+  "tooling/ci/stage-5-final20-finding-lineage.mjs",
+  "tooling/ci/stage-5-final20-readiness-preflight.mjs",
+  "tooling/ci/prepare-stage-5-final20-evidence.mjs",
+  "tooling/ci/prepare-stage-5-final20-correction-matrix.mjs",
+  "tooling/ci/test-stage-5-final20-security-extension-baseline.mjs",
+  "tooling/ci/test-stage-5-final19-preflight-failure.mjs",
+  "tooling/ci/stage-5-final20-scan-provenance.mjs",
+  "tooling/ci/stage-5-working-tree-snapshot.mjs",
+  "tooling/ci/test-stage-5-working-tree-snapshot.mjs",
+  "tooling/ci/stage-5-generation-lifecycle-ledger.json",
+  "tooling/ci/stage-5-generation-lifecycle-ledger.mjs",
+  "tooling/ci/test-stage-5-generation-lifecycle-ledger.mjs",
+  "tooling/ci/scan-source-secrets.mjs",
+  STAGE5_FINAL16_CORRECTION_MATRIX,
   "migrations/0007_stage5_m1_domain_slice.cjs",
   "migrations/0008_stage5_cardinality_only.cjs",
   "migrations/0009_stage5_revision_and_lock_version_hardening.cjs",
@@ -95,6 +285,25 @@ export const STAGE5_REQUIRED_SOURCE_PATHS = Object.freeze([
   "tooling/ci/run-stage-5-authoritative-ci.mjs",
   "tooling/ci/run-stage-5-final10-authoritative-ci.mjs",
   "tooling/ci/prepare-stage-5-final10-evidence.mjs",
+  "tooling/ci/run-stage-5-final11-authoritative-ci.mjs",
+  "tooling/ci/prepare-stage-5-final11-evidence.mjs",
+  "tooling/ci/stage-5-final11-finding-lineage.mjs",
+  "tooling/ci/test-stage-5-final11-finding-lineage.mjs",
+  "tooling/ci/generate-stage-5-final11-security-extension-baseline.mjs",
+  "tooling/ci/stage-5-final11-readiness-preflight.mjs",
+  "tooling/ci/run-stage-5-final14-authoritative-ci.mjs",
+  "tooling/ci/run-stage-5-final14-postgresql-qualification.mjs",
+  "tooling/ci/prepare-stage-5-final14-evidence.mjs",
+  "tooling/ci/stage-5-final14-finding-lineage.mjs",
+  "tooling/ci/stage-5-final14-evidence-index.mjs",
+  "tooling/ci/stage-5-final14-scan-provenance.mjs",
+  "tooling/ci/generate-stage-5-final14-security-extension-baseline.mjs",
+  "tooling/ci/verify-stage-5-final14-security-extension-baseline.mjs",
+  "tooling/ci/stage-5-final14-readiness-preflight.mjs",
+  "tooling/ci/test-stage-5-final14-finding-lineage.mjs",
+  "tooling/ci/test-stage-5-final14-evidence-index.mjs",
+  "tooling/ci/test-stage-5-final14-security-extension-baseline.mjs",
+  "tooling/ci/test-stage-5-final14-scan-provenance.mjs",
   "tooling/ci/scan-source-secrets.mjs",
   "tooling/ci/stage-5-candidate-contract.mjs",
   "tooling/ci/stage-5-evidence-index.mjs",
@@ -162,25 +371,25 @@ const readStage5EvidenceFiles = async (root) => {
   return files;
 };
 
-export const validateStage5Final10ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
-  const receiptDirectory = path.dirname(STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT);
+export const validateStage5Final11ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
+  const receiptDirectory = path.dirname(STAGE5_FINAL11_POST_FREEZE_SCAN_REPORT);
   const absoluteReceiptDirectory = path.join(root, receiptDirectory);
   let entries;
   try {
     const directoryMetadata = await lstat(absoluteReceiptDirectory);
     if (!directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink()) {
-      throw new Error(`FINAL-10 scan receipt root is not a regular directory: ${receiptDirectory}`);
+      throw new Error(`FINAL-11 scan receipt root is not a regular directory: ${receiptDirectory}`);
     }
     entries = await readdir(absoluteReceiptDirectory, { withFileTypes: true });
   } catch (error) {
     if (error.code === "ENOENT") {
-      return { path: STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
+      return { path: STAGE5_FINAL11_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
     }
     throw error;
   }
   const allowedNames = new Set([
     ...STAGE5_HISTORICAL_POST_FREEZE_SCAN_REPORTS.map((filePath) => path.basename(filePath)),
-    path.basename(STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT),
+    path.basename(STAGE5_FINAL11_POST_FREEZE_SCAN_REPORT),
   ]);
   const invalidEntries = entries
     .filter((entry) => !allowedNames.has(entry.name) || !entry.isFile() || entry.isSymbolicLink())
@@ -188,20 +397,256 @@ export const validateStage5Final10ScanReceiptDirectory = async ({ root = process
     .toSorted();
   if (invalidEntries.length > 0) {
     throw new Error(
-      `FINAL-10 post-freeze scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
+      `FINAL-11 post-freeze scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
     );
   }
   return {
-    path: STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
+    path: STAGE5_FINAL11_POST_FREEZE_SCAN_REPORT,
     exists: entries.some(
-      (entry) => entry.name === path.basename(STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT),
+      (entry) => entry.name === path.basename(STAGE5_FINAL11_POST_FREEZE_SCAN_REPORT),
     ),
     historicalReports: STAGE5_HISTORICAL_POST_FREEZE_SCAN_REPORTS,
     result: "PASS",
   };
 };
 
-export const validateStage5SourceCoverage = (files, { phase = "FINAL_EVIDENCE" } = {}) => {
+export const validateStage5Final14ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
+  const receiptDirectory = path.dirname(STAGE5_FINAL14_POST_FREEZE_SCAN_REPORT);
+  const absoluteReceiptDirectory = path.join(root, receiptDirectory);
+  let entries;
+  try {
+    const directoryMetadata = await lstat(absoluteReceiptDirectory);
+    if (!directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink()) {
+      throw new Error(`FINAL-14 scan receipt root is not a regular directory: ${receiptDirectory}`);
+    }
+    entries = await readdir(absoluteReceiptDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT")
+      return { path: STAGE5_FINAL14_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
+    throw error;
+  }
+  const allowedNames = new Set([
+    "STAGE_5_FINAL_14_PREVALIDATION.json",
+    "STAGE_5_FINAL_14_ARCHIVE_MANIFEST.json",
+    "STAGE_5_FINAL_14_FROZEN_SOURCE_SNAPSHOT.tar.gz",
+    "STAGE_5_FINAL_14_INDEPENDENT_REVIEW_NO_GO.json",
+    path.basename(STAGE5_FINAL14_POST_FREEZE_SCAN_REPORT),
+  ]);
+  const invalidEntries = entries
+    .filter((entry) => !allowedNames.has(entry.name) || !entry.isFile() || entry.isSymbolicLink())
+    .map((entry) => entry.name)
+    .toSorted();
+  if (invalidEntries.length > 0) {
+    throw new Error(
+      `FINAL-14 scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
+    );
+  }
+  return {
+    path: STAGE5_FINAL14_POST_FREEZE_SCAN_REPORT,
+    exists: entries.some(
+      (entry) => entry.name === path.basename(STAGE5_FINAL14_POST_FREEZE_SCAN_REPORT),
+    ),
+    result: "PASS",
+  };
+};
+
+export const validateStage5Final15ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
+  const receiptDirectory = path.dirname(STAGE5_FINAL15_POST_FREEZE_SCAN_REPORT);
+  const absoluteReceiptDirectory = path.join(root, receiptDirectory);
+  let entries;
+  try {
+    const directoryMetadata = await lstat(absoluteReceiptDirectory);
+    if (!directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink()) {
+      throw new Error(`FINAL-15 scan receipt root is not a regular directory: ${receiptDirectory}`);
+    }
+    entries = await readdir(absoluteReceiptDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT")
+      return { path: STAGE5_FINAL15_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
+    throw error;
+  }
+  const allowedNames = new Set([
+    "STAGE_5_FINAL_15_PREVALIDATION.json",
+    path.basename(STAGE5_FINAL15_POST_FREEZE_SCAN_REPORT),
+  ]);
+  const invalidEntries = entries
+    .filter((entry) => !allowedNames.has(entry.name) || !entry.isFile() || entry.isSymbolicLink())
+    .map((entry) => entry.name)
+    .toSorted();
+  if (invalidEntries.length > 0) {
+    throw new Error(
+      `FINAL-15 scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
+    );
+  }
+  return {
+    path: STAGE5_FINAL15_POST_FREEZE_SCAN_REPORT,
+    exists: entries.some(
+      (entry) => entry.name === path.basename(STAGE5_FINAL15_POST_FREEZE_SCAN_REPORT),
+    ),
+    result: "PASS",
+  };
+};
+
+export const validateStage5Final16ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
+  const receiptDirectory = path.dirname(STAGE5_FINAL16_POST_FREEZE_SCAN_REPORT);
+  const absoluteReceiptDirectory = path.join(root, receiptDirectory);
+  let entries;
+  try {
+    const directoryMetadata = await lstat(absoluteReceiptDirectory);
+    if (!directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink()) {
+      throw new Error(`FINAL-16 scan receipt root is not a regular directory: ${receiptDirectory}`);
+    }
+    entries = await readdir(absoluteReceiptDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return { path: STAGE5_FINAL16_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
+    }
+    throw error;
+  }
+  const allowedNames = new Set([
+    "STAGE_5_FINAL_16_PREVALIDATION.json",
+    "STAGE_5_FINAL_16_ARCHIVE_MANIFEST.json",
+    "STAGE_5_FINAL_16_FROZEN_SOURCE_SNAPSHOT.tar.gz",
+    "STAGE_5_FINAL_16_INDEPENDENT_REVIEW_GO.json",
+    path.basename(STAGE5_FINAL16_POST_FREEZE_SCAN_REPORT),
+  ]);
+  const invalidEntries = entries
+    .filter((entry) => !allowedNames.has(entry.name) || !entry.isFile() || entry.isSymbolicLink())
+    .map((entry) => entry.name)
+    .toSorted();
+  if (invalidEntries.length > 0) {
+    throw new Error(
+      `FINAL-16 scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
+    );
+  }
+  return {
+    path: STAGE5_FINAL16_POST_FREEZE_SCAN_REPORT,
+    exists: entries.some(
+      (entry) => entry.name === path.basename(STAGE5_FINAL16_POST_FREEZE_SCAN_REPORT),
+    ),
+    result: "PASS",
+  };
+};
+
+export const validateStage5Final17ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
+  const receiptDirectory = path.dirname(STAGE5_FINAL17_POST_FREEZE_SCAN_REPORT);
+  const absoluteReceiptDirectory = path.join(root, receiptDirectory);
+  let entries;
+  try {
+    const directoryMetadata = await lstat(absoluteReceiptDirectory);
+    if (!directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink()) {
+      throw new Error(`FINAL-17 scan receipt root is not a regular directory: ${receiptDirectory}`);
+    }
+    entries = await readdir(absoluteReceiptDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return { path: STAGE5_FINAL17_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
+    }
+    throw error;
+  }
+  const allowedNames = new Set([
+    "STAGE_5_FINAL_17_PREVALIDATION.json",
+    "STAGE_5_FINAL_17_ARCHIVE_MANIFEST.json",
+    "STAGE_5_FINAL_17_FROZEN_SOURCE_SNAPSHOT.tar.gz",
+    "STAGE_5_FINAL_17_INDEPENDENT_REVIEW_GO.json",
+    path.basename(STAGE5_FINAL17_POST_FREEZE_SCAN_REPORT),
+  ]);
+  const invalidEntries = entries
+    .filter((entry) => !allowedNames.has(entry.name) || !entry.isFile() || entry.isSymbolicLink())
+    .map((entry) => entry.name)
+    .toSorted();
+  if (invalidEntries.length > 0) {
+    throw new Error(
+      `FINAL-17 scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
+    );
+  }
+  return {
+    path: STAGE5_FINAL17_POST_FREEZE_SCAN_REPORT,
+    exists: entries.some(
+      (entry) => entry.name === path.basename(STAGE5_FINAL17_POST_FREEZE_SCAN_REPORT),
+    ),
+    result: "PASS",
+  };
+};
+
+export const validateStage5Final18ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
+  const receiptDirectory = path.dirname(STAGE5_FINAL18_POST_FREEZE_SCAN_REPORT);
+  const absoluteReceiptDirectory = path.join(root, receiptDirectory);
+  let entries;
+  try {
+    const directoryMetadata = await lstat(absoluteReceiptDirectory);
+    if (!directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink()) {
+      throw new Error(`FINAL-18 scan receipt root is not a regular directory: ${receiptDirectory}`);
+    }
+    entries = await readdir(absoluteReceiptDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return { path: STAGE5_FINAL18_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
+    }
+    throw error;
+  }
+  const allowedNames = new Set([
+    "STAGE_5_FINAL_18_PREVALIDATION.json",
+    "STAGE_5_FINAL_18_ARCHIVE_MANIFEST.json",
+    "STAGE_5_FINAL_18_FROZEN_SOURCE_SNAPSHOT.tar.gz",
+    "STAGE_5_FINAL_18_INDEPENDENT_REVIEW_GO.json",
+    path.basename(STAGE5_FINAL18_POST_FREEZE_SCAN_REPORT),
+  ]);
+  const invalidEntries = entries
+    .filter((entry) => !allowedNames.has(entry.name) || !entry.isFile() || entry.isSymbolicLink())
+    .map((entry) => entry.name)
+    .toSorted();
+  if (invalidEntries.length > 0) {
+    throw new Error(
+      `FINAL-18 scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
+    );
+  }
+  return {
+    path: STAGE5_FINAL18_POST_FREEZE_SCAN_REPORT,
+    exists: entries.some(
+      (entry) => entry.name === path.basename(STAGE5_FINAL18_POST_FREEZE_SCAN_REPORT),
+    ),
+    result: "PASS",
+  };
+};
+
+export const validateStage5Final20ScanReceiptDirectory = async ({ root = process.cwd() } = {}) => {
+  const receiptDirectory = path.dirname(STAGE5_FINAL20_POST_FREEZE_SCAN_REPORT);
+  const absoluteReceiptDirectory = path.join(root, receiptDirectory);
+  let entries;
+  try {
+    const directoryMetadata = await lstat(absoluteReceiptDirectory);
+    if (!directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink()) {
+      throw new Error(`FINAL-19 scan receipt root is not a regular directory: ${receiptDirectory}`);
+    }
+    entries = await readdir(absoluteReceiptDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return { path: STAGE5_FINAL20_POST_FREEZE_SCAN_REPORT, exists: false, result: "PASS" };
+    }
+    throw error;
+  }
+  const allowedName = path.basename(STAGE5_FINAL20_POST_FREEZE_SCAN_REPORT);
+  const invalidEntries = entries
+    .filter((entry) => entry.name !== allowedName || !entry.isFile() || entry.isSymbolicLink())
+    .map((entry) => entry.name)
+    .toSorted();
+  if (invalidEntries.length > 0) {
+    throw new Error(
+      `FINAL-19 scan output directory contains unexpected entries: ${invalidEntries.join(", ")}`,
+    );
+  }
+  return {
+    path: STAGE5_FINAL20_POST_FREEZE_SCAN_REPORT,
+    exists: entries.some((entry) => entry.name === allowedName),
+    result: "PASS",
+  };
+};
+
+export const validateStage5SourceCoverage = (
+  files,
+  { phase = "FINAL_EVIDENCE", candidate = "FINAL-21", candidateArtifactHashes } = {},
+) => {
   if (!STAGE5_SOURCE_SCOPE_PHASES.has(phase)) {
     throw new Error(`Invalid Stage 5 source-scope phase: ${phase}`);
   }
@@ -231,13 +676,32 @@ export const validateStage5SourceCoverage = (files, { phase = "FINAL_EVIDENCE" }
   const stage5EvidenceIndexes = paths.filter((filePath) =>
     /^docs\/evidence\/phase-1-m1\/stage-5(?:-[^/]+)?\/EVIDENCE_INDEX[.]json$/u.test(filePath),
   );
+  const currentIndex = `${currentCandidateManifest.evidenceDirectory}/EVIDENCE_INDEX.json`;
+  const predecessorIndex = currentCandidateManifest.historicalInputs.predecessorEvidenceIndex;
+  const earlierFrozenIndex = "docs/evidence/phase-1-m1/stage-5-final-23/EVIDENCE_INDEX.json";
+  const isCurrentCandidate = candidate === currentCandidateManifest.candidate;
   const expectedEvidenceIndexes =
-    phase === "PRE_INDEX" ? STAGE5_HISTORICAL_EVIDENCE_INDEXES : STAGE5_EXPECTED_EVIDENCE_INDEXES;
+    phase === "PRE_INDEX"
+      ? isCurrentCandidate
+        ? [...STAGE5_HISTORICAL_EVIDENCE_INDEXES, earlierFrozenIndex, predecessorIndex].toSorted()
+        : STAGE5_HISTORICAL_EVIDENCE_INDEXES
+      : isCurrentCandidate
+        ? [
+            ...STAGE5_EXPECTED_EVIDENCE_INDEXES,
+            earlierFrozenIndex,
+            predecessorIndex,
+            currentIndex,
+          ].toSorted()
+        : STAGE5_EXPECTED_EVIDENCE_INDEXES;
   const missingStage5EvidenceIndexes = expectedEvidenceIndexes.filter(
     (filePath) => !stage5EvidenceIndexes.includes(filePath),
   );
   const unexpectedStage5EvidenceIndexes = stage5EvidenceIndexes.filter(
-    (filePath) => !STAGE5_EXPECTED_EVIDENCE_INDEXES.includes(filePath),
+    (filePath) =>
+      !STAGE5_EXPECTED_EVIDENCE_INDEXES.includes(filePath) &&
+      filePath !== earlierFrozenIndex &&
+      filePath !== predecessorIndex &&
+      filePath !== currentIndex,
   );
   const failedCoverage = Object.entries(coverage)
     .filter(([name, count]) => name !== "stage5ReviewMarkdown" && count === 0)
@@ -256,15 +720,77 @@ export const validateStage5SourceCoverage = (files, { phase = "FINAL_EVIDENCE" }
       ),
     );
   }
+  const candidateArtifactPaths = paths.filter((filePath) =>
+    /^docs\/reviews\/phase-1-m1\/STAGE_5_FINAL_\d+_CANDIDATE_(?:VALIDATION|FREEZE)[.](?:md|json)$/u.test(
+      filePath,
+    ),
+  );
+  const lifecycleLedger = validateStage5GenerationLifecycleLedger(
+    candidateArtifactPaths,
+    candidateArtifactHashes,
+  );
+  const lifecycleExpectedArtifacts = [
+    ...(STAGE5_GENERATION_LIFECYCLE_LEDGER.chainAnchor.expectedArtifacts ?? []),
+    ...STAGE5_GENERATION_LIFECYCLE_LEDGER.generations.flatMap(
+      (generation) => generation.expectedArtifacts,
+    ),
+  ];
+  const lifecycleRequiredArtifacts = lifecycleExpectedArtifacts
+    .filter((artifact) => artifact.requirement === "REQUIRED")
+    .map((artifact) => artifact.path);
+  const activeCandidateInputs = isCurrentCandidate
+    ? {
+        matrix: currentCandidateManifest.correctionMatrix,
+        validation: currentCandidateManifest.finalization.validation,
+        freeze: currentCandidateManifest.finalization.freeze,
+        scan: currentCandidateManifest.finalization.scan,
+      }
+    : candidate === "FINAL-21"
+      ? {
+          matrix: STAGE5_FINAL21_CORRECTION_MATRIX,
+          validation: STAGE5_FINAL21_CANDIDATE_VALIDATION,
+          freeze: STAGE5_FINAL21_CANDIDATE_FREEZE,
+          scan: STAGE5_FINAL21_POST_FREEZE_SCAN_REPORT,
+        }
+      : candidate === "FINAL-20"
+        ? {
+            matrix: STAGE5_FINAL20_CORRECTION_MATRIX,
+            validation: STAGE5_FINAL20_CANDIDATE_VALIDATION,
+            freeze: STAGE5_FINAL20_CANDIDATE_FREEZE,
+            scan: STAGE5_FINAL20_POST_FREEZE_SCAN_REPORT,
+          }
+        : null;
+  if (!activeCandidateInputs) throw new Error(`Unsupported Stage 5 candidate: ${candidate}`);
+  const priorCorrectionMatrices = [
+    STAGE5_FINAL11_CORRECTION_MATRIX,
+    STAGE5_FINAL13_CORRECTION_MATRIX,
+    STAGE5_FINAL14_CORRECTION_MATRIX,
+    STAGE5_FINAL15_CORRECTION_MATRIX,
+    STAGE5_FINAL16_CORRECTION_MATRIX,
+    STAGE5_FINAL17_CORRECTION_MATRIX,
+    STAGE5_FINAL18_CORRECTION_MATRIX,
+    STAGE5_FINAL19_CORRECTION_MATRIX,
+    ...(isCurrentCandidate
+      ? [
+          STAGE5_FINAL20_CORRECTION_MATRIX,
+          STAGE5_FINAL21_CORRECTION_MATRIX,
+          "docs/reviews/phase-1-m1/STAGE_5_FINAL_22_CORRECTION_MATRIX.json",
+          "docs/reviews/phase-1-m1/STAGE_5_FINAL_23_CORRECTION_MATRIX.json",
+          currentCandidateManifest.historicalInputs.predecessorCorrectionMatrix,
+        ]
+      : []),
+  ];
   const requiredFinalCandidateInputs =
     phase === "FINAL_CANDIDATE"
       ? [
-          STAGE5_FINAL10_CORRECTION_MATRIX,
-          STAGE5_FINAL10_CANDIDATE_VALIDATION,
-          STAGE5_FINAL10_CANDIDATE_FREEZE,
+          ...priorCorrectionMatrices,
+          activeCandidateInputs.matrix,
+          ...lifecycleRequiredArtifacts,
+          activeCandidateInputs.validation,
+          activeCandidateInputs.freeze,
         ]
       : phase === "FINAL_EVIDENCE"
-        ? [STAGE5_FINAL10_CORRECTION_MATRIX]
+        ? [...priorCorrectionMatrices, activeCandidateInputs.matrix]
         : [];
   const missingFinalCandidateInputs = requiredFinalCandidateInputs.filter(
     (filePath) => !pathSet.has(filePath),
@@ -272,12 +798,25 @@ export const validateStage5SourceCoverage = (files, { phase = "FINAL_EVIDENCE" }
   const failedRequirementIds = [
     ...missingRequiredSourcePaths.map((filePath) => `required:${filePath}`),
     ...failedCoverage,
-    ...(pathSet.has(STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT)
-      ? [`stage5-scan-receipt-self-inclusion:${STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT}`]
+    ...(pathSet.has(STAGE5_FINAL11_POST_FREEZE_SCAN_REPORT)
+      ? [`stage5-scan-receipt-self-inclusion:${STAGE5_FINAL11_POST_FREEZE_SCAN_REPORT}`]
+      : []),
+    ...(pathSet.has(STAGE5_FINAL14_POST_FREEZE_SCAN_REPORT)
+      ? [`stage5-scan-receipt-self-inclusion:${STAGE5_FINAL14_POST_FREEZE_SCAN_REPORT}`]
+      : []),
+    ...(pathSet.has(STAGE5_FINAL16_POST_FREEZE_SCAN_REPORT)
+      ? [`stage5-scan-receipt-self-inclusion:${STAGE5_FINAL16_POST_FREEZE_SCAN_REPORT}`]
+      : []),
+    ...(pathSet.has(STAGE5_FINAL18_POST_FREEZE_SCAN_REPORT)
+      ? [`stage5-scan-receipt-self-inclusion:${STAGE5_FINAL18_POST_FREEZE_SCAN_REPORT}`]
+      : []),
+    ...(pathSet.has(activeCandidateInputs.scan)
+      ? [`stage5-scan-receipt-self-inclusion:${activeCandidateInputs.scan}`]
       : []),
     ...missingFinalCandidateInputs.map(
       (filePath) => `stage5-final-candidate-input-missing:${filePath}`,
     ),
+    ...lifecycleLedger.errors.map((message) => `stage5-generation-lifecycle:${message}`),
   ];
   return {
     phase,
@@ -290,21 +829,31 @@ export const validateStage5SourceCoverage = (files, { phase = "FINAL_EVIDENCE" }
     unexpectedStage5EvidenceIndexes,
     finalCandidateInputs: requiredFinalCandidateInputs,
     postFreezeScanReceipt: {
-      path: STAGE5_FINAL10_POST_FREEZE_SCAN_REPORT,
+      path: activeCandidateInputs.scan,
       excludedFromScan: true,
-      reason: "generated after the final candidate scan to avoid self-reference",
+      reason: `generated after the ${candidate} candidate scan to avoid self-reference`,
     },
     missingFinalCandidateInputs,
+    lifecycleLedger,
     coverage,
     failedRequirementIds,
   };
 };
 
+export const excludeActiveStage5ScanReceipt = (files, manifest = currentCandidateManifest) =>
+  files.filter((filePath) => filePath !== manifest.finalization.scan);
+
 export const collectStage5SourceFiles = async ({
   root = process.cwd(),
   phase = "FINAL_EVIDENCE",
+  candidate = "FINAL-21",
 } = {}) => {
-  const postFreezeScanReceipt = await validateStage5Final10ScanReceiptDirectory({ root });
+  await validateStage5Final11ScanReceiptDirectory({ root });
+  await validateStage5Final14ScanReceiptDirectory({ root });
+  await validateStage5Final15ScanReceiptDirectory({ root });
+  await validateStage5Final16ScanReceiptDirectory({ root });
+  await validateStage5Final18ScanReceiptDirectory({ root });
+  const postFreezeScanReceipt = await validateStage5Final20ScanReceiptDirectory({ root });
   const sourceDirectories = [
     "apps",
     "packages",
@@ -350,8 +899,26 @@ export const collectStage5SourceFiles = async ({
     ...STAGE5_ADDITIONAL_DOCUMENT_PATHS,
     ...rootFiles,
   );
-  const files = sortedUnique(sourceFiles);
-  const validation = validateStage5SourceCoverage(files, { phase });
+  // The active final-candidate scan is an output, never an input to its own scope.
+  // Keep historical predecessor scans: their frozen bytes are separate inputs.
+  const files = sortedUnique(excludeActiveStage5ScanReceipt(sourceFiles));
+  const candidateArtifactHashes = {};
+  const pinnedArtifacts = [
+    ...(STAGE5_GENERATION_LIFECYCLE_LEDGER.chainAnchor.expectedArtifacts ?? []),
+    ...STAGE5_GENERATION_LIFECYCLE_LEDGER.generations.flatMap(
+      (generation) => generation.expectedArtifacts,
+    ),
+  ].filter((artifact) => artifact.sha256 && files.includes(artifact.path));
+  for (const artifact of pinnedArtifacts) {
+    candidateArtifactHashes[artifact.path] = createHash("sha256")
+      .update(await readFile(path.join(root, artifact.path)))
+      .digest("hex");
+  }
+  const validation = validateStage5SourceCoverage(files, {
+    phase,
+    candidate,
+    candidateArtifactHashes,
+  });
   if (validation.result !== "PASS") {
     throw new Error(`Stage 5 source scan coverage is incomplete: ${JSON.stringify(validation)}`);
   }
