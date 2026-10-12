@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 export const STAGE6_BASE_COMMIT = "8dd62157d14e88400a9df1e97452a3807f3ed50e";
 export const STAGE6_BASE_TAG = "phase-1-stage-5-go";
 export const STAGE6_BASELINE_PATH =
-  "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_02.json";
+  "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_03.json";
 export const STAGE6_EXTENSION_PATH = "docs/implementation/M1_STAGE_6_SECURITY_EXTENSION.md";
 export const STAGE5_BASELINE_PATH =
   "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json";

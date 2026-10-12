@@ -18,6 +18,8 @@ const bearerPrefix = ["Bear", "er"].join("");
 const privateKeyHeader = ["-----BEGIN ", "PRIVATE ", "KEY-----"].join("");
 const passwordKey = ["pass", "word"].join("");
 const queryKey = ["access", "_token"].join("");
+const accessKeyAssignmentKey = ["access", "key"].join("");
+const accessKeyDomAlias = ["access", "Key"].join("");
 const fixtureEmail = ["traveller.fixture", "example.invalid"].join("@");
 const fixtureCases = [
   {
@@ -119,6 +121,17 @@ try {
   });
   assert.equal(safeCodeReference.findings.length, 0);
 
+  const safeStaticDomAlias = scanSensitiveText({
+    text: `${accessKeyAssignmentKey}: "${accessKeyDomAlias}"\n`,
+    file: "fixtures/safe-static-dom-property-alias.ts",
+  });
+  assert.equal(safeStaticDomAlias.findings.length, 0);
+  const unsafeAccessKey = scanSensitiveText({
+    text: `${accessKeyAssignmentKey}: "${alphabeticSentinel}"\n`,
+    file: "fixtures/unsafe-access-key-material.ts",
+  });
+  assert.ok(unsafeAccessKey.findings.some((finding) => finding.rule === "secret-assignment"));
+
   console.log(
     JSON.stringify(
       {
@@ -129,6 +142,8 @@ try {
         generatedBrowserAsset: "REJECTED_AS_EXPECTED",
         explicitSafeFixtureAllowlist: "PASS",
         codeCredentialReferences: "PASS",
+        staticDomPropertyAlias: "PASS",
+        suspiciousAccessKeyMaterial: "REJECTED_AS_EXPECTED",
         matchedValuesEmitted: false,
       },
       null,

@@ -129,16 +129,20 @@ const collectAssignmentFindings = (text, file) => {
     assignments.push({ key: match[1], value: match[3], index: match.index ?? 0, quoted: true });
   }
   const unquotedAssignment =
-    /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_-]{1,63})\s*(?::|=)\s*([^\s#][^#\r\n]*)$/gm;
+    /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_-]{1,63})\s*(?::|=)\s*([^\s#"'`][^#\r\n]*)$/gm;
   for (const match of text.matchAll(unquotedAssignment)) {
     assignments.push({ key: match[1], value: match[2], index: match.index ?? 0, quoted: false });
   }
   for (const assignment of assignments) {
     const value = assignment.value.trim().replace(/[,;]$/, "").trim();
+    const assignmentKey = normalizedAssignmentKey(assignment.key);
+    // React DOM's property table uses this exact public alias, not credential material.
+    const safeStaticDomPropertyAlias = assignmentKey === "accesskey" && value === "accessKey";
     if (
-      !SUSPICIOUS_ASSIGNMENT_KEYS.has(normalizedAssignmentKey(assignment.key)) ||
+      !SUSPICIOUS_ASSIGNMENT_KEYS.has(assignmentKey) ||
       value.length < 8 ||
-      isSafeReference(value, !assignment.quoted)
+      isSafeReference(value, !assignment.quoted) ||
+      safeStaticDomPropertyAlias
     ) {
       continue;
     }
