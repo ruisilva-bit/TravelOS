@@ -15,15 +15,18 @@ const argument = (name) => {
 
 const destinationRoot = path.resolve(argument("--root") ?? "");
 const evidencePath = argument("--evidence");
-const allowedDisposableRoots = ["travelos-stage3-", "travelos-stage4-", "travelos-stage5-"].map(
-  (prefix) => path.join(os.tmpdir(), prefix),
-);
+const allowedDisposableRoots = [
+  "travelos-stage3-",
+  "travelos-stage4-",
+  "travelos-stage5-",
+  "travelos-stage6-",
+].map((prefix) => path.join(os.tmpdir(), prefix));
 if (
   !destinationRoot ||
   !allowedDisposableRoots.some((prefix) => destinationRoot.startsWith(prefix))
 ) {
   throw new Error(
-    "--root must be a TravelOS Stage 3, Stage 4 or Stage 5 disposable path below the OS temp directory",
+    "--root must be a TravelOS Stage 3, Stage 4, Stage 5 or Stage 6 disposable path below the OS temp directory",
   );
 }
 

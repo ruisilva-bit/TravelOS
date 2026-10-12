@@ -47,6 +47,11 @@
     "freeze:stage3:corrected:verify": "node tooling/ci/verify-stage-3-corrected-candidate-freeze.mjs",
     "test:security-scanner": "node tooling/ci/test-sensitive-data-scanner.mjs",
     "test:stage5:focused": "node tooling/ci/run-stage-5-current-focused.mjs",
+    "test:stage6:postgres": "node tooling/database/run-stage-6-disposable.mjs",
+    "stage6:successor-baseline:write": "node tooling/ci/write-stage-6-successor-baseline.mjs",
+    "stage6:successor-baseline:verify": "node tooling/ci/verify-stage-6-successor-baseline.mjs",
+    "test:stage6:successor-baseline": "node tooling/ci/test-stage-6-successor-baseline.mjs",
+    "security:scan:stage6": "node tooling/ci/scan-stage-6-current-source.mjs",
     "stage5:candidate-coherence:verify": "node tooling/ci/verify-stage-5-candidate-coherence.mjs",
     "historical:test:stage5:focused:final20": "node tooling/ci/run-stage-5-final20-focused.mjs",
     "stage5:security-extension:verify": "node tooling/ci/verify-stage-5-current-security-extension-baseline.mjs",
@@ -79,7 +84,7 @@
     "security:scan:bundles": "node tooling/ci/scan-browser-bundles.mjs",
     "security:scan:stage4": "node tooling/ci/scan-source-secrets.mjs --stage4-final",
     "security:scan": "pnpm security:scan:source && pnpm security:scan:bundles",
-    "ci:verify": "node tooling/ci/verify.mjs",
+    "ci:verify": "node tooling/ci/verify-stage-6.mjs",
     "evidence:stage2": "node tooling/ci/capture-stage-2-evidence.mjs"
   },
   "dependencies": {

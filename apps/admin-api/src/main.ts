@@ -7,10 +7,12 @@ import {
   type DevelopmentInstanceManifest,
 } from "@travelos/config";
 import {
+  createPostgresM1StaffTripPublicationOperations,
   createPostgresM1StaffTripOperations,
   createPostgresPersistence,
   createStaffAccessRepository,
 } from "@travelos/database";
+import { AdminTripPublicationPreviewV1Schema } from "@travelos/contracts/admin";
 
 import { createAdminApi, type CreateAdminApiOptions } from "./app.js";
 import { createAdminStaffSessionResolver } from "./m1-session-resolver.js";
@@ -67,15 +69,21 @@ const createAdminAuthOptions = async (
       expectedHost: manifest.hosts.admin,
     };
     const staffAccessRepository = createStaffAccessRepository(persistence);
+    const sessionResolver = createAdminStaffSessionResolver(realm, policy);
     return {
       options: {
         auth: {
           realm,
           policy,
           staffAccessRepository,
-          m1Operations: createPostgresM1StaffTripOperations(
+          m1Operations: createPostgresM1StaffTripOperations(persistence, sessionResolver),
+          m1PublicationOperations: createPostgresM1StaffTripPublicationOperations(
             persistence,
-            createAdminStaffSessionResolver(realm, policy),
+            sessionResolver,
+            {
+              validate: (value) =>
+                void AdminTripPublicationPreviewV1Schema.shape.projection.parse(value),
+            },
           ),
         },
       },

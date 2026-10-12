@@ -67,7 +67,7 @@ interface AgencyRow {
 
 const asSingle = <Row>(rows: readonly Row[]): Row | null => rows[0] ?? null;
 
-const readStaffAuthorizationSnapshot = async (
+export const readStaffAuthorizationSnapshot = async (
   database: Kysely<DatabaseShape>,
   staffPrincipalId: string,
   agencyId: string,

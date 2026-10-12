@@ -86,8 +86,10 @@ export {
 } from "./modules/trip-operations/application/m1-trip-slice.js";
 export {
   createM1StaffTripOperations,
+  authorizeM1Operation,
   M1_OPERATION_PERMISSION_REQUIREMENTS,
   M1StaffAuthorizationError,
+  type M1StaffAuthorizationDependencies,
   type M1StaffAuthorizationRepository,
   type M1StaffSessionResolver,
   type M1StaffTripOperations,
@@ -123,3 +125,50 @@ export {
   type TripTraveller,
   type TripTravellerRole,
 } from "./modules/crm/domain/continuity.js";
+export {
+  assemblePortalTripSnapshotV1,
+  resolvePublicationFieldVisibility,
+  type ConfigurablePublicationField,
+  type PortalAccommodationSnapshotV1,
+  type PortalFlightSnapshotV1,
+  type PortalScheduledTimeV1,
+  type PortalTripSnapshotV1,
+  type PublicationFieldClassification,
+  type PublicationFieldVisibility,
+  type PublicationSafeAccommodationSource,
+  type PublicationSafeFlightSource,
+  type PublicationSafeTripInput,
+  type PublicationSafeTripSource,
+  type PublicationVisibilityPolicy,
+  type VisibilityChoice,
+} from "./modules/customer-presentation/domain/snapshot-v1.js";
+export { canonicalPortalTripSnapshotV1Json } from "./modules/customer-presentation/domain/canonical-json.js";
+export {
+  buildTripPublicationCandidate,
+  buildTripPublicationCandidateFromSources,
+  TripPublicationNotFoundError,
+  type TripPublicationCandidate,
+} from "./modules/customer-presentation/application/projection.js";
+export {
+  createM1StaffTripPublicationOperations,
+  IdempotencyConflictError,
+  M1StaffPublicationInputError,
+  StalePublicationCandidateError,
+  type M1StaffTripPublicationOperations,
+  type M1StaffTripPublicationOperationsDependencies,
+  type M1StaffTripPublicationRepository,
+  type PublicationHistoryEntry,
+  type PublicationHistoryPage,
+  type PublishTripRequest,
+  type TripPublicationResult,
+} from "./modules/customer-presentation/application/staff-publication-operations.js";
+export type {
+  AccommodationPublicationSourcePort,
+  FlightPublicationSourcePort,
+  PortalTripSnapshotHashPort,
+  PortalTripSnapshotValidatorPort,
+  TripPublicationRevisionSource,
+  TripPublicationSourceReadPort,
+  TripPublicationSourcePort,
+  TripPublicationSourceUnit,
+} from "./modules/customer-presentation/application/publication-source.js";

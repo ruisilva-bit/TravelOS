@@ -26,12 +26,13 @@ import { createUuidV7 } from "../uuidv7.js";
 
 type DatabaseShape = Record<string, never>;
 
-const assertStaffAuthorizationInTransaction = async (
+export const assertStaffAuthorizationInTransaction = async (
   database: Kysely<DatabaseShape>,
   authorization: StaffAuthorizationOperationProof,
   targetAgencyId: OpaqueId,
   requiredPermissionIds: readonly StaffPermissionId[],
-): Promise<void> => {
+  recentMfaMaximumAgeMs: number | null = null,
+): Promise<number | null> => {
   const session = authorization?.session;
   if (
     typeof session !== "object" ||
@@ -69,6 +70,12 @@ const assertStaffAuthorizationInTransaction = async (
   if (sessionAgencyId !== targetAgencyId) {
     throw new M1StaffAuthorizationError("FORBIDDEN");
   }
+  if (
+    recentMfaMaximumAgeMs !== null &&
+    (!Number.isSafeInteger(recentMfaMaximumAgeMs) || recentMfaMaximumAgeMs <= 0)
+  ) {
+    throw new Error("Recent MFA maximum age must be a positive safe integer");
+  }
 
   const liveSession = (
     await sql<{
@@ -77,19 +84,23 @@ const assertStaffAuthorizationInTransaction = async (
       readonly authorizationEpoch: string;
       readonly expiresAtEpochMs: number;
       readonly recentMfaVerifiedAtEpochMs: number | null;
+      readonly databaseNowEpochMs: number;
     }>`
+      WITH request_time AS (SELECT statement_timestamp() AS "now")
       SELECT active_session."userId" AS "staffPrincipalId",
              context."agencyId"::text AS "agencyId",
              context."authorizationEpoch"::text AS "authorizationEpoch",
              (EXTRACT(EPOCH FROM active_session."expiresAt") * 1000)::double precision AS "expiresAtEpochMs",
-             (EXTRACT(EPOCH FROM context."recentMfaVerifiedAt") * 1000)::double precision AS "recentMfaVerifiedAtEpochMs"
+             (EXTRACT(EPOCH FROM context."recentMfaVerifiedAt") * 1000)::double precision AS "recentMfaVerifiedAtEpochMs",
+             (EXTRACT(EPOCH FROM request_time."now") * 1000)::double precision AS "databaseNowEpochMs"
         FROM "staff_access"."staff_session" AS active_session
+        CROSS JOIN request_time
         JOIN "staff_access"."staff_session_context" AS context
           ON context."sessionId" = active_session."id"
          AND context."staffPrincipalId" = active_session."userId"
        WHERE active_session."id" = ${session.sessionId}
          AND active_session."userId" = ${session.staffPrincipalId}
-         AND active_session."expiresAt" > clock_timestamp()
+         AND active_session."expiresAt" > request_time."now"
          AND context."agencyId" = ${sessionAgencyId}::uuid
          AND context."authorizationEpoch" = ${session.authorizationEpoch}
        FOR SHARE OF active_session, context
@@ -122,8 +133,8 @@ const assertStaffAuthorizationInTransaction = async (
         organizationUnitAncestorIds: [],
         requiredAccessLevel: "ALL",
       },
-      nowEpochMs: authorization.nowEpochMs,
-      recentMfaMaximumAgeMs: null,
+      nowEpochMs: liveSession.databaseNowEpochMs,
+      recentMfaMaximumAgeMs,
     });
     if (decision.result === "DENY") {
       throw new M1StaffAuthorizationError(
@@ -131,6 +142,7 @@ const assertStaffAuthorizationInTransaction = async (
       );
     }
   }
+  return liveSession.recentMfaVerifiedAtEpochMs;
 };
 
 type PersonRow = {

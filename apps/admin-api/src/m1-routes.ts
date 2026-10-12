@@ -4,9 +4,14 @@ import {
   M1OptimisticConflictError,
   M1TransactionConflictError,
   M1StaffAuthorizationError,
+  M1StaffPublicationInputError,
+  StalePublicationCandidateError,
+  IdempotencyConflictError,
+  TripPublicationNotFoundError,
   createMoney,
   moneyToJson,
   type M1StaffTripOperations,
+  type M1StaffTripPublicationOperations,
   type M1TripSlice,
 } from "@travelos/backend-core";
 import {
@@ -14,6 +19,10 @@ import {
   AdminCreateM1TripSliceRequestSchema,
   AdminM1TripSliceResponseSchema,
   AdminSupplierCostNoteUpdateRequestSchema,
+  AdminPublishTripV1RequestSchema,
+  AdminTripPublicationHistoryV1ResponseSchema,
+  AdminTripPublicationPreviewV1Schema,
+  AdminTripPublicationV1ResponseSchema,
   type AdminCreateM1TripSliceRequest,
 } from "@travelos/contracts/admin";
 import { hostHeaderMatchesExpectedHost, type AuthSurfacePolicy } from "@travelos/auth-adapters";
@@ -27,6 +36,7 @@ interface IncomingHttpRequest {
   readonly headers: Record<string, string | string[] | undefined>;
   readonly body?: unknown;
   readonly params?: Readonly<Record<string, string | undefined>>;
+  readonly query?: Readonly<Record<string, string | readonly string[] | undefined>>;
 }
 
 interface OutgoingHttpResponse {
@@ -52,6 +62,7 @@ export interface AdminM1ExpressApplication {
 export interface AdminM1RouteOptions {
   readonly policy: AuthSurfacePolicy;
   readonly m1Operations: M1StaffTripOperations;
+  readonly m1PublicationOperations?: M1StaffTripPublicationOperations;
 }
 
 const headersFor = (request: IncomingHttpRequest): Headers => {
@@ -315,6 +326,22 @@ const runHandler = (
       send(response, 409, { error: "transaction_conflict" });
       return;
     }
+    if (error instanceof StalePublicationCandidateError) {
+      send(response, 409, { error: "STALE_PUBLICATION_CANDIDATE" });
+      return;
+    }
+    if (error instanceof IdempotencyConflictError) {
+      send(response, 409, { error: "IDEMPOTENCY_KEY_CONFLICT" });
+      return;
+    }
+    if (error instanceof TripPublicationNotFoundError) {
+      response.status(404).end();
+      return;
+    }
+    if (error instanceof M1StaffPublicationInputError) {
+      badRequest(response);
+      return;
+    }
     if (error instanceof M1InputValidationError) {
       badRequest(response);
       return;
@@ -448,4 +475,97 @@ export const registerAdminM1Routes = (
       );
     },
   );
+
+  if (options.m1PublicationOperations !== undefined) {
+    const publicationOperations = options.m1PublicationOperations;
+    application.get("/api/admin/trips/:tripId/publication-preview", (request, response, next) => {
+      runHandler(
+        async () => {
+          const tripId = idFrom(request.params?.tripId);
+          if (tripId === null) {
+            badRequest(response);
+            return;
+          }
+          const rejection = surfaceRejectionStatus(request, options.policy, false);
+          if (rejection !== null) {
+            response.status(rejection).end();
+            return;
+          }
+          const candidate = await publicationOperations.previewTrip(
+            headersFor(request).get("cookie"),
+            tripId,
+          );
+          send(
+            response,
+            200,
+            AdminTripPublicationPreviewV1Schema.parse({
+              workspaceRevision: candidate.workspaceRevision.toString(),
+              projectionHash: candidate.projectionHash,
+              schemaVersion: candidate.schemaVersion,
+              projection: candidate.projection,
+            }),
+          );
+        },
+        response,
+        next,
+      );
+    });
+
+    application.post("/api/admin/trips/:tripId/publications", (request, response, next) => {
+      runHandler(
+        async () => {
+          const tripId = idFrom(request.params?.tripId);
+          const parsed = AdminPublishTripV1RequestSchema.safeParse(request.body);
+          if (tripId === null || !parsed.success) {
+            badRequest(response);
+            return;
+          }
+          const rejection = surfaceRejectionStatus(request, options.policy, true);
+          if (rejection !== null) {
+            response.status(rejection).end();
+            return;
+          }
+          const result = await publicationOperations.publishTrip(
+            headersFor(request).get("cookie"),
+            tripId,
+            parsed.data,
+          );
+          send(response, 200, AdminTripPublicationV1ResponseSchema.parse(result));
+        },
+        response,
+        next,
+      );
+    });
+
+    application.get("/api/admin/trips/:tripId/publications", (request, response, next) => {
+      runHandler(
+        async () => {
+          const tripId = idFrom(request.params?.tripId);
+          const query = request.query ?? {};
+          const cursor = query.before;
+          if (
+            tripId === null ||
+            Object.keys(query).some((key) => key !== "before") ||
+            (Array.isArray(cursor) && cursor.length !== 1)
+          ) {
+            badRequest(response);
+            return;
+          }
+          const rejection = surfaceRejectionStatus(request, options.policy, false);
+          if (rejection !== null) {
+            response.status(rejection).end();
+            return;
+          }
+          const page = await publicationOperations.listPublicationHistory(
+            headersFor(request).get("cookie"),
+            tripId,
+            Array.isArray(cursor) ? cursor[0] : cursor,
+          );
+          send(response, 200, AdminTripPublicationHistoryV1ResponseSchema.parse(page));
+        },
+        response,
+        next,
+      );
+    });
+  }
 };

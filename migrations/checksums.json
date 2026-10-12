@@ -41,6 +41,10 @@
     {
       "file": "0010_stage5_temporal_persistence_parity.cjs",
       "sha256": "d7961fbf06cda8b222fd1219de6d9aec85a0205fb1d186e809260d579c598030"
+    },
+    {
+      "file": "0011_stage6_trip_publication.cjs",
+      "sha256": "a6b4924aca43670c2b1034dca7471df349476a4922ac8370dbde9e3bb5ce6503"
     }
   ]
 }

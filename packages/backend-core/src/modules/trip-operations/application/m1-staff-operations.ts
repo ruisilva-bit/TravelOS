@@ -39,11 +39,14 @@ export interface M1StaffTripOperations {
   ): Promise<M1TripSlice>;
 }
 
-export interface M1StaffTripOperationsDependencies {
-  readonly repository: M1OperationalSliceRepository;
+export interface M1StaffAuthorizationDependencies {
   readonly authorizationRepository: M1StaffAuthorizationRepository;
   readonly sessionResolver: M1StaffSessionResolver;
   readonly nowEpochMs?: () => number;
+}
+
+export interface M1StaffTripOperationsDependencies extends M1StaffAuthorizationDependencies {
+  readonly repository: M1OperationalSliceRepository;
 }
 
 export class M1StaffAuthorizationError extends Error {
@@ -154,11 +157,12 @@ const cookieFrom = (value: unknown): string => {
   return value;
 };
 
-const authorizeM1Operation = async (
-  dependencies: M1StaffTripOperationsDependencies,
+export const authorizeM1Operation = async (
+  dependencies: M1StaffAuthorizationDependencies,
   cookieHeader: unknown,
   targetAgencyId: OpaqueId | null,
   permissionIds: readonly StaffPermissionId[],
+  recentMfaMaximumAgeMs: number | null = null,
 ): Promise<StaffAuthorizationOperationProof> => {
   const cookie = cookieFrom(cookieHeader);
   const session = sessionProofFrom(await dependencies.sessionResolver.resolveStaffSession(cookie));
@@ -188,7 +192,7 @@ const authorizeM1Operation = async (
         requiredAccessLevel: "ALL",
       },
       nowEpochMs,
-      recentMfaMaximumAgeMs: null,
+      recentMfaMaximumAgeMs,
     });
     if (decision.result === "DENY") {
       throw new M1StaffAuthorizationError(

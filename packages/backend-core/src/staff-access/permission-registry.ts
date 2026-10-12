@@ -1,4 +1,4 @@
-export const PERMISSION_REGISTRY_VERSION = 3 as const;
+export const PERMISSION_REGISTRY_VERSION = 4 as const;
 
 export type AuthorizationScopeKind = "AGENCY" | "ORGANIZATION_UNIT";
 export type ResourceAccessLevel = "OWN" | "TEAM" | "ALL";
@@ -101,13 +101,28 @@ export const STAGE_5_PERMISSION_REGISTRY = [
   },
 ] as const satisfies readonly PermissionDefinition[];
 
+/** Stage 6 adds explicit, independently assignable publication capabilities. */
+export const STAGE_6_PERMISSION_REGISTRY = [
+  ...STAGE_5_PERMISSION_REGISTRY,
+  {
+    id: "trip.preview",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+  {
+    id: "trip.publish",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+] as const satisfies readonly PermissionDefinition[];
+
 /** Compatibility export retained for Stage 4 consumers; Stage 5 owns the complete registry. */
 export const STAGE_4_PERMISSION_REGISTRY = STAGE_5_PERMISSION_REGISTRY;
 
-export type StaffPermissionId = (typeof STAGE_5_PERMISSION_REGISTRY)[number]["id"];
+export type StaffPermissionId = (typeof STAGE_6_PERMISSION_REGISTRY)[number]["id"];
 
 const permissionDefinitions = new Map<string, PermissionDefinition>(
-  STAGE_5_PERMISSION_REGISTRY.map((definition) => [definition.id, definition]),
+  STAGE_6_PERMISSION_REGISTRY.map((definition) => [definition.id, definition]),
 );
 
 export const isStaffPermissionId = (value: string): value is StaffPermissionId =>
@@ -123,4 +138,4 @@ export const permissionDefinitionFor = (permissionId: StaffPermissionId): Permis
 
 export const OWNER_ROLE_TEMPLATE_KEY = "agency-owner-v1" as const;
 export const OWNER_ROLE_PERMISSION_IDS: readonly StaffPermissionId[] =
-  STAGE_5_PERMISSION_REGISTRY.map(({ id }) => id);
+  STAGE_6_PERMISSION_REGISTRY.map(({ id }) => id);

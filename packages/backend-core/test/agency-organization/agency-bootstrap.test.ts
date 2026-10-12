@@ -53,7 +53,7 @@ describe("root Agency bootstrap identifiers", () => {
   });
 
   it("binds the bootstrap Owner template to the bounded Stage 5 cost-mutation capability", () => {
-    expect(PERMISSION_REGISTRY_VERSION).toBe(3);
+    expect(PERMISSION_REGISTRY_VERSION).toBe(4);
     expect(permissionDefinitionFor("finance.manage_costs")).toEqual({
       id: "finance.manage_costs",
       allowedScopeKinds: ["AGENCY"],
