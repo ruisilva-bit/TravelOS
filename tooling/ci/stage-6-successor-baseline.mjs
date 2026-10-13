@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 export const STAGE6_BASE_COMMIT = "8dd62157d14e88400a9df1e97452a3807f3ed50e";
 export const STAGE6_BASE_TAG = "phase-1-stage-5-go";
 export const STAGE6_BASELINE_PATH =
-  "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_05.json";
+  "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_06.json";
 export const STAGE6_EXTENSION_PATH = "docs/implementation/M1_STAGE_6_SECURITY_EXTENSION.md";
 export const STAGE5_BASELINE_PATH =
   "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json";
@@ -36,6 +36,16 @@ export const STAGE6_EXTENSION = Object.freeze({
   migrationRunner: "migrator/dist/tooling/database/migration-runner.js",
   migrationChain: "migrator/migrations",
   migrationPathResolution: "module_location",
+  deploymentContract: {
+    schemaVersion: 1,
+    artifactGeneration: 7,
+    sourcePath: "deploy/contracts/deployment-contract.v1.json",
+    artifactPath: "deployment/deployment-contract.v1.json",
+    verifierPath: "tooling/deployment/verify-stage6-deployment-contract.mjs",
+    successorBaselinePath: "provenance/stage6-successor-baseline-generation-06.json",
+    serviceAppPaths: ["apps/admin-api", "apps/portal-api", "apps/worker"],
+    rejectsGeneration06RootLayout: true,
+  },
 });
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const bytewise = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
@@ -119,6 +129,13 @@ export const validateStage6SuccessorManifest = async ({ manifest, readBytes }) =
     "PortalTripSnapshotV1",
     "0011_stage6_trip_publication.cjs",
     "migration-runner.js",
+    "deployment-contract.v1.json",
+    "verify-stage6-deployment-contract.mjs",
+    "stage6-successor-baseline-generation-06.json",
+    "apps/admin-api",
+    "apps/portal-api",
+    "apps/worker",
+    "rejectsGeneration06RootLayout",
     "Stage 7 actions = 0",
   ]) {
     assert.ok(

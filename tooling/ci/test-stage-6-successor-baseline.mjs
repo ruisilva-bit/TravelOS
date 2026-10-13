@@ -23,7 +23,7 @@ const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const aggregate = (rows) =>
   sha256(rows.map((row) => `${row.path}\t${row.bytes}\t${row.sha256}\n`).join(""));
 const extensionText = Buffer.from(
-  "trip.preview trip.publish PortalTripSnapshotV1 0011_stage6_trip_publication.cjs migration-runner.js Stage 7 actions = 0\n",
+  "trip.preview trip.publish PortalTripSnapshotV1 0011_stage6_trip_publication.cjs migration-runner.js deployment-contract.v1.json verify-stage6-deployment-contract.mjs stage6-successor-baseline-generation-06.json apps/admin-api apps/portal-api apps/worker rejectsGeneration06RootLayout Stage 7 actions = 0\n",
 );
 const sourceText = Buffer.from("export const synthetic = true;\n");
 const predecessor = {
