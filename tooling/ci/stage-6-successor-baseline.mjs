@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 export const STAGE6_BASE_COMMIT = "8dd62157d14e88400a9df1e97452a3807f3ed50e";
 export const STAGE6_BASE_TAG = "phase-1-stage-5-go";
 export const STAGE6_BASELINE_PATH =
-  "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_04.json";
+  "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_05.json";
 export const STAGE6_EXTENSION_PATH = "docs/implementation/M1_STAGE_6_SECURITY_EXTENSION.md";
 export const STAGE5_BASELINE_PATH =
   "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json";
@@ -52,7 +52,7 @@ const aggregateRows = (rows) =>
     rows.map(({ path: file, bytes, sha256: digest }) => `${file}\t${bytes}\t${digest}\n`).join(""),
   );
 const outputPath = (file) =>
-  file === STAGE6_BASELINE_PATH ||
+  /^docs\/reviews\/phase-1-m1\/STAGE_6_SUCCESSOR_BASELINE_GENERATION_[0-9]+\.json$/.test(file) ||
   file.startsWith("docs/evidence/phase-1-m1/stage-6/") ||
   file.startsWith("docs/reviews/phase-1-m1/stage-6/");
 const stage7Path = (file) =>

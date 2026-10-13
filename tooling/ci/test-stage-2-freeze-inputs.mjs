@@ -16,6 +16,11 @@ assert.deepEqual(report.preFinalAllowedMissingPaths, [
   "docs/reviews/phase-1-m1/STAGE_2_CORRECTED_CANDIDATE_VALIDATION.md",
 ]);
 assert.equal(report.completeness.result, "PASS");
+const workspacePackageManifests = report.completeness.requirements.find(
+  (item) => item.id === "workspace-package-manifests",
+);
+assert.equal(workspacePackageManifests.matchedPaths.length, 15);
+assert.ok(workspacePackageManifests.matchedPaths.includes("packages/migrator/package.json"));
 assert.deepEqual(repeatedReport.entries, report.entries);
 assert.equal(repeatedReport.aggregateSha256, report.aggregateSha256);
 assert.ok(report.entryCount > 200);

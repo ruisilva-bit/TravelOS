@@ -148,7 +148,7 @@ export const validateStage2FreezeInputEntries = ({
       "workspace-package-manifests",
       "Every app and package workspace manifest is frozen",
       paths.filter((filePath) => /^(?:apps|packages)\/[^/]+\/package[.]json$/.test(filePath)),
-      (matches) => matches.length === 14,
+      (matches) => matches.length === 15,
     ),
     requirement(
       "typescript-configurations",
