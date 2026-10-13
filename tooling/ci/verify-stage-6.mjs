@@ -20,6 +20,7 @@ const gates = [
   ["test:freeze-inputs", "test:freeze-inputs"],
   ["test:security-scanner", "test:security-scanner"],
   ["test:stage6-successor-baseline", "test:stage6:successor-baseline"],
+  ["test:stage6-migrator-package", "test:stage6:migrator-package"],
   ["test:stage6-postgresql-18.6", "test:stage6:postgres"],
   ["test:rejected-technologies", "test:rejected-technologies"],
   ["verify:rejected-technologies", "verify:rejected-technologies"],

@@ -1,0 +1,17 @@
+{
+  "name": "@travelos/migrator",
+  "version": "0.0.0-stage4",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/packages/migrator/src/run-migrations.js"
+  },
+  "dependencies": {
+    "node-pg-migrate": "9.0.0",
+    "pg": "8.23.0"
+  }
+}

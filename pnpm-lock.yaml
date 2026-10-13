@@ -314,6 +314,15 @@ importers:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
 
+  packages/migrator:
+    dependencies:
+      node-pg-migrate:
+        specifier: 9.0.0
+        version: 9.0.0(@types/pg@8.21.0)(pg@8.23.0)
+      pg:
+        specifier: 8.23.0
+        version: 8.23.0
+
   packages/observability: {}
 
   packages/portal-safe-core: {}

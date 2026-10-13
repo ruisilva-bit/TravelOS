@@ -137,7 +137,7 @@ const report = {
 };
 const lifecycle = evaluateInstallLifecycleReport(report);
 if (
-  report.workspaceProjectCount !== 15 ||
+  report.workspaceProjectCount !== 16 ||
   report.installedPackageCount !== 561 ||
   report.lockfile.unchanged !== true ||
   ignoredNone !== true ||

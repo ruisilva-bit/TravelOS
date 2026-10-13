@@ -48,6 +48,7 @@
     "test:security-scanner": "node tooling/ci/test-sensitive-data-scanner.mjs",
     "test:stage5:focused": "node tooling/ci/run-stage-5-current-focused.mjs",
     "test:stage6:postgres": "node tooling/database/run-stage-6-disposable.mjs",
+    "test:stage6:migrator-package": "node tooling/ci/test-stage6-migrator-package.mjs",
     "stage6:successor-baseline:write": "node tooling/ci/write-stage-6-successor-baseline.mjs",
     "stage6:successor-baseline:verify": "node tooling/ci/verify-stage-6-successor-baseline.mjs",
     "test:stage6:successor-baseline": "node tooling/ci/test-stage-6-successor-baseline.mjs",

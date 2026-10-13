@@ -167,6 +167,28 @@ const bootstrapDatabase = (): void => {
   if (result.status !== 0) throw new Error(`Stage 6 database bootstrap failed: ${result.stderr}`);
 };
 
+const packageStage6Migrator = (): string => {
+  const deployDirectory = path.join(workRoot, "stage6-migrator");
+  const result = spawnSync(process.execPath, ["tooling/ci/test-stage6-migrator-package.mjs"], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    maxBuffer: 20 * 1024 * 1024,
+    env: {
+      PATH: process.env["PATH"] ?? "",
+      HOME: process.env["HOME"] ?? "",
+      CI: "true",
+      NODE_ENV: "development",
+      TRAVELOS_STAGE6_MIGRATOR_TARGET: deployDirectory,
+    },
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `Standalone Stage 6 migrator package failed: ${result.stderr || result.stdout}`,
+    );
+  }
+  return deployDirectory;
+};
+
 const stage5MigrationChain = async (): Promise<MigrationChain> => {
   const manifest = JSON.parse(await readFile(productionChain.checksumManifestPath, "utf8")) as {
     readonly schemaVersion: number;
@@ -285,8 +307,38 @@ beforeAll(async () => {
   }
   bootstrapDatabase();
   await runMigrationChain(migrationTarget, await stage5MigrationChain());
-  const migration = await runMigrationChain(migrationTarget, productionChain);
+  const migratorDirectory = packageStage6Migrator();
+  const migrationRun = spawnSync(
+    process.execPath,
+    [path.join(migratorDirectory, "dist/packages/migrator/src/run-migrations.js")],
+    {
+      cwd: os.tmpdir(),
+      encoding: "utf8",
+      maxBuffer: 20 * 1024 * 1024,
+      env: {
+        PATH: process.env["PATH"] ?? "",
+        TRAVELOS_DB_HOST: host,
+        TRAVELOS_DB_PORT: String(port),
+        TRAVELOS_DB_NAME: databaseName,
+        TRAVELOS_DB_MIGRATOR_ROLE: "travelos_migrator",
+        TRAVELOS_DB_OWNER_ROLE: "travelos_owner",
+        TRAVELOS_DB_TLS_POLICY: "DISABLED_LOOPBACK_ONLY",
+        TRAVELOS_ALLOW_TRUST_AUTH_FOR_TESTS: "true",
+      },
+    },
+  );
+  if (migrationRun.status !== 0) {
+    throw new Error(`Packaged Stage 6 migration runner failed: ${migrationRun.stderr}`);
+  }
+  const migration = JSON.parse(migrationRun.stdout);
   expect(migration.result).toBe("PASS");
+  expect(migration.currentVersion).toBe("0011_stage6_trip_publication");
+  expect(migration.target.sessionRole).toBe("travelos_migrator");
+  expect(migration.target.effectiveRole).toBe("travelos_owner");
+  expect(migration.appliedMigrations).toContain("0011_stage6_trip_publication");
+  process.stdout.write(
+    `Packaged migrator identity: session_user=${migration.target.sessionRole}; current_user=${migration.target.effectiveRole}; head=${migration.currentVersion}\n`,
+  );
 
   persistence = createPostgresPersistence<Record<string, never>>({
     host,
