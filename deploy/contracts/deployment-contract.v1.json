@@ -15,7 +15,7 @@
     "verifierPath": "deployment/verify-stage6-deployment-contract.mjs",
     "payloadManifestPath": "payload-manifest.json",
     "checksumsPath": "checksums.txt",
-    "successorBaselinePath": "provenance/stage6-successor-baseline-generation-07.json",
+    "successorBaselinePath": "provenance/stage6-successor-baseline-generation-07-revision-02.json",
     "currentSymlink": "/opt/travelos/current",
     "releaseRoot": "/opt/travelos/releases",
     "runtimeNodePath": "runtime/node/bin/node",

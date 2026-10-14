@@ -324,7 +324,7 @@ const verifyContractShape = (contract) => {
   assert.equal(contract.artifact.checksumsPath, "checksums.txt");
   assert.equal(
     contract.artifact.successorBaselinePath,
-    "provenance/stage6-successor-baseline-generation-07.json",
+    "provenance/stage6-successor-baseline-generation-07-revision-02.json",
   );
   assert.equal(contract.artifact.migratorMigrationDirectory, "migrator/migrations");
   assert.equal(
@@ -814,7 +814,7 @@ const verifySystemdUnits = async (unitDirectory, root, contract) => {
       unit: service.unit,
       user: unit.user,
       group: unit.group,
-      credentials: unit.credentials.map((row) => row.name),
+      systemdReferenceNames: unit.credentials.map((row) => row.name),
     });
   }
   return { result: "PASS", units: verified };
