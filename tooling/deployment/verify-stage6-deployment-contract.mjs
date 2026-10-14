@@ -324,7 +324,7 @@ const verifyContractShape = (contract) => {
   assert.equal(contract.artifact.checksumsPath, "checksums.txt");
   assert.equal(
     contract.artifact.successorBaselinePath,
-    "provenance/stage6-successor-baseline-generation-07-revision-02.json",
+    "provenance/stage6-successor-baseline-generation-07-revision-03.json",
   );
   assert.equal(contract.artifact.migratorMigrationDirectory, "migrator/migrations");
   assert.equal(
@@ -442,20 +442,41 @@ const verifyContractShape = (contract) => {
   );
   exactKeys(
     contract.migrator,
-    ["executor", "credentialName", "credentialSource", "sessionUser", "roleSwitch", "currentUser"],
+    [
+      "executor",
+      "deploymentEntrypoint",
+      "credentialName",
+      "credentialSource",
+      "sessionUser",
+      "roleSwitch",
+      "currentUser",
+      "helperEnvironment",
+    ],
     "Migrator contract",
   );
   assert.deepEqual(
     contract.migrator,
     {
       executor: "travelos-migrator-exec",
+      deploymentEntrypoint: "migrator/run-stage6-migrations.mjs",
       credentialName: "migrator-db",
       credentialSource: "/etc/credstore.encrypted/travelos-migrator-db",
       sessionUser: "travelos_migrator",
       roleSwitch: "SET ROLE travelos_owner",
       currentUser: "travelos_owner",
+      helperEnvironment: {
+        host: "PGHOST",
+        port: "PGPORT",
+        database: "PGDATABASE",
+        sessionUser: "PGUSER",
+        credentialsDirectory: "CREDENTIALS_DIRECTORY",
+      },
     },
     "Canonical migration identity or credential reference changed",
+  );
+  assert.ok(
+    isSafeRelativePath(contract.migrator.deploymentEntrypoint),
+    "Unsafe migrator deployment entrypoint",
   );
   assert.equal(contract.services.length, 3, "Exactly three runtime service units are required");
   for (const service of contract.services) {
@@ -646,6 +667,11 @@ const verifyReleaseMetadata = async (root, contract, contractBytes) => {
   assert.equal(release.database?.migrationHead, REQUIRED_MIGRATION);
   assert.equal(release.database?.runnerEntrypoint, artifact.migrationRunnerEntrypoint);
   assert.equal(release.database?.canonicalRunner, artifact.canonicalMigrationRunner);
+  assert.equal(
+    release.database?.deploymentEntrypoint,
+    contract.migrator.deploymentEntrypoint,
+    "Release metadata does not bind the approved migrator invocation entrypoint",
+  );
   assert.equal(release.database?.identityContract?.sessionUser, contract.migrator.sessionUser);
   assert.equal(release.database?.identityContract?.roleSwitch, contract.migrator.roleSwitch);
   assert.equal(release.database?.identityContract?.currentUser, contract.migrator.currentUser);
@@ -875,6 +901,7 @@ export const verifyStage6DeploymentContract = async ({ artifactRoot, unitDirecto
     `${contract.artifact.workerPath}/dist/main.js`,
     `${contract.artifact.migratorPath}/${contract.artifact.migrationRunnerEntrypoint.slice(contract.artifact.migratorPath.length + 1)}`,
     `${contract.artifact.migratorPath}/${contract.artifact.canonicalMigrationRunner.slice(contract.artifact.migratorPath.length + 1)}`,
+    contract.migrator.deploymentEntrypoint,
     contract.artifact.migrationChecksumManifestPath,
     contract.artifact.requiredMigrationPath,
     contract.artifact.contractPath,

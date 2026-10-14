@@ -124,6 +124,11 @@ const createFixture = async ({ legacyLayout = false } = {}) => {
     contract.artifact.canonicalMigrationRunner,
     Buffer.from("canonical migration runner\n"),
   );
+  await addFile(
+    artifactRoot,
+    contract.migrator.deploymentEntrypoint,
+    await readFile(path.join(repositoryRoot, "tooling/deployment/run-stage6-migrations.mjs")),
+  );
   await addFile(artifactRoot, contract.artifact.requiredMigrationPath, migrationBytes);
   await addFile(artifactRoot, contract.artifact.migrationChecksumManifestPath, checksumBytes);
   await addFile(
@@ -191,6 +196,7 @@ const createFixture = async ({ legacyLayout = false } = {}) => {
       migrationChecksumManifestSha256,
       runnerEntrypoint: contract.artifact.migrationRunnerEntrypoint,
       canonicalRunner: contract.artifact.canonicalMigrationRunner,
+      deploymentEntrypoint: contract.migrator.deploymentEntrypoint,
       identityContract: {
         sessionUser: contract.migrator.sessionUser,
         roleSwitch: contract.migrator.roleSwitch,

@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 export const STAGE6_BASE_COMMIT = "8dd62157d14e88400a9df1e97452a3807f3ed50e";
 export const STAGE6_BASE_TAG = "phase-1-stage-5-go";
 export const STAGE6_BASELINE_PATH =
-  "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_07_REVISION_02.json";
+  "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_07_REVISION_03.json";
 export const STAGE6_EXTENSION_PATH = "docs/implementation/M1_STAGE_6_SECURITY_EXTENSION.md";
 export const STAGE5_BASELINE_PATH =
   "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json";
@@ -42,8 +42,16 @@ export const STAGE6_EXTENSION = Object.freeze({
     sourcePath: "deploy/contracts/deployment-contract.v1.json",
     artifactPath: "deployment/deployment-contract.v1.json",
     verifierPath: "tooling/deployment/verify-stage6-deployment-contract.mjs",
-    successorBaselinePath: "provenance/stage6-successor-baseline-generation-07-revision-02.json",
+    successorBaselinePath: "provenance/stage6-successor-baseline-generation-07-revision-03.json",
     serviceAppPaths: ["apps/admin-api", "apps/portal-api", "apps/worker"],
+    migratorDeploymentEntrypoint: "migrator/run-stage6-migrations.mjs",
+    migratorHelperEnvironment: [
+      "PGHOST",
+      "PGPORT",
+      "PGDATABASE",
+      "PGUSER",
+      "CREDENTIALS_DIRECTORY",
+    ],
     rejectsGeneration06RootLayout: true,
   },
 });
@@ -62,7 +70,9 @@ const aggregateRows = (rows) =>
     rows.map(({ path: file, bytes, sha256: digest }) => `${file}\t${bytes}\t${digest}\n`).join(""),
   );
 const outputPath = (file) =>
-  /^docs\/reviews\/phase-1-m1\/STAGE_6_SUCCESSOR_BASELINE_GENERATION_[0-9]+\.json$/.test(file) ||
+  /^docs\/reviews\/phase-1-m1\/STAGE_6_SUCCESSOR_BASELINE_GENERATION_[0-9]+(?:_REVISION_[0-9]+)?\.json$/.test(
+    file,
+  ) ||
   file.startsWith("docs/evidence/phase-1-m1/stage-6/") ||
   file.startsWith("docs/reviews/phase-1-m1/stage-6/");
 const stage7Path = (file) =>
@@ -131,7 +141,13 @@ export const validateStage6SuccessorManifest = async ({ manifest, readBytes }) =
     "migration-runner.js",
     "deployment-contract.v1.json",
     "verify-stage6-deployment-contract.mjs",
-    "stage6-successor-baseline-generation-07-revision-02.json",
+    "stage6-successor-baseline-generation-07-revision-03.json",
+    "migrator/run-stage6-migrations.mjs",
+    "PGHOST",
+    "PGPORT",
+    "PGDATABASE",
+    "PGUSER",
+    "CREDENTIALS_DIRECTORY",
     "apps/admin-api",
     "apps/portal-api",
     "apps/worker",

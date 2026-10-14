@@ -15,7 +15,7 @@
     "verifierPath": "deployment/verify-stage6-deployment-contract.mjs",
     "payloadManifestPath": "payload-manifest.json",
     "checksumsPath": "checksums.txt",
-    "successorBaselinePath": "provenance/stage6-successor-baseline-generation-07-revision-02.json",
+    "successorBaselinePath": "provenance/stage6-successor-baseline-generation-07-revision-03.json",
     "currentSymlink": "/opt/travelos/current",
     "releaseRoot": "/opt/travelos/releases",
     "runtimeNodePath": "runtime/node/bin/node",
@@ -59,11 +59,19 @@
   },
   "migrator": {
     "executor": "travelos-migrator-exec",
+    "deploymentEntrypoint": "migrator/run-stage6-migrations.mjs",
     "credentialName": "migrator-db",
     "credentialSource": "/etc/credstore.encrypted/travelos-migrator-db",
     "sessionUser": "travelos_migrator",
     "roleSwitch": "SET ROLE travelos_owner",
-    "currentUser": "travelos_owner"
+    "currentUser": "travelos_owner",
+    "helperEnvironment": {
+      "host": "PGHOST",
+      "port": "PGPORT",
+      "database": "PGDATABASE",
+      "sessionUser": "PGUSER",
+      "credentialsDirectory": "CREDENTIALS_DIRECTORY"
+    }
   },
   "services": [
     {

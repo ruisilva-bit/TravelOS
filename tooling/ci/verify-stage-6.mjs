@@ -22,6 +22,7 @@ const gates = [
   ["test:stage6-successor-baseline", "test:stage6:successor-baseline"],
   ["test:stage6-migrator-package", "test:stage6:migrator-package"],
   ["test:stage6-deployment-contract", "test:stage6:deployment-contract"],
+  ["test:stage6-migrator-bootstrap", "test:stage6:migrator-bootstrap"],
   ["test:stage6-postgresql-18.6", "test:stage6:postgres"],
   ["test:rejected-technologies", "test:rejected-technologies"],
   ["verify:rejected-technologies", "verify:rejected-technologies"],
