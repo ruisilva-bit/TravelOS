@@ -307,7 +307,7 @@ const verifyContractShape = (contract) => {
   );
   assert.equal(contract.artifact.generation, 7);
   assert.equal(contract.artifact.sourceBranch, "phase-1/stage-6");
-  assert.equal(contract.artifact.sourceBaselineGeneration, 6);
+  assert.equal(contract.artifact.sourceBaselineGeneration, 7);
   assert.equal(contract.artifact.currentSymlink, CURRENT_ROOT);
   assert.equal(contract.artifact.releaseRoot, "/opt/travelos/releases");
   assert.equal(contract.artifact.artifactIdPrefix, "travelos-phase-1-m1-stage-6-gen07-");
@@ -324,7 +324,7 @@ const verifyContractShape = (contract) => {
   assert.equal(contract.artifact.checksumsPath, "checksums.txt");
   assert.equal(
     contract.artifact.successorBaselinePath,
-    "provenance/stage6-successor-baseline-generation-06.json",
+    "provenance/stage6-successor-baseline-generation-07.json",
   );
   assert.equal(contract.artifact.migratorMigrationDirectory, "migrator/migrations");
   assert.equal(
