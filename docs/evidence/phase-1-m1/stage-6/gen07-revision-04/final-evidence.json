@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "stage": "PHASE_1_M1_STAGE_6",
+  "evidenceGeneration": "gen07-revision-04",
+  "statusAtPreparation": "RUNTIME_AND_READ_ONLY_DATABASE_EVIDENCE_PASS; FINAL_SCAN_AND_INDEPENDENT_REVIEW_PENDING",
+  "candidate": {
+    "generation": 7,
+    "revision": 4,
+    "runtimeCandidateRevision": 3,
+    "branch": "phase-1/stage-6",
+    "sourceCommit": "8a14b27fbc6e260c761304824ea4f4ca690095fc",
+    "sourceTree": "122a2f614ccabd409634951159da547280b88a02",
+    "sourceBaseline": {
+      "path": "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_07_REVISION_03.json",
+      "sha256": "bb8890cacb720d43360997ff0e5c5ac0c6fa945b3dc5f87fb298d80c6e4e1695",
+      "sourceCount": 61,
+      "sourceAggregateSha256": "a736add8226933ac9d2a78268357dd654d16322f722fe377cdb28bbd9a8cde6b"
+    },
+    "artifact": {
+      "id": "travelos-phase-1-m1-stage-6-gen07-8a14b27f",
+      "sha256": "273f928fc6eb6c815b8b602312642a0bde74f6acff2d334079468a8cd3e0038c",
+      "bytes": 79069583,
+      "activeRelease": "/opt/travelos/releases/travelos-stage6-gen07-8a14b27f-attempt01"
+    },
+    "sourceOrArtifactChanged": false
+  },
+  "predecessor": {
+    "candidateRevision": 3,
+    "freezePath": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_CANDIDATE_FREEZE.json",
+    "freezeSha256": "106ed68c6af03cdc5fcf1243964a975da9fa7ea8213584b9736558de7ff59730",
+    "independentVerdict": "NO_GO",
+    "formalDecisionPath": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_FINAL_DECISION.json",
+    "openFindingsAddressedByThisSuccessor": ["S6-RV-01", "S6-RV-02"]
+  },
+  "runtimeAcceptance": {
+    "status": "PASS",
+    "attempt": 2,
+    "targetDatabase": "travelos_development",
+    "syntheticMarker": "TRAVELOS-STAGE6-GEN07-SMOKE-BB033E59-5BB7-4273-A42C-C58D2ED850B2",
+    "agencyId": "01a12fce-10c0-7e4e-a4d5-d91cb40b07fc",
+    "tripId": "01a13b97-78a7-7e6f-b59c-cf91bc31acfb",
+    "entityIds": {
+      "personId": "01a13b97-78a7-73b4-8f7d-1f1b4a3a6c3e",
+      "customerId": "01a13b97-78a7-7096-8004-0b05d2ec3a06",
+      "travellerId": "01a13b97-78a7-7e70-87d8-30f7c137ff9e",
+      "flightId": "01a13b97-78a8-7e93-83dc-b9d81bba2b41",
+      "accommodationId": "01a13b97-78a8-7b65-9e27-64f564bba15c",
+      "reservationId": "01a13b97-78a8-7661-921b-fd1e4092c04a",
+      "supplierCostId": "01a13b97-78a8-7062-a1bb-abc297e39b72"
+    },
+    "workspaceRevision": {
+      "beforeMutation": "1",
+      "afterAccommodationMutation": "2",
+      "increment": 1
+    },
+    "publications": {
+      "v1": {
+        "version": 1,
+        "publicationId": "01a13b97-791c-7400-b7a4-473001b79255",
+        "workspaceRevision": "1",
+        "schemaVersion": 1,
+        "projectionHash": "5a35ab00c9ad27f1dafb4ded3b30755bc562d86cfbcb278e817b771781cae153"
+      },
+      "v2": {
+        "version": 2,
+        "publicationId": "01a13b97-798e-7389-b37c-c03e898c11e8",
+        "workspaceRevision": "2",
+        "schemaVersion": 1,
+        "projectionHash": "69423bcc1d2bb6d7867e7d45d90d62325ae46dd174051db51a12769945d55225",
+        "active": true
+      }
+    },
+    "staleV1Candidate": {
+      "httpStatus": 409,
+      "error": "STALE_PUBLICATION_CANDIDATE",
+      "publicationHistoryRemainedV1ActiveBeforeV2": true,
+      "staleIdempotencyRecordCreated": false
+    },
+    "activePointer": {
+      "activeVersion": 2,
+      "activePublicationId": "01a13b97-798e-7389-b37c-c03e898c11e8"
+    },
+    "idempotencyKeyReferences": {
+      "v1": "stage6-v1-bb033e595bb7",
+      "v2": "stage6-v2-bb033e595bb7"
+    },
+    "v2Replay": {
+      "httpStatus": 200,
+      "sameSuccessfulResponse": true,
+      "version3Allocated": false
+    },
+    "temporaryStaffSessionRevoked": true,
+    "syntheticRecordsRetained": true,
+    "directSqlBusinessWrites": 0,
+    "executionTraceability": {
+      "unit": "travelos-stage6-runtime-acceptance-03.service",
+      "exitCode": 0,
+      "runnerPath": "/home/hermes/.hermes/cache/scratch/travelos-stage6-runtime-acceptance.py",
+      "runnerBytes": 21588,
+      "runnerSha256": "b9a4cd68ff3d26f258ee174837d842e6e10b0d8591eb28be70b122352f7b6ef8",
+      "readOnlyDbVerifierPath": "/home/hermes/projects/TravelOS/docs/evidence/phase-1-m1/stage-6/gen07-revision-03/owner-read-only-atomicity-verifier.py",
+      "readOnlyDbVerifierSha256": "238c49cd02ffe236268345a2116c82a36112f9ae86a9d87fa8da71050c2dbb6e",
+      "redactedAssertionStreamRetained": true,
+      "filteredOutputPath": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-filtered-output.json",
+      "filteredOutputSource": "terminal tool output captured in the historical session; raw unfiltered runner output was not retained.",
+      "rawUnfilteredStdoutRetained": false,
+      "filterPath": "/home/hermes/.hermes/cache/scratch/filter_travelos_stage6_acceptance_output.py",
+      "filterSha256": "b2f6307ef8ef0dd19405d96b63769f9866e4cc9b2d279c11b39b077dc7e327b0",
+      "orchestratorPath": "/home/hermes/.hermes/cache/scratch/run_travelos_stage6_acceptance_attempt02.py",
+      "orchestratorSha256": "885289b08551be483e3f93af64638fd8fa926a16b457b36d6f2c5b711429e98e",
+      "encryptedCredentialValuesExposed": false
+    }
+  },
+  "databaseVerification": {
+    "status": "PASS",
+    "receiptPath": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-database-verification.json",
+    "ownerReadOnlyVerifierPath": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/owner-read-only-atomicity-verifier.py",
+    "ownerReadOnlyVerifierSha256": "238c49cd02ffe236268345a2116c82a36112f9ae86a9d87fa8da71050c2dbb6e",
+    "payloadVerifierPath": "/home/hermes/.hermes/cache/scratch/verify_publication_payloads_attempt02.py",
+    "payloadVerifierSha256": "9bf9882136cc8fd733ae274a14743fbbe97ace4e0e30acd5a04a80a2f36920ef",
+    "readOnlyTransaction": true,
+    "publicationCounts": {
+      "versions": 2,
+      "snapshots": 2,
+      "pointers": 1,
+      "idempotency": 2,
+      "events": 2,
+      "audit": 2,
+      "outbox": 2
+    },
+    "payloadHashMatchesProjectionHash": true,
+    "matchingAuditAndLinkedOutboxPerPublication": true,
+    "orphanPublicationEventAuditOutboxCounts": 0,
+    "immutableTriggersAndRuntimeUpdateDeleteDenials": true,
+    "portalWorkspaceSelectDenied": true
+  },
+  "canonicalCi": {
+    "previousRunStatus": "PASS",
+    "sourceCandidateRevision": 3,
+    "completedGateCount": 32,
+    "exitCode": 0,
+    "rerun": false,
+    "markerClaimAddendumPath": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/ci-marker-claim-addendum.json",
+    "markerClaimQualified": true
+  },
+  "evidencePaths": {
+    "runtimeAcceptanceExecution": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-execution.json",
+    "runtimeAcceptanceFilteredOutput": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-filtered-output.json",
+    "runtimeAcceptanceDatabaseVerification": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-database-verification.json",
+    "ciMarkerClaimAddendum": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/ci-marker-claim-addendum.json"
+  },
+  "stage6Actions": 1,
+  "stage7Actions": 0
+}

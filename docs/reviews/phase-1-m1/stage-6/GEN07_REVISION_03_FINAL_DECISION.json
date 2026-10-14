@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "travelos-phase-1-m1-stage-6-gen07-revision-03",
+  "decidedAt": "2026-10-14T18:15:37+01:00",
+  "decision": "NO_GO",
+  "basis": {
+    "freezePath": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_CANDIDATE_FREEZE.json",
+    "freezeSha256": "106ed68c6af03cdc5fcf1243964a975da9fa7ea8213584b9736558de7ff59730",
+    "freezeEntries": 96,
+    "freezeAggregateSha256": "a26b32b45cb88cfa364d92d9e0d4562c4ebf35da7d193619667539b92429155c",
+    "finalCandidateScanPath": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_FINAL_CANDIDATE_SCAN.json",
+    "finalCandidateScanSha256": "ccd04b4527c2a7c9c49f0e40f32086762225ce0b4106712b7f95e0e3854d8ff4",
+    "finalCandidateScanResult": "PASS",
+    "independentReviewPath": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_INDEPENDENT_REVIEW.json",
+    "independentReviewSha256": "ab01a39adf7f1112d72234afe78bc451a60c01915414ca34c38d40f7f2fca168",
+    "independentReviewVerdict": "NO_GO"
+  },
+  "findings": [
+    {
+      "id": "S6-RV-01",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "summary": "Runtime acceptance stdout and structured checkpoints were not retained, so transient authentication, HTTP 409 and replay assertions are not independently verifiable from the frozen evidence.",
+      "requiredSuccessorEvidence": "Retain redacted machine-readable assertion checkpoints or equivalent direct execution evidence in a new evidence generation, indexed and frozen; obtain a fresh independent review."
+    },
+    {
+      "id": "S6-RV-02",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "summary": "The CI receipt and pre-freeze validation claim a final PASS marker that does not occur in the indexed CI log; the log ends with CANONICAL_CI_EXIT_CODE=0.",
+      "requiredSuccessorEvidence": "In a successor addendum, distinguish the exit-code/gate evidence from the absent marker. Preserve the original freeze and do not rerun CI absent qualified source/artifact changes."
+    }
+  ],
+  "gateSummary": {
+    "candidateFreezeIntegrity": "PASS",
+    "finalCandidateSensitiveScan": "PASS; 97 files, zero findings",
+    "independentReview": "NO_GO",
+    "runtimeAcceptanceEvidence": "INSUFFICIENT_FOR_GREEN",
+    "canonicalCi": "Previously passed once for gen07 revision 03; not rerun during closeout",
+    "sourceOrArtifactChanged": false,
+    "databaseMutationsAfterOriginalAcceptance": 0,
+    "stage7Actions": 0
+  },
+  "gitSeal": {
+    "performed": false,
+    "commitCreated": false,
+    "tagCreated": false,
+    "pushPerformed": false,
+    "reason": "A GO decision is not supported while HIGH/MEDIUM findings remain open."
+  },
+  "stageStatus": "OPEN_NO_GO; revision 03 is preserved as a rejected candidate. Any correction must be made in a successor evidence generation, never by editing the frozen bytes.",
+  "remediationNote": "No new database write, CI run, deployment, or CT command was performed after the independent review. Direct SSH to the Proxmox host was denied in this session; no password was requested or exposed. No alternate approved CT log-export/runner path was identified or used here."
+}

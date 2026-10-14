@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "evidenceGeneration": "gen07-revision-04",
+  "recordedAtUtc": "2026-10-14T18:08:50+00:00",
+  "target": {
+    "database": "travelos_development",
+    "agencyId": "01a12fce-10c0-7e4e-a4d5-d91cb40b07fc",
+    "tripId": "01a13b97-78a7-7e6f-b59c-cf91bc31acfb",
+    "syntheticMarker": "TRAVELOS-STAGE6-GEN07-SMOKE-BB033E59-5BB7-4273-A42C-C58D2ED850B2"
+  },
+  "verificationMethod": {
+    "queryMode": "BEGIN READ ONLY; SET ROLE travelos_owner; SELECT; ROLLBACK",
+    "executionPath": "travelos-migrator-exec /usr/bin/psql",
+    "sessionUser": "travelos_migrator",
+    "currentUser": "travelos_owner",
+    "directSqlBusinessWrites": 0
+  },
+  "publicationState": {
+    "counts": {
+      "versions": 2,
+      "snapshots": 2,
+      "pointers": 1,
+      "idempotency": 2,
+      "staleIdempotency": 0,
+      "events": 2,
+      "audit": 2,
+      "outbox": 2
+    },
+    "activePointer": {
+      "activePublicationId": "01a13b97-798e-7389-b37c-c03e898c11e8",
+      "activeVersion": 2
+    },
+    "publications": [
+      {
+        "version": 1,
+        "publicationId": "01a13b97-791c-7400-b7a4-473001b79255",
+        "workspaceRevision": "1",
+        "schemaVersion": 1,
+        "projectionHash": "5a35ab00c9ad27f1dafb4ded3b30755bc562d86cfbcb278e817b771781cae153",
+        "canonicalPayloadBytes": 1109,
+        "canonicalPayloadSha256": "5a35ab00c9ad27f1dafb4ded3b30755bc562d86cfbcb278e817b771781cae153",
+        "payloadMatchesProjectionHash": true,
+        "internalSentinelAbsent": true,
+        "publishedAt": "2026-10-14 18:05:45.117+00"
+      },
+      {
+        "version": 2,
+        "publicationId": "01a13b97-798e-7389-b37c-c03e898c11e8",
+        "workspaceRevision": "2",
+        "schemaVersion": 1,
+        "projectionHash": "69423bcc1d2bb6d7867e7d45d90d62325ae46dd174051db51a12769945d55225",
+        "canonicalPayloadBytes": 1109,
+        "canonicalPayloadSha256": "69423bcc1d2bb6d7867e7d45d90d62325ae46dd174051db51a12769945d55225",
+        "payloadMatchesProjectionHash": true,
+        "internalSentinelAbsent": true,
+        "publishedAt": "2026-10-14 18:05:45.23+00"
+      }
+    ],
+    "idempotencyRows": [
+      {
+        "idempotencyKeyReference": "stage6-v1-bb033e595bb7",
+        "publicationId": "01a13b97-791c-7400-b7a4-473001b79255",
+        "workspaceRevision": "1",
+        "projectionHash": "5a35ab00c9ad27f1dafb4ded3b30755bc562d86cfbcb278e817b771781cae153"
+      },
+      {
+        "idempotencyKeyReference": "stage6-v2-bb033e595bb7",
+        "publicationId": "01a13b97-798e-7389-b37c-c03e898c11e8",
+        "workspaceRevision": "2",
+        "projectionHash": "69423bcc1d2bb6d7867e7d45d90d62325ae46dd174051db51a12769945d55225"
+      }
+    ]
+  },
+  "publicationAtomicity": {
+    "perPublication": [
+      {
+        "version": 1,
+        "eventCount": 1,
+        "matchingAuditCount": 1,
+        "linkedOutboxCount": 1,
+        "outboxEventLinked": true,
+        "eventActorMatchesPublisher": true
+      },
+      {
+        "version": 2,
+        "eventCount": 1,
+        "matchingAuditCount": 1,
+        "linkedOutboxCount": 1,
+        "outboxEventLinked": true,
+        "eventActorMatchesPublisher": true
+      }
+    ],
+    "orphanCounts": {
+      "eventsWithoutVersion": 0,
+      "auditsWithoutVersion": 0,
+      "outboxesWithoutEvent": 0,
+      "outboxesWithoutVersion": 0
+    }
+  },
+  "immutability": {
+    "triggerNames": [
+      "publication_audit_immutable_trigger",
+      "publication_event_immutable_trigger",
+      "publication_outbox_immutable_trigger",
+      "publication_snapshot_immutable_trigger",
+      "publication_version_immutable_trigger"
+    ],
+    "runtimeUpdateDeleteDenied": {
+      "version": true,
+      "snapshot": true,
+      "event": true,
+      "audit": true,
+      "outbox": true
+    },
+    "portalWorkspaceSelectDenied": true,
+    "prohibitedSqlMutationAttempted": false
+  },
+  "syntheticEntityVerification": {
+    "relationships": {
+      "travellers": 1,
+      "customerLinks": 1,
+      "flightItems": 1,
+      "accommodationItems": 1,
+      "reservations": 1,
+      "reservationItemLinks": 2,
+      "supplierCosts": 1
+    },
+    "entityIds": {
+      "travellerId": "01a13b97-78a7-7e70-87d8-30f7c137ff9e",
+      "personId": "01a13b97-78a7-73b4-8f7d-1f1b4a3a6c3e",
+      "customerId": "01a13b97-78a7-7096-8004-0b05d2ec3a06",
+      "flightItemId": "01a13b97-78a8-7e93-83dc-b9d81bba2b41",
+      "accommodationItemId": "01a13b97-78a8-7b65-9e27-64f564bba15c",
+      "reservationId": "01a13b97-78a8-7661-921b-fd1e4092c04a",
+      "supplierCostId": "01a13b97-78a8-7062-a1bb-abc297e39b72"
+    }
+  },
+  "checks": {
+    "roleIdentity": true,
+    "twoVersionsAndSnapshots": true,
+    "activePointerIsV2": true,
+    "payloadHashesMatchProjectionHashes": true,
+    "expectedSchemaAndWorkspaceRevisions": true,
+    "staleIdempotencyRecordAbsent": true,
+    "oneEventAuditOutboxPerPublication": true,
+    "noOrphanEventAuditOutbox": true,
+    "immutableTriggersAndRuntimePrivileges": true,
+    "portalWorkspaceSelectDenied": true,
+    "syntheticRelationshipsComplete": true
+  },
+  "result": "PASS",
+  "stage7Actions": 0
+}

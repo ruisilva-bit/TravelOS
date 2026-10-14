@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "stage": "PHASE_1_M1_STAGE_6",
+  "candidate": {
+    "generation": 7,
+    "revision": 3,
+    "branch": "phase-1/stage-6",
+    "sourceCommit": "8a14b27fbc6e260c761304824ea4f4ca690095fc",
+    "sourceTree": "122a2f614ccabd409634951159da547280b88a02",
+    "sourceBaseline": {
+      "path": "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_07_REVISION_03.json",
+      "sha256": "bb8890cacb720d43360997ff0e5c5ac0c6fa945b3dc5f87fb298d80c6e4e1695",
+      "verification": "PASS",
+      "sourceCount": 61,
+      "sourceAggregateSha256": "a736add8226933ac9d2a78268357dd654d16322f722fe377cdb28bbd9a8cde6b"
+    },
+    "artifact": {
+      "id": "travelos-phase-1-m1-stage-6-gen07-8a14b27f",
+      "sha256": "273f928fc6eb6c815b8b602312642a0bde74f6acff2d334079468a8cd3e0038c",
+      "bytes": 79069583,
+      "activeRelease": "/opt/travelos/releases/travelos-stage6-gen07-8a14b27f-attempt01"
+    }
+  },
+  "qualification": {
+    "canonicalCi": {
+      "status": "PASS",
+      "authorizedRuns": 1,
+      "consumedRuns": 1,
+      "completedGates": 32,
+      "finalMarker": "PHASE_1_M1_STAGE_6 PASS",
+      "logPath": ".hermes/state/stage6-gen07-revision03-canonical-ci-attempt-01.log",
+      "logSha256": "67bdc1826b7e80dd0ee0210bbef76ff389888de7c624cb3b278b97bc51e967cf",
+      "toolchain": {"node": "24.19.0", "corepack": "0.35.0", "pnpm": "11.21.0"},
+      "rerun": false
+    },
+    "artifactAndDeploymentContract": "PASS",
+    "migrationHead": "0011_stage6_trip_publication",
+    "pendingMigrations": 0,
+    "databaseIdentityForMigrationCheck": {"sessionUser": "travelos_migrator", "effectiveRole": "travelos_owner"},
+    "sourceSecretScan": {"result": "PASS", "payloadFilesScanned": 22798, "unallowlistedFindings": 0}
+  },
+  "runtimeAcceptance": {
+    "status": "PASS",
+    "executionTraceability": {
+      "unit": "travelos-stage6-runtime-acceptance-01.service",
+      "exitCode": 0,
+      "runnerPath": "/home/hermes/.hermes/cache/scratch/travelos-stage6-runtime-acceptance.py",
+      "runnerBytes": 21588,
+      "runnerSha256": "b9a4cd68ff3d26f258ee174837d842e6e10b0d8591eb28be70b122352f7b6ef8",
+      "runnerBundled": false,
+      "readOnlyDbVerifierPath": "/home/hermes/.hermes/cache/scratch/travelos-stage6-admin-runtime-db-verify.py",
+      "readOnlyDbVerifierSha256": "df7b9021d8c7bf004c5378cca77a23c0d6ff30a6fd437804cbbe54f05570fec6",
+      "readOnlyDbVerifierBundled": false,
+      "excludedScriptReason": "Raw execution/verifier scripts access encrypted credential references and include a synthetic bearer-denial probe; they triggered the sensitive-data scanner, so only exact hashes/paths are retained here. No credential values, cookies, session tokens, or TOTP secrets are recorded.",
+      "structuredJournalCheckpointsPersisted": false,
+      "stdoutRetained": false,
+      "basis": "The assertion-bearing runner returned exit code 0; the retained read-only Admin and Owner verification receipts independently reconcile persisted state. The missing transient stdout is disclosed rather than reconstructed."
+    },
+    "targetDatabase": "travelos_development",
+    "syntheticMarker": "TRAVELOS-STAGE6-GEN07-SMOKE-E603D3A3-4660-44B5-A673-4EFE1789EEFD",
+    "agencyId": "01a12fce-10c0-7e4e-a4d5-d91cb40b07fc",
+    "tripId": "01a13b1e-49af-7b65-a162-2dca4e7d48a5",
+    "entityIds": {
+      "personId": "01a13b1e-49af-7c36-bc3d-6cad22097e8e",
+      "customerId": "01a13b1e-49af-7ddf-a4c4-13894e325caa",
+      "tripTravellerId": "01a13b1e-49af-7ec7-8a17-073ae7bb0456",
+      "flightItemId": "01a13b1e-49b0-716c-bb90-852d3ca84b5d",
+      "accommodationItemId": "01a13b1e-49b0-7524-8c7d-cc85dfa37d55",
+      "reservationId": "01a13b1e-49b0-7d64-892a-ebf51fd5392d",
+      "supplierCostId": "01a13b1e-49b0-7eac-b77f-23ee8e315830"
+    },
+    "workspaceRevision": {"v1": "1", "afterMutation": "2", "increment": 1},
+    "publications": [
+      {"version": 1, "publicationId": "01a13b1e-4a6b-741f-8025-861837e21033", "workspaceRevision": "1", "schemaVersion": 1, "projectionHash": "5a37ba2e33aff1ffd1c3c41f8e6ad8cab9afaffc9d69b3cac08d817430f6bece", "canonicalPayloadSha256": "5a37ba2e33aff1ffd1c3c41f8e6ad8cab9afaffc9d69b3cac08d817430f6bece", "payloadHashMatches": true, "internalSentinelAbsent": true},
+      {"version": 2, "publicationId": "01a13b1e-4af6-7ae0-a385-6832a1034f04", "workspaceRevision": "2", "schemaVersion": 1, "projectionHash": "ff01b00d5c90310237ff0c7aea5c534b1dcaf62799fca0c8157083c743ff4395", "canonicalPayloadSha256": "ff01b00d5c90310237ff0c7aea5c534b1dcaf62799fca0c8157083c743ff4395", "payloadHashMatches": true, "internalSentinelAbsent": true}
+    ],
+    "staleV1Candidate": {"httpStatus": 409, "error": "STALE_PUBLICATION_CANDIDATE", "newVersion": false, "pointerChanged": false, "auditRecordCreated": false, "orphanOutboxCreated": false},
+    "activePointer": {"version": 2, "publicationId": "01a13b1e-4af6-7ae0-a385-6832a1034f04"},
+    "v2Replay": {"sameSuccessfulResponse": true, "version3Allocated": false},
+    "idempotencyKeyReferences": {"v1": "stage6-v1-e603d3a34660", "v2": "stage6-v2-e603d3a34660"},
+    "auditOutboxAtomicity": {"events": 2, "audit": 2, "outbox": 2, "oneLinkedSetPerPublication": true, "orphanRows": 0},
+    "immutability": {"immutableTriggers": 5, "AdminUpdateDeleteDenied": true, "PortalWorkspaceSelectDenied": true},
+    "temporaryStaffSessionRevoked": true,
+    "syntheticRecordsRetained": true,
+    "directSqlBusinessWrites": 0
+  },
+  "postAcceptanceHealth": {
+    "adminApi": {"httpStatus": 200, "systemd": "active"},
+    "portalApi": {"httpStatus": 200, "systemd": "active"},
+    "worker": "active"
+  },
+  "previewReadOnlyEvidence": {
+    "applicationPath": "packages/backend-core/src/modules/customer-presentation/application/staff-publication-operations.ts:197-209",
+    "repositoryPath": "packages/database/src/customer-presentation/staff-publication-repository.ts:289-336",
+    "databaseMode": "REPEATABLE READ, READ ONLY transaction",
+    "qualificationTest": "tests/integration/stage-6-publication-postgresql.test.ts:443-501",
+    "assertions": ["two previews return equal candidates", "publication/version/snapshot/pointer/idempotency/event/audit/outbox counts and publication lock generation are unchanged"],
+    "canonicalCiIntegrationTest": "PASS"
+  },
+  "evidencePaths": [
+    "ci-receipt.json",
+    "ci.log",
+    "runtime-acceptance-receipt.json",
+    "runtime-acceptance-reconciliation.json",
+    "pre-acceptance-baseline.json",
+    "host-routing-security-probe.json",
+    "migration-head-no-pending.txt",
+    "artifact-release-verification.json",
+    "source-baseline-verification.json",
+    "post-acceptance-health.json",
+    "owner-read-only-atomicity-verifier.py"
+  ],
+  "statusAtPreparation": "PASS_PENDING_DETERMINISTIC_FREEZE_AND_INDEPENDENT_REVIEW",
+  "stage6Actions": 1,
+  "stage7Actions": 0
+}

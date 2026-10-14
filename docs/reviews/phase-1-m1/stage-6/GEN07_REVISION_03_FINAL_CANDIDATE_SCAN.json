@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "travelos-phase-1-m1-stage-6-gen07-revision-03",
+  "phase": "POST_FREEZE_FINAL_CANDIDATE_SCAN",
+  "collectedAt": "2026-10-14T16:57:08.053Z",
+  "freezePath": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_CANDIDATE_FREEZE.json",
+  "freezeBytes": 24779,
+  "freezeSha256": "106ed68c6af03cdc5fcf1243964a975da9fa7ea8213584b9736558de7ff59730",
+  "declaredEntries": 96,
+  "parsedEntries": 96,
+  "matchedEntries": 96,
+  "missingPaths": [],
+  "mismatchedPaths": [],
+  "duplicates": [],
+  "selfIncluded": false,
+  "expectedExtraRows": 0,
+  "aggregateSerialization": "SHA-256 over bytewise UTF-8 path-sorted records path<TAB>bytes<TAB>sha256<LF>; final record is LF-terminated.",
+  "aggregateSha256": "a26b32b45cb88cfa364d92d9e0d4562c4ebf35da7d193619667539b92429155c",
+  "evidenceIndex": {
+    "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/evidence-index.json",
+    "bytes": 2985,
+    "sha256": "ef72bedb30df0163565aea0efefd2daa7214abe44e9a53a00a79d09e8a466bcf",
+    "declared": 12,
+    "parsed": 12,
+    "matched": 12,
+    "aggregateSha256": "c7091866f7b8742b8c804ace0416b5c9a9e7b3527de06d720023fb670850d286",
+    "exactDirectorySet": true
+  },
+  "sensitiveDataScan": {
+    "result": "PASS",
+    "filesScanned": 97,
+    "scopeAggregateSha256": "ff4cf92f5b883174a54ec81af0490d615c3814ec1a82dc311a3495981f12ba1a",
+    "findingCount": 0,
+    "allowlistedFindingCount": 0,
+    "findings": []
+  },
+  "finalFreezeEligible": true,
+  "independentReviewRequiredBeforeDecision": true,
+  "stage7Actions": 0
+}

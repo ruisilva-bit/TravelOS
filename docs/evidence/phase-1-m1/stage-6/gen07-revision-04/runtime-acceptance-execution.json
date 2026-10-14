@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "evidenceGeneration": "gen07-revision-04",
+  "candidate": {
+    "sourceCommit": "8a14b27fbc6e260c761304824ea4f4ca690095fc",
+    "sourceTree": "122a2f614ccabd409634951159da547280b88a02",
+    "generation": 7,
+    "runtimeCandidateRevision": 3,
+    "artifactId": "travelos-phase-1-m1-stage-6-gen07-8a14b27f",
+    "artifactSha256": "273f928fc6eb6c815b8b602312642a0bde74f6acff2d334079468a8cd3e0038c",
+    "activeRelease": "/opt/travelos/releases/travelos-stage6-gen07-8a14b27f-attempt01"
+  },
+  "acceptanceAttempt": 2,
+  "recordedAtUtc": "2026-10-14T18:08:50+00:00",
+  "execution": {
+    "unit": "travelos-stage6-runtime-acceptance-03.service",
+    "runnerPath": "/home/hermes/.hermes/cache/scratch/travelos-stage6-runtime-acceptance.py",
+    "runnerSha256": "b9a4cd68ff3d26f258ee174837d842e6e10b0d8591eb28be70b122352f7b6ef8",
+    "redactionFilterSha256": "b2f6307ef8ef0dd19405d96b63769f9866e4cc9b2d279c11b39b077dc7e327b0",
+    "credentialDelivery": "Previously authorized systemd encrypted-credential delivery; secret values were not read, logged, or exposed.",
+    "databaseOwnerSelection": "read-only query through travelos-migrator-exec",
+    "businessMutations": "Authenticated Admin API routes only",
+    "directSqlBusinessWrites": 0,
+    "psqlExitCode": 0,
+    "runnerExitCode": 0,
+    "filterExitCode": 0,
+    "temporarySessionRevoked": true,
+    "remoteTemporaryFilesRemoved": true,
+    "transientUnitCollected": true,
+    "sensitiveRunnerOutputRetained": false
+  },
+  "assertionRecords": [
+    {
+      "checkpoint": "fixture_prepared",
+      "syntheticMarker": "TRAVELOS-STAGE6-GEN07-SMOKE-BB033E59-5BB7-4273-A42C-C58D2ED850B2"
+    },
+    {
+      "checkpoint": "trip_created",
+      "syntheticMarker": "TRAVELOS-STAGE6-GEN07-SMOKE-BB033E59-5BB7-4273-A42C-C58D2ED850B2",
+      "tripId": "01a13b97-78a7-7e6f-b59c-cf91bc31acfb",
+      "accommodationId": "01a13b97-78a8-7b65-9e27-64f564bba15c",
+      "initialWorkspaceRevision": "1"
+    },
+    {
+      "checkpoint": "publish_v1",
+      "publicationId": "01a13b97-791c-7400-b7a4-473001b79255",
+      "version": 1,
+      "projectionHash": "5a35ab00c9ad27f1dafb4ded3b30755bc562d86cfbcb278e817b771781cae153"
+    },
+    {
+      "checkpoint": "accommodation_mutated",
+      "tripId": "01a13b97-78a7-7e6f-b59c-cf91bc31acfb",
+      "workspaceRevision": "2",
+      "lockVersion": "1"
+    },
+    {
+      "checkpoint": "stale_candidate_rejected",
+      "tripId": "01a13b97-78a7-7e6f-b59c-cf91bc31acfb",
+      "httpStatus": 409,
+      "error": "STALE_PUBLICATION_CANDIDATE"
+    },
+    {
+      "checkpoint": "publish_v2",
+      "publicationId": "01a13b97-798e-7389-b37c-c03e898c11e8",
+      "version": 2,
+      "projectionHash": "69423bcc1d2bb6d7867e7d45d90d62325ae46dd174051db51a12769945d55225"
+    }
+  ],
+  "finalAssertions": {
+    "result": "PASS",
+    "syntheticMarker": "TRAVELOS-STAGE6-GEN07-SMOKE-BB033E59-5BB7-4273-A42C-C58D2ED850B2",
+    "runId": "bb033e595bb7",
+    "agencyId": "01a12fce-10c0-7e4e-a4d5-d91cb40b07fc",
+    "entityIds": {
+      "personId": "01a13b97-78a7-73b4-8f7d-1f1b4a3a6c3e",
+      "customerId": "01a13b97-78a7-7096-8004-0b05d2ec3a06",
+      "travellerId": "01a13b97-78a7-7e70-87d8-30f7c137ff9e",
+      "tripId": "01a13b97-78a7-7e6f-b59c-cf91bc31acfb",
+      "flightId": "01a13b97-78a8-7e93-83dc-b9d81bba2b41",
+      "accommodationId": "01a13b97-78a8-7b65-9e27-64f564bba15c",
+      "reservationId": "01a13b97-78a8-7661-921b-fd1e4092c04a",
+      "supplierCostId": "01a13b97-78a8-7062-a1bb-abc297e39b72"
+    },
+    "health": {
+      "admin": 200,
+      "portal": 200
+    },
+    "security": {
+      "unauthenticatedContext": 401,
+      "unauthenticatedPreview": 401,
+      "wrongAdminHost": 404,
+      "wrongOriginPublish": 403,
+      "bearerAuthorization": 403,
+      "portalWorkspaceRoute": 404
+    },
+    "authentication": {
+      "passwordSignIn": "PASS",
+      "totpChallengeAndVerification": "PASS",
+      "recentMfa": "PASS",
+      "signOut": "PASS",
+      "sessionContextAfterSignOut": 401
+    },
+    "previewV1": {
+      "schemaVersion": 1,
+      "workspaceRevision": "1",
+      "projectionHash": "5a35ab00c9ad27f1dafb4ded3b30755bc562d86cfbcb278e817b771781cae153",
+      "repeatDeterministic": true,
+      "internalSentinelAbsent": true
+    },
+    "publishV1": {
+      "version": 1,
+      "publicationId": "01a13b97-791c-7400-b7a4-473001b79255",
+      "projectionHash": "5a35ab00c9ad27f1dafb4ded3b30755bc562d86cfbcb278e817b771781cae153",
+      "active": true
+    },
+    "accommodationMutation": {
+      "workspaceRevisionFrom": "1",
+      "workspaceRevisionTo": "2",
+      "lockVersionAfter": "1"
+    },
+    "staleCandidate": {
+      "httpStatus": 409,
+      "error": "STALE_PUBLICATION_CANDIDATE",
+      "historyStillVersion1": true
+    },
+    "previewV2": {
+      "schemaVersion": 1,
+      "workspaceRevision": "2",
+      "projectionHash": "69423bcc1d2bb6d7867e7d45d90d62325ae46dd174051db51a12769945d55225",
+      "visibleAccommodationChanged": true,
+      "internalSentinelAbsent": true
+    },
+    "publishV2": {
+      "version": 2,
+      "publicationId": "01a13b97-798e-7389-b37c-c03e898c11e8",
+      "projectionHash": "69423bcc1d2bb6d7867e7d45d90d62325ae46dd174051db51a12769945d55225",
+      "active": true
+    },
+    "idempotencyKeyReferences": {
+      "v1": "stage6-v1-bb033e595bb7",
+      "v2": "stage6-v2-bb033e595bb7"
+    },
+    "idempotentReplay": {
+      "httpStatus": 200,
+      "sameSuccessfulResponse": true,
+      "version3Allocated": false
+    },
+    "history": {
+      "versions": [2, 1],
+      "activeVersion": 2
+    }
+  },
+  "stage7Actions": 0
+}

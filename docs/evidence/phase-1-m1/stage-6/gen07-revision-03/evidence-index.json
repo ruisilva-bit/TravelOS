@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "bundle": "TravelOS Stage 6 gen07 revision03 final evidence",
+  "indexExclusion": "This file is excluded from its own entries.",
+  "aggregateSerialization": "SHA-256 over bytewise path-sorted UTF-8 records path<TAB>bytes<TAB>sha256<LF>; final record is LF-terminated.",
+  "entryCount": 12,
+  "aggregateSha256": "c7091866f7b8742b8c804ace0416b5c9a9e7b3527de06d720023fb670850d286",
+  "entries": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/artifact-release-verification.json",
+      "bytes": 3019,
+      "sha256": "f0a364469486617d4c3632db14c980ca2445320c4ba59ce6ee884234f21aa997"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/ci-receipt.json",
+      "bytes": 1125,
+      "sha256": "58fe8c67acc2bb065a69d18ce1b84765b648ccc5d6db9f1a9cd624f224fac52b"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/ci.log",
+      "bytes": 334359,
+      "sha256": "67bdc1826b7e80dd0ee0210bbef76ff389888de7c624cb3b278b97bc51e967cf"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/final-evidence.json",
+      "bytes": 6802,
+      "sha256": "90f9d6a815f0d2a1be4d876814cb2717199907cdd17ca05e624db60eae8c9d3f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/host-routing-security-probe.json",
+      "bytes": 796,
+      "sha256": "918e0102e3cc27577082f24d7b78674ec7dfb088ff7fc4fb538c1d9cbe3197eb"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/migration-head-no-pending.txt",
+      "bytes": 2300,
+      "sha256": "1941c869918aaf663a3096970bf015b892166cc39d38c9eb234897ada0aa26a9"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/owner-read-only-atomicity-verifier.py",
+      "bytes": 11144,
+      "sha256": "238c49cd02ffe236268345a2116c82a36112f9ae86a9d87fa8da71050c2dbb6e"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/post-acceptance-health.json",
+      "bytes": 501,
+      "sha256": "569a1bc80f22c507e62d3d9c9f29996d59964159cff4c3a0e0acbe5fd2d6ca02"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/pre-acceptance-baseline.json",
+      "bytes": 466,
+      "sha256": "39a86ab6e45007bb0e97f066883b4b9746f5b18b9b1d7f63d219b787e50eab55"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/runtime-acceptance-receipt.json",
+      "bytes": 8155,
+      "sha256": "497d748c132166e59a0534d65cea1e2c6812c4904a5e502a66834a6e46ce7a95"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/runtime-acceptance-reconciliation.json",
+      "bytes": 5619,
+      "sha256": "ec0e001b80e014ca86504e742b70c4afadc43ffa8913e8c64e193711f74ba025"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-03/source-baseline-verification.json",
+      "bytes": 561,
+      "sha256": "0c76c2b98c74ad82950537314691a80e80c63da7a958f92258d77cd163aba1c1"
+    }
+  ]
+}

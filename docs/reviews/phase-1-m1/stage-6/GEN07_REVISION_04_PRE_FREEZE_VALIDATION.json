@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "travelos-phase-1-m1-stage-6-gen07-revision-04",
+  "validationPhase": "PRE_FREEZE",
+  "result": "PASS",
+  "validatedAt": "2026-10-14T18:19:00+00:00",
+  "source": {
+    "branch": "phase-1/stage-6",
+    "commit": "8a14b27fbc6e260c761304824ea4f4ca690095fc",
+    "tree": "122a2f614ccabd409634951159da547280b88a02",
+    "baselinePath": "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_07_REVISION_03.json",
+    "baselineSha256": "bb8890cacb720d43360997ff0e5c5ac0c6fa945b3dc5f87fb298d80c6e4e1695",
+    "baselineVerifierResult": "PASS; source commit/tree and protected source manifest remain unchanged",
+    "protectedSourceCount": 61,
+    "protectedSourceAggregateSha256": "a736add8226933ac9d2a78268357dd654d16322f722fe377cdb28bbd9a8cde6b",
+    "post-evidence-byteReconciliation": {
+      "result": "PASS",
+      "matched": 61,
+      "missing": 0,
+      "mismatched": 0,
+      "aggregateMatchesBaseline": true
+    },
+    "trackedWorkingTreeChanges": 0,
+    "sourceOrArtifactChanged": false
+  },
+  "acceptedPredecessorBaseline": {
+    "path": "docs/reviews/phase-1-m1/STAGE_5_SECURITY_EXTENSION_BASELINE.json",
+    "sha256": "ff41985b197738faa9585af2b4686612d420a9c118801a801c8d38087f1d29b6",
+    "bytes": 38259,
+    "successorManifestDeclaredProtectedFileCount": 38,
+    "successorManifestDeclaredProtectedAggregateSha256": "decc422c49ab17d44e700331b95ac3fdf0bee8d6058b244682ecdc6ab8940255",
+    "status": "Historical Stage 5 successor-baseline gate remains as recorded; this closeout rechecks the predecessor manifest hash only and does not rerun Stage 5 or modify Stage 5."
+  },
+  "predecessorRevision03": {
+    "freezePath": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_CANDIDATE_FREEZE.json",
+    "freezeSha256": "106ed68c6af03cdc5fcf1243964a975da9fa7ea8213584b9736558de7ff59730",
+    "independentReviewPath": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_INDEPENDENT_REVIEW.json",
+    "independentReviewSha256": "ab01a39adf7f1112d72234afe78bc451a60c01915414ca34c38d40f7f2fca168",
+    "formalDecisionPath": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_FINAL_DECISION.json",
+    "formalDecisionSha256": "aa768fd51b153e6df14548c8e0e42231d368c5177bf79f00e1f9388ee63bc4b1",
+    "formalDecision": "NO_GO; revision03 remains unsealed and unchanged",
+    "findingsForIndependentAdjudication": [
+      {
+        "id": "S6-RV-01",
+        "severity": "HIGH",
+        "priorFinding": "No retained assertion-level execution evidence for transient authenticated runtime acceptance outcomes.",
+        "successorEvidence": [
+          "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-execution.json",
+          "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-filtered-output.json",
+          "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-database-verification.json"
+        ],
+        "authorDisposition": "PRESENTED_FOR_INDEPENDENT_ADJUDICATION; author does not self-close the finding."
+      },
+      {
+        "id": "S6-RV-02",
+        "severity": "MEDIUM",
+        "priorFinding": "CI receipt claimed a final PASS marker not present in the indexed CI log.",
+        "successorEvidence": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/ci-marker-claim-addendum.json",
+        "authorDisposition": "PRESENTED_FOR_INDEPENDENT_ADJUDICATION; original receipt and log remain unchanged, CI was not rerun."
+      }
+    ]
+  },
+  "canonicalCi": {
+    "result": "PASS based on the recorded exit code and completed gates",
+    "authorizedRuns": 1,
+    "consumedRuns": 1,
+    "completedGates": 32,
+    "logSha256": "67bdc1826b7e80dd0ee0210bbef76ff389888de7c624cb3b278b97bc51e967cf",
+    "finalMarkerClaim": "Unsupported: PHASE_1_M1_STAGE_6 PASS is absent from retained log; actual final line is CANONICAL_CI_EXIT_CODE=0.",
+    "claimAddendumPath": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/ci-marker-claim-addendum.json",
+    "rerunDuringCloseout": false
+  },
+  "artifactAndRuntime": {
+    "artifactSha256": "273f928fc6eb6c815b8b602312642a0bde74f6acff2d334079468a8cd3e0038c",
+    "artifactBytes": 79069583,
+    "activeRelease": "/opt/travelos/releases/travelos-stage6-gen07-8a14b27f-attempt01",
+    "runtimeCandidateRevision": 3,
+    "migrationHead": "0011_stage6_trip_publication",
+    "pendingMigrations": 0,
+    "adminHealth": 200,
+    "portalHealth": 200,
+    "servicesActive": [
+      "travelos-admin-api.service",
+      "travelos-portal-api.service",
+      "travelos-worker.service"
+    ],
+    "artifactOrServiceChanged": false
+  },
+  "authenticatedRuntimeAcceptance": {
+    "result": "PASS",
+    "attempt": 2,
+    "executionReceipt": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-execution.json",
+    "filteredExecutionOutput": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-filtered-output.json",
+    "readOnlyDatabaseReceipt": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-database-verification.json",
+    "syntheticMarker": "TRAVELOS-STAGE6-GEN07-SMOKE-BB033E59-5BB7-4273-A42C-C58D2ED850B2",
+    "tripId": "01a13b97-78a7-7e6f-b59c-cf91bc31acfb",
+    "publicationV1Id": "01a13b97-791c-7400-b7a4-473001b79255",
+    "publicationV2Id": "01a13b97-798e-7389-b37c-c03e898c11e8",
+    "staleCandidate": "HTTP 409 STALE_PUBLICATION_CANDIDATE; publication history remained at v1 before v2; no stale idempotency row, additional version, pointer mutation, invalid audit, or orphan outbox found by final read-only reconciliation.",
+    "idempotentReplay": "Same v2 success; no v3 allocated.",
+    "auditOutbox": "Two linked event/audit/outbox sets, one per publication; zero orphan events/audits/outboxes.",
+    "immutabilityProtections": "Five immutable triggers; runtime UPDATE/DELETE denied for publication, snapshot, event, audit and outbox; Portal workspace SELECT denied; no prohibited mutation attempted.",
+    "temporaryStaffSessionRevoked": true,
+    "syntheticRecordsRetained": true,
+    "directSqlBusinessWrites": 0
+  },
+  "evidenceBundle": {
+    "directory": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04",
+    "indexPath": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/evidence-index.json",
+    "indexSha256": "b16f690558c5a6f4cee74b459e83fa4b13a4ca3065e1397e5c2885c99c0be6c9",
+    "indexBytes": 1523,
+    "indexedArtifacts": 5,
+    "aggregateSha256": "61aca67c1448bbbc2b548006cd3bfc22bb0fb9dce8ae9597558eb63d373a2353",
+    "integrity": {
+      "declared": 5,
+      "parsed": 5,
+      "matched": 5,
+      "missing": 0,
+      "mismatched": 0,
+      "duplicates": 0,
+      "extraFiles": 0
+    },
+    "sensitiveDataScan": {
+      "result": "PASS",
+      "filesScanned": 6,
+      "findings": 0,
+      "allowlistedFindings": 0,
+      "scopeAggregateSha256": "480fb32a78e5d981ff50a4a31900849b1e6f4c952e3dce18d9e94fabbc01e46f"
+    }
+  },
+  "supportingHistoricalEvidenceToFreeze": [
+    "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_CANDIDATE_FREEZE.json",
+    "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_FINAL_CANDIDATE_SCAN.json",
+    "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_INDEPENDENT_REVIEW.json",
+    "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_03_FINAL_DECISION.json"
+  ],
+  "governingDocumentsToFreeze": [
+    "AGENTS.md",
+    "IDEA.md",
+    "docs/PRODUCT_BLUEPRINT.md",
+    "docs/DOMAIN_MODEL.md",
+    "docs/implementation/M1_STAGE_6_PREVIEW_PUBLISH.md",
+    "docs/implementation/M1_STAGE_6_SECURITY_EXTENSION.md",
+    "docs/adr/README.md",
+    "docs/adr/ADR-001-modular-monolith.md",
+    "docs/adr/ADR-002-dedicated-single-tenant-deployment.md",
+    "docs/adr/ADR-003-independent-database-per-instance.md",
+    "docs/adr/ADR-004-immutable-publishing-snapshots.md",
+    "docs/adr/ADR-005-structured-itinerary-model.md",
+    "docs/adr/ADR-006-provider-based-integration-architecture.md",
+    "docs/adr/ADR-007-separate-staff-and-portal-identity-realms.md",
+    "docs/adr/ADR-008-rbac-with-explicit-resource-scopes.md",
+    "docs/adr/ADR-009-transactional-outbox-and-postgresql-jobs.md",
+    "docs/adr/ADR-010-exact-money-and-currency-representation.md",
+    "docs/adr/ADR-011-document-storage-and-explicit-access-grants.md",
+    "docs/adr/ADR-012-persistence-boundary-and-fleet-safe-migrations.md",
+    "docs/adr/ADR-013-monorepo-web-runtime-and-build-orchestration.md",
+    "docs/adr/ADR-014-durable-privacy-erasure-across-backups.md"
+  ],
+  "boundary": {
+    "stage6Actions": 1,
+    "stage7Actions": 0,
+    "databaseBusinessWritesViaApiOnly": true,
+    "directSqlBusinessWrites": 0,
+    "schemaOrRoleOrGrantChanges": 0,
+    "sourceOrArtifactChanges": 0,
+    "canonicalCiReruns": 0
+  },
+  "status": "READY_FOR_DETERMINISTIC_FREEZE_AND_INDEPENDENT_REVIEW"
+}

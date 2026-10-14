@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "bundle": "TravelOS Stage 6 gen07 revision04 successor evidence",
+  "indexExclusion": "This file is excluded from its own entries.",
+  "aggregateSerialization": "SHA-256 over bytewise path-sorted UTF-8 records path<TAB>bytes<TAB>sha256<LF>; final record is LF-terminated.",
+  "entryCount": 5,
+  "aggregateSha256": "61aca67c1448bbbc2b548006cd3bfc22bb0fb9dce8ae9597558eb63d373a2353",
+  "entries": [
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/ci-marker-claim-addendum.json",
+      "bytes": 1417,
+      "sha256": "2c6c3e3d2ae87cddf3da3cdc56193c53c014c62c3b1d743971d3718d92f111ab"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/final-evidence.json",
+      "bytes": 7069,
+      "sha256": "19a1f808bf8b46d6bd002bbb4c95321a7740f445e2bd5b66d128a1f753e35def"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-database-verification.json",
+      "bytes": 5072,
+      "sha256": "9f4f71e50ffd7562617d5ca1fcb1881f4d237b1edb9055f824f6afadc186816c"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-execution.json",
+      "bytes": 5565,
+      "sha256": "910510f5fe0596e0806568e0e2c9725276c71ab827237c4e26c2269406c8ddab"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-6/gen07-revision-04/runtime-acceptance-filtered-output.json",
+      "bytes": 4302,
+      "sha256": "fb51af666b7969c4263fa7507f6a7ba781ea85f72b38b140f94c50c01c6efd1f"
+    }
+  ]
+}

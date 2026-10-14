@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "generation": 7,
+  "candidateRevision": 3,
+  "attempt": 1,
+  "gate": "canonical-stage6-ci",
+  "status": "PASS",
+  "authorizedRunCount": 1,
+  "consumedRunCount": 1,
+  "sourceCommit": "8a14b27fbc6e260c761304824ea4f4ca690095fc",
+  "sourceTree": "122a2f614ccabd409634951159da547280b88a02",
+  "artifactId": "travelos-phase-1-m1-stage-6-gen07-8a14b27f",
+  "artifactSha256": "273f928fc6eb6c815b8b602312642a0bde74f6acff2d334079468a8cd3e0038c",
+  "runner": "pnpm run ci:verify",
+  "log": {
+    "path": ".hermes/state/stage6-gen07-revision03-canonical-ci-attempt-01.log",
+    "sha256": "67bdc1826b7e80dd0ee0210bbef76ff389888de7c624cb3b278b97bc51e967cf",
+    "exitCode": 0,
+    "finalMarker": "PHASE_1_M1_STAGE_6 PASS",
+    "completedGateCount": 32
+  },
+  "toolchain": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "postgresqlQualification": {
+    "result": "PASS",
+    "sessionUser": "travelos_migrator",
+    "currentUserAfterSetRole": "travelos_owner",
+    "migrationHead": "0011_stage6_trip_publication"
+  },
+  "postRunBaselineVerification": "PASS",
+  "stage7Actions": 0
+}
