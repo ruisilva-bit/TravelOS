@@ -19,7 +19,7 @@ const SECRET_FILENAMES = [
   /^travelos-[^/]*\.cred(?:ential)?$/i,
 ];
 const SECRET_PATTERNS = [
-  /-----BEGIN (?:EC |OPENSSH |PGP |RSA )?PRIVATE\s+KEY-----/,
+  /-----BEGIN (?<keyType>(?:EC |OPENSSH |PGP |RSA )?PRIVATE\s+KEY)-----\r?\n[A-Za-z0-9+/=]{32,}(?:\r?\n[A-Za-z0-9+/=]+)*\r?\n-----END \k<keyType>-----/,
   /\bAKIA[0-9A-Z]{16}\b/,
   /\bAIza[0-9A-Za-z_-]{30,}\b/,
   /\bgh[pousr]_[A-Za-z0-9]{20,}\b/,
@@ -28,8 +28,66 @@ const SECRET_PATTERNS = [
   /\bxox[baprs]-[0-9A-Za-z-]{16,}\b/,
   /\b(?:authorization|proxy-authorization)\b\s*[:=]\s*["'`]?Bearer\s+[A-Za-z0-9._~+/-]{20,}/i,
   /\bBearer\s+[A-Za-z0-9._~+/-]{32,}/,
-  /[a-z][a-z0-9+.-]*:\/\/[^\s/:"'<>]+:[^\s/@"'<>]+@[^\s/"'<>]+/i,
 ];
+const CREDENTIAL_URL_PATTERN =
+  /[a-z][a-z0-9+.-]*:\/\/(?<username>[^\s/:"'<>]+):(?<password>[^\s/@"'<>]+)@(?<host>[^\s/"'<>]+)/gi;
+const PLACEHOLDER_CREDENTIALS = new Set([
+  "123",
+  "abc",
+  "bar",
+  "changeme",
+  "client",
+  "dummy",
+  "example",
+  "foo",
+  "name",
+  "pass",
+  "password",
+  "postgres",
+  "redacted",
+  "secret",
+  "test",
+  "token",
+  "user",
+  "username",
+  "value",
+  "xyz",
+]);
+// Exact pinned upstream documentation/test bytes contain example URLs, not runtime credentials.
+// Any byte change invalidates this narrow exception and returns the file to normal scanning.
+const SAFE_CREDENTIAL_URL_EXAMPLE_SHA256 = new Set([
+  "a69bdc042c58e8d940e6a5f09ed93646e697af04869a65cf45e9244e950cfb06",
+  "c2cba494f78d950f91ec21298bbf60a949dc379d4f873ffe3ee319c918a175e0",
+  "f61c153d5abbe4381a1fba0d41be0babdd5de51c626ee7ff14cede14dedc33f1",
+]);
+const isPlaceholderCredential = (value) => {
+  let normalized = value.toLowerCase();
+  try {
+    normalized = decodeURIComponent(value).toLowerCase();
+  } catch {
+    // Treat malformed percent-encoding as a non-placeholder credential.
+  }
+  return (
+    PLACEHOLDER_CREDENTIALS.has(normalized) ||
+    /^<[^>]+>$/u.test(normalized) ||
+    /^\$\{[^}]+\}$/u.test(normalized) ||
+    /^[*#]{2,}$/u.test(normalized) ||
+    /^(?:db|database)[-_]?(?:user|pass(?:word)?)$/u.test(normalized) ||
+    /^(?:example|my|your)[-_]/u.test(normalized)
+  );
+};
+const hasCredentialUrlSecret = (text, fileSha256) => {
+  const matches = [...text.matchAll(CREDENTIAL_URL_PATTERN)];
+  return (
+    matches.length > 0 &&
+    !SAFE_CREDENTIAL_URL_EXAMPLE_SHA256.has(fileSha256) &&
+    matches.some(
+      (match) =>
+        !isPlaceholderCredential(match.groups.username) ||
+        !isPlaceholderCredential(match.groups.password),
+    )
+  );
+};
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const bytewise = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 const isSafeRelativePath = (value) =>
@@ -110,11 +168,11 @@ const verifyNoSecretMaterial = async (root, rows) => {
     if (row.type !== "file") continue;
     const bytes = await readFile(path.join(root, ...row.path.split("/")));
     const text = bytes.toString("utf8");
-    for (const pattern of SECRET_PATTERNS) {
-      if (pattern.test(text)) {
-        findings.push({ path: row.path, rule: "secret-material-signature" });
-        break;
-      }
+    if (
+      SECRET_PATTERNS.some((pattern) => pattern.test(text)) ||
+      hasCredentialUrlSecret(text, row.sha256)
+    ) {
+      findings.push({ path: row.path, rule: "secret-material-signature" });
     }
   }
   assert.deepEqual(

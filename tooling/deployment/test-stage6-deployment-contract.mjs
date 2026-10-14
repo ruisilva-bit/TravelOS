@@ -272,6 +272,62 @@ try {
   await rm(secretContent.temporaryRoot, { recursive: true, force: true });
 }
 
+const privateKeyContent = await createFixture();
+try {
+  const syntheticPrivateKey = [
+    `-----BEGIN ${"PRIVATE"} KEY-----`,
+    "c3ludGhldGljLW5vbi1zZWNyZXQtY29udGVudA==",
+    `-----END ${"PRIVATE"} KEY-----`,
+  ].join("\n");
+  await addFile(
+    privateKeyContent.artifactRoot,
+    "provenance/key-material.txt",
+    Buffer.from(syntheticPrivateKey),
+  );
+  await writeInventory(privateKeyContent.artifactRoot);
+  await assert.rejects(
+    verifyStage6DeploymentContract(privateKeyContent),
+    /secret-material-signature/u,
+  );
+} finally {
+  await rm(privateKeyContent.temporaryRoot, { recursive: true, force: true });
+}
+
+const placeholderUrl = await createFixture();
+try {
+  const exampleDatabaseUrl =
+    "postgres://" + "user" + ":" + "pass" + "@" + "example.invalid/travelos";
+  await addFile(
+    placeholderUrl.artifactRoot,
+    "provenance/example-url.txt",
+    Buffer.from(exampleDatabaseUrl),
+  );
+  await writeInventory(placeholderUrl.artifactRoot);
+  await verifyStage6DeploymentContract(placeholderUrl);
+} finally {
+  await rm(placeholderUrl.temporaryRoot, { recursive: true, force: true });
+}
+
+const credentialUrl = await createFixture();
+try {
+  const syntheticDatabaseUrl =
+    "postgres://" +
+    "travelos" +
+    ":" +
+    "synthetic-password-secret" +
+    "@" +
+    "database.invalid/travelos";
+  await addFile(
+    credentialUrl.artifactRoot,
+    "provenance/database-url.txt",
+    Buffer.from(syntheticDatabaseUrl),
+  );
+  await writeInventory(credentialUrl.artifactRoot);
+  await assert.rejects(verifyStage6DeploymentContract(credentialUrl), /secret-material-signature/u);
+} finally {
+  await rm(credentialUrl.temporaryRoot, { recursive: true, force: true });
+}
+
 process.stdout.write(
-  `${JSON.stringify({ result: "PASS", assertions: 5, negativeFixtures: ["gen06-root-layout", "mismatched-unit-path", "secret-file", "secret-content"] })}\n`,
+  `${JSON.stringify({ result: "PASS", assertions: 8, negativeFixtures: ["gen06-root-layout", "mismatched-unit-path", "secret-file", "secret-content", "private-key-content", "credential-url"] })}\n`,
 );
