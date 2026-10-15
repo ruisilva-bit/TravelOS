@@ -209,7 +209,7 @@ try {
   );
   await assert.rejects(
     stat(path.join(temporaryRoot, passPaths.claimPath)).then(() =>
-      runStage7CanonicalCi({ root: temporaryRoot }),
+      runStage7CanonicalCi({ root: temporaryRoot, generation: "gen01" }),
     ),
     /One-shot Stage 7 CI state already exists/,
   );

@@ -6,6 +6,7 @@ import { lstat, mkdir, mkdtemp, readFile, readlink, readdir, realpath, rm } from
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const ACCEPTED_STAGE6_CONTRACT_SHA256 =
@@ -773,7 +774,7 @@ export const verifyStage7Artifact = async ({
 };
 
 const parseArguments = (argumentsList) => {
-  const options = { generation: "gen01" };
+  const options = { generation: STAGE7_DEFAULT_GENERATION };
   const seen = new Set();
   for (const argument of argumentsList) {
     const separator = argument.indexOf("=");

@@ -14,6 +14,7 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
 
 const artifactVerifierPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -24,6 +25,7 @@ const artifactBuilder = await import(
   pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), "build-artifact.mjs")).href
 ).catch(() => null);
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+const generation = STAGE7_DEFAULT_GENERATION;
 const baseContractBytes = await readFile(
   path.join(projectRoot, "deploy/contracts/deployment-contract.v1.json"),
 );
@@ -50,7 +52,7 @@ try {
   await assert.rejects(
     artifactVerifier.verifyStage7Artifact({
       artifactRoot: path.join(fixtureRoot, "release"),
-      generation: "gen01",
+      generation,
     }),
     /release\.json/u,
     "An empty candidate directory must fail closed on absent release metadata",
@@ -59,7 +61,7 @@ try {
   await mkdir(cliRoot);
   const cli = spawnSync(
     process.execPath,
-    [artifactVerifierPath, `--artifact-root=${cliRoot}`, "--generation=gen01"],
+    [artifactVerifierPath, `--artifact-root=${cliRoot}`, `--generation=${generation}`],
     { encoding: "utf8" },
   );
   assert.equal(cli.status, 1, "Artifact verifier CLI must fail closed on incomplete payloads");
@@ -73,18 +75,18 @@ try {
   const artifactRoot = path.join(fixtureRoot, "release");
   await mkdir(path.join(artifactRoot, "provenance"), { recursive: true });
   await writeFile(
-    path.join(artifactRoot, "provenance", "stage7-successor-baseline-gen01.json"),
+    path.join(artifactRoot, "provenance", `stage7-successor-baseline-${generation}.json`),
     baselineBytes,
   );
   await writeFile(path.join(artifactRoot, "provenance", "pnpm-lock.yaml"), lockfileBytes);
   let release = {
     schemaVersion: 1,
-    artifactId: `travelos-phase-1-m1-stage-7-gen01-${sourceCommit.slice(0, 8)}`,
+    artifactId: `travelos-phase-1-m1-stage-7-${generation}-${sourceCommit.slice(0, 8)}`,
     source: {
       branch: "phase-1/stage-7",
       commit: sourceCommit,
       tree: "b".repeat(40),
-      successorBaselineGeneration: "gen01",
+      successorBaselineGeneration: generation,
       successorBaselineSha256: baselineSha256,
       lockfilePath: "provenance/pnpm-lock.yaml",
       lockfileSha256,
@@ -100,7 +102,7 @@ try {
   await assert.rejects(
     artifactVerifier.verifyStage7Artifact({
       artifactRoot,
-      generation: "gen01",
+      generation,
     }),
     /stage-7-extension\.v1\.json/u,
     "A candidate package must carry its Stage 7 deployment extension",
@@ -197,7 +199,7 @@ try {
   await chmod(path.join(artifactRoot, "runtime/node/bin/node"), 0o755);
   const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
   release = artifactBuilder.createStage7ReleaseMetadata({
-    generation: "gen01",
+    generation,
     branch: "phase-1/stage-7",
     commit: sourceCommit,
     tree: "b".repeat(40),
@@ -212,14 +214,14 @@ try {
   });
   await writeFile(releasePath, `${JSON.stringify(release)}\n`);
   await assert.rejects(
-    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation: "gen01" }),
+    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation }),
     /payload-manifest\.json/u,
     "Candidate payload must be backed by a complete inventory and checksum manifest",
   );
   await writePayloadManifests();
   const accepted = await artifactVerifier.verifyStage7Artifact({
     artifactRoot,
-    generation: "gen01",
+    generation,
   });
   assert.equal(accepted.result, "PASS");
   assert.equal(accepted.artifactId, release.artifactId);
@@ -228,7 +230,7 @@ try {
   await writeFile(releasePath, `${JSON.stringify(incompleteQualification)}\n`);
   await writePayloadManifests();
   await assert.rejects(
-    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation: "gen01" }),
+    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation }),
     /qualification/u,
     "A release with no explicit one-shot CI qualification state must fail closed",
   );
@@ -247,7 +249,7 @@ try {
   );
   await writePayloadManifests();
   await assert.rejects(
-    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation: "gen01" }),
+    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation }),
     /migration chain|checksum manifest|migration copy/iu,
     "The packaged migrator must not alter any immutable predecessor migration",
   );
@@ -257,7 +259,7 @@ try {
   await writeFile(secretPath, `ghp_${"A".repeat(36)}\n`);
   await writePayloadManifests();
   await assert.rejects(
-    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation: "gen01" }),
+    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation }),
     /Secret material detected/u,
     "Artifact verification must reject secret-like payloads without printing their contents",
   );
@@ -266,7 +268,7 @@ try {
   await assert.rejects(
     artifactVerifier.verifyStage7Artifact({
       artifactRoot: path.join(fixtureRoot, "release"),
-      generation: "gen01",
+      generation,
       expectedCommit: "b".repeat(40),
     }),
     /source commit mismatch/u,
@@ -275,7 +277,7 @@ try {
   await assert.rejects(
     artifactVerifier.verifyStage7Artifact({
       artifactRoot: path.join(fixtureRoot, "release"),
-      generation: "gen01",
+      generation,
       expectedTree: "c".repeat(40),
     }),
     /source tree mismatch/u,
@@ -284,7 +286,7 @@ try {
   await assert.rejects(
     artifactVerifier.verifyStage7Artifact({
       artifactRoot: path.join(fixtureRoot, "release"),
-      generation: "gen01",
+      generation,
       expectedBaselineSha256: "d".repeat(64),
     }),
     /successor-baseline SHA-256 mismatch/u,
@@ -293,7 +295,7 @@ try {
   await assert.rejects(
     artifactVerifier.verifyStage7Artifact({
       artifactRoot: path.join(fixtureRoot, "release"),
-      generation: "gen01",
+      generation,
       expectedLockfileSha256: "d".repeat(64),
     }),
     /lockfile SHA-256 mismatch/u,
@@ -310,7 +312,7 @@ try {
   await assert.rejects(
     artifactVerifier.verifyStage7Artifact({
       artifactRoot: path.join(fixtureRoot, "release"),
-      generation: "gen01",
+      generation,
     }),
     /artifact ID prefix/u,
     "A Stage 6 artifact identity must not qualify as a Stage 7 candidate",
@@ -333,7 +335,7 @@ try {
   const archived = await artifactVerifier.verifyStage7Artifact({
     artifactRoot,
     archivePath,
-    generation: "gen01",
+    generation,
   });
   assert.equal(archived.artifactSha256, archiveSha256);
   assert.equal(archived.artifactBytes, archiveBytes.length);
@@ -355,7 +357,7 @@ try {
     artifactVerifier.verifyStage7Artifact({
       artifactRoot,
       archivePath: mismatchedArchivePath,
-      generation: "gen01",
+      generation,
       temporaryRoot,
     }),
     /archive payload differs/u,

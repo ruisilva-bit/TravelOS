@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { URL } from "node:url";
+import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
 import { validateStage7DeploymentContractSource } from "./verify-deployment-contract.mjs";
 
 const cloneJson = (value) => JSON.parse(JSON.stringify(value));
+const generation = "gen03";
+assert.equal(STAGE7_DEFAULT_GENERATION, generation);
 const readJson = async (relativePath) =>
   JSON.parse(await readFile(new URL(`../../../${relativePath}`, import.meta.url), "utf8"));
 const extension = await readJson("deploy/contracts/stage-7-extension.v1.json");
@@ -26,14 +29,15 @@ const accepted = validateStage7DeploymentContractSource({
   previousMigrationBytes,
   migrationBytes,
   checksumManifestBytes,
-  generation: "gen01",
+  generation,
 });
 assert.equal(accepted.result, "PASS");
+assert.equal(extension.candidate.generation, generation);
 assert.equal(accepted.requiredMigration, "0012_stage7_portal_trip_access.cjs");
 assert.equal(accepted.stage8Actions, 0);
 assert.equal(
   extension.candidate.artifactIdPrefix,
-  "travelos-phase-1-m1-stage-7-gen01-",
+  `travelos-phase-1-m1-stage-7-${generation}-`,
   "Stage 7 artifact IDs must bind generation and source commit",
 );
 assert.equal(extension.artifact.releaseMetadataPath, "release.json");
@@ -43,7 +47,7 @@ assert.equal(extension.artifact.stage7ExtensionPath, "deployment/stage-7-extensi
 assert.equal(extension.artifact.stage7VerifierPath, "deployment/verify-stage7-artifact.mjs");
 assert.equal(
   extension.artifact.successorBaselinePath,
-  "provenance/stage7-successor-baseline-gen01.json",
+  `provenance/stage7-successor-baseline-${generation}.json`,
 );
 assert.equal(extension.artifact.archiveFormat, "tar.gz");
 assert.equal(extension.artifact.canonicalCiStatusAtBuild, "PENDING_ONE_AUTHORIZED_RUN");
@@ -58,7 +62,7 @@ assert.throws(
       previousMigrationBytes,
       migrationBytes,
       checksumManifestBytes,
-      generation: "gen01",
+      generation,
     }),
   /deployment extension differs/u,
 );
@@ -73,7 +77,7 @@ assert.throws(
       previousMigrationBytes,
       migrationBytes,
       checksumManifestBytes,
-      generation: "gen01",
+      generation,
     }),
   /predecessor contract hash mismatch/iu,
 );
@@ -88,7 +92,7 @@ assert.throws(
       previousMigrationBytes,
       migrationBytes,
       checksumManifestBytes: Buffer.from(JSON.stringify(malformedChecksum)),
-      generation: "gen01",
+      generation,
     }),
   /migration checksum manifest hash mismatch/iu,
 );
