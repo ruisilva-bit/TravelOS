@@ -13,6 +13,7 @@ import {
   readdir,
   realpath,
   rename,
+  rm,
   writeFile,
 } from "node:fs/promises";
 import path from "node:path";
@@ -198,6 +199,33 @@ const deployPackage = (packageName, destination, env, cwd) =>
     { cwd, env, label: `Production package deploy ${packageName}` },
   );
 
+export const prunePackagedTestFiles = async (packageRoot) => {
+  const removed = [];
+  const testDirectories = new Set(["test", "tests", "__tests__"]);
+  const visit = async (directory) => {
+    const entries = await readdir(directory, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isSymbolicLink()) continue;
+      const entryPath = path.join(directory, entry.name);
+      const relativePath = path.relative(packageRoot, entryPath).split(path.sep).join("/");
+      if (entry.isDirectory()) {
+        if (testDirectories.has(entry.name)) {
+          await rm(entryPath, { recursive: true });
+          removed.push(relativePath);
+        } else if (entry.name !== "node_modules") {
+          await visit(entryPath);
+        }
+      } else if (entry.isFile() && /\.(?:test|spec)\.[^.]+$/u.test(entry.name)) {
+        await rm(entryPath);
+        removed.push(relativePath);
+      }
+    }
+  };
+
+  await visit(packageRoot);
+  return removed.sort(bytewise);
+};
+
 const inventoryArtifact = async (root) => {
   const rows = [];
   const visit = async (directory) => {
@@ -311,6 +339,7 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
     const target = path.join(stagingRoot, relativeTarget);
     await mkdir(path.dirname(target), { recursive: true });
     deployPackage(packageName, target, env, root);
+    await prunePackagedTestFiles(target);
   }
 
   await copyDirectory(path.join(root, "apps/admin-web/dist"), path.join(stagingRoot, "admin-web"));

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -8,6 +9,11 @@ assert.equal(
   typeof builder?.createStage7ReleaseMetadata,
   "function",
   "Stage 7 must expose deterministic release metadata construction before packaging",
+);
+assert.equal(
+  typeof builder?.prunePackagedTestFiles,
+  "function",
+  "Stage 7 production packages must exclude repository test files",
 );
 
 const commit = "a".repeat(40);
@@ -125,4 +131,37 @@ assert.throws(
     }),
   /Invalid Stage 7 generation/u,
 );
-process.stdout.write(`${JSON.stringify({ result: "PASS", cases: 3 })}\n`);
+
+const temporaryRoot = await mkdtemp(path.join(process.env.TMPDIR, "stage7-package-prune-"));
+try {
+  const packageRoot = path.join(temporaryRoot, "apps/portal-api");
+  await mkdir(path.join(packageRoot, "test/portal-access"), { recursive: true });
+  await mkdir(path.join(packageRoot, "feature/__tests__"), { recursive: true });
+  await mkdir(path.join(packageRoot, "src"), { recursive: true });
+  await mkdir(path.join(packageRoot, "dist"), { recursive: true });
+  await mkdir(path.join(packageRoot, "node_modules/example/test"), { recursive: true });
+  await writeFile(path.join(packageRoot, "test/portal-access/trip-routes.test.ts"), "test-only");
+  await writeFile(path.join(packageRoot, "feature/__tests__/feature.test.ts"), "test-only");
+  await writeFile(path.join(packageRoot, "src/config.spec.js"), "test-only");
+  await writeFile(path.join(packageRoot, "dist/main.js"), "production");
+  await writeFile(path.join(packageRoot, "node_modules/example/test/example.js"), "dependency");
+
+  const removed = await builder.prunePackagedTestFiles(packageRoot);
+  assert.deepEqual(removed, ["feature/__tests__", "src/config.spec.js", "test"]);
+  await assert.rejects(readFile(path.join(packageRoot, "test/portal-access/trip-routes.test.ts")), {
+    code: "ENOENT",
+  });
+  await assert.rejects(readFile(path.join(packageRoot, "feature/__tests__/feature.test.ts")), {
+    code: "ENOENT",
+  });
+  await assert.rejects(readFile(path.join(packageRoot, "src/config.spec.js")), { code: "ENOENT" });
+  assert.equal(await readFile(path.join(packageRoot, "dist/main.js"), "utf8"), "production");
+  assert.equal(
+    await readFile(path.join(packageRoot, "node_modules/example/test/example.js"), "utf8"),
+    "dependency",
+  );
+} finally {
+  await rm(temporaryRoot, { recursive: true, force: true });
+}
+
+process.stdout.write(`${JSON.stringify({ result: "PASS", cases: 4 })}\n`);
