@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "stage": "PHASE_1_M1_STAGE_7",
+  "candidateGeneration": "gen04",
+  "predecessorCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
+  "stage8Actions": 0,
+  "priorCandidates": [
+    {
+      "generation": "gen01",
+      "candidateCommit": "e9584c95ce16ef0f51c53dcff656b7d19277cf4e",
+      "baseline": {
+        "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN01.json",
+        "sha256": "89dce056e0f29641af7fc99b7f57539b30b78579a39a07c4a06bf0e0fda70638"
+      },
+      "predecessorReceipts": {
+        "stage6": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN01_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+          "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+        },
+        "stage7": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN01_STAGE7_PREDECESSOR_VERIFY.json",
+          "sha256": "b8b544a86a7630c3aee8fb80421216ec0af63f166dcc3a35b0ad6a10cc33bdfb"
+        }
+      },
+      "lastPassedGate": "BASELINE_AND_PREDECESSOR_PROOFS",
+      "disposition": "ARTIFACT_BUILD_ATTEMPT_FAILED_BEFORE_CANONICAL_CI; exact failing substep not retained",
+      "artifact": {
+        "result": "FAILED_ATTEMPT_RETAINED",
+        "path": ".hermes/state/stage7-gen01-artifact-attempt-01.tar.gz",
+        "sha256": "7acf18efb81b564d84d324abafc116a6420e642075e1b0fcf52ff491fe2eb9d0",
+        "bytes": 80515658,
+        "buildReceipt": null
+      },
+      "canonicalCiStatus": "NOT_RUN",
+      "canonicalCiReceipt": null,
+      "validationStatus": "NOT_REACHED",
+      "validationPath": null,
+      "finalCandidateScan": "NOT_REACHED",
+      "freezeStatus": "NOT_REACHED",
+      "freezePath": null,
+      "stage8Actions": 0
+    },
+    {
+      "generation": "gen02",
+      "candidateCommit": "d8fb5652880d3e1636a8e6ed9604bb1a232fe94e",
+      "baseline": {
+        "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN02.json",
+        "sha256": "f109986d244df6d235d3d2bb70c0529d86844cf49d94ac1d824acd07570de687"
+      },
+      "predecessorReceipts": {
+        "stage6": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN02_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+          "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+        },
+        "stage7": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN02_STAGE7_PREDECESSOR_VERIFY.json",
+          "sha256": "fa48afbe6995fd69df1b26bc0f5e2c4cdcd36cd9aac3553892e7b521ca991df2"
+        }
+      },
+      "lastPassedGate": "BASELINE_AND_PREDECESSOR_PROOFS",
+      "disposition": "BASELINE_VERIFICATION_OR_ARTIFACT_BUILD_COMMAND_FAILED_UNISOLATED",
+      "artifact": {
+        "result": "NO_ARTIFACT_RECEIPT_RETAINED",
+        "path": null,
+        "sha256": null,
+        "bytes": null,
+        "buildReceipt": null
+      },
+      "canonicalCiStatus": "NOT_RUN",
+      "canonicalCiReceipt": null,
+      "validationStatus": "NOT_REACHED",
+      "validationPath": null,
+      "finalCandidateScan": "NOT_REACHED",
+      "freezeStatus": "NOT_REACHED",
+      "freezePath": null,
+      "stage8Actions": 0
+    },
+    {
+      "generation": "gen03",
+      "candidateCommit": "30335fb81cb8d57dbcca08fb3dc16221a0a4f647",
+      "baseline": {
+        "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN03.json",
+        "sha256": "b7cc197df082444b5d0caac28b31aa67043b33e59bb01293377da2588bf9ccf0"
+      },
+      "predecessorReceipts": {
+        "stage6": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN03_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+          "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+        },
+        "stage7": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN03_STAGE7_PREDECESSOR_VERIFY.json",
+          "sha256": "36e45313bf4cba70fc7ef10995e9492517ceefffe12c22be3206aeac25653bf9"
+        }
+      },
+      "lastPassedGate": "READ_ONLY_CANDIDATE_PREFLIGHT",
+      "disposition": "SUPERSEDED_BEFORE_CANONICAL_CI_AFTER_SOURCE_SCOPE_AND_RUNNER_ARGUMENT_FIXES",
+      "artifact": {
+        "result": "PASS",
+        "path": ".hermes/state/stage7-gen03-artifact.tar.gz",
+        "sha256": "bd8e8ce6fb889fe1aee9f372538c5e900cb2bcdd9c09601ed8f331e25f1d168e",
+        "bytes": 80500510,
+        "buildReceipt": {
+          "path": ".hermes/state/stage7-gen03-artifact-build.json",
+          "sha256": "f0768ef134029e4fd75c8e280e454a1874b98004f68492f4cf64556c44a675d4"
+        }
+      },
+      "canonicalCiStatus": "NOT_RUN",
+      "canonicalCiReceipt": null,
+      "validationStatus": "NOT_REACHED",
+      "validationPath": null,
+      "finalCandidateScan": "NOT_REACHED",
+      "freezeStatus": "NOT_REACHED",
+      "freezePath": null,
+      "stage8Actions": 0
+    }
+  ]
+}

@@ -13,6 +13,7 @@ import {
 } from "../stage-7-successor-baseline.mjs";
 import { verifyStage7DeploymentContract } from "./verify-deployment-contract.mjs";
 import { verifyStage7Artifact } from "./verify-artifact.mjs";
+import { verifyStage7CandidateSourceScope } from "./source-scope.mjs";
 
 const root = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -30,6 +31,16 @@ export const STAGE7_CANONICAL_CI_GATES = Object.freeze([
   {
     label: "stage7-successor-baseline:pre",
     script: "stage7:successor-baseline:verify",
+    args: (generation) => [`--generation=${generation}`],
+  },
+  {
+    label: "stage7-source-scope:pre",
+    script: "stage7:source-scope:verify",
+    args: (generation) => [`--generation=${generation}`],
+  },
+  {
+    label: "stage6-predecessor:security-scan",
+    script: "stage7:predecessor:security-scan",
     args: (generation) => [`--generation=${generation}`],
   },
   { label: "verify:pins", script: "verify:pins" },
@@ -50,7 +61,12 @@ export const STAGE7_CANONICAL_CI_GATES = Object.freeze([
   { label: "test:stage6-deployment-contract", script: "test:stage6:deployment-contract" },
   { label: "test:stage6-migrator-bootstrap", script: "test:stage6:migrator-bootstrap" },
   { label: "test:stage7:successor-baseline", script: "test:stage7:successor-baseline" },
-  { label: "test:stage7-canonical-ci", script: "test:stage7:canonical-ci" },
+  { label: "test:stage7:source-scope", script: "test:stage7:source-scope" },
+  {
+    label: "test:stage7:predecessor-security-scan",
+    script: "test:stage7:predecessor-security-scan",
+  },
+  { label: "test:stage7:canonical-ci", script: "test:stage7:canonical-ci" },
   { label: "test:stage7:artifact", script: "test:stage7:artifact" },
   { label: "test:stage7:deployment-contract", script: "test:stage7:deployment-contract" },
   { label: "test:stage7:migrator-package", script: "test:stage7:migrator-package" },
@@ -62,7 +78,6 @@ export const STAGE7_CANONICAL_CI_GATES = Object.freeze([
   { label: "test:stage7:postgres", script: "test:stage7:postgres" },
   { label: "test:rejected-technologies", script: "test:rejected-technologies" },
   { label: "verify:rejected-technologies", script: "verify:rejected-technologies" },
-  { label: "security:scan:stage6", script: "security:scan:stage6" },
   { label: "evidence:stage4:verify", script: "evidence:stage4:verify" },
   { label: "security:scan:stage4", script: "security:scan:stage4" },
   { label: "test:smoke", script: "test:smoke" },
@@ -70,6 +85,11 @@ export const STAGE7_CANONICAL_CI_GATES = Object.freeze([
   {
     label: "stage7-successor-baseline:post",
     script: "stage7:successor-baseline:verify",
+    args: (generation) => [`--generation=${generation}`],
+  },
+  {
+    label: "stage7-source-scope:post",
+    script: "stage7:source-scope:verify",
     args: (generation) => [`--generation=${generation}`],
   },
   { label: "stage5-candidate-coherence:post", script: "stage5:candidate-coherence:verify" },
@@ -146,6 +166,15 @@ const assertCandidate = (candidate, generation) => {
   assert.match(candidate.candidateCommit ?? "", /^[a-f0-9]{40}$/u);
   assert.match(candidate.artifactSha256 ?? "", /^[a-f0-9]{64}$/u);
   assert.equal(candidate.stage8Actions, 0, "Stage 8 actions must remain zero");
+  assert.equal(
+    candidate.priorEvidenceScope?.result,
+    "PASS",
+    "Prior-evidence source-scope verification must pass before CI",
+  );
+  assert.equal(candidate.priorEvidenceScope.candidateGeneration, generation);
+  assert.equal(candidate.priorEvidenceScope.candidateCommit, candidate.candidateCommit);
+  assert.equal(candidate.priorEvidenceScope.baselineSha256, candidate.baselineSha256);
+  assert.match(candidate.priorEvidenceScope.historySha256 ?? "", /^[a-f0-9]{64}$/u);
 };
 
 const assertAbsent = async (rootPath, relativePath) => {
@@ -186,6 +215,7 @@ export const verifyCandidateFromRepository = async ({
   root: workspace,
   generation,
   verifyBaseline = verifyStage7SuccessorBaseline,
+  verifySourceScope = verifyStage7CandidateSourceScope,
   verifyDeployment = verifyStage7DeploymentContract,
   verifyArtifact = verifyStage7Artifact,
 } = {}) => {
@@ -193,6 +223,21 @@ export const verifyCandidateFromRepository = async ({
   assert.equal(baseline.result, "PASS");
   assert.equal(baseline.currentBranch, "phase-1/stage-7");
   assert.equal(baseline.currentHead, baseline.candidateCommit);
+  const priorEvidenceScope = await verifySourceScope({
+    root: workspace,
+    candidateGeneration: generation,
+    candidateCommit: baseline.candidateCommit,
+    baselinePath: baseline.baselinePath,
+    baselineSha256: baseline.baselineSha256,
+  });
+  assert.equal(
+    priorEvidenceScope.result,
+    "PASS",
+    "Prior-evidence source-scope verification must pass before CI",
+  );
+  assert.equal(priorEvidenceScope.candidateGeneration, generation);
+  assert.equal(priorEvidenceScope.candidateCommit, baseline.candidateCommit);
+  assert.equal(priorEvidenceScope.baselineSha256, baseline.baselineSha256);
   const deployment = await verifyDeployment({
     root: workspace,
     generation,
@@ -235,6 +280,7 @@ export const verifyCandidateFromRepository = async ({
     baselineSha256: baseline.baselineSha256,
     artifactSha256: artifact.artifactSha256,
     deploymentContractSha256: deployment.contractSha256,
+    priorEvidenceScope,
     stage8Actions: baseline.stage8Actions,
   };
 };
@@ -246,9 +292,15 @@ const captureSnapshot = ({ root: workspace, generation, localStatePaths }) =>
     localStatePaths,
   });
 
+export const stage7GateArgumentsFor = (gate, generation) => [
+  "pnpm",
+  "run",
+  gate.script,
+  ...(gate.args?.(generation) ?? []),
+];
+
 const runGate = ({ root: workspace, generation, gate }) => {
-  const suffix = gate.args?.(generation) ?? [];
-  const args = ["pnpm", "run", gate.script, ...(suffix.length ? ["--", ...suffix] : [])];
+  const args = stage7GateArgumentsFor(gate, generation);
   const result = spawnSync("corepack", args, {
     cwd: workspace,
     env: { ...process.env, CI: "true", NODE_ENV: "development" },

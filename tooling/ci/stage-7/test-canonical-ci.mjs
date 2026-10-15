@@ -20,14 +20,62 @@ const {
   listStage7LocalStatePaths,
   verifyCandidateFromRepository,
   runStage7CanonicalCi,
+  stage7GateArgumentsFor,
 } = runner;
 assert.ok(Array.isArray(STAGE7_CANONICAL_CI_GATES));
+assert.equal(typeof stage7GateArgumentsFor, "function");
+assert.deepEqual(
+  stage7GateArgumentsFor(
+    STAGE7_CANONICAL_CI_GATES.find(({ label }) => label === "stage7-predecessor:pre"),
+    "gen04",
+  ),
+  ["pnpm", "run", "stage7:predecessor:verify", "--generation=gen04"],
+);
+assert.deepEqual(
+  stage7GateArgumentsFor(
+    STAGE7_CANONICAL_CI_GATES.find(({ label }) => label === "stage7-successor-baseline:pre"),
+    "gen04",
+  ),
+  ["pnpm", "run", "stage7:successor-baseline:verify", "--generation=gen04"],
+);
+for (const label of ["stage7-source-scope:pre", "stage7-source-scope:post"]) {
+  const gate = STAGE7_CANONICAL_CI_GATES.find((candidateGate) => candidateGate.label === label);
+  assert.ok(gate, `Missing canonical Stage 7 gate: ${label}`);
+  assert.deepEqual(stage7GateArgumentsFor(gate, "gen04"), [
+    "pnpm",
+    "run",
+    "stage7:source-scope:verify",
+    "--generation=gen04",
+  ]);
+}
+const predecessorScanGate = STAGE7_CANONICAL_CI_GATES.find(
+  ({ label }) => label === "stage6-predecessor:security-scan",
+);
+assert.ok(predecessorScanGate, "Stage 6 sensitive scan must target the immutable predecessor");
+assert.deepEqual(stage7GateArgumentsFor(predecessorScanGate, "gen04"), [
+  "pnpm",
+  "run",
+  "stage7:predecessor:security-scan",
+  "--generation=gen04",
+]);
 assert.equal(typeof captureStage7CandidateSnapshot, "function");
 assert.equal(typeof listStage7LocalStatePaths, "function");
 assert.equal(typeof verifyCandidateFromRepository, "function");
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const packageManifest = JSON.parse(
   await readFile(new URL("../../../package.json", import.meta.url), "utf8"),
+);
+assert.equal(
+  packageManifest.scripts["stage7:source-scope:verify"],
+  "node tooling/ci/stage-7/verify-source-scope.mjs",
+);
+assert.equal(
+  packageManifest.scripts["stage7:predecessor:security-scan"],
+  "node tooling/ci/stage-7/scan-predecessor-security.mjs",
+);
+assert.equal(
+  packageManifest.scripts["test:stage7:predecessor-security-scan"],
+  "node tooling/ci/stage-7/test-predecessor-security-scan.mjs",
 );
 const labels = STAGE7_CANONICAL_CI_GATES.map(({ label }) => label);
 assert.equal(new Set(labels).size, labels.length, "Canonical CI gate labels must be unique");
@@ -41,6 +89,8 @@ for (const { script } of STAGE7_CANONICAL_CI_GATES) {
 for (const required of [
   "stage7-predecessor:pre",
   "stage7-successor-baseline:pre",
+  "stage7-source-scope:pre",
+  "stage6-predecessor:security-scan",
   "format:check",
   "lint",
   "build",
@@ -48,15 +98,19 @@ for (const required of [
   "architecture:check",
   "test:unit",
   "test:stage7:successor-baseline",
+  "test:stage7:source-scope",
+  "test:stage7:predecessor-security-scan",
   "test:stage7:artifact",
   "test:stage7:migrator-package",
   "test:stage7:postgres",
   "stage7-successor-baseline:post",
+  "stage7-source-scope:post",
   "protected-baseline:post",
 ]) {
   assert.ok(labels.includes(required), `Missing canonical Stage 7 gate: ${required}`);
 }
 assert.ok(!STAGE7_CANONICAL_CI_GATES.some(({ script }) => script === "ci:verify"));
+assert.ok(!STAGE7_CANONICAL_CI_GATES.some(({ script }) => script === "security:scan:stage6"));
 assert.ok(
   !STAGE7_CANONICAL_CI_GATES.some(({ script }) => script === "stage6:successor-baseline:verify"),
 );
@@ -74,6 +128,13 @@ const candidate = {
   baselineSha256: "e".repeat(64),
   artifactSha256: "b".repeat(64),
   deploymentContractSha256: "f".repeat(64),
+  priorEvidenceScope: {
+    result: "PASS",
+    candidateGeneration: "gen01",
+    candidateCommit: "a".repeat(40),
+    baselineSha256: "e".repeat(64),
+    historySha256: "1".repeat(64),
+  },
   stage8Actions: 0,
 };
 const snapshot = {
@@ -89,7 +150,21 @@ const runCanonicalCiInTest = (options) =>
   runStage7CanonicalCi({ listLocalStatePaths: async () => [], ...options });
 const temporaryRoot = await mkdtemp(path.join(tmpdir(), "travelos-stage7-ci-"));
 try {
-  const artifactPreflight = await verifyCandidateFromRepository({
+  const priorEvidenceScope = {
+    result: "PASS",
+    candidateGeneration: "gen01",
+    candidateCommit: "a".repeat(40),
+    baselineSha256: "e".repeat(64),
+    historyPath: "tooling/ci/stage-7/prior-candidate-dispositions.json",
+    historySha256: "1".repeat(64),
+    candidateCount: 0,
+    requiredEvidencePaths: [],
+    freezeEligibleGenerations: [],
+    violations: [],
+  };
+  let sourceScopeInvocationCount = 0;
+  let artifactVerificationCount = 0;
+  const candidatePreflightInputs = (verifySourceScope) => ({
     root: repositoryRoot,
     generation: "gen01",
     verifyBaseline: async () => ({
@@ -102,12 +177,14 @@ try {
       baselineSha256: "e".repeat(64),
       stage8Actions: 0,
     }),
+    verifySourceScope,
     verifyDeployment: async () => ({
       result: "PASS",
       candidateCommit: "a".repeat(40),
       contractSha256: "f".repeat(64),
     }),
     verifyArtifact: async (input) => {
+      artifactVerificationCount += 1;
       assert.equal(
         input.artifactRoot,
         path.join(repositoryRoot, ".hermes/state/stage7-gen01-artifact"),
@@ -134,8 +211,41 @@ try {
       return { result: "PASS", artifactSha256: "b".repeat(64) };
     },
   });
+  const artifactPreflight = await verifyCandidateFromRepository({
+    ...candidatePreflightInputs(async (input) => {
+      sourceScopeInvocationCount += 1;
+      assert.equal(input.root, repositoryRoot);
+      assert.equal(input.candidateGeneration, "gen01");
+      assert.equal(input.candidateCommit, "a".repeat(40));
+      assert.equal(
+        input.baselinePath,
+        "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN01.json",
+      );
+      assert.equal(input.baselineSha256, "e".repeat(64));
+      return priorEvidenceScope;
+    }),
+  });
   assert.equal(artifactPreflight.artifactSha256, "b".repeat(64));
   assert.equal(artifactPreflight.deploymentContractSha256, "f".repeat(64));
+  assert.deepEqual(artifactPreflight.priorEvidenceScope, priorEvidenceScope);
+  assert.equal(sourceScopeInvocationCount, 1);
+  assert.equal(artifactVerificationCount, 1);
+  await assert.rejects(
+    () =>
+      verifyCandidateFromRepository({
+        ...candidatePreflightInputs(async () => ({
+          ...priorEvidenceScope,
+          result: "FAIL",
+          violations: ["gen01: missing final-candidate validation"],
+        })),
+      }),
+    /Prior-evidence source-scope verification must pass/u,
+  );
+  assert.equal(
+    artifactVerificationCount,
+    1,
+    "Source-scope failure must stop before artifact verification",
+  );
 
   const localStateRoot = await mkdtemp(path.join(tmpdir(), "travelos-stage7-local-state-"));
   try {
