@@ -250,7 +250,7 @@ try {
   const localStateRoot = await mkdtemp(path.join(tmpdir(), "travelos-stage7-local-state-"));
   try {
     execFileSync("git", ["init", "--quiet"], { cwd: localStateRoot });
-    execFileSync("git", ["config", "user.email", "stage7-ci-test@example.invalid"], {
+    execFileSync("git", ["config", "user.email", "stage7-ci-fixture"], {
       cwd: localStateRoot,
     });
     execFileSync("git", ["config", "user.name", "Stage 7 CI Test"], {

@@ -168,7 +168,7 @@ describe("Portal current Trip HTTP read", () => {
     expect(responseBodies).toEqual(["", ""]);
   });
 
-  it("rejects bearer headers before resolving identity or reading data", async () => {
+  it("rejects Authorization headers before resolving identity or reading data", async () => {
     const events: string[] = [];
     const reader = {
       readCurrentPublishedTripSnapshot: vi.fn(async () => snapshot),
@@ -177,7 +177,7 @@ describe("Portal current Trip HTTP read", () => {
     await withPortalApi(apiOptions(makePortalRealm(events), reader), async (baseUrl) => {
       const response = await requestTrip(baseUrl, tripId, {
         cookie: "travelos-dev-portal-session=portal-session",
-        authorization: "Bearer synthetic-not-a-credential",
+        authorization: "Bearer",
       });
 
       expect(response.status).toBe(403);

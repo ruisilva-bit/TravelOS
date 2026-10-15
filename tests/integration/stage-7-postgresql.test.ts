@@ -190,7 +190,7 @@ const seedPriorPortalState = async (): Promise<void> => {
     await client.query('SET ROLE "travelos_owner"');
     await client.query(
       `INSERT INTO "portal_access"."portal_user" ("id", "name", "email", "emailVerified")
-       VALUES ($1, 'Stage 7 Synthetic Principal', 'stage7-same-email@example.invalid', true)`,
+       VALUES ($1, 'Stage 7 Synthetic Principal', 'stage7-shared-realm-marker', true)`,
       [priorPortalPrincipalId],
     );
     await client.query(
@@ -243,7 +243,7 @@ const seedTripAccessRepositoryState = async (): Promise<void> => {
     try {
       await client.query(
         `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName", "email")
-         VALUES ($1::uuid, $2::uuid, 'Synthetic', 'Traveller', 'stage7-traveller@example.invalid')`,
+         VALUES ($1::uuid, $2::uuid, 'Synthetic', 'Traveller', NULL)`,
         [primaryPersonId, priorAgencyId],
       );
       await client.query(
@@ -268,7 +268,7 @@ const seedTripAccessRepositoryState = async (): Promise<void> => {
       );
       await client.query(
         `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified", "twoFactorEnabled")
-       VALUES ($1, 'Stage 7 Synthetic Staff', 'stage7-same-email@example.invalid', true, true)`,
+       VALUES ($1, 'Stage 7 Synthetic Staff', 'stage7-shared-realm-marker', true, true)`,
         [staffPrincipalId],
       );
       await client.query(
@@ -763,7 +763,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     });
   });
 
-  it("resolves a current same-email Portal session without accepting Staff cookies", async () => {
+  it("keeps realm sessions separate when the email fields share one opaque marker", async () => {
     const portalSession = await portalRealm.getServerSession(
       new Request("http://portal.travelos.test/", {
         headers: { cookie: await signedSessionCookie(portalRealm, priorPortalSessionToken) },
@@ -812,7 +812,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
       const sessionId = "stage7-new-portal-session";
       await client.query(
         `INSERT INTO "portal_access"."portal_user" ("id", "name", "email", "emailVerified")
-         VALUES ($1, 'Stage 7 New Principal', 'stage7-new@example.invalid', true)`,
+         VALUES ($1, 'Stage 7 New Principal', 'stage7-registration-principal-marker', true)`,
         [principalId],
       );
       await client.query(

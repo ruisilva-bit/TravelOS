@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "predecessorCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
+  "predecessorTag": "travelos-phase-1-m1-stage-6-gen07-revision-04-go",
+  "predecessorTagObject": "8d951cbf739a69695ea98e2a31b5532ee0b0d951",
+  "detachedWorktree": {
+    "head": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
+    "branch": null,
+    "status": "CLEAN"
+  },
+  "stage6VerifierWorktree": {
+    "head": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
+    "branch": "phase-1/stage-6",
+    "status": "CLEAN_OUTSIDE_LOCAL_STATE"
+  },
+  "stage6Verification": {
+    "schemaVersion": 1,
+    "result": "PASS",
+    "branch": "phase-1/stage-6",
+    "sourceCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
+    "stage6BaselinePath": "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_07_REVISION_03.json",
+    "stage6BaselineSha256": "bb8890cacb720d43360997ff0e5c5ac0c6fa945b3dc5f87fb298d80c6e4e1695",
+    "sourceCount": 61,
+    "sourceAggregateSha256": "a736add8226933ac9d2a78268357dd654d16322f722fe377cdb28bbd9a8cde6b",
+    "predecessor": {
+      "result": "PASS",
+      "tag": "phase-1-stage-5-go",
+      "commit": "8dd62157d14e88400a9df1e97452a3807f3ed50e",
+      "phase0BaselineSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+      "stage5BaselineSha256": "ff41985b197738faa9585af2b4686612d420a9c118801a801c8d38087f1d29b6",
+      "stage5ProtectedFileCount": 38,
+      "stage5AggregateSha256": "decc422c49ab17d44e700331b95ac3fdf0bee8d6058b244682ecdc6ab8940255",
+      "stage6Actions": 0
+    },
+    "stage6Actions": 1,
+    "stage7Actions": 0
+  },
+  "receiptPath": "docs/reviews/phase-1-m1/stage-7/GEN03_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+  "stage7Actions": 1,
+  "stage8Actions": 0
+}

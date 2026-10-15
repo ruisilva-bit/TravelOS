@@ -476,9 +476,32 @@ export const verifyStage7CandidateSourceScope = async ({
     root,
     candidateGeneration,
   });
+  const historicalEvidencePaths = new Set();
+  for (const candidate of priorHistory.priorCandidates) {
+    if (candidate.canonicalCiStatus !== "NOT_RUN") {
+      historicalEvidencePaths.add(candidate.canonicalCiReceipt.path);
+      historicalEvidencePaths.add(`${evidenceRootFor(candidate.generation)}canonical-ci.log`);
+    }
+    if (candidate.validationStatus === "CREATED") {
+      historicalEvidencePaths.add(candidate.validationPath);
+    }
+    if (["CREATED", "VERIFIED"].includes(candidate.freezeStatus)) {
+      historicalEvidencePaths.add(candidate.freezePath);
+    }
+  }
+  const verifiedHistoricalEvidencePaths = [...historicalEvidencePaths].toSorted();
+  for (const evidencePath of verifiedHistoricalEvidencePaths) {
+    assertRelativePath(evidencePath, "prior evidence path");
+    const evidenceAbsolutePath = path.resolve(root, evidencePath);
+    const evidenceInfo = await lstat(evidenceAbsolutePath);
+    if (!evidenceInfo.isFile() || evidenceInfo.isSymbolicLink()) {
+      throw new Error(`prior evidence is not a regular file: ${evidencePath}`);
+    }
+    await readFile(evidenceAbsolutePath);
+  }
   const evaluation = evaluateStage7PriorEvidenceScope({
     priorCandidates: priorHistory.priorCandidates,
-    sourcePaths,
+    sourcePaths: [...sourcePaths, ...verifiedHistoricalEvidencePaths],
   });
   const missingVerifierPaths = sourceScopeVerifierPaths.filter(
     (requiredPath) => !sourcePaths.includes(requiredPath),

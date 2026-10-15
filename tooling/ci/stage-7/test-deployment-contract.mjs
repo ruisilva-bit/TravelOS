@@ -5,7 +5,7 @@ import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
 import { validateStage7DeploymentContractSource } from "./verify-deployment-contract.mjs";
 
 const cloneJson = (value) => JSON.parse(JSON.stringify(value));
-const generation = "gen04";
+const generation = "gen05";
 assert.equal(STAGE7_DEFAULT_GENERATION, generation);
 const readJson = async (relativePath) =>
   JSON.parse(await readFile(new URL(`../../../${relativePath}`, import.meta.url), "utf8"));
