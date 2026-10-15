@@ -3,7 +3,7 @@ import { connect } from "node:net";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 
-import { PORTAL_AUTH_BASE_PATH, type AuthRealm } from "@travelos/auth-adapters";
+import { PORTAL_AUTH_BASE_PATH, type PortalAuthRealm } from "@travelos/auth-adapters/portal";
 
 import { createPortalApi, type CreatePortalApiOptions } from "../src/app.js";
 
@@ -35,7 +35,7 @@ const startListener = async (
 
 const portalRealm = (
   handle = vi.fn(async () => new Response("portal-auth", { status: 200 })),
-): AuthRealm => ({
+): PortalAuthRealm => ({
   kind: "PORTAL",
   basePath: PORTAL_AUTH_BASE_PATH,
   cookieName: "travelos-dev-portal-session",
@@ -46,7 +46,7 @@ const portalRealm = (
   },
 });
 
-const authOptions = (realm: AuthRealm): NonNullable<CreatePortalApiOptions["auth"]> => ({
+const authOptions = (realm: PortalAuthRealm): NonNullable<CreatePortalApiOptions["auth"]> => ({
   realm,
   policy: { canonicalOrigin, expectedHost },
 });

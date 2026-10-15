@@ -1,4 +1,4 @@
-export const PERMISSION_REGISTRY_VERSION = 4 as const;
+export const PERMISSION_REGISTRY_VERSION = 5 as const;
 
 export type AuthorizationScopeKind = "AGENCY" | "ORGANIZATION_UNIT";
 export type ResourceAccessLevel = "OWN" | "TEAM" | "ALL";
@@ -116,13 +116,23 @@ export const STAGE_6_PERMISSION_REGISTRY = [
   },
 ] as const satisfies readonly PermissionDefinition[];
 
-/** Compatibility export retained for Stage 4 consumers; Stage 5 owns the complete registry. */
+/** Stage 7 adds explicit Agency-scoped management of customer Portal Trip grants. */
+export const STAGE_7_PERMISSION_REGISTRY = [
+  ...STAGE_6_PERMISSION_REGISTRY,
+  {
+    id: "trip.access.manage",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+] as const satisfies readonly PermissionDefinition[];
+
+/** Compatibility export retained for Stage 4 consumers; Stage 7 owns the current registry. */
 export const STAGE_4_PERMISSION_REGISTRY = STAGE_5_PERMISSION_REGISTRY;
 
-export type StaffPermissionId = (typeof STAGE_6_PERMISSION_REGISTRY)[number]["id"];
+export type StaffPermissionId = (typeof STAGE_7_PERMISSION_REGISTRY)[number]["id"];
 
 const permissionDefinitions = new Map<string, PermissionDefinition>(
-  STAGE_6_PERMISSION_REGISTRY.map((definition) => [definition.id, definition]),
+  STAGE_7_PERMISSION_REGISTRY.map((definition) => [definition.id, definition]),
 );
 
 export const isStaffPermissionId = (value: string): value is StaffPermissionId =>
@@ -138,4 +148,4 @@ export const permissionDefinitionFor = (permissionId: StaffPermissionId): Permis
 
 export const OWNER_ROLE_TEMPLATE_KEY = "agency-owner-v1" as const;
 export const OWNER_ROLE_PERMISSION_IDS: readonly StaffPermissionId[] =
-  STAGE_6_PERMISSION_REGISTRY.map(({ id }) => id);
+  STAGE_7_PERMISSION_REGISTRY.map(({ id }) => id);

@@ -7,6 +7,7 @@
     "paths": {
       "@travelos/backend-core": ["./packages/backend-core/src/index.ts"],
       "@travelos/auth-adapters": ["./packages/auth-adapters/src/index.ts"],
+      "@travelos/auth-adapters/portal": ["./packages/auth-adapters/src/portal.ts"],
       "@travelos/contracts/admin": ["./packages/contracts/src/admin/index.ts"],
       "@travelos/contracts/portal": ["./packages/contracts/src/portal/index.ts"],
       "@travelos/config": ["./packages/config/src/index.ts"],

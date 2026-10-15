@@ -129,6 +129,29 @@ if (packageBoundaries.result !== "PASS" || packageBoundaries.violations.length !
   process.exit(1);
 }
 
+const portalImportFixtures = spawnSync(
+  process.execPath,
+  ["tooling/architecture/fixtures/stage-7/verify-portal-import-boundaries.mjs"],
+  { cwd: process.cwd(), encoding: "utf8", maxBuffer: 20 * 1024 * 1024 },
+);
+let portalImportFixtureReport;
+try {
+  portalImportFixtureReport = JSON.parse(portalImportFixtures.stdout);
+} catch {
+  process.stderr.write(portalImportFixtures.stderr);
+  process.stderr.write("Portal import-boundary fixtures did not return JSON\n");
+  process.exit(1);
+}
+if (
+  portalImportFixtures.status !== 0 ||
+  portalImportFixtureReport.result !== "PASS" ||
+  portalImportFixtureReport.failedCaseCount !== 0
+) {
+  process.stderr.write(portalImportFixtures.stderr);
+  process.stderr.write(`${JSON.stringify(portalImportFixtureReport, null, 2)}\n`);
+  process.exit(1);
+}
+
 const negative = spawnSync(process.execPath, ["tooling/architecture/reject-negative-fixture.mjs"], {
   cwd: process.cwd(),
   encoding: "utf8",
@@ -207,6 +230,7 @@ const output = {
   dependencyUniverse: dependencyUniverseSummary(dependencyUniverse),
   nonTypeScriptAssetDependencies: dependencyUniverse.nonTypeScriptAssetDependencies,
   packageBoundaries,
+  portalImportBoundaries: portalImportFixtureReport,
   negativePortalFixture: {
     expectedFailureObserved: true,
     processExitCode: negative.status,

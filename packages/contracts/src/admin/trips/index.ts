@@ -19,3 +19,11 @@ export {
   type AdminTripPublicationPreviewV1,
   type AdminTripPublicationV1Response,
 } from "./publication-v1.js";
+export {
+  AdminTripAccessGrantIssueV1RequestSchema,
+  AdminTripAccessGrantRevokeV1RequestSchema,
+  AdminTripAccessGrantV1ResponseSchema,
+  type AdminTripAccessGrantIssueV1Request,
+  type AdminTripAccessGrantRevokeV1Request,
+  type AdminTripAccessGrantV1Response,
+} from "./portal-access/index.js";

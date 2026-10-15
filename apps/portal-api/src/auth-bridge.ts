@@ -1,8 +1,8 @@
 import {
   dispatchAuthRealmRequest,
-  type AuthRealm,
+  type PortalAuthRealm,
   type AuthSurfacePolicy,
-} from "@travelos/auth-adapters";
+} from "@travelos/auth-adapters/portal";
 import { PortalAuthenticatedSessionSchema } from "@travelos/contracts/portal";
 import { portalPrincipalIdentityFromSession } from "@travelos/portal-safe-core/portal-access";
 
@@ -38,7 +38,7 @@ interface NestHttpApplication {
 }
 
 export interface PortalAuthBridgeOptions {
-  readonly realm: AuthRealm;
+  readonly realm: PortalAuthRealm;
   readonly policy: AuthSurfacePolicy;
 }
 

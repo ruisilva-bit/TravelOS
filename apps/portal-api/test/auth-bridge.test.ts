@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { AuthRealm } from "@travelos/auth-adapters";
+import type { PortalAuthRealm } from "@travelos/auth-adapters/portal";
 
 import { registerPortalAuthBridge } from "../src/auth-bridge.js";
 
@@ -37,25 +37,27 @@ const policy = {
   expectedHost: "portal.travelos.test",
 };
 
-const portalRealm = (kind: "PORTAL" | "STAFF" = "PORTAL"): AuthRealm => ({
-  kind,
-  basePath: kind === "PORTAL" ? "/api/auth/portal" : "/api/auth/staff",
-  cookieName: "travelos-dev-portal-session",
-  secureTransportRequired: false,
-  async handle() {
-    return new Response("portal-auth", { status: 200 });
-  },
-  async getServerSession() {
-    return {
-      sessionId: "portal-session-1",
-      principalId: "portal-principal-1",
-      expiresAtEpochMs: Date.now() + 60_000,
-      agencyId: null,
-      authorizationEpoch: null,
-      recentMfaVerifiedAtEpochMs: null,
-    };
-  },
-});
+const portalRealm = (kind: "PORTAL" | "STAFF" = "PORTAL"): PortalAuthRealm =>
+  ({
+    kind,
+    basePath: kind === "PORTAL" ? "/api/auth/portal" : "/api/auth/staff",
+    cookieName: "travelos-dev-portal-session",
+    secureTransportRequired: false,
+    async handle() {
+      return new Response("portal-auth", { status: 200 });
+    },
+    async getServerSession() {
+      return {
+        realm: kind,
+        sessionId: "portal-session-1",
+        principalId: "portal-principal-1",
+        expiresAtEpochMs: Date.now() + 60_000,
+        agencyId: "00000000-0000-7000-8000-000000000071",
+        authorizationEpoch: 1n,
+        recentMfaVerifiedAtEpochMs: null,
+      };
+    },
+  }) as unknown as PortalAuthRealm;
 
 const invoke = async (handler: Handler, request: RequestLike) =>
   new Promise<{

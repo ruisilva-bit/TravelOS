@@ -8,6 +8,7 @@ import {
 } from "@travelos/auth-adapters";
 import { authorizeStaffRequest } from "@travelos/backend-core";
 import type { M1StaffTripOperations } from "@travelos/backend-core";
+import type { M1StaffTripAccessOperations } from "@travelos/backend-core";
 import type { M1StaffTripPublicationOperations } from "@travelos/backend-core";
 import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
 import type { StaffAccessRepository } from "@travelos/database";
@@ -53,6 +54,7 @@ export interface AdminAuthBridgeOptions {
   readonly policy: AuthSurfacePolicy;
   readonly staffAccessRepository: Pick<StaffAccessRepository, "getStaffAuthorizationSnapshot">;
   readonly m1Operations?: M1StaffTripOperations;
+  readonly m1TripAccessOperations?: M1StaffTripAccessOperations;
   readonly m1PublicationOperations?: M1StaffTripPublicationOperations;
 }
 
@@ -246,6 +248,9 @@ export const registerAdminAuthBridge = (
     registerAdminM1Routes(http, {
       policy: options.policy,
       m1Operations: options.m1Operations,
+      ...(options.m1TripAccessOperations === undefined
+        ? {}
+        : { m1TripAccessOperations: options.m1TripAccessOperations }),
       ...(options.m1PublicationOperations === undefined
         ? {}
         : { m1PublicationOperations: options.m1PublicationOperations }),

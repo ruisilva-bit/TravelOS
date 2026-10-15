@@ -35,6 +35,7 @@ export {
   permissionDefinitionFor,
   STAGE_4_PERMISSION_REGISTRY,
   STAGE_5_PERMISSION_REGISTRY,
+  STAGE_7_PERMISSION_REGISTRY,
   type AuthorizationScopeKind,
   type PermissionDefinition,
   type ResourceAccessLevel,
@@ -95,6 +96,23 @@ export {
   type M1StaffTripOperations,
   type M1StaffTripOperationsDependencies,
 } from "./modules/trip-operations/application/m1-staff-operations.js";
+export {
+  M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
+  createM1StaffTripAccessOperations,
+  M1StaffTripAccessNotFoundError,
+  TRIP_ACCESS_MANAGE_PERMISSION_ID,
+  type IssueTripAccessGrantCommand,
+  type M1StaffTripAccessOperations,
+  type M1StaffTripAccessOperationsDependencies,
+  type M1StaffTripAccessRepository,
+  type RevokeTripAccessGrantCommand,
+} from "./modules/portal-access/application/staff-trip-access-operations.js";
+export {
+  TRIP_ACCESS_CAPABILITY_IDS,
+  type TripAccessCapabilityId,
+  type TripAccessGrant,
+  type TripAccessGrantCapabilitySet,
+} from "./modules/portal-access/domain/trip-access-grant.js";
 export {
   INTERNAL_ONLY_FIELD_CLASSIFICATION,
   type SupplierCostDraft,

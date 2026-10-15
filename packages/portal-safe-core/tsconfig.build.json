@@ -4,6 +4,9 @@
     "noEmit": false,
     "declaration": true,
     "declarationMap": false,
+    "paths": {
+      "@travelos/contracts/portal": ["../contracts/dist/portal/index.d.ts"]
+    },
     "outDir": "dist",
     "rootDir": "src",
     "tsBuildInfoFile": "dist/.tsbuildinfo"

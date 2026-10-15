@@ -10,6 +10,7 @@ const policy = {
 };
 
 const session = {
+  realm: "STAFF",
   sessionId: "synthetic-session",
   principalId: "synthetic-staff-principal",
   expiresAtEpochMs: 1_800_000_000_000,
@@ -42,6 +43,16 @@ describe("Admin Staff application session resolver", () => {
     const realm = {
       kind: "STAFF",
       getServerSession: vi.fn().mockResolvedValue({ ...session, agencyId: null }),
+    } as unknown as AuthRealm;
+    const resolver = createAdminStaffSessionResolver(realm, policy);
+
+    await expect(resolver.resolveStaffSession("travelos_staff=opaque-session")).resolves.toBeNull();
+  });
+
+  it("fails closed when a Staff adapter returns a Portal realm session", async () => {
+    const realm = {
+      kind: "STAFF",
+      getServerSession: vi.fn().mockResolvedValue({ ...session, realm: "PORTAL" }),
     } as unknown as AuthRealm;
     const resolver = createAdminStaffSessionResolver(realm, policy);
 

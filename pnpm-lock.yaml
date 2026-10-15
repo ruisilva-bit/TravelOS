@@ -229,6 +229,9 @@ importers:
       '@travelos/portal-safe-core':
         specifier: workspace:*
         version: link:../../packages/portal-safe-core
+      kysely:
+        specifier: 0.29.5
+        version: 0.29.5
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
@@ -325,7 +328,11 @@ importers:
 
   packages/observability: {}
 
-  packages/portal-safe-core: {}
+  packages/portal-safe-core:
+    dependencies:
+      '@travelos/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/test-support: {}
 

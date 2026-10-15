@@ -163,6 +163,7 @@ const authorizedTripSlice: M1TripSlice = {
 
 const startAuthorizedAdminApi = async (failCreate = false) => {
   const session = {
+    realm: "STAFF" as const,
     sessionId: "synthetic-session-id",
     principalId: staffPrincipalId,
     expiresAtEpochMs: Date.now() + 60_000,

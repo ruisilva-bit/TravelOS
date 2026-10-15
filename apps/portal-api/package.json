@@ -14,6 +14,7 @@
     "@travelos/config": "workspace:*",
     "@travelos/contracts": "workspace:*",
     "@travelos/portal-safe-core": "workspace:*",
+    "kysely": "0.29.5",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
   }

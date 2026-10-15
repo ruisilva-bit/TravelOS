@@ -53,6 +53,7 @@ const staffRealm = (overrides: Partial<AuthRealm> = {}): AuthRealm => ({
   },
   async getServerSession() {
     return {
+      realm: "STAFF",
       sessionId: "staff-session-1",
       principalId: "staff-principal-1",
       expiresAtEpochMs: Date.now() + 60_000,

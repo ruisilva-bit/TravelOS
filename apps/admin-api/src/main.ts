@@ -1,12 +1,14 @@
 import "reflect-metadata";
 
 import { createStaffAuthRealm } from "@travelos/auth-adapters";
+import { createM1StaffTripAccessOperations } from "@travelos/backend-core";
 import {
   loadDevelopmentInstanceManifest,
   readSystemdCredentialText,
   type DevelopmentInstanceManifest,
 } from "@travelos/config";
 import {
+  createPostgresM1StaffTripAccessRepository,
   createPostgresM1StaffTripPublicationOperations,
   createPostgresM1StaffTripOperations,
   createPostgresPersistence,
@@ -70,6 +72,11 @@ const createAdminAuthOptions = async (
     };
     const staffAccessRepository = createStaffAccessRepository(persistence);
     const sessionResolver = createAdminStaffSessionResolver(realm, policy);
+    const m1TripAccessOperations = createM1StaffTripAccessOperations({
+      repository: createPostgresM1StaffTripAccessRepository(persistence),
+      authorizationRepository: staffAccessRepository,
+      sessionResolver,
+    });
     return {
       options: {
         auth: {
@@ -77,6 +84,7 @@ const createAdminAuthOptions = async (
           policy,
           staffAccessRepository,
           m1Operations: createPostgresM1StaffTripOperations(persistence, sessionResolver),
+          m1TripAccessOperations,
           m1PublicationOperations: createPostgresM1StaffTripPublicationOperations(
             persistence,
             sessionResolver,

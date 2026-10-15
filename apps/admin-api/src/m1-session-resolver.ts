@@ -21,7 +21,12 @@ export const createAdminStaffSessionResolver = (
       }
 
       const session = await realm.getServerSession(request);
-      if (session === null || session.agencyId === null || session.authorizationEpoch === null) {
+      if (
+        session === null ||
+        session.realm !== "STAFF" ||
+        session.agencyId === null ||
+        session.authorizationEpoch === null
+      ) {
         return null;
       }
       return {

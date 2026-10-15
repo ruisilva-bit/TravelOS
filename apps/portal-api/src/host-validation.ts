@@ -1,4 +1,4 @@
-import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters";
+import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters/portal";
 
 export const PORTAL_PRIVATE_NO_STORE = "private, no-store";
 

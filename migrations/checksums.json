@@ -45,6 +45,10 @@
     {
       "file": "0011_stage6_trip_publication.cjs",
       "sha256": "a6b4924aca43670c2b1034dca7471df349476a4922ac8370dbde9e3bb5ce6503"
+    },
+    {
+      "file": "0012_stage7_portal_trip_access.cjs",
+      "sha256": "4bf653fdc7522443ea321d98d448934ec1b5d0c4e8d4abd904360182ada5ade8"
     }
   ]
 }

@@ -90,7 +90,7 @@ export const architecturePolicy = {
       root: "apps/portal-api",
       layer: "portal-server-composition-root",
       workspace: [
-        "@travelos/auth-adapters",
+        "@travelos/auth-adapters/portal",
         "@travelos/config",
         "@travelos/contracts/portal",
         "@travelos/observability",
@@ -102,6 +102,7 @@ export const architecturePolicy = {
         "@nestjs/common",
         "@nestjs/core",
         "@nestjs/platform-express",
+        "kysely",
         "reflect-metadata",
         "rxjs",
       ],
@@ -170,7 +171,7 @@ export const architecturePolicy = {
       workspace: ["@travelos/backend-core", "@travelos/portal-safe-core/portal-access"],
       external: ["@better-auth/kysely-adapter", "better-auth", "kysely", "pg", "zod"],
       builtins: ["node:crypto"],
-      exports: ["."],
+      exports: [".", "./portal"],
     }),
     unit({
       packageName: "@travelos/design-system",

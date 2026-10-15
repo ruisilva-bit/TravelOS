@@ -10,10 +10,11 @@ export type RealmEnvironment = "DEVELOPMENT" | "PRODUCTION";
 export type AuthenticationRealm = "STAFF" | "PORTAL";
 
 export interface RealmSession {
+  readonly realm: AuthenticationRealm;
   readonly sessionId: string;
   readonly principalId: string;
   readonly expiresAtEpochMs: number;
-  /** Staff-only trusted session context; null in Portal or before membership exists. */
+  /** Current Agency context; null when a Staff membership or Portal context is unavailable. */
   readonly agencyId: string | null;
   readonly authorizationEpoch: bigint | null;
   readonly recentMfaVerifiedAtEpochMs: number | null;
@@ -35,6 +36,13 @@ export interface AuthRealmConfiguration {
   readonly environment: RealmEnvironment;
   /** Development-only, local-operator use. Never bind this configuration to HTTP. */
   readonly allowOperatorEnrollment?: boolean;
+}
+
+export type PortalAuthRealmConfiguration = Omit<AuthRealmConfiguration, "allowOperatorEnrollment">;
+
+export interface PortalAuthRealm extends AuthRealm {
+  readonly kind: "PORTAL";
+  readonly basePath: typeof PORTAL_AUTH_BASE_PATH;
 }
 
 const assertRealmConfiguration = ({
@@ -70,6 +78,11 @@ type StaffSessionContextRow = {
   readonly recentMfaVerifiedAt: Date | null;
 };
 
+type PortalSessionContextRow = {
+  readonly agencyId: string;
+  readonly authorizationEpoch: string;
+};
+
 type SetCookieHeaders = Headers & { readonly getSetCookie?: () => string[] };
 
 const cookieHeaderFor = (headers: Headers, cookieName: string): string | null => {
@@ -97,6 +110,27 @@ const staffSessionContextFor = async (
           ON principal."id" = context."staffPrincipalId"
        WHERE context."sessionId" = ${sessionId}
          AND principal."twoFactorEnabled"
+    `.execute(database)
+  ).rows[0];
+  return row ?? null;
+};
+
+const portalSessionContextFor = async (
+  database: Kysely<Record<string, never>>,
+  sessionId: string,
+  principalId: string,
+): Promise<PortalSessionContextRow | null> => {
+  const row = (
+    await sql<PortalSessionContextRow>`
+      SELECT context."agencyId"::text AS "agencyId",
+             context."authorizationEpoch"::text AS "authorizationEpoch"
+        FROM "portal_access"."portal_session_context" AS context
+        JOIN "portal_access"."portal_principal_context" AS principal
+          ON principal."agencyId" = context."agencyId"
+         AND principal."portalPrincipalId" = context."portalPrincipalId"
+         AND principal."authorizationEpoch" = context."authorizationEpoch"
+       WHERE context."sessionId" = ${sessionId}
+         AND context."portalPrincipalId" = ${principalId}
     `.execute(database)
   ).rows[0];
   return row ?? null;
@@ -250,17 +284,24 @@ const createRealm = (
     getServerSession: async (request) => {
       const result = await auth.api.getSession({ headers: request.headers });
       if (result === null) return null;
-      const context =
+      const staffContext =
         kind === "STAFF"
           ? await staffSessionContextFor(configuration.database, result.session.id)
           : null;
+      const portalContext =
+        kind === "PORTAL"
+          ? await portalSessionContextFor(configuration.database, result.session.id, result.user.id)
+          : null;
+      if (kind === "PORTAL" && portalContext === null) return null;
+      const context = kind === "STAFF" ? staffContext : portalContext;
       return {
+        realm: kind,
         sessionId: result.session.id,
         principalId: result.user.id,
         expiresAtEpochMs: result.session.expiresAt.getTime(),
         agencyId: context?.agencyId ?? null,
         authorizationEpoch: context === null ? null : BigInt(context.authorizationEpoch),
-        recentMfaVerifiedAtEpochMs: context?.recentMfaVerifiedAt?.getTime() ?? null,
+        recentMfaVerifiedAtEpochMs: staffContext?.recentMfaVerifiedAt?.getTime() ?? null,
       };
     },
   };
@@ -269,8 +310,10 @@ const createRealm = (
 export const createStaffAuthRealm = (configuration: AuthRealmConfiguration): AuthRealm =>
   createRealm("STAFF", configuration);
 
-export const createPortalAuthRealm = (configuration: AuthRealmConfiguration): AuthRealm =>
-  createRealm("PORTAL", configuration);
+export const createPortalAuthRealm = (
+  configuration: PortalAuthRealmConfiguration,
+): PortalAuthRealm =>
+  createRealm("PORTAL", { ...configuration, allowOperatorEnrollment: false }) as PortalAuthRealm;
 
 /**
  * This factory is intentionally for the local operator command only. It must never be passed to

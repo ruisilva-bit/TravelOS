@@ -1,6 +1,9 @@
 import "reflect-metadata";
 
-import { createAuthRealmPostgresDatabase, createPortalAuthRealm } from "@travelos/auth-adapters";
+import {
+  createAuthRealmPostgresDatabase,
+  createPortalAuthRealm,
+} from "@travelos/auth-adapters/portal";
 import {
   loadDevelopmentInstanceManifest,
   readSystemdCredentialText,
@@ -8,6 +11,7 @@ import {
 } from "@travelos/config";
 
 import { createPortalApi, type CreatePortalApiOptions } from "./app.js";
+import { createPostgresPortalTripSnapshotReader } from "./trip-read-repository.js";
 
 const readRequiredArgument = (name: string): string => {
   const prefix = `${name}=`;
@@ -54,9 +58,11 @@ const createPortalAuthOptions = async (
       realmKeyMaterial,
       environment: manifest.environment,
     });
+    const tripSnapshotReader = createPostgresPortalTripSnapshotReader(realmDatabase.database);
     return {
       options: {
         expectedHost: manifest.hosts.portal,
+        tripSnapshotReader,
         auth: {
           realm,
           policy: {

@@ -52,8 +52,8 @@ describe("root Agency bootstrap identifiers", () => {
     expect(port.ensureRootAgency).toHaveBeenCalledOnce();
   });
 
-  it("binds the bootstrap Owner template to the bounded Stage 5 cost-mutation capability", () => {
-    expect(PERMISSION_REGISTRY_VERSION).toBe(4);
+  it("preserves the Stage 5 cost-mutation capability after the Stage 7 registry extension", () => {
+    expect(PERMISSION_REGISTRY_VERSION).toBe(5);
     expect(permissionDefinitionFor("finance.manage_costs")).toEqual({
       id: "finance.manage_costs",
       allowedScopeKinds: ["AGENCY"],

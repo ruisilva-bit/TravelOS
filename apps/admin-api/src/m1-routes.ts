@@ -8,8 +8,10 @@ import {
   StalePublicationCandidateError,
   IdempotencyConflictError,
   TripPublicationNotFoundError,
+  M1StaffTripAccessNotFoundError,
   createMoney,
   moneyToJson,
+  type M1StaffTripAccessOperations,
   type M1StaffTripOperations,
   type M1StaffTripPublicationOperations,
   type M1TripSlice,
@@ -23,6 +25,9 @@ import {
   AdminTripPublicationHistoryV1ResponseSchema,
   AdminTripPublicationPreviewV1Schema,
   AdminTripPublicationV1ResponseSchema,
+  AdminTripAccessGrantIssueV1RequestSchema,
+  AdminTripAccessGrantRevokeV1RequestSchema,
+  AdminTripAccessGrantV1ResponseSchema,
   type AdminCreateM1TripSliceRequest,
 } from "@travelos/contracts/admin";
 import { hostHeaderMatchesExpectedHost, type AuthSurfacePolicy } from "@travelos/auth-adapters";
@@ -62,6 +67,7 @@ export interface AdminM1ExpressApplication {
 export interface AdminM1RouteOptions {
   readonly policy: AuthSurfacePolicy;
   readonly m1Operations: M1StaffTripOperations;
+  readonly m1TripAccessOperations?: M1StaffTripAccessOperations;
   readonly m1PublicationOperations?: M1StaffTripPublicationOperations;
 }
 
@@ -338,6 +344,10 @@ const runHandler = (
       response.status(404).end();
       return;
     }
+    if (error instanceof M1StaffTripAccessNotFoundError) {
+      response.status(404).end();
+      return;
+    }
     if (error instanceof M1StaffPublicationInputError) {
       badRequest(response);
       return;
@@ -475,6 +485,62 @@ export const registerAdminM1Routes = (
       );
     },
   );
+
+  if (options.m1TripAccessOperations !== undefined) {
+    const tripAccessOperations = options.m1TripAccessOperations;
+    application.post("/api/admin/trips/:tripId/portal-access-grants", (request, response, next) => {
+      runHandler(
+        async () => {
+          const tripId = idFrom(request.params?.tripId);
+          const parsed = AdminTripAccessGrantIssueV1RequestSchema.safeParse(request.body);
+          if (tripId === null || !parsed.success || parsed.data.tripId !== tripId) {
+            badRequest(response);
+            return;
+          }
+          const rejection = surfaceRejectionStatus(request, options.policy, true);
+          if (rejection !== null) {
+            response.status(rejection).end();
+            return;
+          }
+          const grant = await tripAccessOperations.issueTripAccessGrant(
+            headersFor(request).get("cookie"),
+            parsed.data,
+          );
+          send(response, 201, AdminTripAccessGrantV1ResponseSchema.parse(grant));
+        },
+        response,
+        next,
+      );
+    });
+
+    application.post(
+      "/api/admin/portal-access-grants/:grantId/revocations",
+      (request, response, next) => {
+        runHandler(
+          async () => {
+            const grantId = idFrom(request.params?.grantId);
+            const parsed = AdminTripAccessGrantRevokeV1RequestSchema.safeParse(request.body);
+            if (grantId === null || !parsed.success || parsed.data.grantId !== grantId) {
+              badRequest(response);
+              return;
+            }
+            const rejection = surfaceRejectionStatus(request, options.policy, true);
+            if (rejection !== null) {
+              response.status(rejection).end();
+              return;
+            }
+            const grant = await tripAccessOperations.revokeTripAccessGrant(
+              headersFor(request).get("cookie"),
+              parsed.data,
+            );
+            send(response, 200, AdminTripAccessGrantV1ResponseSchema.parse(grant));
+          },
+          response,
+          next,
+        );
+      },
+    );
+  }
 
   if (options.m1PublicationOperations !== undefined) {
     const publicationOperations = options.m1PublicationOperations;

@@ -1,14 +1,17 @@
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
-import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters";
+import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters/portal";
+import type { CurrentPublishedPortalTripSnapshotReader } from "@travelos/portal-safe-core/customer-presentation";
 
 import { PortalApiModule } from "./app.module.js";
 import { registerPortalAuthBridge, type PortalAuthBridgeOptions } from "./auth-bridge.js";
 import { createPortalHostValidationMiddleware } from "./host-validation.js";
+import { registerPortalTripRoutes } from "./trip-routes.js";
 
 export interface CreatePortalApiOptions {
   readonly expectedHost: string;
   readonly auth?: PortalAuthBridgeOptions;
+  readonly tripSnapshotReader?: CurrentPublishedPortalTripSnapshotReader;
 }
 
 const isCanonicalOriginForHost = (canonicalOrigin: string, expectedHost: string): boolean => {
@@ -48,6 +51,16 @@ export const createPortalApi = async (
   application.useBodyParser("json");
   if (options.auth !== undefined) {
     registerPortalAuthBridge(application, options.auth);
+  }
+  if (options.tripSnapshotReader !== undefined) {
+    if (options.auth === undefined) {
+      throw new Error("Portal Trip routes require Portal authentication");
+    }
+    registerPortalTripRoutes(application, {
+      realm: options.auth.realm,
+      policy: options.auth.policy,
+      reader: options.tripSnapshotReader,
+    });
   }
   await application.init();
   return application;
