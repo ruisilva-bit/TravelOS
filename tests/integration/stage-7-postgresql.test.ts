@@ -12,7 +12,9 @@ import type { AuthSurfacePolicy, PortalAuthRealm } from "@travelos/auth-adapters
 import { createAdminStaffSessionResolver } from "../../apps/admin-api/src/m1-session-resolver.js";
 import { createPortalApi } from "../../apps/portal-api/src/app.js";
 import * as databaseModule from "../../packages/database/src/index.js";
+import { createLocalOperatorPortalEnrollmentService } from "../../packages/auth-adapters/src/realm.js";
 import {
+  createLocalOperatorStaffEnrollmentRealm,
   createPortalAuthRealm,
   createStaffAuthRealm,
   type AuthRealm,
@@ -842,6 +844,245 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         { agencyId: priorAgencyId, principalEpoch: "1", sessionEpoch: "1" },
       ]);
     });
+  });
+
+  it("limits Portal enrollment to local operators and authenticates via the normal Portal realm", async () => {
+    const portalDatabase = await portalAuthPersistence!.withConnection(
+      async (connection) => connection,
+    );
+    const localEnrollment = createLocalOperatorPortalEnrollmentService({
+      database: portalDatabase,
+      canonicalOrigin: "http://portal.travelos.test",
+      realmKeyMaterial: stage7RealmKey,
+      environment: "DEVELOPMENT",
+    });
+    expect(() =>
+      createLocalOperatorPortalEnrollmentService({
+        database: portalDatabase,
+        canonicalOrigin: "https://portal.travelos.test",
+        realmKeyMaterial: stage7RealmKey,
+        environment: "PRODUCTION",
+      }),
+    ).toThrow(/development/iu);
+    expect(() =>
+      createLocalOperatorStaffEnrollmentRealm({
+        database: portalDatabase,
+        canonicalOrigin: "https://admin.travelos.test",
+        realmKeyMaterial: stage7RealmKey,
+        environment: "PRODUCTION",
+      }),
+    ).toThrow(/development/iu);
+
+    const email = `stage7-operator-${randomUUID()}@example.test`;
+    const syntheticCredential = createHash("sha512")
+      .update("travelos-stage-7-disposable-portal-credential")
+      .digest("base64url");
+    await expect(
+      localEnrollment.enroll({
+        email: `stage7-operator-${randomUUID()}@external.test`,
+        name: "Rejected Non-Synthetic Portal",
+        password: syntheticCredential,
+      }),
+    ).rejects.toThrow(/synthetic.*example\.test/iu);
+    const enrolled = await localEnrollment.enroll({
+      email,
+      name: "Stage 7 Synthetic Portal",
+      password: syntheticCredential,
+    });
+
+    const principal = await withPortalLogin(async (client) => {
+      const result = await client.query<{
+        portalPrincipalId: string;
+        agencyId: string;
+        authorizationEpoch: string;
+      }>(
+        `SELECT principal."portalPrincipalId", principal."agencyId"::text AS "agencyId",
+                principal."authorizationEpoch"::text AS "authorizationEpoch"
+           FROM "portal_access"."portal_user" AS user_row
+           JOIN "portal_access"."portal_principal_context" AS principal
+             ON principal."portalPrincipalId" = user_row."id"
+          WHERE user_row."email" = $1`,
+        [email],
+      );
+      return result.rows[0] ?? null;
+    });
+    expect(principal).toMatchObject({ agencyId: priorAgencyId, authorizationEpoch: "1" });
+    expect(principal?.portalPrincipalId).toBe(enrolled.portalPrincipalId);
+
+    const publicSignup = await portalRealm.handle(
+      new Request("http://portal.travelos.test/api/auth/portal/sign-up/email", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://portal.travelos.test",
+        },
+        body: JSON.stringify({
+          email: `stage7-public-${randomUUID()}@example.test`,
+          name: "Denied Public Signup",
+          password: syntheticCredential,
+        }),
+      }),
+    );
+    expect(publicSignup.status).toBeGreaterThanOrEqual(400);
+
+    const signIn = await portalRealm.handle(
+      new Request("http://portal.travelos.test/api/auth/portal/sign-in/email", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://portal.travelos.test",
+        },
+        body: JSON.stringify({ email, password: syntheticCredential }),
+      }),
+    );
+    expect(signIn.status).toBe(200);
+    const cookie = signIn.headers.getSetCookie()[0]?.split(";", 1)[0];
+    if (cookie === undefined)
+      throw new Error("Portal sign-in response did not set a session cookie");
+    expect(cookie).toMatch(/^travelos-dev-portal-session=/u);
+    const portalSession = await portalRealm.getServerSession(
+      new Request("http://portal.travelos.test/", { headers: { cookie } }),
+    );
+    expect(portalSession).toMatchObject({
+      realm: "PORTAL",
+      principalId: principal?.portalPrincipalId,
+      agencyId: priorAgencyId,
+      authorizationEpoch: 1n,
+    });
+    await expect(
+      staffRealm.getServerSession(
+        new Request("http://admin.travelos.test/", { headers: { cookie } }),
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it("rolls back a synthetic Portal enrollment when native verification fails", async () => {
+    const portalDatabase = await portalAuthPersistence!.withConnection(
+      async (connection) => connection,
+    );
+    const localEnrollment = createLocalOperatorPortalEnrollmentService({
+      database: portalDatabase,
+      canonicalOrigin: "http://portal.travelos.test",
+      realmKeyMaterial: stage7RealmKey,
+      environment: "DEVELOPMENT",
+    });
+    const email = `stage7-rollback-${randomUUID()}@example.test`;
+    const syntheticCredential = createHash("sha512")
+      .update("travelos-stage-7-disposable-portal-credential")
+      .digest("base64url");
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(`
+        CREATE FUNCTION "portal_access"."stage7_reject_email_verification"()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+        BEGIN
+          IF OLD."emailVerified" IS FALSE
+             AND NEW."emailVerified" IS TRUE
+             AND OLD."email" LIKE ('stage7-rollback-%' || chr(64) || 'example.test') THEN
+            RAISE EXCEPTION 'synthetic Stage 7 verification failure';
+          END IF;
+          RETURN NEW;
+        END;
+        $$
+      `);
+      await client.query(`
+        CREATE TRIGGER "stage7_reject_email_verification"
+        BEFORE UPDATE OF "emailVerified" ON "portal_access"."portal_user"
+        FOR EACH ROW EXECUTE FUNCTION "portal_access"."stage7_reject_email_verification"()
+      `);
+    });
+    try {
+      await expect(
+        localEnrollment.enroll({
+          email,
+          name: "Stage 7 Rollback Portal",
+          password: syntheticCredential,
+        }),
+      ).rejects.toThrow(/verification failed/iu);
+      const remainingUsers = await withPortalLogin(async (client) =>
+        client.query<{ readonly count: string }>(
+          `SELECT count(*)::text AS count
+             FROM "portal_access"."portal_user"
+            WHERE "email" = $1`,
+          [email],
+        ),
+      );
+      expect(remainingUsers.rows).toEqual([{ count: "0" }]);
+    } finally {
+      await withOwnerLogin(priorDatabaseName, async (client) => {
+        await client.query(`
+          DROP TRIGGER "stage7_reject_email_verification" ON "portal_access"."portal_user"
+        `);
+        await client.query(`
+          DROP FUNCTION "portal_access"."stage7_reject_email_verification"()
+        `);
+      });
+    }
+    const enrolled = await localEnrollment.enroll({
+      email,
+      name: "Stage 7 Rollback Portal",
+      password: syntheticCredential,
+    });
+    const recoveredUser = await withPortalLogin(async (client) =>
+      client.query<{ readonly id: string; readonly emailVerified: boolean }>(
+        `SELECT "id", "emailVerified"
+           FROM "portal_access"."portal_user"
+          WHERE "email" = $1`,
+        [email],
+      ),
+    );
+    expect(recoveredUser.rows).toEqual([{ id: enrolled.portalPrincipalId, emailVerified: true }]);
+  });
+
+  it("keeps concurrent local Portal enrollment for one normalized address to one verified identity", async () => {
+    const portalDatabase = await portalAuthPersistence!.withConnection(
+      async (connection) => connection,
+    );
+    const localEnrollment = createLocalOperatorPortalEnrollmentService({
+      database: portalDatabase,
+      canonicalOrigin: "http://portal.travelos.test",
+      realmKeyMaterial: stage7RealmKey,
+      environment: "DEVELOPMENT",
+    });
+    const email = `stage7-concurrent-${randomUUID()}@example.test`;
+    const syntheticCredential = createHash("sha512")
+      .update("travelos-stage-7-disposable-portal-credential")
+      .digest("base64url");
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const results = await Promise.allSettled([
+      localEnrollment.enroll({
+        email,
+        name: "Stage 7 Concurrent Portal A",
+        password: syntheticCredential,
+      }),
+      localEnrollment.enroll({
+        email: email.toUpperCase(),
+        name: "Stage 7 Concurrent Portal B",
+        password: syntheticCredential,
+      }),
+    ]);
+    const successfulIds = results.flatMap((result) =>
+      result.status === "fulfilled" ? [result.value.portalPrincipalId] : [],
+    );
+    const uniqueSuccessfulIds = [...new Set(successfulIds)];
+    expect(successfulIds.length).toBeGreaterThan(0);
+    expect(uniqueSuccessfulIds).toHaveLength(1);
+
+    const users = await withPortalLogin(async (client) =>
+      client.query<{
+        readonly id: string;
+        readonly email: string;
+        readonly emailVerified: boolean;
+      }>(
+        `SELECT "id", "email", "emailVerified"
+           FROM "portal_access"."portal_user"
+          WHERE "email" = $1`,
+        [email],
+      ),
+    );
+    expect(users.rows).toEqual([{ id: uniqueSuccessfulIds[0], email, emailVerified: true }]);
   });
 
   it("gives existing Agency Owner templates the Stage 7 grant-management permission", async () => {

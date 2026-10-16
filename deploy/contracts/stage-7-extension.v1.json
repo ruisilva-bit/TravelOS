@@ -7,10 +7,10 @@
     "sha256": "d97709506b69d133f13cbd9c74c1f9a790477180cbcd124b7135c26bb0c75633"
   },
   "candidate": {
-    "generation": "gen05",
+    "generation": "gen06",
     "sourceBranch": "phase-1/stage-7",
-    "artifactIdPrefix": "travelos-phase-1-m1-stage-7-gen05-",
-    "successorBaselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN05.json"
+    "artifactIdPrefix": "travelos-phase-1-m1-stage-7-gen06-",
+    "successorBaselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN06.json"
   },
   "artifact": {
     "designation": "DEVELOPMENT_CANDIDATE_UNQUALIFIED",
@@ -19,7 +19,7 @@
     "checksumsPath": "checksums.txt",
     "stage7ExtensionPath": "deployment/stage-7-extension.v1.json",
     "stage7VerifierPath": "deployment/verify-stage7-artifact.mjs",
-    "successorBaselinePath": "provenance/stage7-successor-baseline-gen05.json",
+    "successorBaselinePath": "provenance/stage7-successor-baseline-gen06.json",
     "archiveFormat": "tar.gz",
     "canonicalCiStatusAtBuild": "PENDING_ONE_AUTHORIZED_RUN",
     "currentSymlink": "/opt/travelos/current",
@@ -27,6 +27,41 @@
     "buildOncePromoteSameDigest": true,
     "compileOnCT200": false,
     "baseRuntimeContractUnchanged": true
+  },
+  "runtimeAcceptance": {
+    "sourcePath": "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+    "runnerPath": "operator/stage7-runtime-acceptance.mjs",
+    "executionMode": "DEVELOPMENT_OPERATOR_ONE_SHOT",
+    "operatorOnly": true,
+    "persistentService": false,
+    "listener": false,
+    "publicSignupEndpoint": false,
+    "newExternallyReachablePorts": [],
+    "credentialDirectoryEnv": "CREDENTIALS_DIRECTORY",
+    "requiredCredentialNames": [
+      "portal-api-db",
+      "portal-auth-realm",
+      "stage7-staff-email",
+      "stage7-staff-password",
+      "stage7-staff-totp"
+    ],
+    "runtimeDependencies": [
+      {
+        "appRoot": "apps/portal-api",
+        "packageName": "@travelos/config",
+        "exportName": "."
+      },
+      {
+        "appRoot": "apps/portal-api",
+        "packageName": "@travelos/auth-adapters",
+        "exportName": "./portal"
+      },
+      {
+        "appRoot": "apps/portal-api",
+        "packageName": "@travelos/auth-adapters",
+        "internalModule": "dist/realm.js"
+      }
+    ]
   },
   "database": {
     "host": "127.0.0.1",

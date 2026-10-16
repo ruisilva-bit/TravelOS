@@ -1,0 +1,716 @@
+import assert from "node:assert/strict";
+import { randomBytes, randomUUID } from "node:crypto";
+import { lstat, readFile, realpath } from "node:fs/promises";
+import http from "node:http";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const REQUIRED_CREDENTIALS = Object.freeze({
+  portalDatabasePassword: "portal-api-db",
+  portalRealmKey: "portal-auth-realm",
+  staffEmail: "stage7-staff-email",
+  staffPassword: "stage7-staff-password",
+  staffTotpCode: "stage7-staff-totp",
+});
+const SYSTEMD_REFERENCE_PREFIX = "systemd-credential:";
+const MAX_RESPONSE_BYTES = 1_048_576;
+const DEVELOPMENT_STAFF_COOKIE = "travelos-dev-staff-session";
+const DEVELOPMENT_PORTAL_COOKIE = "travelos-dev-portal-session";
+
+const cleanCredentialName = (reference, expectedName) => {
+  assert.equal(typeof reference, "string");
+  assert.ok(reference.startsWith(SYSTEMD_REFERENCE_PREFIX));
+  assert.equal(reference.slice(SYSTEMD_REFERENCE_PREFIX.length), expectedName);
+  return expectedName;
+};
+
+export const readStage7RuntimeCredentials = async ({
+  manifest,
+  credentialDirectory = process.env.CREDENTIALS_DIRECTORY,
+  readCredential = async (name, directory) => {
+    const filePath = path.join(directory, name);
+    const metadata = await lstat(filePath);
+    if (!metadata.isFile() || metadata.isSymbolicLink()) throw new Error("not-regular");
+    return readFile(filePath, "utf8");
+  },
+}) => {
+  if (manifest?.environment !== "DEVELOPMENT") {
+    throw new Error("Stage 7 authenticated acceptance is restricted to DEVELOPMENT");
+  }
+  if (
+    typeof credentialDirectory !== "string" ||
+    !path.isAbsolute(credentialDirectory) ||
+    path.resolve(credentialDirectory) !== credentialDirectory
+  ) {
+    throw new Error("An absolute CREDENTIALS_DIRECTORY is required");
+  }
+  const references = {
+    portalDatabasePassword: manifest.database?.runtimeRoles?.portalApi?.credentialReference,
+    portalRealmKey: manifest.authentication?.portalRealmCredentialReference,
+    staffEmail: `${SYSTEMD_REFERENCE_PREFIX}${REQUIRED_CREDENTIALS.staffEmail}`,
+    staffPassword: `${SYSTEMD_REFERENCE_PREFIX}${REQUIRED_CREDENTIALS.staffPassword}`,
+    staffTotpCode: `${SYSTEMD_REFERENCE_PREFIX}${REQUIRED_CREDENTIALS.staffTotpCode}`,
+  };
+  const credentials = Object.create(null);
+  for (const [key, expectedName] of Object.entries(REQUIRED_CREDENTIALS)) {
+    let value;
+    try {
+      const name = cleanCredentialName(references[key], expectedName);
+      value = await readCredential(name, credentialDirectory);
+    } catch {
+      for (const secretKey of Object.keys(credentials)) credentials[secretKey] = "";
+      throw new Error("Required operator credentials are unavailable in CREDENTIALS_DIRECTORY");
+    }
+    if (typeof value !== "string" || value.length === 0 || value.includes("\0")) {
+      for (const secretKey of Object.keys(credentials)) credentials[secretKey] = "";
+      throw new Error("Required operator credentials are invalid");
+    }
+    credentials[key] = value.trim();
+    if (credentials[key].length === 0) {
+      for (const secretKey of Object.keys(credentials)) credentials[secretKey] = "";
+      throw new Error("Required operator credentials are invalid");
+    }
+  }
+  return credentials;
+};
+
+const statusIs = (response, expected, label) => {
+  assert.equal(response.status, expected, `${label} returned unexpected status`);
+};
+const objectBody = (response, label) => {
+  assert.ok(
+    response.body !== null && typeof response.body === "object",
+    `${label} body is invalid`,
+  );
+  return response.body;
+};
+const cookieHeaderFrom = (response, name) => {
+  const setCookies = response.headers?.["set-cookie"] ?? response.headers?.getSetCookie?.() ?? [];
+  const rows = Array.isArray(setCookies) ? setCookies : [setCookies];
+  const prefix = `${name}=`;
+  const matching = rows
+    .map((row) => String(row).split(";", 1)[0])
+    .find((row) => row.startsWith(prefix));
+  return matching ?? null;
+};
+const temporaryCookieHeaderFrom = (response) => {
+  const setCookies = response.headers?.["set-cookie"] ?? response.headers?.getSetCookie?.() ?? [];
+  const rows = Array.isArray(setCookies) ? setCookies : [setCookies];
+  return rows
+    .map((row) => String(row).split(";", 1)[0])
+    .filter((row) => row.includes("="))
+    .join("; ");
+};
+const requireCookie = (response, name, label) => {
+  const cookie = cookieHeaderFrom(response, name);
+  assert.ok(cookie !== null && cookie.length > name.length + 1, `${label} did not issue a session`);
+  return cookie;
+};
+const requireStatus = (response, expected, label) => {
+  statusIs(response, expected, label);
+  return response;
+};
+
+const signInStaff = async ({ requestAdmin, credentials }) => {
+  const signIn = await requestAdmin({
+    method: "POST",
+    path: "/api/auth/staff/sign-in/email",
+    body: { email: credentials.staffEmail, password: credentials.staffPassword },
+  });
+  requireStatus(signIn, 200, "Staff sign-in");
+  const signInBody = objectBody(signIn, "Staff sign-in");
+  const directCookie = cookieHeaderFrom(signIn, DEVELOPMENT_STAFF_COOKIE);
+  if (directCookie !== null) return directCookie;
+  assert.equal(signInBody.twoFactorRedirect, true, "Staff sign-in did not complete MFA");
+  const challengeCookie = temporaryCookieHeaderFrom(signIn);
+  assert.ok(challengeCookie.length > 0, "Staff MFA challenge did not issue its temporary cookie");
+  const verified = await requestAdmin({
+    method: "POST",
+    path: "/api/auth/staff/two-factor/verify-totp",
+    body: { code: credentials.staffTotpCode },
+    cookie: challengeCookie,
+  });
+  requireStatus(verified, 200, "Staff MFA verification");
+  return requireCookie(verified, DEVELOPMENT_STAFF_COOKIE, "Staff MFA verification");
+};
+
+const signInPortal = async ({ requestPortal, email, password }) => {
+  const response = await requestPortal({
+    method: "POST",
+    path: "/api/auth/portal/sign-in/email",
+    body: { email, password },
+  });
+  requireStatus(response, 200, "Portal sign-in");
+  return requireCookie(response, DEVELOPMENT_PORTAL_COOKIE, "Portal sign-in");
+};
+
+const tripSliceRequest = ({ agencyId, suffix, sentinel }) => ({
+  agencyId,
+  person: { givenName: "Stage", familyName: "Seven Acceptance", email: null },
+  customer: { displayName: `Stage 7 synthetic customer ${suffix}` },
+  customerPersonRole: "PRIMARY_CONTACT",
+  trip: {
+    title: `Stage 7 synthetic acceptance ${suffix}`,
+    startDate: "2030-06-01",
+    endDate: "2030-06-04",
+    state: "DRAFT",
+  },
+  travellerRole: "PRIMARY_TRAVELLER",
+  flight: {
+    title: "Synthetic flight",
+    description: "Stage 7 acceptance fixture",
+    carrier: "Example Air",
+    flightNumber: "EA700",
+    departureAirport: "LIS",
+    arrivalAirport: "OPO",
+    departure: {
+      localDate: "2030-06-01",
+      localTime: "09:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2030-06-01T08:00:00Z",
+    },
+    arrival: {
+      localDate: "2030-06-01",
+      localTime: "10:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2030-06-01T09:00:00Z",
+    },
+    terminal: null,
+    cabin: "ECONOMY",
+    baggage: "Synthetic baggage",
+    seat: null,
+    customerBookingReference: null,
+  },
+  accommodation: {
+    title: "Synthetic accommodation",
+    description: "Published description before workspace edit",
+    propertyName: "Example Hotel",
+    checkIn: {
+      localDate: "2030-06-01",
+      localTime: "15:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2030-06-01T14:00:00Z",
+    },
+    checkOut: {
+      localDate: "2030-06-04",
+      localTime: "11:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2030-06-04T10:00:00Z",
+    },
+    roomDescription: "Synthetic room",
+    boardType: "BREAKFAST",
+    customerBookingReference: null,
+  },
+  reservation: {
+    supplierName: "Synthetic supplier",
+    supplierReference: `STAGE7-${suffix}`,
+    customerBookingReference: null,
+    state: "CONFIRMED",
+  },
+  supplierCost: {
+    amount: { minorUnits: "12345", currency: "EUR", scale: 2 },
+    internalNote: sentinel,
+  },
+});
+
+const assertPortalSnapshot = (body, expectedTitle, sentinel) => {
+  assert.deepEqual(Object.keys(body).sort(), ["items", "schemaVersion", "trip"]);
+  assert.equal(body.schemaVersion, 1);
+  assert.equal(body.trip.title, expectedTitle);
+  assert.ok(Array.isArray(body.items) && body.items.length === 2);
+  assert.equal(
+    JSON.stringify(body).includes(sentinel),
+    false,
+    "INTERNAL_ONLY sentinel leaked to Portal",
+  );
+  assert.equal(
+    JSON.stringify(body).includes("supplierCost"),
+    false,
+    "Supplier cost field leaked to Portal",
+  );
+  assert.equal(
+    JSON.stringify(body).includes("internalNote"),
+    false,
+    "Internal note field leaked to Portal",
+  );
+};
+
+export const runStage7RuntimeAcceptance = async ({
+  manifest,
+  credentials,
+  requestAdmin,
+  requestPortal,
+  enrollment,
+  makeUuid = randomUUID,
+  makePassword = () => randomBytes(32).toString("base64url"),
+}) => {
+  assert.equal(manifest?.environment, "DEVELOPMENT", "Runtime acceptance is DEVELOPMENT-only");
+  for (const listener of [
+    manifest.runtime?.listeners?.adminApi,
+    manifest.runtime?.listeners?.portalApi,
+  ]) {
+    assert.equal(
+      listener?.host,
+      "127.0.0.1",
+      "Acceptance runner permits loopback API listeners only",
+    );
+    assert.ok(
+      Number.isInteger(listener?.port) && listener.port > 0,
+      "API listener port is invalid",
+    );
+  }
+  assert.equal(typeof requestAdmin, "function");
+  assert.equal(typeof requestPortal, "function");
+  assert.equal(typeof enrollment?.enroll, "function");
+  const probes = [];
+  let staffCookie;
+  let portalCookie;
+  let enrolledPrincipalId;
+  let agencyId;
+  let issuedGrantId;
+  let grantRevoked = false;
+  let portalPassword;
+  let failure;
+
+  try {
+    staffCookie = await signInStaff({
+      requestAdmin: (request) =>
+        requestAdmin({ ...request, cookie: request.cookie ?? staffCookie }),
+      credentials,
+    });
+    probes.push("staff-realm-authenticated-with-recent-mfa");
+
+    const contextResponse = requireStatus(
+      await requestAdmin({
+        method: "GET",
+        path: "/api/staff/session-context",
+        cookie: staffCookie,
+      }),
+      200,
+      "Staff session context",
+    );
+    const context = objectBody(contextResponse, "Staff session context");
+    assert.equal(typeof context.agencyId, "string");
+    assert.equal(typeof context.principalId, "string");
+    assert.equal(typeof context.recentMfaVerifiedAtEpochMs, "number");
+    agencyId = context.agencyId;
+    probes.push("staff-session-scope-confirmed");
+
+    const suffix = makeUuid();
+    const sentinel = `STAGE7_INTERNAL_ONLY_${suffix}`;
+    const tripInput = tripSliceRequest({ agencyId: context.agencyId, suffix, sentinel });
+    const createResponse = requireStatus(
+      await requestAdmin({
+        method: "POST",
+        path: "/api/admin/trips",
+        body: tripInput,
+        cookie: staffCookie,
+      }),
+      201,
+      "Synthetic Trip creation through Admin API",
+    );
+    const created = objectBody(createResponse, "Synthetic Trip creation");
+    const tripId = created.trip?.id;
+    const createdAgencyId = created.trip?.agencyId;
+    const accommodation = created.accommodations?.[0];
+    assert.ok(typeof tripId === "string" && typeof createdAgencyId === "string");
+    assert.equal(createdAgencyId, context.agencyId);
+    assert.ok(
+      typeof accommodation?.id === "string" && typeof accommodation?.lockVersion === "string",
+    );
+    probes.push("synthetic-business-data-created-through-admin-api");
+
+    const email = `stage7-${suffix}@example.test`;
+    portalPassword = makePassword();
+    const enrollmentResult = await enrollment.enroll({
+      email,
+      name: "Stage 7 Runtime Acceptance",
+      password: portalPassword,
+    });
+    enrolledPrincipalId = enrollmentResult.portalPrincipalId;
+    assert.ok(typeof enrolledPrincipalId === "string" && enrolledPrincipalId.length > 0);
+    probes.push("local-operator-portal-enrollment-verified");
+
+    const unauthenticated = await requestPortal({
+      method: "GET",
+      path: `/api/portal/trips/${tripId}`,
+    });
+    requireStatus(unauthenticated, 401, "Unauthenticated Portal Trip read");
+    probes.push("unauthenticated-portal-trip-denied");
+
+    portalCookie = await signInPortal({ requestPortal, email, password: portalPassword });
+    probes.push("portal-realm-authenticated");
+
+    const beforeGrant = await requestPortal({
+      method: "GET",
+      path: `/api/portal/trips/${tripId}`,
+      cookie: portalCookie,
+    });
+    requireStatus(beforeGrant, 404, "Portal Trip read before explicit grant");
+    probes.push("portal-default-deny-before-grant");
+
+    const preview = objectBody(
+      requireStatus(
+        await requestAdmin({
+          method: "GET",
+          path: `/api/admin/trips/${tripId}/publication-preview`,
+          cookie: staffCookie,
+        }),
+        200,
+        "Publication preview",
+      ),
+      "Publication preview",
+    );
+    assert.equal(typeof preview.workspaceRevision, "string");
+    assert.match(preview.projectionHash, /^[0-9a-f]{64}$/u);
+    assert.equal(JSON.stringify(preview.projection).includes(sentinel), false);
+    const publication = objectBody(
+      requireStatus(
+        await requestAdmin({
+          method: "POST",
+          path: `/api/admin/trips/${tripId}/publications`,
+          body: {
+            expectedWorkspaceRevision: preview.workspaceRevision,
+            expectedProjectionHash: preview.projectionHash,
+            idempotencyKey: `stage7-runtime-publish-${suffix}`,
+          },
+          cookie: staffCookie,
+        }),
+        200,
+        "Trip publication through Admin API",
+      ),
+      "Trip publication",
+    );
+    assert.equal(publication.tripId, tripId);
+    assert.equal(publication.isActive, true);
+    probes.push("immutable-publication-created-through-admin-api");
+
+    const grant = objectBody(
+      requireStatus(
+        await requestAdmin({
+          method: "POST",
+          path: `/api/admin/trips/${tripId}/portal-access-grants`,
+          body: {
+            agencyId: createdAgencyId,
+            portalPrincipalId: enrolledPrincipalId,
+            tripId,
+            idempotencyKey: `stage7-runtime-grant-${suffix}`,
+            expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
+            relationshipLabel: "Stage 7 synthetic acceptance",
+          },
+          cookie: staffCookie,
+        }),
+        201,
+        "Portal Trip access grant",
+      ),
+      "Portal Trip access grant",
+    );
+    issuedGrantId = grant.grantId;
+    assert.equal(grant.portalPrincipalId, enrolledPrincipalId);
+    assert.equal(grant.tripId, tripId);
+    probes.push("explicit-trip-access-grant-issued-through-admin-api");
+
+    const authorizedBeforeEdit = objectBody(
+      requireStatus(
+        await requestPortal({
+          method: "GET",
+          path: `/api/portal/trips/${tripId}`,
+          cookie: portalCookie,
+        }),
+        200,
+        "Authorized Portal Trip read",
+      ),
+      "Authorized Portal Trip read",
+    );
+    assertPortalSnapshot(authorizedBeforeEdit, tripInput.trip.title, sentinel);
+    probes.push("authorized-portal-read-uses-allowlisted-snapshot");
+
+    const updateResponse = requireStatus(
+      await requestAdmin({
+        method: "PATCH",
+        path: `/api/admin/itinerary/accommodations/${accommodation.id}`,
+        body: {
+          itemId: accommodation.id,
+          agencyId: createdAgencyId,
+          tripId,
+          expectedLockVersion: accommodation.lockVersion,
+          title: "Synthetic accommodation changed after publication",
+          description: "Unpublished workspace edit sentinel",
+        },
+        cookie: staffCookie,
+      }),
+      200,
+      "Post-publication workspace edit through Admin API",
+    );
+    objectBody(updateResponse, "Post-publication workspace edit");
+    const authorizedAfterEdit = objectBody(
+      requireStatus(
+        await requestPortal({
+          method: "GET",
+          path: `/api/portal/trips/${tripId}`,
+          cookie: portalCookie,
+        }),
+        200,
+        "Portal Trip read after workspace edit",
+      ),
+      "Portal Trip read after workspace edit",
+    );
+    assert.deepEqual(authorizedAfterEdit, authorizedBeforeEdit);
+    assertPortalSnapshot(authorizedAfterEdit, tripInput.trip.title, sentinel);
+    probes.push("portal-snapshot-unchanged-after-workspace-edit");
+
+    const revoke = objectBody(
+      requireStatus(
+        await requestAdmin({
+          method: "POST",
+          path: `/api/admin/portal-access-grants/${issuedGrantId}/revocations`,
+          body: {
+            agencyId,
+            grantId: issuedGrantId,
+            idempotencyKey: `stage7-runtime-revoke-${suffix}`,
+          },
+          cookie: staffCookie,
+        }),
+        200,
+        "Portal Trip access revocation",
+      ),
+      "Portal Trip access revocation",
+    );
+    assert.ok(typeof revoke.revokedAt === "string");
+    grantRevoked = true;
+    const afterRevoke = await requestPortal({
+      method: "GET",
+      path: `/api/portal/trips/${tripId}`,
+      cookie: portalCookie,
+    });
+    requireStatus(afterRevoke, 404, "Portal Trip read after grant revocation");
+    probes.push("grant-revocation-invalidates-existing-portal-session");
+  } catch (error) {
+    failure = error;
+  } finally {
+    if (issuedGrantId !== undefined && !grantRevoked && staffCookie !== undefined) {
+      try {
+        const revokeResponse = await requestAdmin({
+          method: "POST",
+          path: `/api/admin/portal-access-grants/${issuedGrantId}/revocations`,
+          body: {
+            agencyId,
+            grantId: issuedGrantId,
+            idempotencyKey: `stage7-runtime-cleanup-${makeUuid()}`,
+          },
+          cookie: staffCookie,
+        });
+        if (revokeResponse.status >= 200 && revokeResponse.status < 300) grantRevoked = true;
+      } catch {
+        failure ??= new Error("Runtime acceptance could not revoke its temporary grant");
+      }
+    }
+    if (portalCookie !== undefined) {
+      try {
+        const signOut = await requestPortal({
+          method: "POST",
+          path: "/api/auth/portal/sign-out",
+          body: {},
+          cookie: portalCookie,
+        });
+        if (signOut.status < 200 || signOut.status >= 300) {
+          failure ??= new Error("Runtime acceptance could not revoke its Portal session");
+        }
+      } catch {
+        failure ??= new Error("Runtime acceptance could not revoke its Portal session");
+      }
+    }
+    if (staffCookie !== undefined) {
+      try {
+        const signOut = await requestAdmin({
+          method: "POST",
+          path: "/api/auth/staff/sign-out",
+          body: {},
+          cookie: staffCookie,
+        });
+        if (signOut.status < 200 || signOut.status >= 300) {
+          failure ??= new Error("Runtime acceptance could not revoke its Staff session");
+        }
+      } catch {
+        failure ??= new Error("Runtime acceptance could not revoke its Staff session");
+      }
+    }
+    if (credentials && typeof credentials === "object") {
+      for (const key of Object.keys(credentials)) credentials[key] = "";
+    }
+  }
+  if (failure !== undefined)
+    throw new Error("Stage 7 runtime acceptance failed; sensitive values were not retained");
+  assert.equal(grantRevoked, true, "Runtime acceptance grant was not revoked");
+  return { result: "PASS", probes, stage8Actions: 0 };
+};
+
+const requestLoopback =
+  (listener, expectedHost, canonicalOrigin) =>
+  ({ method, path: requestPath, body, cookie }) =>
+    new Promise((resolve, reject) => {
+      if (!requestPath.startsWith("/") || requestPath.startsWith("//")) {
+        reject(new Error("Invalid local acceptance request path"));
+        return;
+      }
+      const payload = body === undefined ? undefined : Buffer.from(JSON.stringify(body));
+      const headers = {
+        host: expectedHost,
+        accept: "application/json",
+        ...(payload === undefined
+          ? {}
+          : { "content-type": "application/json", "content-length": payload.length }),
+        ...(cookie === undefined ? {} : { cookie }),
+        ...(method === "GET" ? {} : { origin: canonicalOrigin }),
+      };
+      const request = http.request(
+        {
+          hostname: listener.host,
+          port: listener.port,
+          method,
+          path: requestPath,
+          headers,
+          timeout: 10_000,
+        },
+        (response) => {
+          const chunks = [];
+          let bytes = 0;
+          response.on("data", (chunk) => {
+            bytes += chunk.length;
+            if (bytes > MAX_RESPONSE_BYTES)
+              request.destroy(new Error("Acceptance response exceeded its limit"));
+            else chunks.push(chunk);
+          });
+          response.on("end", () => {
+            const raw = Buffer.concat(chunks).toString("utf8");
+            let parsed;
+            if (raw.length > 0) {
+              try {
+                parsed = JSON.parse(raw);
+              } catch {
+                reject(new Error("Acceptance API returned invalid JSON"));
+                return;
+              }
+            }
+            resolve({ status: response.statusCode ?? 0, headers: response.headers, body: parsed });
+          });
+        },
+      );
+      request.on("timeout", () => request.destroy(new Error("Acceptance API request timed out")));
+      request.on("error", () => reject(new Error("Acceptance API request failed")));
+      if (payload !== undefined) request.write(payload);
+      request.end();
+    });
+
+const resolveRuntimePackageRoot = (appRoot, packageName) =>
+  realpath(path.join(appRoot, "node_modules", ...packageName.split("/")));
+
+export const resolveRuntimePackageImport = async ({ appRoot, packageName, exportName = "." }) => {
+  const packageRoot = await resolveRuntimePackageRoot(appRoot, packageName);
+  const packageMetadata = JSON.parse(
+    await readFile(path.join(packageRoot, "package.json"), "utf8"),
+  );
+  const exportPath = packageMetadata.exports?.[exportName]?.import;
+  assert.ok(typeof exportPath === "string" && exportPath.startsWith("./"));
+  const entryPath = await realpath(path.join(packageRoot, exportPath));
+  assert.ok(entryPath.startsWith(`${packageRoot}${path.sep}`));
+  return pathToFileURL(entryPath).href;
+};
+
+const runCli = async () => {
+  const argumentsList = process.argv.slice(2);
+  assert.equal(
+    argumentsList.length,
+    1,
+    "Usage: node stage7-runtime-acceptance.mjs --manifest=/absolute/path",
+  );
+  assert.ok(argumentsList[0].startsWith("--manifest="), "Only --manifest is accepted");
+  const manifestPath = argumentsList[0].slice("--manifest=".length);
+  assert.ok(path.isAbsolute(manifestPath), "Manifest path must be absolute");
+  const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+  const artifactRoot = path.resolve(scriptDirectory, "..");
+  const portalPackageRoot = path.join(artifactRoot, "apps/portal-api");
+  const config = await import(
+    await resolveRuntimePackageImport({
+      appRoot: portalPackageRoot,
+      packageName: "@travelos/config",
+    })
+  );
+  const manifest = await config.loadDevelopmentInstanceManifest(manifestPath);
+  assert.equal(
+    manifest.environment,
+    "DEVELOPMENT",
+    "Acceptance runner is not enabled outside DEVELOPMENT",
+  );
+  const credentials = await readStage7RuntimeCredentials({
+    manifest,
+    readCredential: (name) =>
+      config.readSystemdCredentialText(`${SYSTEMD_REFERENCE_PREFIX}${name}`),
+  });
+  let portalDatabase;
+  try {
+    const portalAuth = await import(
+      await resolveRuntimePackageImport({
+        appRoot: portalPackageRoot,
+        packageName: "@travelos/auth-adapters",
+        exportName: "./portal",
+      })
+    );
+    const adapterPackageRoot = await resolveRuntimePackageRoot(
+      portalPackageRoot,
+      "@travelos/auth-adapters",
+    );
+    const adapterRealmPath = await realpath(path.join(adapterPackageRoot, "dist/realm.js"));
+    assert.ok(adapterRealmPath.startsWith(`${adapterPackageRoot}${path.sep}`));
+    const adapterRealm = await import(pathToFileURL(adapterRealmPath).href);
+    portalDatabase = portalAuth.createAuthRealmPostgresDatabase({
+      host: manifest.database.host,
+      port: manifest.database.port,
+      database: manifest.database.name,
+      user: manifest.database.runtimeRoles.portalApi.roleName,
+      password: credentials.portalDatabasePassword,
+      tls: { mode: manifest.database.tlsPolicy },
+      applicationName: "travelos-stage7-acceptance",
+      maxConnections: 2,
+    });
+    const enrollment = adapterRealm.createLocalOperatorPortalEnrollmentService({
+      database: portalDatabase.database,
+      canonicalOrigin: `http://${manifest.hosts.portal}`,
+      realmKeyMaterial: credentials.portalRealmKey,
+      environment: manifest.environment,
+    });
+    const requestAdmin = requestLoopback(
+      manifest.runtime.listeners.adminApi,
+      manifest.hosts.admin,
+      `http://${manifest.hosts.admin}`,
+    );
+    const requestPortal = requestLoopback(
+      manifest.runtime.listeners.portalApi,
+      manifest.hosts.portal,
+      `http://${manifest.hosts.portal}`,
+    );
+    const result = await runStage7RuntimeAcceptance({
+      manifest,
+      credentials,
+      requestAdmin,
+      requestPortal,
+      enrollment,
+    });
+    process.stdout.write(`${JSON.stringify(result)}\n`);
+  } finally {
+    for (const key of Object.keys(credentials)) credentials[key] = "";
+    if (portalDatabase !== undefined) await portalDatabase.destroy();
+  }
+};
+
+const directEntry =
+  process.argv[1] !== undefined &&
+  pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+if (directEntry) {
+  runCli().catch(() => {
+    process.stderr.write(
+      "Stage 7 runtime acceptance failed; sensitive values were not retained.\n",
+    );
+    process.exitCode = 1;
+  });
+}

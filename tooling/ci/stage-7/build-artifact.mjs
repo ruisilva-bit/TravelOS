@@ -66,6 +66,7 @@ export const createStage7ReleaseMetadata = ({
   deploymentContractSha256,
   stage7DeploymentContractSha256,
   stage7VerifierSha256,
+  runtimeAcceptanceSha256,
 }) => {
   assertGeneration(generation);
   assert.equal(branch, "phase-1/stage-7", "Stage 7 source branch mismatch");
@@ -80,6 +81,7 @@ export const createStage7ReleaseMetadata = ({
     deploymentContractSha256,
     stage7DeploymentContractSha256,
     stage7VerifierSha256,
+    runtimeAcceptanceSha256,
   })) {
     assert.match(value ?? "", /^[a-f0-9]{64}$/u, `Invalid ${name}`);
   }
@@ -143,6 +145,17 @@ export const createStage7ReleaseMetadata = ({
     stage7Verifier: {
       path: "deployment/verify-stage7-artifact.mjs",
       sha256: stage7VerifierSha256,
+    },
+    runtimeAcceptance: {
+      sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+      runnerPath: "operator/stage7-runtime-acceptance.mjs",
+      sha256: runtimeAcceptanceSha256,
+      executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
+      operatorOnly: true,
+      persistentService: false,
+      listener: false,
+      publicSignupEndpoint: false,
+      credentialDirectoryEnv: "CREDENTIALS_DIRECTORY",
     },
   };
 };
@@ -321,6 +334,9 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
   const verifierBytes = await readFile(path.join(root, "tooling/ci/stage-7/verify-artifact.mjs"));
   const migrationBytes = await readFile(path.join(root, "migrations", migrationName));
   const migrationChecksumBytes = await readFile(path.join(root, "migrations/checksums.json"));
+  const runtimeAcceptanceBytes = await readFile(
+    path.join(root, "tooling/ci/stage-7/runtime-acceptance-runner.mjs"),
+  );
   const nodeBinary = process.execPath;
   const nodeBinaryDigest = await hashPath(nodeBinary);
 
@@ -352,6 +368,7 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
   await mkdir(path.join(stagingRoot, "deployment"), { recursive: true });
   await mkdir(path.join(stagingRoot, "instance-manifest"), { recursive: true });
   await mkdir(path.join(stagingRoot, "provenance"), { recursive: true });
+  await mkdir(path.join(stagingRoot, "operator"), { recursive: true });
   await mkdir(path.join(stagingRoot, "runtime/node/bin"), { recursive: true });
   await copyFile(
     path.join(root, "tooling/deployment/run-stage6-migrations.mjs"),
@@ -368,6 +385,10 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
   await copyFile(
     path.join(root, "tooling/ci/stage-7/verify-artifact.mjs"),
     path.join(stagingRoot, "deployment/verify-stage7-artifact.mjs"),
+  );
+  await copyFile(
+    path.join(root, "tooling/ci/stage-7/runtime-acceptance-runner.mjs"),
+    path.join(stagingRoot, "operator/stage7-runtime-acceptance.mjs"),
   );
   await copyFile(
     path.join(root, "deploy/manifests/development.example.json"),
@@ -398,6 +419,7 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
     deploymentContractSha256: sha256(baseContractBytes),
     stage7DeploymentContractSha256: sha256(extensionBytes),
     stage7VerifierSha256: sha256(verifierBytes),
+    runtimeAcceptanceSha256: sha256(runtimeAcceptanceBytes),
   });
   assert.deepEqual(release.toolchain, toolchain);
   await writeFile(path.join(stagingRoot, "release.json"), safeJsonBytes(release), {

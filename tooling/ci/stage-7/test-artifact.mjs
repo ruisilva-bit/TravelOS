@@ -68,7 +68,22 @@ try {
   assert.match(cli.stderr, /release\.json/u);
 
   const sourceCommit = "a".repeat(40);
-  const baselineBytes = Buffer.from("synthetic Stage 7 baseline\n");
+  const runnerBytes = await readFile(
+    path.join(projectRoot, "tooling/ci/stage-7/runtime-acceptance-runner.mjs"),
+  );
+  const runnerSha256 = createHash("sha256").update(runnerBytes).digest("hex");
+  const baselineBytes = Buffer.from(
+    `${JSON.stringify({
+      schemaVersion: 1,
+      sourceFiles: [
+        {
+          path: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+          bytes: runnerBytes.length,
+          sha256: runnerSha256,
+        },
+      ],
+    })}\n`,
+  );
   const baselineSha256 = createHash("sha256").update(baselineBytes).digest("hex");
   const lockfileBytes = Buffer.from("lockfileVersion: '9.0'\n");
   const lockfileSha256 = createHash("sha256").update(lockfileBytes).digest("hex");
@@ -158,6 +173,12 @@ try {
   await writeArtifactFile("deployment/deployment-contract.v1.json", baseContractBytes);
   await writeArtifactFile("deployment/stage-7-extension.v1.json", extensionBytes);
   await writeArtifactFile("deployment/verify-stage7-artifact.mjs", verifierBytes);
+  await assert.rejects(
+    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation }),
+    /operator\/stage7-runtime-acceptance\.mjs/u,
+    "A candidate missing its declared runtime acceptance runner must fail preflight",
+  );
+  await writeArtifactFile("operator/stage7-runtime-acceptance.mjs", runnerBytes);
   const migrationBytes = await readFile(
     path.join(projectRoot, "migrations/0012_stage7_portal_trip_access.cjs"),
   );
@@ -196,6 +217,38 @@ try {
   ]) {
     await writeArtifactFile(relativePath, Buffer.from(content));
   }
+  for (const [relativePath, content] of [
+    [
+      "apps/portal-api/node_modules/@travelos/config/package.json",
+      JSON.stringify({
+        name: "@travelos/config",
+        type: "module",
+        exports: { ".": { import: "./dist/index.js" } },
+      }),
+    ],
+    [
+      "apps/portal-api/node_modules/@travelos/config/dist/index.js",
+      "export const loadDevelopmentInstanceManifest = () => {};\nexport const readSystemdCredentialText = () => {};\n",
+    ],
+    [
+      "apps/portal-api/node_modules/@travelos/auth-adapters/package.json",
+      JSON.stringify({
+        name: "@travelos/auth-adapters",
+        type: "module",
+        exports: { "./portal": { import: "./dist/portal.js" } },
+      }),
+    ],
+    [
+      "apps/portal-api/node_modules/@travelos/auth-adapters/dist/portal.js",
+      "export const createAuthRealmPostgresDatabase = () => ({});\n",
+    ],
+    [
+      "apps/portal-api/node_modules/@travelos/auth-adapters/dist/realm.js",
+      "export const createLocalOperatorPortalEnrollmentService = () => ({});\n",
+    ],
+  ]) {
+    await writeArtifactFile(relativePath, Buffer.from(content));
+  }
   await chmod(path.join(artifactRoot, "runtime/node/bin/node"), 0o755);
   const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
   release = artifactBuilder.createStage7ReleaseMetadata({
@@ -211,6 +264,7 @@ try {
     deploymentContractSha256: digest(baseContractBytes),
     stage7DeploymentContractSha256: digest(extensionBytes),
     stage7VerifierSha256: digest(verifierBytes),
+    runtimeAcceptanceSha256: runnerSha256,
   });
   await writeFile(releasePath, `${JSON.stringify(release)}\n`);
   await assert.rejects(

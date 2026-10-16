@@ -32,6 +32,7 @@ const release = builder.createStage7ReleaseMetadata({
   deploymentContractSha256: hash,
   stage7DeploymentContractSha256: hash,
   stage7VerifierSha256: hash,
+  runtimeAcceptanceSha256: hash,
 });
 assert.deepEqual(release, {
   schemaVersion: 1,
@@ -94,6 +95,17 @@ assert.deepEqual(release, {
     path: "deployment/verify-stage7-artifact.mjs",
     sha256: hash,
   },
+  runtimeAcceptance: {
+    sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+    runnerPath: "operator/stage7-runtime-acceptance.mjs",
+    sha256: hash,
+    executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
+    operatorOnly: true,
+    persistentService: false,
+    listener: false,
+    publicSignupEndpoint: false,
+    credentialDirectoryEnv: "CREDENTIALS_DIRECTORY",
+  },
 });
 assert.throws(
   () =>
@@ -110,6 +122,7 @@ assert.throws(
       deploymentContractSha256: hash,
       stage7DeploymentContractSha256: hash,
       stage7VerifierSha256: hash,
+      runtimeAcceptanceSha256: hash,
     }),
   /source branch mismatch/u,
 );
@@ -128,6 +141,7 @@ assert.throws(
       deploymentContractSha256: hash,
       stage7DeploymentContractSha256: hash,
       stage7VerifierSha256: hash,
+      runtimeAcceptanceSha256: hash,
     }),
   /Invalid Stage 7 generation/u,
 );

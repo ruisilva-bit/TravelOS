@@ -34,11 +34,9 @@ export interface AuthRealmConfiguration {
   readonly canonicalOrigin: string;
   readonly realmKeyMaterial: string;
   readonly environment: RealmEnvironment;
-  /** Development-only, local-operator use. Never bind this configuration to HTTP. */
-  readonly allowOperatorEnrollment?: boolean;
 }
 
-export type PortalAuthRealmConfiguration = Omit<AuthRealmConfiguration, "allowOperatorEnrollment">;
+export type PortalAuthRealmConfiguration = AuthRealmConfiguration;
 
 export interface PortalAuthRealm extends AuthRealm {
   readonly kind: "PORTAL";
@@ -136,9 +134,17 @@ const portalSessionContextFor = async (
   return row ?? null;
 };
 
+type InternalRealmConfiguration = AuthRealmConfiguration & {
+  readonly allowOperatorEnrollment?: boolean;
+  readonly transactionManagedExternally?: boolean;
+};
+
+type VerificationTokenConsumer = (email: string, token: string) => void;
+
 const createRealm = (
   kind: AuthenticationRealm,
-  configuration: AuthRealmConfiguration,
+  configuration: InternalRealmConfiguration,
+  verificationTokenConsumer?: VerificationTokenConsumer,
 ): AuthRealm => {
   assertRealmConfiguration(configuration);
   const basePath = kind === "STAFF" ? STAFF_AUTH_BASE_PATH : PORTAL_AUTH_BASE_PATH;
@@ -151,7 +157,10 @@ const createRealm = (
     appName: kind === "STAFF" ? "TravelOS Staff" : "TravelOS Portal",
     baseURL: configuration.canonicalOrigin,
     basePath,
-    database: kyselyAdapter(realmDatabase, { type: "postgres", transaction: true }),
+    database: kyselyAdapter(realmDatabase, {
+      type: "postgres",
+      transaction: configuration.transactionManagedExternally !== true,
+    }),
     secret: configuration.realmKeyMaterial,
     trustedOrigins: [configuration.canonicalOrigin],
     emailAndPassword: {
@@ -160,6 +169,16 @@ const createRealm = (
       requireEmailVerification: true,
       ...(configuration.allowOperatorEnrollment === true ? { autoSignIn: false } : {}),
     },
+    ...(verificationTokenConsumer === undefined
+      ? {}
+      : {
+          emailVerification: {
+            sendOnSignUp: true,
+            sendVerificationEmail: async ({ user, token }) => {
+              verificationTokenConsumer(user.email, token);
+            },
+          },
+        }),
     user: { modelName: `${tablePrefix}_user` },
     session: {
       modelName: `${tablePrefix}_session`,
@@ -308,12 +327,121 @@ const createRealm = (
 };
 
 export const createStaffAuthRealm = (configuration: AuthRealmConfiguration): AuthRealm =>
-  createRealm("STAFF", configuration);
+  createRealm("STAFF", { ...configuration, allowOperatorEnrollment: false });
 
 export const createPortalAuthRealm = (
   configuration: PortalAuthRealmConfiguration,
 ): PortalAuthRealm =>
   createRealm("PORTAL", { ...configuration, allowOperatorEnrollment: false }) as PortalAuthRealm;
+
+const assertDevelopmentOperatorEnrollment = (configuration: AuthRealmConfiguration): void => {
+  if (configuration.environment !== "DEVELOPMENT") {
+    throw new Error("Local operator enrollment is available only in DEVELOPMENT");
+  }
+};
+
+export interface LocalOperatorPortalEnrollmentInput {
+  readonly email: string;
+  readonly name: string;
+  readonly password: string;
+}
+
+export interface LocalOperatorPortalEnrollmentResult {
+  readonly portalPrincipalId: string;
+}
+
+export interface LocalOperatorPortalEnrollmentService {
+  enroll(input: LocalOperatorPortalEnrollmentInput): Promise<LocalOperatorPortalEnrollmentResult>;
+}
+
+/**
+ * This service is only for local DEVELOPMENT acceptance tooling. It owns the temporary
+ * Better Auth handler so its enrollment capability cannot be mounted on an HTTP listener.
+ */
+export const createLocalOperatorPortalEnrollmentService = (
+  configuration: AuthRealmConfiguration,
+): LocalOperatorPortalEnrollmentService => {
+  assertDevelopmentOperatorEnrollment(configuration);
+  return {
+    async enroll(input) {
+      const email = input.email.trim().toLowerCase();
+      if (!email.endsWith("@example.test")) {
+        throw new Error("Local Portal enrollment requires a synthetic @example.test address");
+      }
+      return configuration.database.transaction().execute(async (database) => {
+        const verificationToken: { value: string | undefined } = { value: undefined };
+        const realm = createRealm(
+          "PORTAL",
+          {
+            ...configuration,
+            database,
+            allowOperatorEnrollment: true,
+            transactionManagedExternally: true,
+          },
+          (_email, token) => {
+            verificationToken.value = token;
+          },
+        );
+        try {
+          const signup = await realm.handle(
+            new Request(
+              new URL(`${PORTAL_AUTH_BASE_PATH}/sign-up/email`, configuration.canonicalOrigin),
+              {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  origin: configuration.canonicalOrigin,
+                },
+                body: JSON.stringify({ ...input, email }),
+              },
+            ),
+          );
+          if (!signup.ok) throw new Error("Local Portal identity enrollment failed");
+
+          const signupBody: unknown = await signup.json();
+          const signupRecord =
+            signupBody !== null && typeof signupBody === "object"
+              ? (signupBody as Record<string, unknown>)
+              : null;
+          const user =
+            signupRecord?.user !== null && typeof signupRecord?.user === "object"
+              ? (signupRecord.user as Record<string, unknown>)
+              : null;
+          const portalPrincipalId = typeof user?.id === "string" ? user.id : null;
+          const token = verificationToken.value;
+          verificationToken.value = undefined;
+          if (portalPrincipalId === null || token === undefined) {
+            throw new Error(
+              "Local Portal identity enrollment returned incomplete Better Auth evidence",
+            );
+          }
+
+          const verified = await realm.handle(
+            new Request(
+              new URL(
+                `${PORTAL_AUTH_BASE_PATH}/verify-email?token=${encodeURIComponent(token)}`,
+                configuration.canonicalOrigin,
+              ),
+              { method: "GET", headers: { origin: configuration.canonicalOrigin } },
+            ),
+          );
+          if (!verified.ok) throw new Error("Local Portal identity verification failed");
+          const verificationBody: unknown = await verified.json();
+          const verificationRecord =
+            verificationBody !== null && typeof verificationBody === "object"
+              ? (verificationBody as Record<string, unknown>)
+              : null;
+          if (verificationRecord?.status !== true) {
+            throw new Error("Local Portal identity verification did not complete");
+          }
+          return { portalPrincipalId };
+        } finally {
+          verificationToken.value = undefined;
+        }
+      });
+    },
+  };
+};
 
 /**
  * This factory is intentionally for the local operator command only. It must never be passed to
@@ -321,4 +449,7 @@ export const createPortalAuthRealm = (
  */
 export const createLocalOperatorStaffEnrollmentRealm = (
   configuration: AuthRealmConfiguration,
-): AuthRealm => createRealm("STAFF", { ...configuration, allowOperatorEnrollment: true });
+): AuthRealm => {
+  assertDevelopmentOperatorEnrollment(configuration);
+  return createRealm("STAFF", { ...configuration, allowOperatorEnrollment: true });
+};

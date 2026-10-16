@@ -50,6 +50,37 @@ const expectedExtensionFor = (generation) => ({
     compileOnCT200: false,
     baseRuntimeContractUnchanged: true,
   },
+  runtimeAcceptance: {
+    sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+    runnerPath: "operator/stage7-runtime-acceptance.mjs",
+    executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
+    operatorOnly: true,
+    persistentService: false,
+    listener: false,
+    publicSignupEndpoint: false,
+    newExternallyReachablePorts: [],
+    credentialDirectoryEnv: "CREDENTIALS_DIRECTORY",
+    requiredCredentialNames: [
+      "portal-api-db",
+      "portal-auth-realm",
+      "stage7-staff-email",
+      "stage7-staff-password",
+      "stage7-staff-totp",
+    ],
+    runtimeDependencies: [
+      { appRoot: "apps/portal-api", packageName: "@travelos/config", exportName: "." },
+      {
+        appRoot: "apps/portal-api",
+        packageName: "@travelos/auth-adapters",
+        exportName: "./portal",
+      },
+      {
+        appRoot: "apps/portal-api",
+        packageName: "@travelos/auth-adapters",
+        internalModule: "dist/realm.js",
+      },
+    ],
+  },
   database: {
     host: "127.0.0.1",
     port: 5432,
@@ -196,6 +227,7 @@ export const verifyStage7DeploymentContract = async ({
 } = {}) => {
   const contractBytes = await assertRegularFile(workspace, STAGE7_EXTENSION_PATH);
   const extension = JSON.parse(contractBytes.toString("utf8"));
+  await assertRegularFile(workspace, extension.runtimeAcceptance.sourcePath);
   const source = validateStage7DeploymentContractSource({
     extension,
     baseContractBytes: await assertRegularFile(workspace, BASE_CONTRACT_PATH),

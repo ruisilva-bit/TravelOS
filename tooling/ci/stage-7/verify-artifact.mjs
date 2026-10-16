@@ -5,7 +5,7 @@ import { createReadStream } from "node:fs";
 import { lstat, mkdir, mkdtemp, readFile, readlink, readdir, realpath, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL, URL } from "node:url";
 import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -197,6 +197,42 @@ const verifyPackagedContract = async ({ root, release, generation }) => {
   assert.equal(extension?.artifact?.archiveFormat, "tar.gz");
   assert.equal(extension?.artifact?.compileOnCT200, false);
   assert.equal(extension?.artifact?.baseRuntimeContractUnchanged, true);
+  const acceptance = extension?.runtimeAcceptance;
+  assert.deepEqual(
+    acceptance,
+    {
+      sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+      runnerPath: "operator/stage7-runtime-acceptance.mjs",
+      executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
+      operatorOnly: true,
+      persistentService: false,
+      listener: false,
+      publicSignupEndpoint: false,
+      newExternallyReachablePorts: [],
+      credentialDirectoryEnv: "CREDENTIALS_DIRECTORY",
+      requiredCredentialNames: [
+        "portal-api-db",
+        "portal-auth-realm",
+        "stage7-staff-email",
+        "stage7-staff-password",
+        "stage7-staff-totp",
+      ],
+      runtimeDependencies: [
+        { appRoot: "apps/portal-api", packageName: "@travelos/config", exportName: "." },
+        {
+          appRoot: "apps/portal-api",
+          packageName: "@travelos/auth-adapters",
+          exportName: "./portal",
+        },
+        {
+          appRoot: "apps/portal-api",
+          packageName: "@travelos/auth-adapters",
+          internalModule: "dist/realm.js",
+        },
+      ],
+    },
+    "Stage 7 runtime acceptance contract differs from the operator-only one-shot contract",
+  );
   assert.equal(extension?.database?.host, "127.0.0.1");
   assert.equal(extension?.database?.tlsPolicy, "DISABLED_LOOPBACK_ONLY");
   assert.equal(extension?.database?.betterAuthRuntimeMigrations, false);
@@ -204,6 +240,155 @@ const verifyPackagedContract = async ({ root, release, generation }) => {
   assert.equal(base?.artifact?.currentSymlink, extension?.artifact?.currentSymlink);
   assert.equal(base?.artifact?.releaseRoot, extension?.artifact?.releaseRoot);
   return { base, extension };
+};
+
+const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension }) => {
+  const acceptance = extension.runtimeAcceptance;
+  const runnerBytes = await readRegularArtifactFile(root, acceptance.runnerPath);
+  const runnerSha256 = sha256(runnerBytes);
+  assert.deepEqual(
+    release.runtimeAcceptance,
+    {
+      sourcePath: acceptance.sourcePath,
+      runnerPath: acceptance.runnerPath,
+      sha256: runnerSha256,
+      executionMode: acceptance.executionMode,
+      operatorOnly: acceptance.operatorOnly,
+      persistentService: acceptance.persistentService,
+      listener: acceptance.listener,
+      publicSignupEndpoint: acceptance.publicSignupEndpoint,
+      credentialDirectoryEnv: acceptance.credentialDirectoryEnv,
+    },
+    "Packaged runtime acceptance metadata differs from its declared contract",
+  );
+  const runnerText = runnerBytes.toString("utf8");
+  assert.ok(
+    runnerText.includes("CREDENTIALS_DIRECTORY"),
+    "Runner does not consume systemd credentials",
+  );
+  assert.doesNotMatch(
+    runnerText,
+    /\.(?:listen|createServer)\s*\(/u,
+    "Runner must not create a listener",
+  );
+  assert.doesNotMatch(
+    runnerText,
+    /node:child_process|\bspawn\s*\(/u,
+    "Runner must not launch a persistent child process",
+  );
+  assert.doesNotMatch(
+    runnerText,
+    /\/api\/auth\/portal\/sign-up/u,
+    "Runner must not add public Portal signup",
+  );
+  assert.match(
+    runnerText,
+    /--manifest=/u,
+    "Runner must expose only its operator manifest argument",
+  );
+  assert.match(
+    runnerText,
+    /listener\?\.host,\s*"127\.0\.0\.1"/u,
+    "Runner must target loopback listeners only",
+  );
+
+  const payload = JSON.parse(
+    (await readRegularArtifactFile(root, "payload-manifest.json")).toString("utf8"),
+  );
+  const row = payload.files.find((entry) => entry.path === acceptance.runnerPath);
+  assert.ok(row !== undefined, "Acceptance runner is missing from artifact inventory");
+  assert.equal(row.type, "file");
+  assert.equal(row.bytes, runnerBytes.length);
+  assert.equal(row.sha256, runnerSha256);
+  const checksumLine = `${runnerSha256}  ${acceptance.runnerPath}`;
+  const checksums = (await readRegularArtifactFile(root, "checksums.txt"))
+    .toString("utf8")
+    .split("\n");
+  assert.ok(
+    checksums.includes(checksumLine),
+    "Acceptance runner is missing from artifact checksums",
+  );
+  for (const unit of payload.files.filter((entry) =>
+    /\.(?:service|socket|timer)$/u.test(entry.path),
+  )) {
+    if (unit.type !== "file") continue;
+    const unitText = (await readRegularArtifactFile(root, unit.path)).toString("utf8");
+    assert.equal(
+      unitText.includes(acceptance.runnerPath),
+      false,
+      "Acceptance runner must not be configured as a persistent systemd unit",
+    );
+  }
+
+  const baseline = JSON.parse(
+    (
+      await readRegularArtifactFile(
+        root,
+        `provenance/stage7-successor-baseline-${release.source.successorBaselineGeneration}.json`,
+      )
+    ).toString("utf8"),
+  );
+  const sourceRow = baseline.sourceFiles.find((entry) => entry.path === acceptance.sourcePath);
+  assert.ok(
+    sourceRow !== undefined,
+    "Acceptance runner source is missing from successor provenance",
+  );
+  assert.equal(
+    sourceRow.sha256,
+    runnerSha256,
+    "Packaged runner differs from its provenanced source",
+  );
+
+  const runnerModule = await import(pathToFileURL(path.join(root, acceptance.runnerPath)).href);
+  for (const dependency of acceptance.runtimeDependencies) {
+    const appRoot = path.join(root, dependency.appRoot);
+    if (dependency.exportName !== undefined) {
+      const moduleUrl = await runnerModule.resolveRuntimePackageImport({
+        appRoot,
+        packageName: dependency.packageName,
+        exportName: dependency.exportName,
+      });
+      const module = await import(moduleUrl);
+      if (dependency.packageName === "@travelos/config") {
+        assert.equal(typeof module.loadDevelopmentInstanceManifest, "function");
+        assert.equal(typeof module.readSystemdCredentialText, "function");
+      } else {
+        assert.equal(typeof module.createAuthRealmPostgresDatabase, "function");
+        const realmModule = await import(new URL("./realm.js", moduleUrl));
+        assert.equal(typeof realmModule.createLocalOperatorPortalEnrollmentService, "function");
+      }
+    } else {
+      const packageRoot = await realpath(
+        path.join(appRoot, "node_modules", ...dependency.packageName.split("/")),
+      );
+      const modulePath = await realpath(path.join(packageRoot, dependency.internalModule));
+      assert.ok(
+        isContained(packageRoot, modulePath),
+        "Runtime dependency escapes its package root",
+      );
+      const module = await import(pathToFileURL(modulePath).href);
+      assert.equal(typeof module.createLocalOperatorPortalEnrollmentService, "function");
+    }
+  }
+};
+
+const verifyDeclaredRuntimeAcceptanceRunner = async (root) => {
+  const contractPath = path.join(root, "deployment/stage-7-extension.v1.json");
+  let metadata;
+  try {
+    metadata = await lstat(contractPath);
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+  assert.ok(
+    metadata.isFile() && !metadata.isSymbolicLink(),
+    "Packaged Stage 7 extension must be a regular file",
+  );
+  const extension = JSON.parse((await readFile(contractPath)).toString("utf8"));
+  if (extension.runtimeAcceptance?.runnerPath !== undefined) {
+    await readRegularArtifactFile(root, extension.runtimeAcceptance.runnerPath);
+  }
 };
 
 const assertExactKeys = (value, expected, label) =>
@@ -231,6 +416,7 @@ const verifyReleaseMetadataAndLayout = async ({ root, release, generation, contr
       "deploymentContract",
       "stage7DeploymentContract",
       "stage7Verifier",
+      "runtimeAcceptance",
     ],
     "Stage 7 release metadata",
   );
@@ -331,6 +517,7 @@ const verifyReleaseMetadataAndLayout = async ({ root, release, generation, contr
     `${base.artifact.workerPath}/package.json`,
     `${base.artifact.workerPath}/dist/main.js`,
     `${base.artifact.migratorPath}/package.json`,
+    extension.runtimeAcceptance.runnerPath,
     release.database.runnerEntrypoint,
     release.database.canonicalRunner,
     release.database.deploymentEntrypoint,
@@ -491,6 +678,7 @@ const verifyReleaseMetadataAndLayout = async ({ root, release, generation, contr
     `v${release.runtime.node.version}`,
     "Bundled Node runtime version mismatch",
   );
+  await verifyRuntimeAcceptanceArtifact({ root, release, extension });
 };
 
 const verifyPayloadChecksums = async (root, payloadRows) => {
@@ -663,6 +851,7 @@ export const verifyStage7Artifact = async ({
     "Artifact root must be a directory",
   );
   const payloadRows = await inventoryArtifact(root);
+  await verifyDeclaredRuntimeAcceptanceRunner(root);
 
   const releasePath = path.join(root, "release.json");
   const releaseMetadata = await lstat(releasePath);

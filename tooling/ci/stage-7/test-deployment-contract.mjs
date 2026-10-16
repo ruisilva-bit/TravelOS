@@ -5,7 +5,7 @@ import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
 import { validateStage7DeploymentContractSource } from "./verify-deployment-contract.mjs";
 
 const cloneJson = (value) => JSON.parse(JSON.stringify(value));
-const generation = "gen05";
+const generation = "gen06";
 assert.equal(STAGE7_DEFAULT_GENERATION, generation);
 const readJson = async (relativePath) =>
   JSON.parse(await readFile(new URL(`../../../${relativePath}`, import.meta.url), "utf8"));
@@ -51,6 +51,37 @@ assert.equal(
 );
 assert.equal(extension.artifact.archiveFormat, "tar.gz");
 assert.equal(extension.artifact.canonicalCiStatusAtBuild, "PENDING_ONE_AUTHORIZED_RUN");
+assert.deepEqual(extension.runtimeAcceptance, {
+  sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+  runnerPath: "operator/stage7-runtime-acceptance.mjs",
+  executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
+  operatorOnly: true,
+  persistentService: false,
+  listener: false,
+  publicSignupEndpoint: false,
+  newExternallyReachablePorts: [],
+  credentialDirectoryEnv: "CREDENTIALS_DIRECTORY",
+  requiredCredentialNames: [
+    "portal-api-db",
+    "portal-auth-realm",
+    "stage7-staff-email",
+    "stage7-staff-password",
+    "stage7-staff-totp",
+  ],
+  runtimeDependencies: [
+    { appRoot: "apps/portal-api", packageName: "@travelos/config", exportName: "." },
+    {
+      appRoot: "apps/portal-api",
+      packageName: "@travelos/auth-adapters",
+      exportName: "./portal",
+    },
+    {
+      appRoot: "apps/portal-api",
+      packageName: "@travelos/auth-adapters",
+      internalModule: "dist/realm.js",
+    },
+  ],
+});
 
 const internalReadMutation = cloneJson(extension);
 internalReadMutation.portal.mutableWorkspaceRead = true;
