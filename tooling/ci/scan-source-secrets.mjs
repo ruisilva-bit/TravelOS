@@ -128,15 +128,20 @@ const stage4FinalScan = process.argv.includes("--stage4-final") || stage4PreInde
 const stage3EvidenceDirectory = "docs/evidence/phase-1-m1/stage-3";
 const stage4EvidenceDirectory = "docs/evidence/phase-1-m1/stage-4";
 const ignoredDirectoryNames = new Set([".vite", "coverage", "dist", "node_modules"]);
-// These are deliberately line-specific: an unreviewed PII-looking email in the
-// Stage 4 integration fixture must remain a scan failure.
-const stage4SyntheticFixtureEmailAllowlist = [294, 303, 315, 321, 331, 344, 385, 403, 480, 486].map(
-  (line) => ({
+// These are deliberately line-specific: unreviewed PII-looking emails must
+// remain scan failures, including in Stage 4 and Stage 7 synthetic fixtures.
+const syntheticFixtureEmailAllowlist = [
+  ...[294, 303, 315, 321, 331, 344, 385, 403, 480, 486].map((line) => ({
     path: "tests/integration/stage-4-postgresql.test.ts",
     rule: "email-address",
     line,
-  }),
-);
+  })),
+  {
+    path: "tooling/ci/stage-7/test-runtime-acceptance-runner.mjs",
+    rule: "email-address",
+    line: 231,
+  },
+];
 const readRegularFiles = async (relativeDirectory) => {
   const files = [];
   const walk = async (currentDirectory) => {
@@ -264,7 +269,7 @@ const files = stage5FinalScan
         ...stage4AdditionalFiles,
       ]),
     ].toSorted();
-const allowlist = stage4FinalScan || stage5FinalScan ? stage4SyntheticFixtureEmailAllowlist : [];
+const allowlist = stage4FinalScan || stage5FinalScan ? syntheticFixtureEmailAllowlist : [];
 const scan = await scanSensitiveFiles({ files, allowlist });
 const stage5FinalScanProvenance = stage5FinalScan
   ? (stage5Final21Scan

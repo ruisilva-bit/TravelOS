@@ -97,7 +97,7 @@ export const STAGE7_BASE_TAG_OBJECT = "8d951cbf739a69695ea98e2a31b5532ee0b0d951"
 export const STAGE7_EXTENSION_PATH = "docs/implementation/M1_STAGE_7_PORTAL_ISOLATION.md";
 export const STAGE7_AUTHORIZED_PATHS_PATH =
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS.json";
-export const STAGE7_DEFAULT_GENERATION = "gen06";
+export const STAGE7_DEFAULT_GENERATION = "gen07";
 export const stage7BaselinePathFor = (generation) => {
   assert.match(generation, /^gen[0-9]{2,}$/, "Invalid Stage 7 candidate generation");
   return `docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_${generation.toUpperCase()}.json`;
@@ -231,6 +231,7 @@ export const STAGE7_AUTHORIZED_PATHS = Object.freeze({
     "tooling/architecture/check.mjs",
     "tooling/architecture/fixtures/stage-7/verify-portal-import-boundaries.mjs",
     "tooling/architecture/package-boundary-policy.mjs",
+    "tooling/ci/scan-source-secrets.mjs",
     "tooling/ci/stage-7-successor-baseline.mjs",
     "tooling/ci/test-stage-7-successor-baseline.mjs",
     "tooling/ci/verify-stage-7-predecessor.mjs",
