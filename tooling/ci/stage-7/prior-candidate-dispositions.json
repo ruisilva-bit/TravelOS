@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "stage": "PHASE_1_M1_STAGE_7",
-  "candidateGeneration": "gen05",
+  "candidateGeneration": "gen06",
   "predecessorCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
   "stage8Actions": 0,
   "priorCandidates": [
@@ -146,6 +146,47 @@
       "canonicalCiReceipt": {
         "path": "docs/evidence/phase-1-m1/stage-7/gen04/canonical-ci-execution.json",
         "sha256": "9793bdc47937b2e5c20acd5735a6ba1192fa4b60481f516a945859ae9dc9bed1"
+      },
+      "validationStatus": "NOT_REACHED",
+      "validationPath": null,
+      "finalCandidateScan": "NOT_REACHED",
+      "freezeStatus": "NOT_REACHED",
+      "freezePath": null,
+      "stage8Actions": 0
+    },
+    {
+      "generation": "gen05",
+      "candidateCommit": "886462096c799aaf026a6f710a43fb84cb4d9722",
+      "baseline": {
+        "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN05.json",
+        "sha256": "16cfc78fb21885c69f4e5032cf14ee4cb9886feb7e24fda362440cc857423342"
+      },
+      "predecessorReceipts": {
+        "stage6": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN05_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+          "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+        },
+        "stage7": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN05_STAGE7_PREDECESSOR_VERIFY.json",
+          "sha256": "b5459ee0c63cf3bd2cde4173803871c8105e65e7aff01986f69f22eb6c729991"
+        }
+      },
+      "lastPassedGate": "CANONICAL_CI",
+      "disposition": "CANONICAL_CI_PASS_42_OF_42; one-shot authorization consumed; not repeated",
+      "artifact": {
+        "result": "PASS",
+        "path": ".hermes/state/stage7-gen05-artifact.tar.gz",
+        "sha256": "03513caf4d4b79ade4e4bc239a430df23506d1de1828d65e52fbf36821135326",
+        "bytes": 80517004,
+        "buildReceipt": {
+          "path": ".hermes/state/stage7-gen05-artifact-build.json",
+          "sha256": "3e09620034f8af52cd85f2f423584f78ed090c6e4dee12f26f8062066cd6aa9f"
+        }
+      },
+      "canonicalCiStatus": "PASS",
+      "canonicalCiReceipt": {
+        "path": "docs/evidence/phase-1-m1/stage-7/gen05/canonical-ci-execution.json",
+        "sha256": "326e5a35964fb5b85edc8cb4b2790c8649c7bab10fdd0b8cc2e570bf528adacf"
       },
       "validationStatus": "NOT_REACHED",
       "validationPath": null,
