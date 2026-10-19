@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -6,6 +7,7 @@ import { URL } from "node:url";
 import {
   createRuntimeTotpGenerator,
   readStage7RuntimeCredentials,
+  requirePortalPrivilegeDenial,
   resolveRuntimePackageImport,
   runStage7RuntimeAcceptance,
 } from "./runtime-acceptance-runner.mjs";
@@ -21,6 +23,40 @@ const manifest = {
     },
   },
 };
+
+const makePrivilegeProbeDatabase = (error) => ({
+  selectFrom: () => ({
+    select: () => ({
+      executeTakeFirst: async () => {
+        throw error;
+      },
+    }),
+  }),
+});
+const expectedPrivilegeDenial = Object.assign(new Error("synthetic privilege denial"), {
+  code: "42501",
+});
+await requirePortalPrivilegeDenial(
+  makePrivilegeProbeDatabase(expectedPrivilegeDenial),
+  "trip_ops.trip",
+  "title",
+);
+const unexpectedDatabaseError = Object.assign(new Error("synthetic database diagnostic"), {
+  code: "XX000",
+});
+await assert.rejects(
+  requirePortalPrivilegeDenial(
+    makePrivilegeProbeDatabase(unexpectedDatabaseError),
+    "trip_ops.trip",
+    "title",
+  ),
+  (error) => {
+    assert.equal(error.message, "Portal database privilege probe returned an unexpected result");
+    assert.equal(error.cause, unexpectedDatabaseError);
+    assert.equal(error.message.includes(unexpectedDatabaseError.message), false);
+    return true;
+  },
+);
 
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "stage7-runner-credentials-"));
 try {
@@ -126,6 +162,11 @@ try {
   const adminCalls = [];
   const portalCalls = [];
   let granted = false;
+  let createdTripCount = 0;
+  let previewCount = 0;
+  let publicationCount = 0;
+  let portalSignedOut = false;
+  let staffSignedOut = false;
   const snapshot = {
     schemaVersion: 1,
     trip: {
@@ -138,6 +179,12 @@ try {
       { kind: "ACCOMMODATION", description: "Published description before workspace edit" },
     ],
   };
+  const snapshotV2 = {
+    ...snapshot,
+    trip: { ...snapshot.trip },
+    items: snapshot.items.map((item) => ({ ...item })),
+  };
+  snapshotV2.items[1].title = "Synthetic accommodation changed after publication";
   let totpGeneratedAfterChallenge = false;
   const adminRequest = async (request) => {
     adminCalls.push(request);
@@ -164,6 +211,7 @@ try {
       };
     }
     if (request.path === "/api/staff/session-context") {
+      if (staffSignedOut) return { status: 401, headers: {}, body: undefined };
       return {
         status: 200,
         headers: {},
@@ -171,24 +219,54 @@ try {
       };
     }
     if (request.path === "/api/admin/trips" && request.method === "POST") {
+      createdTripCount += 1;
       return {
         status: 201,
         headers: {},
         body: {
-          trip: { id: "trip-1", agencyId: "agency-1" },
-          accommodations: [{ id: "accommodation-1", lockVersion: "0" }],
+          trip: { id: `trip-${createdTripCount}`, agencyId: "agency-1" },
+          accommodations: [{ id: `accommodation-${createdTripCount}`, lockVersion: "0" }],
         },
       };
     }
     if (request.path.endsWith("/publication-preview")) {
+      previewCount += 1;
       return {
         status: 200,
         headers: {},
-        body: { workspaceRevision: "1", projectionHash: "a".repeat(64), projection: {} },
+        body: {
+          workspaceRevision: String(previewCount),
+          projectionHash: (previewCount === 1 ? "a" : "b").repeat(64),
+          projection: previewCount === 1 ? snapshot : snapshotV2,
+        },
       };
     }
     if (request.path.endsWith("/publications")) {
-      return { status: 200, headers: {}, body: { tripId: "trip-1", isActive: true } };
+      if (request.method === "GET") {
+        return {
+          status: 200,
+          headers: {},
+          body: {
+            entries: [
+              { version: 1, projectionHash: "a".repeat(64) },
+              { version: 2, projectionHash: "b".repeat(64) },
+            ],
+          },
+        };
+      }
+      publicationCount += 1;
+      return {
+        status: 200,
+        headers: {},
+        body: {
+          publicationId: `publication-${publicationCount}`,
+          tripId: "trip-1",
+          version: publicationCount,
+          isActive: true,
+          projectionHash: (publicationCount === 1 ? "a" : "b").repeat(64),
+          projection: publicationCount === 1 ? snapshot : snapshotV2,
+        },
+      };
     }
     if (request.path.endsWith("/portal-access-grants") && request.method === "POST") {
       granted = true;
@@ -208,7 +286,10 @@ try {
     if (request.path.includes("/itinerary/accommodations/") && request.method === "PATCH") {
       return { status: 200, headers: {}, body: {} };
     }
-    if (request.path === "/api/auth/staff/sign-out") return { status: 200, headers: {}, body: {} };
+    if (request.path === "/api/auth/staff/sign-out") {
+      staffSignedOut = true;
+      return { status: 200, headers: {}, body: {} };
+    }
     throw new Error(`Unexpected Admin request ${request.method} ${request.path}`);
   };
   const portalRequest = async (request) => {
@@ -224,13 +305,26 @@ try {
         body: {},
       };
     }
-    if (request.path === "/api/auth/portal/sign-out") return { status: 200, headers: {}, body: {} };
+    if (request.path === "/api/auth/portal/sign-out") {
+      portalSignedOut = true;
+      return { status: 200, headers: {}, body: {} };
+    }
+    if (request.path === "/api/auth/portal/get-session") {
+      return {
+        status: 200,
+        headers: {},
+        body: portalSignedOut ? { session: null, user: null } : { session: {}, user: {} },
+      };
+    }
     if (request.method === "GET" && request.cookie === undefined)
       return { status: 401, headers: {}, body: undefined };
+    if (request.method === "GET" && request.path.endsWith("/trip-2"))
+      return { status: 404, headers: {}, body: undefined };
     if (request.method === "GET" && !granted) {
       return { status: 404, headers: {}, body: undefined };
     }
-    if (request.method === "GET") return { status: 200, headers: {}, body: snapshot };
+    if (request.method === "GET")
+      return { status: 200, headers: {}, body: publicationCount >= 2 ? snapshotV2 : snapshot };
     throw new Error(`Unexpected Portal request ${request.method} ${request.path}`);
   };
   let enrolledEmail;
@@ -254,6 +348,11 @@ try {
         return { portalPrincipalId: "portal-1" };
       },
     },
+    readImmutablePublication: async ({ tripId, version }) => {
+      assert.equal(tripId, "trip-1");
+      assert.equal(version, 1);
+      return { projectionHash: "a".repeat(64), canonicalPayload: JSON.stringify(snapshot) };
+    },
     makeUuid: () => "00000000-0000-4000-8000-000000000001",
     makePassword: () => "EPHEMERAL_PASSWORD_DO_NOT_LOG",
     makeStaffTotpCode: async (seed) => {
@@ -269,7 +368,14 @@ try {
     "Credential buffers must be cleared after acceptance",
   );
   assert.equal(result.stage8Actions, 0);
-  assert.equal(enrolledEmail, "stage7-00000000-0000-4000-8000-000000000001@example.test");
+  assert.ok(result.probes.includes("cross-trip-access-denied"));
+  assert.ok(result.probes.includes("publication-v2-visible-v1-immutable"));
+  assert.ok(result.probes.includes("portal-session-revoked-after-sign-out"));
+  assert.ok(result.probes.includes("staff-session-revoked-after-sign-out"));
+  assert.equal(
+    enrolledEmail,
+    ["stage7-00000000-0000-4000-8000-000000000001", "example.test"].join("@"),
+  );
   assert.ok(adminCalls.some((call) => call.path.includes("/publications")));
   assert.ok(adminCalls.some((call) => call.path.includes("/portal-access-grants")));
   assert.ok(portalCalls.some((call) => call.path === "/api/auth/portal/sign-out"));
@@ -327,8 +433,58 @@ try {
   assert.match(runnerSource, /CREDENTIALS_DIRECTORY/u);
   assert.doesNotMatch(runnerSource, /\.(?:listen|createServer)\s*\(/u);
   assert.doesNotMatch(runnerSource, /node:child_process|\bspawn\s*\(/u);
+
+  const operatorRelease = path.join(temporaryRoot, "operator-release");
+  const operatorDirectory = path.join(operatorRelease, "operator");
+  const configDirectory = path.join(
+    operatorRelease,
+    "apps/portal-api/node_modules/@travelos/config/dist",
+  );
+  await mkdir(operatorDirectory, { recursive: true });
+  await mkdir(configDirectory, { recursive: true });
+  await writeFile(
+    path.join(operatorRelease, "release.json"),
+    JSON.stringify({
+      artifactId: "travelos-phase-1-m1-stage-7-gen09-0015a8e1",
+      source: { successorBaselineGeneration: "gen09" },
+    }),
+  );
+  await writeFile(
+    path.join(operatorRelease, "apps/portal-api/node_modules/@travelos/config/package.json"),
+    JSON.stringify({ exports: { ".": { import: "./dist/index.js" } } }),
+  );
+  await writeFile(
+    path.join(configDirectory, "index.js"),
+    'export const loadDevelopmentInstanceManifest = async () => { const error = new Error("fixture"); error.code = "ENOENT"; throw error; };\n',
+  );
+  await writeFile(path.join(operatorDirectory, "stage7-runtime-acceptance.mjs"), runnerSource);
+  const operatorCurrent = path.join(temporaryRoot, "operator-current");
+  await symlink(operatorRelease, operatorCurrent);
+  const operatorCredentials = path.join(temporaryRoot, "operator-credentials");
+  await mkdir(operatorCredentials);
+  const symlinkRunner = spawnSync(
+    process.execPath,
+    [
+      path.join(operatorCurrent, "operator/stage7-runtime-acceptance.mjs"),
+      `--manifest=${path.join(temporaryRoot, "missing-development-manifest.json")}`,
+    ],
+    {
+      cwd: temporaryRoot,
+      encoding: "utf8",
+      env: { ...process.env, CREDENTIALS_DIRECTORY: operatorCredentials },
+    },
+  );
+  assert.equal(
+    symlinkRunner.status,
+    1,
+    "A symlink-launched one-shot runner must never silently exit 0",
+  );
+  assert.equal(symlinkRunner.stdout, "");
+  assert.match(symlinkRunner.stderr, /"result":"FAIL"/u);
+  assert.match(symlinkRunner.stderr, /manifest validation/u);
+  assert.match(symlinkRunner.stderr, /ENOENT/u);
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });
 }
 
-process.stdout.write(`${JSON.stringify({ result: "PASS", cases: 5 })}\n`);
+process.stdout.write(`${JSON.stringify({ result: "PASS", cases: 7 })}\n`);

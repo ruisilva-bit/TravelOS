@@ -8,7 +8,7 @@ import {
 } from "./verify-deployment-contract.mjs";
 
 const cloneJson = (value) => JSON.parse(JSON.stringify(value));
-const generation = "gen08";
+const generation = "gen09";
 assert.equal(STAGE7_DEFAULT_GENERATION, generation);
 const readJson = async (relativePath) =>
   JSON.parse(await readFile(new URL(`../../../${relativePath}`, import.meta.url), "utf8"));
@@ -32,6 +32,19 @@ const operatorUnit = await readFile(
 assert.match(operatorUnit, /^DynamicUser=yes$/mu);
 assert.doesNotMatch(operatorUnit, /^Group=/mu);
 validateStage7OperatorUnit(operatorUnit);
+assert.ok(
+  operatorUnit
+    .split("\n")
+    .includes(
+      `ExecStartPre=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/deployment/verify-stage7-artifact.mjs --artifact-root=/opt/travelos/current --release-root=/opt/travelos/releases --generation=${generation}`,
+    ),
+  "Post-activation preflight must explicitly bind the current symlink to the release root",
+);
+assert.throws(
+  () =>
+    validateStage7OperatorUnit(operatorUnit.replace(" --release-root=/opt/travelos/releases", "")),
+  /operator unit/iu,
+);
 assert.throws(
   () => validateStage7OperatorUnit(operatorUnit.replace(/^DynamicUser=yes$/mu, "DynamicUser=no")),
   /operator unit/iu,

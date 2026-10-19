@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "stage": "PHASE_1_M1_STAGE_7",
-  "candidateGeneration": "gen08",
+  "candidateGeneration": "gen09",
   "predecessorCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
   "stage8Actions": 0,
   "priorCandidates": [
@@ -270,6 +270,44 @@
         "path": "docs/evidence/phase-1-m1/stage-7/gen07/canonical-ci-execution.json",
         "sha256": "eef778b702131df10d62d4a8b75b5bacd5add4c3c04dc6656ff3a7ea0887fd3a"
       },
+      "validationStatus": "NOT_REACHED",
+      "validationPath": null,
+      "finalCandidateScan": "NOT_REACHED",
+      "freezeStatus": "NOT_REACHED",
+      "freezePath": null,
+      "stage8Actions": 0
+    },
+    {
+      "generation": "gen08",
+      "candidateCommit": "0015a8e1be16195d3333a8c9dfe53c107f83c30b",
+      "baseline": {
+        "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN08.json",
+        "sha256": "92d5b9db847e31acbb1367675ecb315ccad22605c4be2bd7415989c45414ea57"
+      },
+      "predecessorReceipts": {
+        "stage6": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN08_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+          "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+        },
+        "stage7": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN08_STAGE7_PREDECESSOR_VERIFY.json",
+          "sha256": "a68dafdf60f9855177fb92d6f084db30a277deea7f60e98b78ce9d0543b43396"
+        }
+      },
+      "lastPassedGate": "CLEAN_EXTRACTED_ARTIFACT_VERIFICATION",
+      "disposition": "Packaged verifier rejected the authorized current symlink with Artifact root must be a directory; canonical CI was not run and gen08 is retained as historical evidence.",
+      "artifact": {
+        "result": "PASS",
+        "path": ".hermes/state/stage7-gen08-artifact.tar.gz",
+        "sha256": "45e06d625d9acf756f17d90fb3403970893eac6984a776f4bf9550e9fbdcba70",
+        "bytes": 80501355,
+        "buildReceipt": {
+          "path": ".hermes/state/stage7-gen08-artifact-build.json",
+          "sha256": "b05ef8856a0340f531c2fcf449498756ec7f1e75348b02cf1c10178ab73a7d8b"
+        }
+      },
+      "canonicalCiStatus": "NOT_RUN",
+      "canonicalCiReceipt": null,
       "validationStatus": "NOT_REACHED",
       "validationPath": null,
       "finalCandidateScan": "NOT_REACHED",

@@ -7,10 +7,10 @@
     "sha256": "d97709506b69d133f13cbd9c74c1f9a790477180cbcd124b7135c26bb0c75633"
   },
   "candidate": {
-    "generation": "gen08",
+    "generation": "gen09",
     "sourceBranch": "phase-1/stage-7",
-    "artifactIdPrefix": "travelos-phase-1-m1-stage-7-gen08-",
-    "successorBaselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN08.json"
+    "artifactIdPrefix": "travelos-phase-1-m1-stage-7-gen09-",
+    "successorBaselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN09.json"
   },
   "artifact": {
     "designation": "DEVELOPMENT_CANDIDATE_UNQUALIFIED",
@@ -19,7 +19,7 @@
     "checksumsPath": "checksums.txt",
     "stage7ExtensionPath": "deployment/stage-7-extension.v1.json",
     "stage7VerifierPath": "deployment/verify-stage7-artifact.mjs",
-    "successorBaselinePath": "provenance/stage7-successor-baseline-gen08.json",
+    "successorBaselinePath": "provenance/stage7-successor-baseline-gen09.json",
     "archiveFormat": "tar.gz",
     "canonicalCiStatusAtBuild": "PENDING_ONE_AUTHORIZED_RUN",
     "currentSymlink": "/opt/travelos/current",

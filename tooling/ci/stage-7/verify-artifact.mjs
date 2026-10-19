@@ -8,6 +8,9 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const DEPLOYMENT_ROOT = "/opt/travelos";
+const DEPLOYMENT_RELEASE_ROOT = "/opt/travelos/releases";
+const DEPLOYMENT_CURRENT_SYMLINK = "/opt/travelos/current";
 const ACCEPTED_STAGE6_CONTRACT_SHA256 =
   "d97709506b69d133f13cbd9c74c1f9a790477180cbcd124b7135c26bb0c75633";
 const EXCLUDED_MANIFEST_FILES = new Set(["payload-manifest.json", "checksums.txt"]);
@@ -93,6 +96,98 @@ const hasCredentialUrlSecret = (text, fileSha256) => {
 const bytewise = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 const isContained = (root, candidate) =>
   candidate === root || candidate.startsWith(`${root}${path.sep}`);
+
+export const resolveArtifactRoot = async ({
+  artifactRoot,
+  releaseRoot,
+  authorizedCurrentSymlinkPath = DEPLOYMENT_CURRENT_SYMLINK,
+}) => {
+  assert.ok(
+    typeof artifactRoot === "string" && path.isAbsolute(artifactRoot),
+    "Artifact root must be an absolute path",
+  );
+  const root = path.resolve(artifactRoot);
+  assert.ok(
+    typeof authorizedCurrentSymlinkPath === "string" &&
+      path.isAbsolute(authorizedCurrentSymlinkPath),
+    "Authorized current symlink path must be absolute",
+  );
+  const authorizedCurrent = path.resolve(authorizedCurrentSymlinkPath);
+  const rootMetadata = await lstat(root).catch((error) => {
+    if (error.code === "ENOENT") throw new Error(`Artifact root does not exist: ${root}`);
+    throw error;
+  });
+
+  if (rootMetadata.isSymbolicLink()) {
+    assert.equal(
+      root,
+      authorizedCurrent,
+      `Only the authorized current symlink ${authorizedCurrent} may be used as an artifact root`,
+    );
+    assert.ok(
+      releaseRoot !== undefined,
+      "Release root is required for the authorized current symlink",
+    );
+  } else {
+    assert.ok(
+      !(root === authorizedCurrent),
+      `The authorized current path must be a symlink: ${authorizedCurrent}`,
+    );
+    assert.ok(
+      rootMetadata.isDirectory(),
+      "Artifact root must be a real directory or the authorized current symlink",
+    );
+  }
+
+  let releaseRootReal;
+  if (releaseRoot !== undefined) {
+    assert.ok(
+      typeof releaseRoot === "string" && path.isAbsolute(releaseRoot),
+      "Release root must be an absolute path",
+    );
+    const releaseRootPath = path.resolve(releaseRoot);
+    const releaseRootMetadata = await lstat(releaseRootPath).catch((error) => {
+      if (error.code === "ENOENT")
+        throw new Error(`Release root does not exist: ${releaseRootPath}`);
+      throw error;
+    });
+    assert.ok(
+      releaseRootMetadata.isDirectory() && !releaseRootMetadata.isSymbolicLink(),
+      `Release root must be a real directory: ${releaseRootPath}`,
+    );
+    releaseRootReal = await realpath(releaseRootPath);
+  }
+
+  if (rootMetadata.isSymbolicLink()) {
+    const targetPath = path.resolve(path.dirname(root), await readlink(root));
+    const targetMetadata = await lstat(targetPath).catch((error) => {
+      if (error.code === "ENOENT") throw new Error(`Artifact root symlink is dangling: ${root}`);
+      throw error;
+    });
+    assert.ok(
+      targetMetadata.isDirectory() && !targetMetadata.isSymbolicLink(),
+      "Current symlink must point directly to a real release directory",
+    );
+    const resolvedRoot = await realpath(root);
+    const resolvedTarget = await realpath(targetPath);
+    assert.equal(resolvedRoot, resolvedTarget, "Current symlink target resolution mismatch");
+    assert.ok(
+      path.dirname(resolvedRoot) === releaseRootReal && isContained(releaseRootReal, resolvedRoot),
+      `Current symlink target must be a direct release directory inside the release root: ${resolvedRoot}`,
+    );
+    return resolvedRoot;
+  }
+
+  const resolvedRoot = await realpath(root);
+  if (releaseRootReal !== undefined) {
+    assert.ok(
+      path.dirname(resolvedRoot) === releaseRootReal && isContained(releaseRootReal, resolvedRoot),
+      `Physical artifact root must be a direct release directory inside the release root: ${resolvedRoot}`,
+    );
+  }
+  return resolvedRoot;
+};
+
 const isSafeRelativePath = (value) =>
   typeof value === "string" &&
   value.length > 0 &&
@@ -244,7 +339,7 @@ const verifyPackagedContract = async ({ root, release, generation }) => {
   return { base, extension };
 };
 
-const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension }) => {
+const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension, generation }) => {
   const acceptance = extension.runtimeAcceptance;
   const runnerBytes = await readRegularArtifactFile(root, acceptance.runnerPath);
   const operatorUnitBytes = await readRegularArtifactFile(root, acceptance.operatorUnitPath);
@@ -314,7 +409,14 @@ const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension }) => 
   assert.match(unitText, /Type=oneshot/u);
   assert.match(unitText, /Restart=no/u);
   assert.match(unitText, /User=travelos-stage7-operator/u);
-  assert.match(unitText, /--generation=gen08/u);
+  assert.ok(
+    unitText
+      .split("\n")
+      .includes(
+        `ExecStartPre=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/deployment/verify-stage7-artifact.mjs --artifact-root=/opt/travelos/current --release-root=${DEPLOYMENT_RELEASE_ROOT} --generation=${generation}`,
+      ),
+    "Operator preflight must verify the authorized current symlink and expected generation",
+  );
   assert.match(unitText, /LoadCredentialEncrypted=stage7-staff-totp:/u);
   assert.match(
     unitText,
@@ -709,7 +811,7 @@ const verifyReleaseMetadataAndLayout = async ({ root, release, generation, contr
     `v${release.runtime.node.version}`,
     "Bundled Node runtime version mismatch",
   );
-  await verifyRuntimeAcceptanceArtifact({ root, release, extension });
+  await verifyRuntimeAcceptanceArtifact({ root, release, extension, generation });
 };
 
 const verifyPayloadChecksums = async (root, payloadRows) => {
@@ -867,6 +969,8 @@ const verifyArchiveMatchesDirectory = async ({ archivePath, expectedRows, tempor
 export const verifyStage7Artifact = async ({
   artifactRoot,
   archivePath,
+  releaseRoot,
+  authorizedCurrentSymlinkPath = DEPLOYMENT_CURRENT_SYMLINK,
   generation,
   expectedCommit,
   expectedTree,
@@ -875,12 +979,11 @@ export const verifyStage7Artifact = async ({
   temporaryRoot = process.env.TMPDIR ?? os.tmpdir(),
 }) => {
   assert.match(generation, /^gen[0-9]{2,}$/u, "Invalid Stage 7 generation");
-  const root = path.resolve(artifactRoot);
-  const rootMetadata = await lstat(root);
-  assert.ok(
-    rootMetadata.isDirectory() && !rootMetadata.isSymbolicLink(),
-    "Artifact root must be a directory",
-  );
+  const root = await resolveArtifactRoot({
+    artifactRoot,
+    releaseRoot,
+    authorizedCurrentSymlinkPath,
+  });
   const payloadRows = await inventoryArtifact(root);
   await verifyDeclaredRuntimeAcceptanceRunner(root);
 
@@ -901,6 +1004,13 @@ export const verifyStage7Artifact = async ({
   );
   assert.equal(release.source?.branch, "phase-1/stage-7", "Stage 7 source branch mismatch");
   assert.match(release.source?.commit ?? "", /^[a-f0-9]{40}$/u, "Invalid Stage 7 source commit");
+  if (releaseRoot !== undefined) {
+    assert.equal(
+      path.basename(root),
+      `travelos-stage7-${generation}-${release.source.commit.slice(0, 8)}`,
+      "Release directory identity does not match its Stage 7 generation and source commit",
+    );
+  }
   if (expectedCommit !== undefined) {
     assert.equal(release.source.commit, expectedCommit, "Stage 7 artifact source commit mismatch");
   }
@@ -1007,6 +1117,7 @@ const parseArguments = (argumentsList) => {
     const value = argument.slice(separator + 1);
     if (name === "artifact-root") options.artifactRoot = value;
     else if (name === "archive") options.archivePath = value;
+    else if (name === "release-root") options.releaseRoot = value;
     else if (name === "generation") options.generation = value;
     else if (name === "expected-commit") options.expectedCommit = value;
     else if (name === "expected-tree") options.expectedTree = value;
@@ -1015,11 +1126,30 @@ const parseArguments = (argumentsList) => {
   }
   assert.ok(options.artifactRoot, "Missing required --artifact-root");
   assert.ok(options.generation, "Missing required --generation");
+  assert.ok(path.isAbsolute(options.artifactRoot), "--artifact-root must be an absolute path");
+  if (options.releaseRoot !== undefined) {
+    assert.ok(path.isAbsolute(options.releaseRoot), "--release-root must be an absolute path");
+    assert.equal(
+      path.resolve(options.releaseRoot),
+      DEPLOYMENT_RELEASE_ROOT,
+      `--release-root must be ${DEPLOYMENT_RELEASE_ROOT}`,
+    );
+  }
+  if (isContained(DEPLOYMENT_ROOT, path.resolve(options.artifactRoot))) {
+    assert.equal(
+      path.resolve(options.releaseRoot ?? ""),
+      DEPLOYMENT_RELEASE_ROOT,
+      `Deployment artifacts require --release-root=${DEPLOYMENT_RELEASE_ROOT}`,
+    );
+  }
   return options;
 };
 
-const directEntry =
-  process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+const invokedPath = process.argv[1]
+  ? await realpath(path.resolve(process.argv[1])).catch(() => null)
+  : null;
+const modulePath = await realpath(fileURLToPath(import.meta.url));
+const directEntry = invokedPath !== null && invokedPath === modulePath;
 if (directEntry) {
   try {
     const result = await verifyStage7Artifact(parseArguments(process.argv.slice(2)));

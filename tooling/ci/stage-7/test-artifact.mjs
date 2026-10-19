@@ -290,6 +290,25 @@ try {
   });
   assert.equal(accepted.result, "PASS");
   assert.equal(accepted.artifactId, release.artifactId);
+  const operatorUnitPath = "operator/travelos-stage7-runtime-acceptance.service";
+  const wrongGenerationUnit = Buffer.from(
+    operatorUnitBytes.toString("utf8").replace("--generation=gen09", "--generation=gen08"),
+  );
+  assert.notDeepEqual(wrongGenerationUnit, operatorUnitBytes);
+  const expectedOperatorUnitSha256 = release.runtimeAcceptance.operatorUnitSha256;
+  release.runtimeAcceptance.operatorUnitSha256 = digest(wrongGenerationUnit);
+  await writeFile(releasePath, `${JSON.stringify(release)}\n`);
+  await writeArtifactFile(operatorUnitPath, wrongGenerationUnit);
+  await writePayloadManifests();
+  await assert.rejects(
+    artifactVerifier.verifyStage7Artifact({ artifactRoot, generation }),
+    /expected generation/u,
+    "The packaged operator preflight must bind to the requested candidate generation",
+  );
+  release.runtimeAcceptance.operatorUnitSha256 = expectedOperatorUnitSha256;
+  await writeFile(releasePath, `${JSON.stringify(release)}\n`);
+  await writeArtifactFile(operatorUnitPath, operatorUnitBytes);
+  await writePayloadManifests();
   const incompleteQualification = { ...release };
   delete incompleteQualification.qualification;
   await writeFile(releasePath, `${JSON.stringify(incompleteQualification)}\n`);
@@ -432,4 +451,4 @@ try {
   await rm(fixtureRoot, { recursive: true, force: true });
 }
 
-process.stdout.write('{"result":"PASS","cases":15,"positiveCases":2,"negativeControls":13}\n');
+process.stdout.write('{"result":"PASS","cases":16,"positiveCases":2,"negativeControls":14}\n');

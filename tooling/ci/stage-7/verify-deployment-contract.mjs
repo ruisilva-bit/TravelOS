@@ -35,7 +35,7 @@ export const validateStage7OperatorUnit = (unit) => {
     "IPAddressDeny=any",
     "IPAddressAllow=localhost",
     "Restart=no",
-    "ExecStartPre=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/deployment/verify-stage7-artifact.mjs --artifact-root=/opt/travelos/current --generation=gen08",
+    `ExecStartPre=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/deployment/verify-stage7-artifact.mjs --artifact-root=/opt/travelos/current --release-root=/opt/travelos/releases --generation=${STAGE7_DEFAULT_GENERATION}`,
     "ExecStart=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/operator/stage7-runtime-acceptance.mjs --manifest=/etc/travelos/instances/development.json",
   ]) {
     assert.ok(unit.split("\n").includes(line), `Unsafe Stage 7 operator unit: ${line}`);

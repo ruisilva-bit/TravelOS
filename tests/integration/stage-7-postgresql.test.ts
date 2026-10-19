@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { copyFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -73,6 +74,235 @@ const workRoot = process.env["TRAVELOS_STAGE7_WORK_ROOT"] ?? "";
 const emptyDatabaseName = "travelos_stage7_empty_qualification";
 const priorDatabaseName = "travelos_stage7_prior_qualification";
 const stage7Head = "0012_stage7_portal_trip_access";
+const freeLoopbackPort = async (): Promise<number> =>
+  new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen({ host: "127.0.0.1", port: 0 }, () => {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        server.close();
+        reject(new Error("Unable to allocate an ephemeral Stage 7 API port"));
+        return;
+      }
+      const selected = address.port;
+      server.close((error) => (error ? reject(error) : resolve(selected)));
+    });
+  });
+
+const runPackagedOperatorRehearsal = async ({
+  artifactRoot,
+  staffEmail,
+  staffPassword,
+  staffTotpSeed,
+}: {
+  artifactRoot: string;
+  staffEmail: string;
+  staffPassword: string;
+  staffTotpSeed: string;
+}): Promise<void> => {
+  const rehearsalRoot = await mkdtemp(path.join(workRoot, "stage7-packaged-rehearsal-"));
+  const adminCredentials = path.join(rehearsalRoot, "admin-credentials");
+  const portalCredentials = path.join(rehearsalRoot, "portal-credentials");
+  const operatorCredentials = path.join(rehearsalRoot, "operator-credentials");
+  const missingCredentials = path.join(rehearsalRoot, "missing-credentials");
+  const invalidCredentials = path.join(rehearsalRoot, "invalid-credentials");
+  const manifestPath = path.join(rehearsalRoot, "development.json");
+  const reportPath = path.join(rehearsalRoot, "report.json");
+  const etcUpper = path.join(rehearsalRoot, "etc-upper");
+  const etcWork = path.join(rehearsalRoot, "etc-work");
+  const directoryPaths = [
+    adminCredentials,
+    portalCredentials,
+    operatorCredentials,
+    missingCredentials,
+    invalidCredentials,
+    etcUpper,
+    etcWork,
+  ];
+  const writeCredential = async (directory: string, name: string, value: string): Promise<void> => {
+    await writeFile(path.join(directory, name), value, { mode: 0o600, flag: "wx" });
+  };
+  try {
+    await Promise.all(directoryPaths.map((directory) => mkdir(directory, { mode: 0o700 })));
+    const portalRealmKey = `${randomUUID()}${randomUUID()}`;
+    await Promise.all([
+      writeCredential(
+        adminCredentials,
+        "admin-api-db",
+        "synthetic-admin-api-db-password-not-used-with-trust-auth",
+      ),
+      writeCredential(adminCredentials, "staff-auth-realm", stage7RealmKey),
+      writeCredential(
+        portalCredentials,
+        "portal-api-db",
+        "synthetic-portal-api-db-password-not-used-with-trust-auth",
+      ),
+      writeCredential(portalCredentials, "portal-auth-realm", portalRealmKey),
+      writeCredential(
+        operatorCredentials,
+        "portal-api-db",
+        "synthetic-portal-api-db-password-not-used-with-trust-auth",
+      ),
+      writeCredential(operatorCredentials, "portal-auth-realm", portalRealmKey),
+      writeCredential(operatorCredentials, "stage7-staff-email", staffEmail),
+      writeCredential(operatorCredentials, "stage7-staff-password", staffPassword),
+      writeCredential(operatorCredentials, "stage7-staff-totp", staffTotpSeed),
+      writeCredential(
+        invalidCredentials,
+        "portal-api-db",
+        "synthetic-portal-api-db-password-not-used-with-trust-auth",
+      ),
+      writeCredential(invalidCredentials, "portal-auth-realm", portalRealmKey),
+      writeCredential(invalidCredentials, "stage7-staff-email", staffEmail),
+      writeCredential(invalidCredentials, "stage7-staff-password", staffPassword),
+      writeCredential(invalidCredentials, "stage7-staff-totp", "123456"),
+    ]);
+    for (const directory of [
+      adminCredentials,
+      portalCredentials,
+      operatorCredentials,
+      missingCredentials,
+      invalidCredentials,
+    ]) {
+      expect((await stat(directory)).mode & 0o777).toBe(0o700);
+    }
+    for (const [directory, names] of [
+      [adminCredentials, ["admin-api-db", "staff-auth-realm"]],
+      [portalCredentials, ["portal-api-db", "portal-auth-realm"]],
+      [
+        operatorCredentials,
+        [
+          "portal-api-db",
+          "portal-auth-realm",
+          "stage7-staff-email",
+          "stage7-staff-password",
+          "stage7-staff-totp",
+        ],
+      ],
+      [
+        invalidCredentials,
+        [
+          "portal-api-db",
+          "portal-auth-realm",
+          "stage7-staff-email",
+          "stage7-staff-password",
+          "stage7-staff-totp",
+        ],
+      ],
+    ] as const) {
+      for (const name of names)
+        expect((await stat(path.join(directory, name))).mode & 0o777).toBe(0o600);
+    }
+
+    const manifest = JSON.parse(
+      await readFile(path.join(artifactRoot, "instance-manifest/development.example.json"), "utf8"),
+    ) as {
+      database: { name: string; port: number };
+      runtime: { listeners: { adminApi: { port: number }; portalApi: { port: number } } };
+    };
+    manifest.database.name = emptyDatabaseName;
+    manifest.database.port = port;
+    manifest.runtime.listeners.adminApi.port = await freeLoopbackPort();
+    manifest.runtime.listeners.portalApi.port = await freeLoopbackPort();
+    while (manifest.runtime.listeners.portalApi.port === manifest.runtime.listeners.adminApi.port) {
+      manifest.runtime.listeners.portalApi.port = await freeLoopbackPort();
+    }
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o600 });
+
+    const rehearsalResult = spawnSync(
+      process.execPath,
+      ["tooling/ci/stage-7/rehearse-packaged-operator.mjs", `--artifact-root=${artifactRoot}`],
+      {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+        timeout: 300_000,
+        maxBuffer: 8 * 1024 * 1024,
+        env: {
+          PATH: process.env["PATH"] ?? "/usr/bin:/bin",
+          HOME: process.env["HOME"] ?? "",
+          TMPDIR: os.tmpdir(),
+          TRAVELOS_STAGE7_REHEARSAL_REPORT: reportPath,
+          TRAVELOS_STAGE7_REHEARSAL_MANIFEST: manifestPath,
+          TRAVELOS_STAGE7_REHEARSAL_ADMIN_CREDENTIALS: adminCredentials,
+          TRAVELOS_STAGE7_REHEARSAL_PORTAL_CREDENTIALS: portalCredentials,
+          TRAVELOS_STAGE7_REHEARSAL_OPERATOR_CREDENTIALS: operatorCredentials,
+          TRAVELOS_STAGE7_REHEARSAL_MISSING_CREDENTIALS: missingCredentials,
+          TRAVELOS_STAGE7_REHEARSAL_INVALID_CREDENTIALS: invalidCredentials,
+          TRAVELOS_STAGE7_REHEARSAL_ETC_UPPER: etcUpper,
+          TRAVELOS_STAGE7_REHEARSAL_ETC_WORK: etcWork,
+        },
+      },
+    );
+    expect(rehearsalResult.status).toBe(0);
+    expect(rehearsalResult.stderr).toBe("");
+    const report = JSON.parse(rehearsalResult.stdout) as {
+      result: string;
+      artifactId: string;
+      preActivationVerifier: { result: string; artifactId: string };
+      postActivationVerifier: { result: string; artifactId: string };
+      missingCredentials: { status: number; stage: string };
+      invalidCredentials: { status: number; stage: string };
+      runner: { result: string; probes: string[]; stage8Actions: number };
+      services: {
+        adminStarted: boolean;
+        portalStarted: boolean;
+        stopped: boolean;
+        listenersClosed: boolean;
+      };
+    };
+    expect(report.result).toBe("PASS");
+    expect(report.preActivationVerifier).toMatchObject({
+      result: "PASS",
+      artifactId: report.artifactId,
+    });
+    expect(report.postActivationVerifier).toMatchObject({
+      result: "PASS",
+      artifactId: report.artifactId,
+    });
+    expect(report.missingCredentials).toMatchObject({ status: 1, stage: "credential delivery" });
+    expect(report.invalidCredentials).toMatchObject({ status: 1, stage: "credential delivery" });
+    expect(report.runner.result).toBe("PASS");
+    expect(report.runner.stage8Actions).toBe(0);
+    expect(report.runner.probes).toContain("cross-trip-access-denied");
+    expect(report.runner.probes).toContain("publication-v2-visible-v1-immutable");
+    expect(report.runner.probes).toContain("portal-role-denies-workspace-and-internal-table-reads");
+    expect(report.runner.probes).toContain("portal-session-revoked-after-sign-out");
+    expect(report.runner.probes).toContain("staff-session-revoked-after-sign-out");
+    expect(report.services).toEqual({
+      adminStarted: true,
+      portalStarted: true,
+      stopped: true,
+      listenersClosed: true,
+    });
+    const sanitizedReport = JSON.stringify(report);
+    for (const secret of [
+      staffEmail,
+      staffPassword,
+      staffTotpSeed,
+      stage7RealmKey,
+      "synthetic-admin-api-db-password-not-used-with-trust-auth",
+      "synthetic-portal-api-db-password-not-used-with-trust-auth",
+      portalRealmKey,
+    ]) {
+      expect(sanitizedReport).not.toContain(secret);
+    }
+    process.stdout.write(
+      `STAGE7_PACKAGED_REHEARSAL ${JSON.stringify({
+        result: report.result,
+        artifactId: report.artifactId,
+        preActivationVerifier: report.preActivationVerifier,
+        postActivationVerifier: report.postActivationVerifier,
+        missingCredentials: report.missingCredentials,
+        invalidCredentials: report.invalidCredentials,
+        probes: report.runner.probes,
+        services: report.services,
+        stage8Actions: report.runner.stage8Actions,
+      })}\n`,
+    );
+  } finally {
+    await rm(rehearsalRoot, { recursive: true, force: true });
+  }
+};
 const emptyAgencyId = "00000000-0000-7000-8000-000000000070";
 const priorAgencyId = "00000000-0000-7000-8000-000000000071";
 const primaryTripId = "00000000-0000-7000-8000-000000000072";
@@ -854,6 +1084,15 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
       expect(sessionCookie).toMatch(/^travelos-dev-staff-session=/u);
       const signedOut = await call(staffAuthRealm, "sign-out", {}, sessionCookie);
       expect(signedOut.status).toBe(200);
+      const artifactRoot = process.env["TRAVELOS_STAGE7_ARTIFACT_ROOT"];
+      if (artifactRoot !== undefined) {
+        await runPackagedOperatorRehearsal({
+          artifactRoot,
+          staffEmail: email,
+          staffPassword: password,
+          staffTotpSeed: seed!,
+        });
+      }
     } finally {
       await staffPersistence.destroy();
     }

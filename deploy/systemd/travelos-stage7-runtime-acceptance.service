@@ -26,7 +26,7 @@ LoadCredentialEncrypted=portal-auth-realm:/etc/credstore.encrypted/travelos-port
 LoadCredentialEncrypted=stage7-staff-email:/etc/credstore.encrypted/travelos-stage7-staff-email
 LoadCredentialEncrypted=stage7-staff-password:/etc/credstore.encrypted/travelos-stage7-staff-password
 LoadCredentialEncrypted=stage7-staff-totp:/etc/credstore.encrypted/travelos-stage7-staff-totp
-ExecStartPre=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/deployment/verify-stage7-artifact.mjs --artifact-root=/opt/travelos/current --generation=gen08
+ExecStartPre=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/deployment/verify-stage7-artifact.mjs --artifact-root=/opt/travelos/current --release-root=/opt/travelos/releases --generation=gen09
 ExecStart=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/operator/stage7-runtime-acceptance.mjs --manifest=/etc/travelos/instances/development.json
 StandardOutput=journal
 StandardError=journal

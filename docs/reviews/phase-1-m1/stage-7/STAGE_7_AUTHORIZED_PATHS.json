@@ -4,6 +4,7 @@
   "exactSourceFiles": [
     "docs/implementation/M1_STAGE_7_PORTAL_ISOLATION.md",
     "docs/superpowers/plans/2026-10-15-stage-7-portal-isolation.md",
+    "docs/superpowers/plans/2026-10-19-stage-7-gen09-end-to-end.md",
     "deploy/contracts/stage-7-extension.v1.json",
     "deploy/systemd/travelos-stage7-runtime-acceptance.service",
     "migrations/0012_stage7_portal_trip_access.cjs",

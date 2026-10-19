@@ -258,6 +258,7 @@ export const runStage7RuntimeAcceptance = async ({
   requestPortal,
   enrollment,
   makeStaffTotpCode,
+  readImmutablePublication,
   makeUuid = randomUUID,
   makePassword = () => randomBytes(32).toString("base64url"),
 }) => {
@@ -285,8 +286,12 @@ export const runStage7RuntimeAcceptance = async ({
   let portalCookie;
   let enrolledPrincipalId;
   let agencyId;
+  let tripId;
+  let ungrantedTripId;
   let issuedGrantId;
   let grantRevoked = false;
+  let portalSignedOut = false;
+  let staffSignedOut = false;
   let portalPassword;
   let failure;
 
@@ -329,7 +334,7 @@ export const runStage7RuntimeAcceptance = async ({
       "Synthetic Trip creation through Admin API",
     );
     const created = objectBody(createResponse, "Synthetic Trip creation");
-    const tripId = created.trip?.id;
+    tripId = created.trip?.id;
     const createdAgencyId = created.trip?.agencyId;
     const accommodation = created.accommodations?.[0];
     assert.ok(typeof tripId === "string" && typeof createdAgencyId === "string");
@@ -338,6 +343,24 @@ export const runStage7RuntimeAcceptance = async ({
       typeof accommodation?.id === "string" && typeof accommodation?.lockVersion === "string",
     );
     probes.push("synthetic-business-data-created-through-admin-api");
+
+    const ungrantedInput = tripSliceRequest({
+      agencyId: context.agencyId,
+      suffix: `${suffix}-cross-trip`,
+      sentinel: `STAGE7_INTERNAL_ONLY_CROSS_${suffix}`,
+    });
+    const ungrantedResponse = requireStatus(
+      await requestAdmin({
+        method: "POST",
+        path: "/api/admin/trips",
+        body: ungrantedInput,
+        cookie: staffCookie,
+      }),
+      201,
+      "Synthetic ungranted Trip creation through Admin API",
+    );
+    ungrantedTripId = objectBody(ungrantedResponse, "Synthetic ungranted Trip creation").trip?.id;
+    assert.ok(typeof ungrantedTripId === "string" && ungrantedTripId !== tripId);
 
     const email = `stage7-${suffix}@example.test`;
     portalPassword = makePassword();
@@ -429,6 +452,14 @@ export const runStage7RuntimeAcceptance = async ({
     assert.equal(grant.tripId, tripId);
     probes.push("explicit-trip-access-grant-issued-through-admin-api");
 
+    const crossTrip = await requestPortal({
+      method: "GET",
+      path: `/api/portal/trips/${ungrantedTripId}`,
+      cookie: portalCookie,
+    });
+    requireStatus(crossTrip, 404, "Portal access to a different, ungranted Trip");
+    probes.push("cross-trip-access-denied");
+
     const authorizedBeforeEdit = objectBody(
       requireStatus(
         await requestPortal({
@@ -477,6 +508,86 @@ export const runStage7RuntimeAcceptance = async ({
     assert.deepEqual(authorizedAfterEdit, authorizedBeforeEdit);
     assertPortalSnapshot(authorizedAfterEdit, tripInput.trip.title, sentinel);
     probes.push("portal-snapshot-unchanged-after-workspace-edit");
+
+    const previewV2 = objectBody(
+      requireStatus(
+        await requestAdmin({
+          method: "GET",
+          path: `/api/admin/trips/${tripId}/publication-preview`,
+          cookie: staffCookie,
+        }),
+        200,
+        "Version 2 publication preview",
+      ),
+      "Version 2 publication preview",
+    );
+    assert.notEqual(previewV2.projectionHash, publication.projectionHash);
+    assert.equal(JSON.stringify(previewV2.projection).includes(sentinel), false);
+    const publicationV2 = objectBody(
+      requireStatus(
+        await requestAdmin({
+          method: "POST",
+          path: `/api/admin/trips/${tripId}/publications`,
+          body: {
+            expectedWorkspaceRevision: previewV2.workspaceRevision,
+            expectedProjectionHash: previewV2.projectionHash,
+            idempotencyKey: `stage7-runtime-publish-v2-${suffix}`,
+          },
+          cookie: staffCookie,
+        }),
+        200,
+        "Version 2 Trip publication through Admin API",
+      ),
+      "Version 2 Trip publication",
+    );
+    assert.equal(publicationV2.tripId, tripId);
+    assert.equal(publicationV2.version, 2);
+    assert.equal(publicationV2.isActive, true);
+    assert.notEqual(publicationV2.projectionHash, publication.projectionHash);
+
+    const portalV2 = objectBody(
+      requireStatus(
+        await requestPortal({
+          method: "GET",
+          path: `/api/portal/trips/${tripId}`,
+          cookie: portalCookie,
+        }),
+        200,
+        "Portal Trip read after version 2 publication",
+      ),
+      "Portal Trip read after version 2 publication",
+    );
+    assertPortalSnapshot(portalV2, tripInput.trip.title, sentinel);
+    assert.equal(
+      JSON.stringify(portalV2).includes("Synthetic accommodation changed after publication"),
+      true,
+    );
+
+    const history = objectBody(
+      requireStatus(
+        await requestAdmin({
+          method: "GET",
+          path: `/api/admin/trips/${tripId}/publications`,
+          cookie: staffCookie,
+        }),
+        200,
+        "Trip publication history after version 2",
+      ),
+      "Trip publication history",
+    );
+    const historyV1 = history.entries?.find((entry) => entry.version === 1);
+    const historyV2 = history.entries?.find((entry) => entry.version === 2);
+    assert.equal(historyV1?.projectionHash, publication.projectionHash);
+    assert.equal(historyV2?.projectionHash, publicationV2.projectionHash);
+    assert.equal(typeof readImmutablePublication, "function");
+    const persistedV1 = await readImmutablePublication({ tripId, version: 1 });
+    assert.equal(persistedV1?.projectionHash, publication.projectionHash);
+    const persistedPayload =
+      typeof persistedV1?.canonicalPayload === "string"
+        ? JSON.parse(persistedV1.canonicalPayload)
+        : persistedV1?.canonicalPayload;
+    assert.deepEqual(persistedPayload, publication.projection);
+    probes.push("publication-v2-visible-v1-immutable");
 
     const revoke = objectBody(
       requireStatus(
@@ -534,6 +645,8 @@ export const runStage7RuntimeAcceptance = async ({
         });
         if (signOut.status < 200 || signOut.status >= 300) {
           failure ??= new Error("Runtime acceptance could not revoke its Portal session");
+        } else {
+          portalSignedOut = true;
         }
       } catch {
         failure ??= new Error("Runtime acceptance could not revoke its Portal session");
@@ -549,6 +662,8 @@ export const runStage7RuntimeAcceptance = async ({
         });
         if (signOut.status < 200 || signOut.status >= 300) {
           failure ??= new Error("Runtime acceptance could not revoke its Staff session");
+        } else {
+          staffSignedOut = true;
         }
       } catch {
         failure ??= new Error("Runtime acceptance could not revoke its Staff session");
@@ -556,6 +671,39 @@ export const runStage7RuntimeAcceptance = async ({
     }
     if (credentials && typeof credentials === "object") {
       for (const key of Object.keys(credentials)) credentials[key] = "";
+    }
+    if (portalSignedOut && portalCookie !== undefined && tripId !== undefined) {
+      try {
+        const session = await requestPortal({
+          method: "GET",
+          path: "/api/auth/portal/get-session",
+          cookie: portalCookie,
+        });
+        if (
+          session.status === 200 &&
+          (session.body === null || (session.body?.session === null && session.body?.user === null))
+        ) {
+          probes.push("portal-session-revoked-after-sign-out");
+        } else {
+          failure ??= new Error("Runtime acceptance Portal session remained active after sign-out");
+        }
+      } catch {
+        failure ??= new Error("Runtime acceptance could not verify Portal session revocation");
+      }
+    }
+    if (staffSignedOut && staffCookie !== undefined) {
+      try {
+        const context = await requestAdmin({
+          method: "GET",
+          path: "/api/staff/session-context",
+          cookie: staffCookie,
+        });
+        if (context.status === 401) probes.push("staff-session-revoked-after-sign-out");
+        else
+          failure ??= new Error("Runtime acceptance Staff session remained active after sign-out");
+      } catch {
+        failure ??= new Error("Runtime acceptance could not verify Staff session revocation");
+      }
     }
   }
   if (failure !== undefined)
@@ -652,37 +800,73 @@ export const resolveRuntimePackageImport = async ({ appRoot, packageName, export
   return pathToFileURL(entryPath).href;
 };
 
-const runCli = async () => {
-  const argumentsList = process.argv.slice(2);
-  assert.equal(
-    argumentsList.length,
-    1,
-    "Usage: node stage7-runtime-acceptance.mjs --manifest=/absolute/path",
-  );
-  assert.ok(argumentsList[0].startsWith("--manifest="), "Only --manifest is accepted");
-  const manifestPath = argumentsList[0].slice("--manifest=".length);
-  assert.ok(path.isAbsolute(manifestPath), "Manifest path must be absolute");
-  const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
-  const artifactRoot = path.resolve(scriptDirectory, "..");
-  const release = JSON.parse(await readFile(path.join(artifactRoot, "release.json"), "utf8"));
-  assert.match(release.artifactId, /^travelos-phase-1-m1-stage-7-gen08-[a-f0-9]{8}$/u);
-  assert.equal(release.source?.successorBaselineGeneration, "gen08");
-  const portalPackageRoot = path.join(artifactRoot, "apps/portal-api");
-  const config = await import(
-    await resolveRuntimePackageImport({
-      appRoot: portalPackageRoot,
-      packageName: "@travelos/config",
-    })
-  );
-  const manifest = await config.loadDevelopmentInstanceManifest(manifestPath);
-  assert.equal(
-    manifest.environment,
-    "DEVELOPMENT",
-    "Acceptance runner is not enabled outside DEVELOPMENT",
-  );
-  const credentials = await readStage7RuntimeCredentials({ manifest });
-  let portalDatabase;
+const safeFailureCode = (error) =>
+  typeof error?.code === "string" && /^[A-Z0-9_]{1,64}$/u.test(error.code)
+    ? error.code
+    : "STAGE7_RUNTIME_ACCEPTANCE_ERROR";
+
+export const requirePortalPrivilegeDenial = async (database, table, column) => {
   try {
+    await database.selectFrom(table).select(column).executeTakeFirst();
+  } catch (error) {
+    if (error?.code === "42501") return;
+    throw new Error("Portal database privilege probe returned an unexpected result", {
+      cause: error,
+    });
+  }
+  throw new Error("Portal database role can read a forbidden mutable or internal table");
+};
+
+const verifyPortalDatabaseIsolation = async (database) => {
+  await requirePortalPrivilegeDenial(database, "trip_ops.trip", "title");
+  await requirePortalPrivilegeDenial(database, "finance.supplier_cost_line", "internalNote");
+};
+
+const runCli = async () => {
+  let failureStage = "operator arguments";
+  let failure = null;
+  let operatorCredentialValues;
+  let portalDatabase;
+  let result;
+  try {
+    const argumentsList = process.argv.slice(2);
+    assert.equal(
+      argumentsList.length,
+      1,
+      "Usage: node stage7-runtime-acceptance.mjs --manifest=/absolute/path",
+    );
+    assert.ok(argumentsList[0].startsWith("--manifest="), "Only --manifest is accepted");
+    const manifestPath = argumentsList[0].slice("--manifest=".length);
+    assert.ok(path.isAbsolute(manifestPath), "Manifest path must be absolute");
+    const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+    const artifactRoot = path.resolve(scriptDirectory, "..");
+
+    failureStage = "artifact identity preflight";
+    const release = JSON.parse(await readFile(path.join(artifactRoot, "release.json"), "utf8"));
+    assert.match(release.artifactId, /^travelos-phase-1-m1-stage-7-gen09-[a-f0-9]{8}$/u);
+    assert.equal(release.source?.successorBaselineGeneration, "gen09");
+
+    const portalPackageRoot = path.join(artifactRoot, "apps/portal-api");
+    failureStage = "runtime dependency resolution";
+    const config = await import(
+      await resolveRuntimePackageImport({
+        appRoot: portalPackageRoot,
+        packageName: "@travelos/config",
+      })
+    );
+
+    failureStage = "manifest validation";
+    const manifest = await config.loadDevelopmentInstanceManifest(manifestPath);
+    assert.equal(
+      manifest.environment,
+      "DEVELOPMENT",
+      "Acceptance runner is not enabled outside DEVELOPMENT",
+    );
+
+    failureStage = "credential delivery";
+    operatorCredentialValues = await readStage7RuntimeCredentials({ manifest });
+
+    failureStage = "Portal realm initialization";
     const portalAuth = await import(
       await resolveRuntimePackageImport({
         appRoot: portalPackageRoot,
@@ -702,7 +886,7 @@ const runCli = async () => {
       port: manifest.database.port,
       database: manifest.database.name,
       user: manifest.database.runtimeRoles.portalApi.roleName,
-      password: credentials.portalDatabasePassword,
+      password: operatorCredentialValues.portalDatabasePassword,
       tls: { mode: manifest.database.tlsPolicy },
       applicationName: "travelos-stage7-acceptance",
       maxConnections: 2,
@@ -710,7 +894,7 @@ const runCli = async () => {
     const enrollment = adapterRealm.createLocalOperatorPortalEnrollmentService({
       database: portalDatabase.database,
       canonicalOrigin: `http://${manifest.hosts.portal}`,
-      realmKeyMaterial: credentials.portalRealmKey,
+      realmKeyMaterial: operatorCredentialValues.portalRealmKey,
       environment: manifest.environment,
     });
     const requestAdmin = requestLoopback(
@@ -723,28 +907,67 @@ const runCli = async () => {
       manifest.hosts.portal,
       `http://${manifest.hosts.portal}`,
     );
-    const result = await runStage7RuntimeAcceptance({
+    const readImmutablePublication = async ({ tripId, version }) =>
+      portalDatabase.database
+        .selectFrom("trip_ops.publication_version as version")
+        .innerJoin(
+          "trip_ops.publication_snapshot as snapshot",
+          "snapshot.publicationId",
+          "version.publicationId",
+        )
+        .select([
+          "version.projectionHash as projectionHash",
+          "snapshot.canonicalPayload as canonicalPayload",
+        ])
+        .where("version.tripId", "=", tripId)
+        .where("version.version", "=", version)
+        .executeTakeFirst();
+    failureStage = "authenticated API acceptance";
+    result = await runStage7RuntimeAcceptance({
       manifest,
-      credentials,
+      credentials: operatorCredentialValues,
       requestAdmin,
       requestPortal,
       enrollment,
+      readImmutablePublication,
       makeStaffTotpCode: await createRuntimeTotpGenerator(portalPackageRoot),
     });
-    process.stdout.write(`${JSON.stringify(result)}\n`);
+    failureStage = "Portal database privilege isolation";
+    await verifyPortalDatabaseIsolation(portalDatabase.database);
+    result.probes.push("portal-role-denies-workspace-and-internal-table-reads");
+  } catch (error) {
+    failure = { result: "FAIL", stage: failureStage, code: safeFailureCode(error) };
   } finally {
-    for (const key of Object.keys(credentials)) credentials[key] = "";
-    if (portalDatabase !== undefined) await portalDatabase.destroy();
+    if (operatorCredentialValues !== undefined) {
+      for (const key of Object.keys(operatorCredentialValues)) operatorCredentialValues[key] = "";
+    }
+    if (portalDatabase !== undefined) {
+      try {
+        await portalDatabase.destroy();
+      } catch (error) {
+        if (failure === null) {
+          failure = { result: "FAIL", stage: "resource cleanup", code: safeFailureCode(error) };
+        }
+      }
+    }
   }
+  if (failure !== null) {
+    process.stderr.write(`${JSON.stringify(failure)}\n`);
+    process.exitCode = 1;
+    return;
+  }
+  process.stdout.write(`${JSON.stringify(result)}\n`);
 };
 
-const directEntry =
-  process.argv[1] !== undefined &&
-  pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+const invokedPath = process.argv[1]
+  ? await realpath(path.resolve(process.argv[1])).catch(() => null)
+  : null;
+const modulePath = await realpath(fileURLToPath(import.meta.url));
+const directEntry = invokedPath !== null && invokedPath === modulePath;
 if (directEntry) {
   runCli().catch(() => {
     process.stderr.write(
-      "Stage 7 runtime acceptance failed; sensitive values were not retained.\n",
+      '{"result":"FAIL","stage":"runner lifecycle","code":"STAGE7_RUNTIME_ACCEPTANCE_ERROR"}\n',
     );
     process.exitCode = 1;
   });

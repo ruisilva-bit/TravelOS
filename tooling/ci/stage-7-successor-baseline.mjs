@@ -97,7 +97,7 @@ export const STAGE7_BASE_TAG_OBJECT = "8d951cbf739a69695ea98e2a31b5532ee0b0d951"
 export const STAGE7_EXTENSION_PATH = "docs/implementation/M1_STAGE_7_PORTAL_ISOLATION.md";
 export const STAGE7_AUTHORIZED_PATHS_PATH =
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS.json";
-export const STAGE7_DEFAULT_GENERATION = "gen08";
+export const STAGE7_DEFAULT_GENERATION = "gen09";
 export const stage7BaselinePathFor = (generation) => {
   assert.match(generation, /^gen[0-9]{2,}$/, "Invalid Stage 7 candidate generation");
   return `docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_${generation.toUpperCase()}.json`;
@@ -210,6 +210,7 @@ export const STAGE7_AUTHORIZED_PATHS = Object.freeze({
   exactSourceFiles: [
     "docs/implementation/M1_STAGE_7_PORTAL_ISOLATION.md",
     "docs/superpowers/plans/2026-10-15-stage-7-portal-isolation.md",
+    "docs/superpowers/plans/2026-10-19-stage-7-gen09-end-to-end.md",
     "deploy/contracts/stage-7-extension.v1.json",
     "deploy/systemd/travelos-stage7-runtime-acceptance.service",
     "migrations/0012_stage7_portal_trip_access.cjs",
