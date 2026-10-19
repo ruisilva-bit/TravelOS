@@ -162,6 +162,7 @@ try {
   const adminCalls = [];
   const portalCalls = [];
   let granted = false;
+  let grantRevoked = false;
   let createdTripCount = 0;
   let previewCount = 0;
   let publicationCount = 0;
@@ -278,6 +279,7 @@ try {
     }
     if (request.path.endsWith("/revocations")) {
       granted = false;
+      grantRevoked = true;
       return { status: 200, headers: {}, body: { revokedAt: "2030-06-01T00:00:00Z" } };
     }
     if (request.path.includes("/portal-access-grants/") && request.method === "POST") {
@@ -320,6 +322,8 @@ try {
       return { status: 401, headers: {}, body: undefined };
     if (request.method === "GET" && request.path.endsWith("/trip-2"))
       return { status: 404, headers: {}, body: undefined };
+    if (request.method === "GET" && grantRevoked)
+      return { status: 401, headers: {}, body: undefined };
     if (request.method === "GET" && !granted) {
       return { status: 404, headers: {}, body: undefined };
     }
@@ -372,6 +376,7 @@ try {
   assert.ok(result.probes.includes("publication-v2-visible-v1-immutable"));
   assert.ok(result.probes.includes("portal-access-grant-revocation-http-200"));
   assert.ok(result.probes.includes("portal-access-grant-revocation-revoked-at-string"));
+  assert.ok(result.probes.includes("portal-trip-read-after-revocation-http-401"));
   assert.ok(result.probes.includes("portal-session-revoked-after-sign-out"));
   assert.ok(result.probes.includes("staff-session-revoked-after-sign-out"));
   assert.equal(

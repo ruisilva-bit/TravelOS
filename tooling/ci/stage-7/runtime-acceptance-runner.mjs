@@ -613,7 +613,8 @@ export const runStage7RuntimeAcceptance = async ({
       path: `/api/portal/trips/${tripId}`,
       cookie: portalCookie,
     });
-    requireStatus(afterRevoke, 404, "Portal Trip read after grant revocation");
+    probes.push(`portal-trip-read-after-revocation-http-${afterRevoke.status}`);
+    requireStatus(afterRevoke, 401, "Portal Trip read after authorization-epoch revocation");
     probes.push("grant-revocation-invalidates-existing-portal-session");
   } catch (error) {
     failure = error;
