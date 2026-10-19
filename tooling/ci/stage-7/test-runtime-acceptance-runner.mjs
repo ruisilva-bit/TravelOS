@@ -370,6 +370,8 @@ try {
   assert.equal(result.stage8Actions, 0);
   assert.ok(result.probes.includes("cross-trip-access-denied"));
   assert.ok(result.probes.includes("publication-v2-visible-v1-immutable"));
+  assert.ok(result.probes.includes("portal-access-grant-revocation-http-200"));
+  assert.ok(result.probes.includes("portal-access-grant-revocation-revoked-at-string"));
   assert.ok(result.probes.includes("portal-session-revoked-after-sign-out"));
   assert.ok(result.probes.includes("staff-session-revoked-after-sign-out"));
   assert.equal(

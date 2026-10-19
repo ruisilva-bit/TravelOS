@@ -24,6 +24,7 @@ import {
 } from "../../packages/auth-adapters/src/index.js";
 import {
   asOpaqueId,
+  bootstrapRootAgency,
   IdempotencyConflictError,
   M1InputValidationError,
   M1StaffAuthorizationError,
@@ -428,29 +429,23 @@ const seedRootAgency = async (
   agencyId: string,
   suffix: string,
 ): Promise<void> => {
-  const client = new Client({
+  const persistence = createPostgresPersistence<Record<string, never>>({
     host,
     port,
     database: databaseName,
-    user: "travelos_migrator",
-    ssl: false,
+    user: "travelos_admin_api",
+    tls: { mode: "DISABLED_LOOPBACK_ONLY" },
+    applicationName: `travelos-stage7-root-bootstrap-${suffix}`,
+    maxConnections: 2,
   });
-  await client.connect();
   try {
-    await client.query('SET ROLE "travelos_owner"');
-    await client.query(
-      `INSERT INTO "organization"."agency" ("id", "bootstrapReference", "slug")
-       VALUES ($1::uuid, $2, $3)`,
-      [agencyId, `stage7-${suffix}-migration-fixture`, `stage7-${suffix}-migration`],
-    );
-    await client.query(
-      `INSERT INTO "staff_access"."role" ("id", "agencyId", "templateKey", "displayName", "isSystemTemplate")
-       VALUES ($1::uuid, $2::uuid, 'agency-owner-v1', 'Owner', true)`,
-      [randomUUID(), agencyId],
-    );
+    await bootstrapRootAgency(createStaffAccessRepository(persistence), {
+      agencyId,
+      bootstrapReference: `stage7-${suffix}-migration-fixture`,
+      slug: `stage7-${suffix}-migration`,
+    });
   } finally {
-    await client.query("RESET ROLE").catch(() => undefined);
-    await client.end();
+    await persistence.destroy();
   }
 };
 
@@ -1036,6 +1031,18 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         operatorIdentity: "TEST_LOCAL_OPERATOR",
       });
       expect(consumed.result).toBe("CONSUMED");
+      const ownerSnapshot = await repository.getStaffAuthorizationSnapshot(
+        principalId!,
+        emptyAgencyId,
+      );
+      expect(ownerSnapshot?.assignments).toContainEqual(
+        expect.objectContaining({
+          permissionId: "agency.view",
+          scopeKind: "AGENCY",
+          accessLevel: "ALL",
+          active: true,
+        }),
+      );
       const initial = await call(staffAuthRealm, "sign-in/email", { email, password });
       expect(initial.status).toBe(200);
       const initialCookie = initial.headers

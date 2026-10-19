@@ -590,23 +590,22 @@ export const runStage7RuntimeAcceptance = async ({
     assert.deepEqual(persistedPayload, publication.projection);
     probes.push("publication-v2-visible-v1-immutable");
 
+    const revokeResponse = await requestAdmin({
+      method: "POST",
+      path: `/api/admin/portal-access-grants/${issuedGrantId}/revocations`,
+      body: {
+        agencyId,
+        grantId: issuedGrantId,
+        idempotencyKey: `stage7-runtime-revoke-${suffix}`,
+      },
+      cookie: staffCookie,
+    });
+    probes.push(`portal-access-grant-revocation-http-${revokeResponse.status}`);
     const revoke = objectBody(
-      requireStatus(
-        await requestAdmin({
-          method: "POST",
-          path: `/api/admin/portal-access-grants/${issuedGrantId}/revocations`,
-          body: {
-            agencyId,
-            grantId: issuedGrantId,
-            idempotencyKey: `stage7-runtime-revoke-${suffix}`,
-          },
-          cookie: staffCookie,
-        }),
-        200,
-        "Portal Trip access revocation",
-      ),
+      requireStatus(revokeResponse, 200, "Portal Trip access revocation"),
       "Portal Trip access revocation",
     );
+    probes.push(`portal-access-grant-revocation-revoked-at-${typeof revoke.revokedAt}`);
     assert.ok(typeof revoke.revokedAt === "string");
     grantRevoked = true;
     const afterRevoke = await requestPortal({
