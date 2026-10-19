@@ -304,16 +304,17 @@ export const runStage7RuntimeAcceptance = async ({
     });
     probes.push("staff-realm-authenticated-with-recent-mfa");
 
-    const contextResponse = requireStatus(
-      await requestAdmin({
-        method: "GET",
-        path: "/api/staff/session-context",
-        cookie: staffCookie,
-      }),
-      200,
-      "Staff session context",
-    );
+    const rawContextResponse = await requestAdmin({
+      method: "GET",
+      path: "/api/staff/session-context",
+      cookie: staffCookie,
+    });
+    probes.push(`staff-session-context-http-${rawContextResponse.status}`);
+    const contextResponse = requireStatus(rawContextResponse, 200, "Staff session context");
     const context = objectBody(contextResponse, "Staff session context");
+    probes.push(`staff-session-context-agency-id-${typeof context.agencyId}`);
+    probes.push(`staff-session-context-principal-id-${typeof context.principalId}`);
+    probes.push(`staff-session-context-mfa-${typeof context.recentMfaVerifiedAtEpochMs}`);
     assert.equal(typeof context.agencyId, "string");
     assert.equal(typeof context.principalId, "string");
     assert.equal(typeof context.recentMfaVerifiedAtEpochMs, "number");

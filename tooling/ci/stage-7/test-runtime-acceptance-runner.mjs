@@ -472,6 +472,10 @@ try {
       );
       assert.deepEqual(error.completedProbes, [
         "staff-realm-authenticated-with-recent-mfa",
+        "staff-session-context-http-200",
+        "staff-session-context-agency-id-undefined",
+        "staff-session-context-principal-id-undefined",
+        "staff-session-context-mfa-undefined",
         "staff-session-revoked-after-sign-out",
       ]);
       return true;
