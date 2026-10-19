@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { URL } from "node:url";
 import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
-import { validateStage7DeploymentContractSource } from "./verify-deployment-contract.mjs";
+import {
+  validateStage7DeploymentContractSource,
+  validateStage7OperatorUnit,
+} from "./verify-deployment-contract.mjs";
 
 const cloneJson = (value) => JSON.parse(JSON.stringify(value));
-const generation = "gen07";
+const generation = "gen08";
 assert.equal(STAGE7_DEFAULT_GENERATION, generation);
 const readJson = async (relativePath) =>
   JSON.parse(await readFile(new URL(`../../../${relativePath}`, import.meta.url), "utf8"));
@@ -21,6 +24,24 @@ const migrationBytes = await readFile(
 );
 const checksumManifestBytes = await readFile(
   new URL("../../../migrations/checksums.json", import.meta.url),
+);
+const operatorUnit = await readFile(
+  new URL("../../../deploy/systemd/travelos-stage7-runtime-acceptance.service", import.meta.url),
+  "utf8",
+);
+assert.match(operatorUnit, /^DynamicUser=yes$/mu);
+assert.doesNotMatch(operatorUnit, /^Group=/mu);
+validateStage7OperatorUnit(operatorUnit);
+assert.throws(
+  () => validateStage7OperatorUnit(operatorUnit.replace(/^DynamicUser=yes$/mu, "DynamicUser=no")),
+  /operator unit/iu,
+);
+assert.throws(
+  () =>
+    validateStage7OperatorUnit(
+      operatorUnit.replace(/^LoadCredentialEncrypted=stage7-staff-totp:.*\n/mu, ""),
+    ),
+  /operator unit/iu,
 );
 
 const accepted = validateStage7DeploymentContractSource({
@@ -54,6 +75,8 @@ assert.equal(extension.artifact.canonicalCiStatusAtBuild, "PENDING_ONE_AUTHORIZE
 assert.deepEqual(extension.runtimeAcceptance, {
   sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
   runnerPath: "operator/stage7-runtime-acceptance.mjs",
+  operatorUnitSourcePath: "deploy/systemd/travelos-stage7-runtime-acceptance.service",
+  operatorUnitPath: "operator/travelos-stage7-runtime-acceptance.service",
   executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
   operatorOnly: true,
   persistentService: false,
@@ -61,6 +84,7 @@ assert.deepEqual(extension.runtimeAcceptance, {
   publicSignupEndpoint: false,
   newExternallyReachablePorts: [],
   credentialDirectoryEnv: "CREDENTIALS_DIRECTORY",
+  staffTotpCredentialKind: "BETTER_AUTH_BASE32_SEED",
   requiredCredentialNames: [
     "portal-api-db",
     "portal-auth-realm",
@@ -129,5 +153,5 @@ assert.throws(
 );
 
 process.stdout.write(
-  `${JSON.stringify({ result: "PASS", cases: 4, positiveCases: 1, negativeControls: 3 })}\n`,
+  `${JSON.stringify({ result: "PASS", cases: 7, positiveCases: 2, negativeControls: 5 })}\n`,
 );

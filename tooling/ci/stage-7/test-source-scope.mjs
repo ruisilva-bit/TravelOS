@@ -26,7 +26,7 @@ assert.equal(typeof verifyStage7CandidateSourceScope, "function");
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const actualHistory = await loadStage7PriorCandidateDispositions({
   root: repositoryRoot,
-  candidateGeneration: "gen07",
+  candidateGeneration: "gen08",
 });
 assert.deepEqual(
   actualHistory.priorCandidates.map(({ generation, candidateCommit }) => [
@@ -40,6 +40,7 @@ assert.deepEqual(
     ["gen04", "c2f8869cc80fa249cfbacaec70d07ef78ebce653"],
     ["gen05", "886462096c799aaf026a6f710a43fb84cb4d9722"],
     ["gen06", "ec51a8f0c724b77c863a17dbbd27c9510b9e7120"],
+    ["gen07", "d8ae418ff825b59845b45b7fbf8b4dfa8c141d7d"],
   ],
 );
 assert.ok(
@@ -50,6 +51,7 @@ assert.ok(
 assert.equal(actualHistory.priorCandidates[3].canonicalCiStatus, "FAIL");
 assert.equal(actualHistory.priorCandidates[4].canonicalCiStatus, "PASS");
 assert.equal(actualHistory.priorCandidates[5].canonicalCiStatus, "FAIL");
+assert.equal(actualHistory.priorCandidates[6].canonicalCiStatus, "PASS");
 const gen04CiEvidencePaths = [
   "docs/evidence/phase-1-m1/stage-7/gen04/canonical-ci-execution.json",
   "docs/evidence/phase-1-m1/stage-7/gen04/canonical-ci.log",
@@ -60,6 +62,8 @@ const priorCiEvidencePaths = [
   "docs/evidence/phase-1-m1/stage-7/gen05/canonical-ci.log",
   "docs/evidence/phase-1-m1/stage-7/gen06/canonical-ci-execution.json",
   "docs/evidence/phase-1-m1/stage-7/gen06/canonical-ci.log",
+  "docs/evidence/phase-1-m1/stage-7/gen07/canonical-ci-execution.json",
+  "docs/evidence/phase-1-m1/stage-7/gen07/canonical-ci.log",
 ];
 
 const preFreeze = evaluateStage7PriorEvidenceScope({
@@ -70,7 +74,7 @@ assert.equal(preFreeze.result, "PASS");
 assert.deepEqual(preFreeze.requiredEvidencePaths, priorCiEvidencePaths);
 assert.deepEqual(preFreeze.missingPaths, []);
 assert.deepEqual(preFreeze.freezeEligibleGenerations, []);
-assert.equal(preFreeze.candidateCount, 6);
+assert.equal(preFreeze.candidateCount, 7);
 
 const frozenValidationPath = "docs/evidence/phase-1-m1/stage-7/gen99/candidate-validation.json";
 const frozenManifestPath = "docs/evidence/phase-1-m1/stage-7/gen99/candidate-freeze.json";
@@ -184,9 +188,9 @@ try {
     if (candidate.freezePath) await copyRepositoryFile(candidate.freezePath);
   }
 
-  const candidateGeneration = "gen07";
+  const candidateGeneration = "gen08";
   const candidateCommit = "4".repeat(40);
-  const baselinePath = "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN07.json";
+  const baselinePath = "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN08.json";
   const newVerifierPaths = [
     "package.json",
     "tooling/ci/scan-source-secrets.mjs",
@@ -232,7 +236,7 @@ try {
   });
   assert.equal(candidateScope.result, "PASS");
   assert.equal(candidateScope.candidateGeneration, candidateGeneration);
-  assert.equal(candidateScope.candidateCount, 6);
+  assert.equal(candidateScope.candidateCount, 7);
   assert.deepEqual(candidateScope.requiredEvidencePaths, priorCiEvidencePaths);
   assert.deepEqual(candidateScope.freezeEligibleGenerations, []);
   assert.ok(/^[a-f0-9]{64}$/u.test(candidateScope.historySha256));

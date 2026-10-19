@@ -2,15 +2,17 @@ import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import http from "node:http";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { TextDecoder } from "node:util";
 
 const REQUIRED_CREDENTIALS = Object.freeze({
   portalDatabasePassword: "portal-api-db",
   portalRealmKey: "portal-auth-realm",
   staffEmail: "stage7-staff-email",
   staffPassword: "stage7-staff-password",
-  staffTotpCode: "stage7-staff-totp",
+  staffTotpSeed: "stage7-staff-totp",
 });
 const SYSTEMD_REFERENCE_PREFIX = "systemd-credential:";
 const MAX_RESPONSE_BYTES = 1_048_576;
@@ -49,7 +51,7 @@ export const readStage7RuntimeCredentials = async ({
     portalRealmKey: manifest.authentication?.portalRealmCredentialReference,
     staffEmail: `${SYSTEMD_REFERENCE_PREFIX}${REQUIRED_CREDENTIALS.staffEmail}`,
     staffPassword: `${SYSTEMD_REFERENCE_PREFIX}${REQUIRED_CREDENTIALS.staffPassword}`,
-    staffTotpCode: `${SYSTEMD_REFERENCE_PREFIX}${REQUIRED_CREDENTIALS.staffTotpCode}`,
+    staffTotpSeed: `${SYSTEMD_REFERENCE_PREFIX}${REQUIRED_CREDENTIALS.staffTotpSeed}`,
   };
   const credentials = Object.create(null);
   for (const [key, expectedName] of Object.entries(REQUIRED_CREDENTIALS)) {
@@ -71,6 +73,10 @@ export const readStage7RuntimeCredentials = async ({
       throw new Error("Required operator credentials are invalid");
     }
   }
+  if (!/^[A-Z2-7]{16,128}$/u.test(credentials.staffTotpSeed)) {
+    for (const secretKey of Object.keys(credentials)) credentials[secretKey] = "";
+    throw new Error("Required operator credentials are invalid");
+  }
   return credentials;
 };
 
@@ -90,7 +96,7 @@ const cookieHeaderFrom = (response, name) => {
   const prefix = `${name}=`;
   const matching = rows
     .map((row) => String(row).split(";", 1)[0])
-    .find((row) => row.startsWith(prefix));
+    .find((row) => row.startsWith(prefix) && row.length > prefix.length);
   return matching ?? null;
 };
 const temporaryCookieHeaderFrom = (response) => {
@@ -98,7 +104,7 @@ const temporaryCookieHeaderFrom = (response) => {
   const rows = Array.isArray(setCookies) ? setCookies : [setCookies];
   return rows
     .map((row) => String(row).split(";", 1)[0])
-    .filter((row) => row.includes("="))
+    .filter((row) => row.includes("=") && row.slice(row.indexOf("=") + 1).length > 0)
     .join("; ");
 };
 const requireCookie = (response, name, label) => {
@@ -111,7 +117,7 @@ const requireStatus = (response, expected, label) => {
   return response;
 };
 
-const signInStaff = async ({ requestAdmin, credentials }) => {
+export const signInStaff = async ({ requestAdmin, credentials, makeStaffTotpCode }) => {
   const signIn = await requestAdmin({
     method: "POST",
     path: "/api/auth/staff/sign-in/email",
@@ -119,15 +125,25 @@ const signInStaff = async ({ requestAdmin, credentials }) => {
   });
   requireStatus(signIn, 200, "Staff sign-in");
   const signInBody = objectBody(signIn, "Staff sign-in");
-  const directCookie = cookieHeaderFrom(signIn, DEVELOPMENT_STAFF_COOKIE);
-  if (directCookie !== null) return directCookie;
+  const unexpectedSession = cookieHeaderFrom(signIn, DEVELOPMENT_STAFF_COOKIE);
+  if (unexpectedSession !== null) {
+    await requestAdmin({
+      method: "POST",
+      path: "/api/auth/staff/sign-out",
+      body: {},
+      cookie: unexpectedSession,
+    });
+    throw new Error("Staff sign-in unexpectedly issued a session without MFA");
+  }
   assert.equal(signInBody.twoFactorRedirect, true, "Staff sign-in did not complete MFA");
   const challengeCookie = temporaryCookieHeaderFrom(signIn);
   assert.ok(challengeCookie.length > 0, "Staff MFA challenge did not issue its temporary cookie");
+  const code = await makeStaffTotpCode(credentials.staffTotpSeed);
+  assert.match(code, /^[0-9]{6}$/u, "Staff MFA generator returned an invalid code");
   const verified = await requestAdmin({
     method: "POST",
     path: "/api/auth/staff/two-factor/verify-totp",
-    body: { code: credentials.staffTotpCode },
+    body: { code },
     cookie: challengeCookie,
   });
   requireStatus(verified, 200, "Staff MFA verification");
@@ -241,6 +257,7 @@ export const runStage7RuntimeAcceptance = async ({
   requestAdmin,
   requestPortal,
   enrollment,
+  makeStaffTotpCode,
   makeUuid = randomUUID,
   makePassword = () => randomBytes(32).toString("base64url"),
 }) => {
@@ -262,6 +279,7 @@ export const runStage7RuntimeAcceptance = async ({
   assert.equal(typeof requestAdmin, "function");
   assert.equal(typeof requestPortal, "function");
   assert.equal(typeof enrollment?.enroll, "function");
+  assert.equal(typeof makeStaffTotpCode, "function");
   const probes = [];
   let staffCookie;
   let portalCookie;
@@ -277,6 +295,7 @@ export const runStage7RuntimeAcceptance = async ({
       requestAdmin: (request) =>
         requestAdmin({ ...request, cookie: request.cookie ?? staffCookie }),
       credentials,
+      makeStaffTotpCode,
     });
     probes.push("staff-realm-authenticated-with-recent-mfa");
 
@@ -605,6 +624,22 @@ const requestLoopback =
 const resolveRuntimePackageRoot = (appRoot, packageName) =>
   realpath(path.join(appRoot, "node_modules", ...packageName.split("/")));
 
+// Compute a fresh challenge only after Staff sign-in, using the exact Better
+// Auth OTP implementation shipped with the runtime adapter.
+export const createRuntimeTotpGenerator = async (appRoot) => {
+  const adapterRoot = await resolveRuntimePackageRoot(appRoot, "@travelos/auth-adapters");
+  const packageFile = await realpath(path.join(adapterRoot, "package.json"));
+  const adapterRequire = createRequire(packageFile);
+  const betterAuthRequire = createRequire(adapterRequire.resolve("better-auth"));
+  const { createOTP } = betterAuthRequire("@better-auth/utils/otp");
+  const { base32 } = betterAuthRequire("@better-auth/utils/base32");
+  return async (encodedSeed) => {
+    assert.match(encodedSeed, /^[A-Z2-7]{16,128}$/u, "Invalid Staff TOTP seed");
+    const secret = new TextDecoder("utf-8", { fatal: true }).decode(base32.decode(encodedSeed));
+    return createOTP(secret).totp();
+  };
+};
+
 export const resolveRuntimePackageImport = async ({ appRoot, packageName, exportName = "." }) => {
   const packageRoot = await resolveRuntimePackageRoot(appRoot, packageName);
   const packageMetadata = JSON.parse(
@@ -629,6 +664,9 @@ const runCli = async () => {
   assert.ok(path.isAbsolute(manifestPath), "Manifest path must be absolute");
   const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
   const artifactRoot = path.resolve(scriptDirectory, "..");
+  const release = JSON.parse(await readFile(path.join(artifactRoot, "release.json"), "utf8"));
+  assert.match(release.artifactId, /^travelos-phase-1-m1-stage-7-gen08-[a-f0-9]{8}$/u);
+  assert.equal(release.source?.successorBaselineGeneration, "gen08");
   const portalPackageRoot = path.join(artifactRoot, "apps/portal-api");
   const config = await import(
     await resolveRuntimePackageImport({
@@ -642,11 +680,7 @@ const runCli = async () => {
     "DEVELOPMENT",
     "Acceptance runner is not enabled outside DEVELOPMENT",
   );
-  const credentials = await readStage7RuntimeCredentials({
-    manifest,
-    readCredential: (name) =>
-      config.readSystemdCredentialText(`${SYSTEMD_REFERENCE_PREFIX}${name}`),
-  });
+  const credentials = await readStage7RuntimeCredentials({ manifest });
   let portalDatabase;
   try {
     const portalAuth = await import(
@@ -695,6 +729,7 @@ const runCli = async () => {
       requestAdmin,
       requestPortal,
       enrollment,
+      makeStaffTotpCode: await createRuntimeTotpGenerator(portalPackageRoot),
     });
     process.stdout.write(`${JSON.stringify(result)}\n`);
   } finally {

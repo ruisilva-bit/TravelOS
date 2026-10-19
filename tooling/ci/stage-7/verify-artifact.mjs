@@ -6,7 +6,6 @@ import { lstat, mkdir, mkdtemp, readFile, readlink, readdir, realpath, rm } from
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
-import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const ACCEPTED_STAGE6_CONTRACT_SHA256 =
@@ -203,6 +202,8 @@ const verifyPackagedContract = async ({ root, release, generation }) => {
     {
       sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
       runnerPath: "operator/stage7-runtime-acceptance.mjs",
+      operatorUnitSourcePath: "deploy/systemd/travelos-stage7-runtime-acceptance.service",
+      operatorUnitPath: "operator/travelos-stage7-runtime-acceptance.service",
       executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
       operatorOnly: true,
       persistentService: false,
@@ -210,6 +211,7 @@ const verifyPackagedContract = async ({ root, release, generation }) => {
       publicSignupEndpoint: false,
       newExternallyReachablePorts: [],
       credentialDirectoryEnv: "CREDENTIALS_DIRECTORY",
+      staffTotpCredentialKind: "BETTER_AUTH_BASE32_SEED",
       requiredCredentialNames: [
         "portal-api-db",
         "portal-auth-realm",
@@ -245,6 +247,7 @@ const verifyPackagedContract = async ({ root, release, generation }) => {
 const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension }) => {
   const acceptance = extension.runtimeAcceptance;
   const runnerBytes = await readRegularArtifactFile(root, acceptance.runnerPath);
+  const operatorUnitBytes = await readRegularArtifactFile(root, acceptance.operatorUnitPath);
   const runnerSha256 = sha256(runnerBytes);
   assert.deepEqual(
     release.runtimeAcceptance,
@@ -252,6 +255,8 @@ const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension }) => 
       sourcePath: acceptance.sourcePath,
       runnerPath: acceptance.runnerPath,
       sha256: runnerSha256,
+      operatorUnitPath: acceptance.operatorUnitPath,
+      operatorUnitSha256: sha256(operatorUnitBytes),
       executionMode: acceptance.executionMode,
       operatorOnly: acceptance.operatorOnly,
       persistentService: acceptance.persistentService,
@@ -295,6 +300,26 @@ const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension }) => 
   const payload = JSON.parse(
     (await readRegularArtifactFile(root, "payload-manifest.json")).toString("utf8"),
   );
+  const unitRow = payload.files.find((entry) => entry.path === acceptance.operatorUnitPath);
+  assert.equal(unitRow?.type, "file", "Operator unit is missing from artifact inventory");
+  assert.equal(unitRow.sha256, sha256(operatorUnitBytes));
+  assert.ok(
+    (await readRegularArtifactFile(root, "checksums.txt"))
+      .toString("utf8")
+      .split("\n")
+      .includes(`${unitRow.sha256}  ${acceptance.operatorUnitPath}`),
+    "Operator unit is missing from artifact checksums",
+  );
+  const unitText = operatorUnitBytes.toString("utf8");
+  assert.match(unitText, /Type=oneshot/u);
+  assert.match(unitText, /Restart=no/u);
+  assert.match(unitText, /User=travelos-stage7-operator/u);
+  assert.match(unitText, /--generation=gen08/u);
+  assert.match(unitText, /LoadCredentialEncrypted=stage7-staff-totp:/u);
+  assert.match(
+    unitText,
+    /ExecStart=\/opt\/travelos\/current\/runtime\/node\/bin\/node \/opt\/travelos\/current\/operator\/stage7-runtime-acceptance\.mjs/u,
+  );
   const row = payload.files.find((entry) => entry.path === acceptance.runnerPath);
   assert.ok(row !== undefined, "Acceptance runner is missing from artifact inventory");
   assert.equal(row.type, "file");
@@ -313,11 +338,13 @@ const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension }) => 
   )) {
     if (unit.type !== "file") continue;
     const unitText = (await readRegularArtifactFile(root, unit.path)).toString("utf8");
-    assert.equal(
-      unitText.includes(acceptance.runnerPath),
-      false,
-      "Acceptance runner must not be configured as a persistent systemd unit",
-    );
+    if (unit.path !== acceptance.operatorUnitPath) {
+      assert.equal(
+        unitText.includes(acceptance.runnerPath),
+        false,
+        "Acceptance runner must not be configured as a persistent systemd unit",
+      );
+    }
   }
 
   const baseline = JSON.parse(
@@ -338,6 +365,10 @@ const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension }) => 
     runnerSha256,
     "Packaged runner differs from its provenanced source",
   );
+  const unitSource = baseline.sourceFiles.find(
+    (entry) => entry.path === acceptance.operatorUnitSourcePath,
+  );
+  assert.equal(unitSource?.sha256, sha256(operatorUnitBytes), "Operator unit differs from source");
 
   const runnerModule = await import(pathToFileURL(path.join(root, acceptance.runnerPath)).href);
   for (const dependency of acceptance.runtimeDependencies) {
@@ -963,7 +994,9 @@ export const verifyStage7Artifact = async ({
 };
 
 const parseArguments = (argumentsList) => {
-  const options = { generation: STAGE7_DEFAULT_GENERATION };
+  // This file is also copied to deployment/ in a standalone release. Do not
+  // import source-tree helpers: they are intentionally absent from the payload.
+  const options = {};
   const seen = new Set();
   for (const argument of argumentsList) {
     const separator = argument.indexOf("=");
@@ -981,6 +1014,7 @@ const parseArguments = (argumentsList) => {
     else throw new Error(`Unsupported argument: ${argument}`);
   }
   assert.ok(options.artifactRoot, "Missing required --artifact-root");
+  assert.ok(options.generation, "Missing required --generation");
   return options;
 };
 

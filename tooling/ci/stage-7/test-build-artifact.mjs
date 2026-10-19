@@ -33,6 +33,7 @@ const release = builder.createStage7ReleaseMetadata({
   stage7DeploymentContractSha256: hash,
   stage7VerifierSha256: hash,
   runtimeAcceptanceSha256: hash,
+  operatorUnitSha256: hash,
 });
 assert.deepEqual(release, {
   schemaVersion: 1,
@@ -99,6 +100,8 @@ assert.deepEqual(release, {
     sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
     runnerPath: "operator/stage7-runtime-acceptance.mjs",
     sha256: hash,
+    operatorUnitPath: "operator/travelos-stage7-runtime-acceptance.service",
+    operatorUnitSha256: hash,
     executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
     operatorOnly: true,
     persistentService: false,
@@ -123,6 +126,7 @@ assert.throws(
       stage7DeploymentContractSha256: hash,
       stage7VerifierSha256: hash,
       runtimeAcceptanceSha256: hash,
+      operatorUnitSha256: hash,
     }),
   /source branch mismatch/u,
 );
@@ -142,6 +146,7 @@ assert.throws(
       stage7DeploymentContractSha256: hash,
       stage7VerifierSha256: hash,
       runtimeAcceptanceSha256: hash,
+      operatorUnitSha256: hash,
     }),
   /Invalid Stage 7 generation/u,
 );

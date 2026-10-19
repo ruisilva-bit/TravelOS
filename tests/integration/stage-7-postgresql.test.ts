@@ -1,9 +1,9 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { copyFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeSignature } from "better-auth/crypto";
 import { Client } from "pg";
 import request from "supertest";
@@ -12,8 +12,10 @@ import type { AuthSurfacePolicy, PortalAuthRealm } from "@travelos/auth-adapters
 import { createAdminStaffSessionResolver } from "../../apps/admin-api/src/m1-session-resolver.js";
 import { createPortalApi } from "../../apps/portal-api/src/app.js";
 import * as databaseModule from "../../packages/database/src/index.js";
+import { createStaffAccessRepository } from "../../packages/database/src/index.js";
 import { createLocalOperatorPortalEnrollmentService } from "../../packages/auth-adapters/src/realm.js";
 import {
+  createOneTimeOperatorToken,
   createLocalOperatorStaffEnrollmentRealm,
   createPortalAuthRealm,
   createStaffAuthRealm,
@@ -45,6 +47,25 @@ import {
 } from "../../tooling/database/migration-runner.js";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
+const { createRuntimeTotpGenerator, signInStaff } = (await import(
+  pathToFileURL(path.join(repositoryRoot, "tooling/ci/stage-7/runtime-acceptance-runner.mjs")).href
+)) as {
+  createRuntimeTotpGenerator: (appRoot: string) => Promise<(seed: string) => Promise<string>>;
+  signInStaff: (input: {
+    requestAdmin: (request: {
+      method: string;
+      path: string;
+      body: object;
+      cookie?: string;
+    }) => Promise<{ status: number; headers: { "set-cookie": string[] }; body: unknown }>;
+    credentials: {
+      staffEmail: string;
+      staffPassword: string;
+      staffTotpSeed: string;
+    };
+    makeStaffTotpCode: (seed: string) => Promise<string>;
+  }) => Promise<string>;
+};
 const host = process.env["PGHOST"] ?? "";
 const port = Number.parseInt(process.env["PGPORT"] ?? "", 10);
 const postgresBin = process.env["TRAVELOS_STAGE7_PG_BIN"] ?? "";
@@ -698,6 +719,146 @@ afterEach(() => {
 });
 
 describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
+  it("authenticates the acceptance runner against a real DEVELOPMENT Staff MFA realm", async () => {
+    const staffPersistence = createPostgresPersistence<Record<string, never>>({
+      host,
+      port,
+      database: emptyDatabaseName,
+      user: "travelos_admin_api",
+      tls: { mode: "DISABLED_LOOPBACK_ONLY" },
+      applicationName: "travelos-stage7-runner-auth-qualification",
+      maxConnections: 2,
+    });
+    try {
+      const adminDatabase = await staffPersistence.withConnection(async (connection) => connection);
+      const staffAuthRealm = createStaffAuthRealm({
+        database: adminDatabase,
+        canonicalOrigin: "http://admin.travelos.test",
+        realmKeyMaterial: stage7RealmKey,
+        environment: "DEVELOPMENT",
+      });
+      const enrollmentRealm = createLocalOperatorStaffEnrollmentRealm({
+        database: adminDatabase,
+        canonicalOrigin: "http://admin.travelos.test",
+        realmKeyMaterial: stage7RealmKey,
+        environment: "DEVELOPMENT",
+      });
+      const email = `stage7-runner-${randomUUID()}@example.test`;
+      const password = randomBytes(32).toString("base64url");
+      const origin = "http://admin.travelos.test";
+      const repository = createStaffAccessRepository(staffPersistence);
+      const invitation = createOneTimeOperatorToken();
+      const issued = await repository.issueFirstOwnerInvitation({
+        agencyId: emptyAgencyId,
+        targetEmail: email,
+        tokenDigest: invitation.digest,
+        expiresAt: new Date(Date.now() + 60_000),
+        operatorIdentity: "TEST_LOCAL_OPERATOR",
+      });
+      expect(issued.result).toBe("ISSUED");
+      const call = async (realm: AuthRealm, endpoint: string, body: object, cookie?: string) =>
+        realm.handle(
+          new Request(`${origin}/api/auth/staff/${endpoint}`, {
+            method: "POST",
+            headers: {
+              origin,
+              "content-type": "application/json",
+              ...(cookie === undefined ? {} : { cookie }),
+            },
+            body: JSON.stringify(body),
+          }),
+        );
+      const enrolled = await call(enrollmentRealm, "sign-up/email", {
+        email,
+        name: "Stage 7 Synthetic Runner",
+        password,
+      });
+      expect(enrolled.status).toBe(200);
+      const principalId = await repository.findStaffPrincipalIdByEmail(email);
+      expect(principalId).not.toBeNull();
+      const consumed = await repository.consumeFirstOwnerInvitation({
+        tokenDigest: invitation.digest,
+        staffPrincipalId: principalId!,
+        operatorIdentity: "TEST_LOCAL_OPERATOR",
+      });
+      expect(consumed.result).toBe("CONSUMED");
+      const initial = await call(staffAuthRealm, "sign-in/email", { email, password });
+      expect(initial.status).toBe(200);
+      const initialCookie = initial.headers
+        .getSetCookie()
+        .map((row) => row.split(";", 1)[0])
+        .join("; ");
+      const enabled = await call(staffAuthRealm, "two-factor/enable", { password }, initialCookie);
+      expect(enabled.status).toBe(200);
+      const totpUri = ((await enabled.json()) as { totpURI: string }).totpURI;
+      const seed = new URL(totpUri).searchParams.get("secret");
+      expect(seed).toMatch(/^[A-Z2-7]{16,128}$/u);
+      const generateTotp = await createRuntimeTotpGenerator(
+        path.join(repositoryRoot, "apps/portal-api"),
+      );
+      const verified = await call(
+        staffAuthRealm,
+        "two-factor/verify-totp",
+        { code: await generateTotp(seed!) },
+        initialCookie,
+      );
+      expect(verified.status).toBe(200);
+      const diagnosticChallenge = await call(staffAuthRealm, "sign-in/email", { email, password });
+      const diagnosticBody = (await diagnosticChallenge.json()) as { twoFactorRedirect?: boolean };
+      const diagnosticCookies = diagnosticChallenge.headers.getSetCookie().map((row) => {
+        const pair = row.split(";", 1)[0] ?? "";
+        return {
+          name: pair.split("=", 1)[0],
+          hasValue: pair.slice(pair.indexOf("=") + 1).length > 0,
+        };
+      });
+      expect({ redirect: diagnosticBody.twoFactorRedirect, cookies: diagnosticCookies }).toEqual({
+        redirect: true,
+        cookies: [
+          { name: "travelos-dev-staff-session", hasValue: false },
+          { name: "travelos-staff.session_data", hasValue: false },
+          { name: "travelos-staff.two_factor", hasValue: true },
+        ],
+      });
+      const requestAdmin = async ({
+        path: endpoint,
+        body,
+        cookie,
+      }: {
+        path: string;
+        body: object;
+        cookie?: string;
+        method: string;
+      }) => {
+        const response = await call(
+          staffAuthRealm,
+          endpoint.replace("/api/auth/staff/", ""),
+          body,
+          cookie,
+        );
+        return {
+          status: response.status,
+          headers: { "set-cookie": response.headers.getSetCookie() },
+          body: await response.json(),
+        };
+      };
+      const sessionCookie = await signInStaff({
+        requestAdmin,
+        credentials: {
+          staffEmail: email,
+          staffPassword: password,
+          staffTotpSeed: seed!,
+        },
+        makeStaffTotpCode: generateTotp,
+      });
+      expect(sessionCookie).toMatch(/^travelos-dev-staff-session=/u);
+      const signedOut = await call(staffAuthRealm, "sign-out", {}, sessionCookie);
+      expect(signedOut.status).toBe(200);
+    } finally {
+      await staffPersistence.destroy();
+    }
+  });
+
   it("applies the ordered Stage 7 migration to an empty supported database", () => {
     expect(emptyStage6Run.currentVersion).toBe("0011_stage6_trip_publication");
     expect(emptyStage6Run.verifiedMigrationCount).toBe(11);

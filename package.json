@@ -67,7 +67,7 @@
     "test:stage7:predecessor-security-scan": "node tooling/ci/stage-7/test-predecessor-security-scan.mjs",
     "stage7:deployment-contract:verify": "node tooling/ci/stage-7/verify-deployment-contract.mjs",
     "test:stage7:deployment-contract": "node tooling/ci/stage-7/test-deployment-contract.mjs",
-    "test:stage7:artifact": "node tooling/ci/stage-7/test-artifact.mjs && node tooling/ci/stage-7/test-build-artifact.mjs",
+    "test:stage7:artifact": "node tooling/ci/stage-7/test-artifact.mjs && node tooling/ci/stage-7/test-build-artifact.mjs && node tooling/ci/stage-7/test-packaged-verifier.mjs && node tooling/ci/stage-7/test-runtime-acceptance-runner.mjs",
     "test:stage7:migrator-package": "node tooling/ci/stage-7/test-migrator-package.mjs",
     "test:stage7:canonical-ci": "node tooling/ci/stage-7/test-canonical-ci.mjs",
     "security:scan:stage6": "node tooling/ci/scan-stage-6-current-source.mjs",

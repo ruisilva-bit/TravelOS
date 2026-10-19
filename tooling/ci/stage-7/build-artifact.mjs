@@ -67,6 +67,7 @@ export const createStage7ReleaseMetadata = ({
   stage7DeploymentContractSha256,
   stage7VerifierSha256,
   runtimeAcceptanceSha256,
+  operatorUnitSha256,
 }) => {
   assertGeneration(generation);
   assert.equal(branch, "phase-1/stage-7", "Stage 7 source branch mismatch");
@@ -82,6 +83,7 @@ export const createStage7ReleaseMetadata = ({
     stage7DeploymentContractSha256,
     stage7VerifierSha256,
     runtimeAcceptanceSha256,
+    operatorUnitSha256,
   })) {
     assert.match(value ?? "", /^[a-f0-9]{64}$/u, `Invalid ${name}`);
   }
@@ -150,6 +152,8 @@ export const createStage7ReleaseMetadata = ({
       sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
       runnerPath: "operator/stage7-runtime-acceptance.mjs",
       sha256: runtimeAcceptanceSha256,
+      operatorUnitPath: "operator/travelos-stage7-runtime-acceptance.service",
+      operatorUnitSha256,
       executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
       operatorOnly: true,
       persistentService: false,
@@ -337,6 +341,9 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
   const runtimeAcceptanceBytes = await readFile(
     path.join(root, "tooling/ci/stage-7/runtime-acceptance-runner.mjs"),
   );
+  const operatorUnitBytes = await readFile(
+    path.join(root, "deploy/systemd/travelos-stage7-runtime-acceptance.service"),
+  );
   const nodeBinary = process.execPath;
   const nodeBinaryDigest = await hashPath(nodeBinary);
 
@@ -391,6 +398,10 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
     path.join(stagingRoot, "operator/stage7-runtime-acceptance.mjs"),
   );
   await copyFile(
+    path.join(root, "deploy/systemd/travelos-stage7-runtime-acceptance.service"),
+    path.join(stagingRoot, "operator/travelos-stage7-runtime-acceptance.service"),
+  );
+  await copyFile(
     path.join(root, "deploy/manifests/development.example.json"),
     path.join(stagingRoot, "instance-manifest/development.example.json"),
   );
@@ -420,6 +431,7 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
     stage7DeploymentContractSha256: sha256(extensionBytes),
     stage7VerifierSha256: sha256(verifierBytes),
     runtimeAcceptanceSha256: sha256(runtimeAcceptanceBytes),
+    operatorUnitSha256: sha256(operatorUnitBytes),
   });
   assert.deepEqual(release.toolchain, toolchain);
   await writeFile(path.join(stagingRoot, "release.json"), safeJsonBytes(release), {

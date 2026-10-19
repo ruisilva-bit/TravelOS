@@ -22,6 +22,53 @@ const REQUIRED_MIGRATION_SHA256 =
 const CHECKSUM_MANIFEST_SHA256 = "dd545bf5ae7ad0947dee21780cf392a6b873261b8953d8b04ca0962db21b6b81";
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const bytewise = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
+export const validateStage7OperatorUnit = (unit) => {
+  for (const line of [
+    "Type=oneshot",
+    "User=travelos-stage7-operator",
+    "DynamicUser=yes",
+    "WorkingDirectory=/opt/travelos/current",
+    "UMask=0077",
+    "NoNewPrivileges=yes",
+    "ProtectSystem=strict",
+    "ProtectHome=yes",
+    "IPAddressDeny=any",
+    "IPAddressAllow=localhost",
+    "Restart=no",
+    "ExecStartPre=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/deployment/verify-stage7-artifact.mjs --artifact-root=/opt/travelos/current --generation=gen08",
+    "ExecStart=/opt/travelos/current/runtime/node/bin/node /opt/travelos/current/operator/stage7-runtime-acceptance.mjs --manifest=/etc/travelos/instances/development.json",
+  ]) {
+    assert.ok(unit.split("\n").includes(line), `Unsafe Stage 7 operator unit: ${line}`);
+  }
+  const directives = unit.split("\n").filter((line) => line.includes("=") && !line.startsWith("#"));
+  const credentialRows = directives.filter((line) => line.startsWith("LoadCredentialEncrypted="));
+  assert.deepEqual(
+    credentialRows,
+    [
+      "portal-api-db",
+      "portal-auth-realm",
+      "stage7-staff-email",
+      "stage7-staff-password",
+      "stage7-staff-totp",
+    ].map((name) => `LoadCredentialEncrypted=${name}:/etc/credstore.encrypted/travelos-${name}`),
+    "Unsafe Stage 7 operator unit credential bindings",
+  );
+  for (const prefix of ["ExecStart=", "ExecStartPre="]) {
+    assert.equal(
+      directives.filter((line) => line.startsWith(prefix)).length,
+      1,
+      "Unsafe Stage 7 operator unit command count",
+    );
+  }
+  assert.ok(
+    !directives.some((line) =>
+      /^(?:Environment|Group|LoadCredential|ExecStartPost|ExecReload)=/u.test(line),
+    ) &&
+      !unit.includes("[Install]") &&
+      !unit.includes("[Socket]"),
+    "Unsafe Stage 7 operator unit directives",
+  );
+};
 
 const expectedExtensionFor = (generation) => ({
   schemaVersion: 1,
@@ -53,6 +100,8 @@ const expectedExtensionFor = (generation) => ({
   runtimeAcceptance: {
     sourcePath: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
     runnerPath: "operator/stage7-runtime-acceptance.mjs",
+    operatorUnitSourcePath: "deploy/systemd/travelos-stage7-runtime-acceptance.service",
+    operatorUnitPath: "operator/travelos-stage7-runtime-acceptance.service",
     executionMode: "DEVELOPMENT_OPERATOR_ONE_SHOT",
     operatorOnly: true,
     persistentService: false,
@@ -60,6 +109,7 @@ const expectedExtensionFor = (generation) => ({
     publicSignupEndpoint: false,
     newExternallyReachablePorts: [],
     credentialDirectoryEnv: "CREDENTIALS_DIRECTORY",
+    staffTotpCredentialKind: "BETTER_AUTH_BASE32_SEED",
     requiredCredentialNames: [
       "portal-api-db",
       "portal-auth-realm",
@@ -228,6 +278,10 @@ export const verifyStage7DeploymentContract = async ({
   const contractBytes = await assertRegularFile(workspace, STAGE7_EXTENSION_PATH);
   const extension = JSON.parse(contractBytes.toString("utf8"));
   await assertRegularFile(workspace, extension.runtimeAcceptance.sourcePath);
+  const operatorUnit = (
+    await assertRegularFile(workspace, extension.runtimeAcceptance.operatorUnitSourcePath)
+  ).toString("utf8");
+  validateStage7OperatorUnit(operatorUnit);
   const source = validateStage7DeploymentContractSource({
     extension,
     baseContractBytes: await assertRegularFile(workspace, BASE_CONTRACT_PATH),

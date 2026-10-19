@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { URL } from "node:url";
 import {
+  createRuntimeTotpGenerator,
   readStage7RuntimeCredentials,
   resolveRuntimePackageImport,
   runStage7RuntimeAcceptance,
@@ -60,15 +61,22 @@ try {
     "stage7-staff-totp",
   ];
   for (const name of names)
-    await writeFile(path.join(credentialDirectory, name), `synthetic-${name}`);
+    await writeFile(
+      path.join(credentialDirectory, name),
+      name === "stage7-staff-totp" ? "KN4W45DIMV2GSY2UN52HAU3FMNZGK5BRGIZQ" : `synthetic-${name}`,
+      { mode: 0o600 },
+    );
 
   const credentials = await readStage7RuntimeCredentials({ manifest, credentialDirectory });
+  const makeTotp = await createRuntimeTotpGenerator(path.join(process.cwd(), "apps/portal-api"));
+  assert.match(await makeTotp("KN4W45DIMV2GSY2UN52HAU3FMNZGK5BRGIZQ"), /^[0-9]{6}$/u);
+  await assert.rejects(makeTotp("123456"), /Invalid Staff TOTP seed/u);
   assert.deepEqual(Object.keys(credentials).sort(), [
     "portalDatabasePassword",
     "portalRealmKey",
     "staffEmail",
     "staffPassword",
-    "staffTotpCode",
+    "staffTotpSeed",
   ]);
   assert.ok(
     Object.values(credentials).every((value) => typeof value === "string" && value.length > 0),
@@ -88,6 +96,32 @@ try {
       return /required operator credentials/iu.test(error.message);
     },
   );
+  await writeFile(path.join(credentialDirectory, "stage7-staff-totp"), "123456", { mode: 0o600 });
+  await assert.rejects(
+    readStage7RuntimeCredentials({ manifest, credentialDirectory }),
+    /required operator credentials are invalid/iu,
+    "An expiring six-digit TOTP code must not be accepted as a reusable secret",
+  );
+  await writeFile(
+    path.join(credentialDirectory, "stage7-staff-totp"),
+    "KN4W45DIMV2GSY2UN52HAU3FMNZGK5BRGIZQ",
+    { mode: 0o600 },
+  );
+  await rm(path.join(credentialDirectory, "stage7-staff-totp"));
+  await symlink(
+    path.join(temporaryRoot, "missing-target"),
+    path.join(credentialDirectory, "stage7-staff-totp"),
+  );
+  await assert.rejects(
+    readStage7RuntimeCredentials({ manifest, credentialDirectory }),
+    /required operator credentials are unavailable/iu,
+  );
+  await rm(path.join(credentialDirectory, "stage7-staff-totp"));
+  await writeFile(
+    path.join(credentialDirectory, "stage7-staff-totp"),
+    "KN4W45DIMV2GSY2UN52HAU3FMNZGK5BRGIZQ",
+    { mode: 0o600 },
+  );
 
   const adminCalls = [];
   const portalCalls = [];
@@ -104,6 +138,7 @@ try {
       { kind: "ACCOMMODATION", description: "Published description before workspace edit" },
     ],
   };
+  let totpGeneratedAfterChallenge = false;
   const adminRequest = async (request) => {
     adminCalls.push(request);
     if (request.path === "/api/auth/staff/sign-in/email") {
@@ -119,7 +154,7 @@ try {
     }
     if (request.path === "/api/auth/staff/two-factor/verify-totp") {
       assert.ok(
-        request.body.code === "synthetic-stage7-staff-totp",
+        request.body.code === "654321" && totpGeneratedAfterChallenge,
         "Staff MFA uses CREDENTIALS_DIRECTORY input",
       );
       return {
@@ -221,6 +256,12 @@ try {
     },
     makeUuid: () => "00000000-0000-4000-8000-000000000001",
     makePassword: () => "EPHEMERAL_PASSWORD_DO_NOT_LOG",
+    makeStaffTotpCode: async (seed) => {
+      assert.equal(seed, "KN4W45DIMV2GSY2UN52HAU3FMNZGK5BRGIZQ");
+      assert.equal(adminCalls.at(-1)?.path, "/api/auth/staff/sign-in/email");
+      totpGeneratedAfterChallenge = true;
+      return "654321";
+    },
   });
   assert.equal(result.result, "PASS");
   assert.ok(
@@ -233,6 +274,44 @@ try {
   assert.ok(adminCalls.some((call) => call.path.includes("/portal-access-grants")));
   assert.ok(portalCalls.some((call) => call.path === "/api/auth/portal/sign-out"));
   assert.equal(JSON.stringify(result).includes("EPHEMERAL_PASSWORD_DO_NOT_LOG"), false);
+  assert.equal(JSON.stringify(result).includes("KN4W45DIMV2GSY2UN52HAU3FMNZGK5BRGIZQ"), false);
+  const failClosedCredentials = await readStage7RuntimeCredentials({
+    manifest,
+    credentialDirectory,
+  });
+  await assert.rejects(
+    runStage7RuntimeAcceptance({
+      manifest: {
+        environment: "DEVELOPMENT",
+        runtime: {
+          listeners: {
+            adminApi: { host: "127.0.0.1", port: 3101 },
+            portalApi: { host: "127.0.0.1", port: 3102 },
+          },
+        },
+      },
+      credentials: failClosedCredentials,
+      requestAdmin: async () => ({
+        status: 200,
+        headers: { "set-cookie": ["travelos-dev-staff-session=unverified; HttpOnly"] },
+        body: { twoFactorRedirect: false },
+      }),
+      requestPortal: async () => {
+        throw new Error("Must never reach Portal API");
+      },
+      enrollment: {
+        enroll: async () => {
+          throw new Error("Must never enroll");
+        },
+      },
+      makeStaffTotpCode: async () => {
+        throw new Error("Must never generate TOTP");
+      },
+    }),
+    (error) =>
+      error.message === "Stage 7 runtime acceptance failed; sensitive values were not retained",
+  );
+  assert.ok(Object.values(failClosedCredentials).every((value) => value === ""));
   const grantRequest = adminCalls.find((call) => call.path.endsWith("/portal-access-grants"));
   const grantExpiresAt = Date.parse(grantRequest.body.expiresAt);
   assert.ok(Number.isFinite(grantExpiresAt) && grantExpiresAt > Date.now());

@@ -72,6 +72,10 @@ try {
     path.join(projectRoot, "tooling/ci/stage-7/runtime-acceptance-runner.mjs"),
   );
   const runnerSha256 = createHash("sha256").update(runnerBytes).digest("hex");
+  const operatorUnitBytes = await readFile(
+    path.join(projectRoot, "deploy/systemd/travelos-stage7-runtime-acceptance.service"),
+  );
+  const operatorUnitSha256 = createHash("sha256").update(operatorUnitBytes).digest("hex");
   const baselineBytes = Buffer.from(
     `${JSON.stringify({
       schemaVersion: 1,
@@ -80,6 +84,11 @@ try {
           path: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
           bytes: runnerBytes.length,
           sha256: runnerSha256,
+        },
+        {
+          path: "deploy/systemd/travelos-stage7-runtime-acceptance.service",
+          bytes: operatorUnitBytes.length,
+          sha256: operatorUnitSha256,
         },
       ],
     })}\n`,
@@ -179,6 +188,7 @@ try {
     "A candidate missing its declared runtime acceptance runner must fail preflight",
   );
   await writeArtifactFile("operator/stage7-runtime-acceptance.mjs", runnerBytes);
+  await writeArtifactFile("operator/travelos-stage7-runtime-acceptance.service", operatorUnitBytes);
   const migrationBytes = await readFile(
     path.join(projectRoot, "migrations/0012_stage7_portal_trip_access.cjs"),
   );
@@ -265,6 +275,7 @@ try {
     stage7DeploymentContractSha256: digest(extensionBytes),
     stage7VerifierSha256: digest(verifierBytes),
     runtimeAcceptanceSha256: runnerSha256,
+    operatorUnitSha256,
   });
   await writeFile(releasePath, `${JSON.stringify(release)}\n`);
   await assert.rejects(
