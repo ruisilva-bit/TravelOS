@@ -706,8 +706,15 @@ export const runStage7RuntimeAcceptance = async ({
       }
     }
   }
-  if (failure !== undefined)
-    throw new Error("Stage 7 runtime acceptance failed; sensitive values were not retained");
+  if (failure !== undefined) {
+    const acceptanceFailure = new Error(
+      "Stage 7 runtime acceptance failed; sensitive values were not retained",
+    );
+    acceptanceFailure.completedProbes = probes
+      .filter((probe) => typeof probe === "string" && /^[a-z0-9-]{1,96}$/u.test(probe))
+      .slice(0, 32);
+    throw acceptanceFailure;
+  }
   assert.equal(grantRevoked, true, "Runtime acceptance grant was not revoked");
   return { result: "PASS", probes, stage8Actions: 0 };
 };
@@ -936,7 +943,17 @@ const runCli = async () => {
     await verifyPortalDatabaseIsolation(portalDatabase.database);
     result.probes.push("portal-role-denies-workspace-and-internal-table-reads");
   } catch (error) {
-    failure = { result: "FAIL", stage: failureStage, code: safeFailureCode(error) };
+    const completedProbes = Array.isArray(error?.completedProbes)
+      ? error.completedProbes
+          .filter((probe) => typeof probe === "string" && /^[a-z0-9-]{1,96}$/u.test(probe))
+          .slice(0, 32)
+      : null;
+    failure = {
+      result: "FAIL",
+      stage: failureStage,
+      code: safeFailureCode(error),
+      ...(completedProbes === null ? {} : { completedProbes }),
+    };
   } finally {
     if (operatorCredentialValues !== undefined) {
       for (const key of Object.keys(operatorCredentialValues)) operatorCredentialValues[key] = "";

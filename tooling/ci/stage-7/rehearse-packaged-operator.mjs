@@ -23,6 +23,7 @@ const REQUIRED_CREDENTIALS = [
   "stage7-staff-password",
   "stage7-staff-totp",
 ];
+const PACKAGED_VERIFIER_TIMEOUT_MS = 120_000;
 const scriptPath = fileURLToPath(import.meta.url);
 
 const argumentValue = (prefix) => {
@@ -34,6 +35,30 @@ const safeCode = (error) =>
   typeof error?.code === "string" && /^[A-Z0-9_]{1,64}$/u.test(error.code)
     ? error.code
     : "STAGE7_PACKAGED_REHEARSAL_ERROR";
+
+const safeRuntimeFailure = (stderr) => {
+  try {
+    const failure = JSON.parse(stderr);
+    const completedProbes = Array.isArray(failure.completedProbes)
+      ? failure.completedProbes
+          .filter((probe) => typeof probe === "string" && /^[a-z0-9-]{1,96}$/u.test(probe))
+          .slice(0, 32)
+      : null;
+    return {
+      stage:
+        typeof failure.stage === "string" && /^[A-Za-z][A-Za-z0-9 _-]{0,63}$/u.test(failure.stage)
+          ? failure.stage
+          : "UNRECOGNIZED_STAGE",
+      code:
+        typeof failure.code === "string" && /^[A-Z0-9_]{1,64}$/u.test(failure.code)
+          ? failure.code
+          : "UNRECOGNIZED_CODE",
+      ...(completedProbes === null ? {} : { completedProbes }),
+    };
+  } catch {
+    return { stage: "UNPARSEABLE_FAILURE_OUTPUT", code: "UNPARSEABLE_FAILURE_OUTPUT" };
+  }
+};
 
 const safeWriteReport = async (reportPath, report) => {
   await writeFile(reportPath, `${JSON.stringify(report)}\n`, { mode: 0o600 });
@@ -103,7 +128,10 @@ const runSync = (command, args, { cwd, env, timeout = 30_000 } = {}) => {
 };
 
 const runVerifier = (nodePath, script, args, cwd) => {
-  const result = runSync(nodePath, [script, ...args], { cwd });
+  const result = runSync(nodePath, [script, ...args], {
+    cwd,
+    timeout: PACKAGED_VERIFIER_TIMEOUT_MS,
+  });
   assert.equal(result.status, 0, "Packaged artifact verifier command failed");
   assert.equal(result.stderr, "");
   const parsed = JSON.parse(result.stdout);
@@ -322,6 +350,7 @@ const namespaceWorker = async (inputs) => {
     const preflight = runSync(execStartPre[0], execStartPre.slice(1), {
       cwd: "/opt/travelos/current",
       env: { PATH: process.env.PATH ?? "/usr/bin:/bin", HOME: "/nonexistent" },
+      timeout: PACKAGED_VERIFIER_TIMEOUT_MS,
     });
     assert.equal(preflight.status, 0);
     const postPreflight = JSON.parse(preflight.stdout);
@@ -377,6 +406,7 @@ const namespaceWorker = async (inputs) => {
       const pre = runSync(execStartPre[0], execStartPre.slice(1), {
         cwd: "/opt/travelos/current",
         env: operatorEnvironment(credentialDirectory),
+        timeout: PACKAGED_VERIFIER_TIMEOUT_MS,
       });
       if (pre.status !== 0)
         return { preflightStatus: pre.status, status: pre.status, stdout: "", stderr: "" };
@@ -423,6 +453,16 @@ const namespaceWorker = async (inputs) => {
 
     report.stage = "authenticated one-shot acceptance";
     const accepted = runOneShot(inputs.operatorCredentials);
+    report.acceptedOneShot = {
+      preflightStatus: accepted.preflightStatus,
+      status: accepted.status,
+      failure:
+        accepted.preflightStatus !== 0
+          ? { stage: "artifact preflight", code: "PREFLIGHT_FAILED" }
+          : accepted.status === 0
+            ? null
+            : safeRuntimeFailure(accepted.stderr),
+    };
     assert.equal(accepted.preflightStatus, 0);
     assert.equal(accepted.status, 0);
     assert.equal(accepted.stderr, "");

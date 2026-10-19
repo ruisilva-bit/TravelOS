@@ -418,6 +418,66 @@ try {
       error.message === "Stage 7 runtime acceptance failed; sensitive values were not retained",
   );
   assert.ok(Object.values(failClosedCredentials).every((value) => value === ""));
+  const progressCredentials = await readStage7RuntimeCredentials({ manifest, credentialDirectory });
+  let diagnosticStaffSignedOut = false;
+  const partialAdminRequest = async (request) => {
+    if (request.path === "/api/auth/staff/sign-in/email") {
+      return {
+        status: 200,
+        headers: { "set-cookie": ["staff-challenge=temporary; HttpOnly"] },
+        body: { twoFactorRedirect: true },
+      };
+    }
+    if (request.path === "/api/auth/staff/two-factor/verify-totp") {
+      return {
+        status: 200,
+        headers: { "set-cookie": ["travelos-dev-staff-session=verified; HttpOnly"] },
+        body: { status: true },
+      };
+    }
+    if (request.path === "/api/auth/staff/sign-out") {
+      diagnosticStaffSignedOut = true;
+      return { status: 200, headers: {}, body: {} };
+    }
+    if (request.path === "/api/staff/session-context") {
+      return diagnosticStaffSignedOut
+        ? { status: 401, headers: {}, body: undefined }
+        : { status: 200, headers: {}, body: {} };
+    }
+    throw new Error("Unexpected diagnostic Admin request");
+  };
+  await assert.rejects(
+    runStage7RuntimeAcceptance({
+      manifest: {
+        ...manifest,
+        runtime: {
+          listeners: {
+            adminApi: { host: "127.0.0.1", port: 3101 },
+            portalApi: { host: "127.0.0.1", port: 3102 },
+          },
+        },
+      },
+      credentials: progressCredentials,
+      requestAdmin: partialAdminRequest,
+      requestPortal: async () => {
+        throw new Error("Must not reach Portal API before Staff scope is confirmed");
+      },
+      enrollment: { enroll: async () => ({ portalPrincipalId: "unused" }) },
+      makeStaffTotpCode: async () => "654321",
+    }),
+    (error) => {
+      assert.equal(
+        error.message,
+        "Stage 7 runtime acceptance failed; sensitive values were not retained",
+      );
+      assert.deepEqual(error.completedProbes, [
+        "staff-realm-authenticated-with-recent-mfa",
+        "staff-session-revoked-after-sign-out",
+      ]);
+      return true;
+    },
+  );
+  assert.ok(Object.values(progressCredentials).every((value) => value === ""));
   const grantRequest = adminCalls.find((call) => call.path.endsWith("/portal-access-grants"));
   const grantExpiresAt = Date.parse(grantRequest.body.expiresAt);
   assert.ok(Number.isFinite(grantExpiresAt) && grantExpiresAt > Date.now());
@@ -487,4 +547,4 @@ try {
   await rm(temporaryRoot, { recursive: true, force: true });
 }
 
-process.stdout.write(`${JSON.stringify({ result: "PASS", cases: 7 })}\n`);
+process.stdout.write(`${JSON.stringify({ result: "PASS", cases: 8 })}\n`);

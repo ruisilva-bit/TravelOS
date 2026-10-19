@@ -233,8 +233,6 @@ const runPackagedOperatorRehearsal = async ({
         },
       },
     );
-    expect(rehearsalResult.status).toBe(0);
-    expect(rehearsalResult.stderr).toBe("");
     const report = JSON.parse(rehearsalResult.stdout) as {
       result: string;
       artifactId: string;
@@ -250,6 +248,32 @@ const runPackagedOperatorRehearsal = async ({
         listenersClosed: boolean;
       };
     };
+    const diagnostic = report as typeof report & {
+      stage?: string | null;
+      code?: string | null;
+      acceptedOneShot?: {
+        preflightStatus: number | null;
+        status: number | null;
+        failure: { stage: string; code: string; completedProbes?: string[] } | null;
+      };
+    };
+    expect(
+      rehearsalResult.status,
+      `Packaged operator rehearsal failed: ${JSON.stringify({
+        result: report.result,
+        stage: diagnostic.stage ?? null,
+        code: diagnostic.code ?? null,
+        artifactId: report.artifactId ?? null,
+        preActivation: report.preActivationVerifier?.result ?? null,
+        postActivation: report.postActivationVerifier?.result ?? null,
+        missingCredentialStatus: report.missingCredentials?.status ?? null,
+        invalidCredentialStatus: report.invalidCredentials?.status ?? null,
+        runner: report.runner?.result ?? null,
+        acceptedOneShot: diagnostic.acceptedOneShot ?? null,
+        services: report.services ?? null,
+      })}`,
+    ).toBe(0);
+    expect(rehearsalResult.stderr).toBe("");
     expect(report.result).toBe("PASS");
     expect(report.preActivationVerifier).toMatchObject({
       result: "PASS",
@@ -1096,7 +1120,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     } finally {
       await staffPersistence.destroy();
     }
-  });
+  }, 360_000);
 
   it("applies the ordered Stage 7 migration to an empty supported database", () => {
     expect(emptyStage6Run.currentVersion).toBe("0011_stage6_trip_publication");
