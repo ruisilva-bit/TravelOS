@@ -3,6 +3,10 @@ import { cp, lstat, mkdtemp, readFile, readdir, realpath, rm } from "node:fs/pro
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
+import {
+  STAGE7_DEFAULT_GENERATION,
+  stage7ExtensionPathFor,
+} from "../stage-7-successor-baseline.mjs";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const temporaryRoot = process.env.TMPDIR;
@@ -82,11 +86,21 @@ try {
   const { verifyMigrationChain } = await import(pathToFileURL(canonicalRunner).href);
   const verified = await verifyMigrationChain(chain);
   assert.equal(verified.result, "PASS");
-  assert.equal(verified.migrations.at(-1)?.file, "0012_stage7_portal_trip_access.cjs");
-  assert.equal(
-    verified.migrations.at(-1)?.sha256,
-    "4bf653fdc7522443ea321d98d448934ec1b5d0c4e8d4abd904360182ada5ade8",
+  const stage7Extension = JSON.parse(
+    await readFile(
+      path.join(repositoryRoot, stage7ExtensionPathFor(STAGE7_DEFAULT_GENERATION)),
+      "utf8",
+    ),
   );
+  const requiredMigration = stage7Extension.database.requiredMigration;
+  const packagedChecksumManifest = JSON.parse(await readFile(chain.checksumManifestPath, "utf8"));
+  const requiredMigrationHash =
+    stage7Extension.database.requiredMigrationSha256 ??
+    packagedChecksumManifest.migrations.find((migration) => migration.file === requiredMigration)
+      ?.sha256;
+  assert.equal(verified.migrations.at(-1)?.file, requiredMigration);
+  assert.match(requiredMigrationHash ?? "", /^[a-f0-9]{64}$/u);
+  assert.equal(verified.migrations.at(-1)?.sha256, requiredMigrationHash);
 
   const deploymentRoot = await realpath(deployTarget);
   await assertContainedSymlinks(deploymentRoot, deploymentRoot);

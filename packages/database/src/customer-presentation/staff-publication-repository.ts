@@ -20,6 +20,7 @@ import {
   type StaffPermissionId,
   type TripPublicationCandidate,
   type TripPublicationResult,
+  type WithdrawActivePublicationRequest,
 } from "@travelos/backend-core";
 import { sql, type Kysely, type Transaction as KyselyTransaction } from "kysely";
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
@@ -48,6 +49,10 @@ const PUBLISH_PERMISSIONS = [
   "trip.view",
   "trip.publish",
 ] as const satisfies readonly StaffPermissionId[];
+const WITHDRAW_PERMISSIONS = [
+  "trip.view",
+  "trip.withdraw_publication",
+] as const satisfies readonly StaffPermissionId[];
 const RECENT_MFA_MAXIMUM_AGE_MS = 5 * 60 * 1_000;
 const MAX_SERIALIZATION_ATTEMPTS = 3;
 
@@ -69,6 +74,11 @@ const requestHash = (tripId: string, request: PublishTripRequest): string =>
       `${tripId}\u0000${request.expectedWorkspaceRevision.toString()}\u0000${request.expectedProjectionHash}`,
       "utf8",
     )
+    .digest("hex");
+
+const withdrawalRequestHash = (tripId: string, request: WithdrawActivePublicationRequest): string =>
+  createHash("sha256")
+    .update(JSON.stringify(["trip.withdraw_publication", tripId, request.reason]), "utf8")
     .digest("hex");
 
 const asHistoryEntry = (row: {
@@ -307,7 +317,10 @@ export const createPostgresM1StaffTripPublicationRepository = (
         const code = postgresCode(error);
         const retryable = code === "40001" || code === "40P01";
         const idempotencyRace =
-          code === "23505" && postgresConstraint(error) === "publication_idempotency_pkey";
+          code === "23505" &&
+          ["publication_idempotency_pkey", "publication_withdrawal_idempotency_pkey"].includes(
+            postgresConstraint(error) ?? "",
+          );
         if ((!retryable && !idempotencyRace) || attempt === MAX_SERIALIZATION_ATTEMPTS) {
           if (retryable || idempotencyRace) throw new M1TransactionConflictError();
           throw error;
@@ -561,6 +574,159 @@ export const createPostgresM1StaffTripPublicationRepository = (
         return {
           entries,
           nextCursor: hasMore ? String(lastEntry?.version) : null,
+        };
+      });
+    },
+
+    async withdrawActivePublication(agencyId, tripId, request, authorization) {
+      if (
+        request.reason.trim().length < 1 ||
+        request.reason.trim().length > 500 ||
+        containsControlCharacter(request.reason) ||
+        request.idempotencyKey.length < 1 ||
+        request.idempotencyKey.length > 128 ||
+        containsControlCharacter(request.idempotencyKey)
+      ) {
+        throw new M1StaffPublicationInputError();
+      }
+      const actorId = authorization.session.staffPrincipalId;
+      const expectedRequestHash = withdrawalRequestHash(tripId, request);
+
+      return serializable(async (database) => {
+        const assuranceVerifiedAtEpochMs = await assertStaffAuthorizationInTransaction(
+          database,
+          authorization,
+          agencyId,
+          WITHDRAW_PERMISSIONS,
+          RECENT_MFA_MAXIMUM_AGE_MS,
+        );
+        if (assuranceVerifiedAtEpochMs === null) {
+          throw new M1StaffAuthorizationError("FORBIDDEN");
+        }
+
+        const existing = (
+          await sql<{
+            readonly tripId: string;
+            readonly requestHash: string;
+            readonly outcome: "WITHDRAWN" | "ALREADY_WITHDRAWN";
+            readonly publicationId: string | null;
+            readonly version: number | null;
+            readonly withdrawnAt: Date | null;
+          }>`
+            SELECT "tripId"::text AS "tripId", "requestHash", "outcome",
+                   "publicationId"::text AS "publicationId", "version", "withdrawnAt"
+              FROM "trip_ops"."publication_withdrawal_idempotency"
+             WHERE "agencyId" = ${agencyId}::uuid
+               AND "staffPrincipalId" = ${actorId}
+               AND "command" = 'trip.withdraw_publication'
+               AND "idempotencyKey" = ${request.idempotencyKey}
+          `.execute(database)
+        ).rows[0];
+        if (existing !== undefined) {
+          if (existing.requestHash.trim() !== expectedRequestHash || existing.tripId !== tripId) {
+            throw new IdempotencyConflictError();
+          }
+          return {
+            status: existing.outcome,
+            tripId: asOpaqueId(tripId),
+            publicationId:
+              existing.publicationId === null ? null : asOpaqueId(existing.publicationId),
+            version: existing.version,
+            withdrawnAt: existing.withdrawnAt?.toISOString() ?? null,
+          };
+        }
+
+        const trip = (
+          await sql<{ readonly workspaceRevision: string }>`
+            SELECT locked."workspaceRevision"::text AS "workspaceRevision"
+              FROM "trip_ops"."lock_trip_for_publication"(${agencyId}::uuid, ${tripId}::uuid) AS locked
+          `.execute(database)
+        ).rows[0];
+        if (trip === undefined) throw new TripPublicationNotFoundError();
+
+        const pointer = (
+          await sql<{
+            readonly activePublicationId: string;
+            readonly activeVersion: number;
+          }>`
+            SELECT "activePublicationId"::text AS "activePublicationId", "activeVersion"
+              FROM "trip_ops"."publication_pointer"
+             WHERE "agencyId" = ${agencyId}::uuid AND "tripId" = ${tripId}::uuid
+             FOR UPDATE
+          `.execute(database)
+        ).rows[0];
+
+        if (pointer === undefined) {
+          await sql`
+            INSERT INTO "trip_ops"."publication_withdrawal_idempotency"
+              ("agencyId", "staffPrincipalId", "command", "idempotencyKey", "tripId",
+               "requestHash", "outcome", "publicationId", "version", "withdrawnAt")
+            VALUES (${agencyId}::uuid, ${actorId}, 'trip.withdraw_publication',
+                    ${request.idempotencyKey}, ${tripId}::uuid, ${expectedRequestHash},
+                    'ALREADY_WITHDRAWN', NULL, NULL, NULL)
+          `.execute(database);
+          return {
+            status: "ALREADY_WITHDRAWN",
+            tripId: asOpaqueId(tripId),
+            publicationId: null,
+            version: null,
+            withdrawnAt: null,
+          };
+        }
+
+        const withdrawnAt = (
+          await sql<{ readonly withdrawnAt: Date }>`
+            SELECT date_trunc('milliseconds', clock_timestamp()) AS "withdrawnAt"
+          `.execute(database)
+        ).rows[0]?.withdrawnAt;
+        if (withdrawnAt === undefined) throw new Error("PostgreSQL clock query returned no row");
+        const deletedPointer = (
+          await sql<{ readonly tripId: string }>`
+            DELETE FROM "trip_ops"."publication_pointer"
+             WHERE "agencyId" = ${agencyId}::uuid
+               AND "tripId" = ${tripId}::uuid
+               AND "activePublicationId" = ${pointer.activePublicationId}::uuid
+            RETURNING "tripId"::text AS "tripId"
+          `.execute(database)
+        ).rows[0];
+        if (deletedPointer === undefined) throw new M1TransactionConflictError();
+
+        const eventId = createUuidV7();
+        await sql`
+          INSERT INTO "trip_ops"."publication_withdrawal_event"
+            ("eventId", "agencyId", "tripId", "publicationId", "version", "actorStaffPrincipalId", "eventType")
+          VALUES (${eventId}::uuid, ${agencyId}::uuid, ${tripId}::uuid,
+                  ${pointer.activePublicationId}::uuid, ${pointer.activeVersion}, ${actorId},
+                  'TRIP_PUBLICATION_WITHDRAWN')
+        `.execute(database);
+        await sql`
+          INSERT INTO "audit"."trip_publication_withdrawal_event"
+            ("auditId", "agencyId", "tripId", "publicationId", "actorStaffPrincipalId", "action", "reason")
+          VALUES (${createUuidV7()}::uuid, ${agencyId}::uuid, ${tripId}::uuid,
+                  ${pointer.activePublicationId}::uuid, ${actorId},
+                  'TRIP_PUBLICATION_WITHDRAWN', ${request.reason.trim()})
+        `.execute(database);
+        await sql`
+          INSERT INTO "integration"."publication_withdrawal_outbox"
+            ("messageId", "eventId", "agencyId", "tripId", "publicationId", "version", "eventType")
+          VALUES (${createUuidV7()}::uuid, ${eventId}::uuid, ${agencyId}::uuid, ${tripId}::uuid,
+                  ${pointer.activePublicationId}::uuid, ${pointer.activeVersion},
+                  'TRIP_PUBLICATION_WITHDRAWN')
+        `.execute(database);
+        await sql`
+          INSERT INTO "trip_ops"."publication_withdrawal_idempotency"
+            ("agencyId", "staffPrincipalId", "command", "idempotencyKey", "tripId",
+             "requestHash", "outcome", "publicationId", "version", "withdrawnAt")
+          VALUES (${agencyId}::uuid, ${actorId}, 'trip.withdraw_publication',
+                  ${request.idempotencyKey}, ${tripId}::uuid, ${expectedRequestHash},
+                  'WITHDRAWN', ${pointer.activePublicationId}::uuid, ${pointer.activeVersion}, ${withdrawnAt})
+        `.execute(database);
+        return {
+          status: "WITHDRAWN",
+          tripId: asOpaqueId(tripId),
+          publicationId: asOpaqueId(pointer.activePublicationId),
+          version: pointer.activeVersion,
+          withdrawnAt: withdrawnAt.toISOString(),
         };
       });
     },

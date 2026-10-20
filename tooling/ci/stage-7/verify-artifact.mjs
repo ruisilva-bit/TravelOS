@@ -14,6 +14,15 @@ const DEPLOYMENT_CURRENT_SYMLINK = "/opt/travelos/current";
 const ACCEPTED_STAGE6_CONTRACT_SHA256 =
   "d97709506b69d133f13cbd9c74c1f9a790477180cbcd124b7135c26bb0c75633";
 const EXCLUDED_MANIFEST_FILES = new Set(["payload-manifest.json", "checksums.txt"]);
+const generationNumberFor = (generation) => Number(generation.slice(3));
+const stage7ExtensionArtifactPathFor = (generation) =>
+  `deployment/stage-7-extension.${generationNumberFor(generation) >= 10 ? "v2" : "v1"}.json`;
+const stage7ExtensionSourcePathFor = (generation) =>
+  `deploy/contracts/stage-7-extension.${generationNumberFor(generation) >= 10 ? "v2" : "v1"}.json`;
+const stage7SourceBranchFor = (generation) =>
+  generationNumberFor(generation) >= 10
+    ? "stage7/runtime-acceptance-cleanup-successor"
+    : "phase-1/stage-7";
 const SECRET_FILENAMES = [
   /^\.env(?:\..*)?$/i,
   /^\.npmrc$/i,
@@ -228,10 +237,19 @@ const readRegularArtifactFile = async (root, relativePath) => {
 
 const verifyPackagedContract = async ({ root, release, generation }) => {
   const basePath = "deployment/deployment-contract.v1.json";
-  const extensionPath = "deployment/stage-7-extension.v1.json";
+  const extensionPath = stage7ExtensionArtifactPathFor(generation);
+  const unselectedExtensionPath =
+    generationNumberFor(generation) >= 10
+      ? "deployment/stage-7-extension.v1.json"
+      : "deployment/stage-7-extension.v2.json";
   const verifierPath = "deployment/verify-stage7-artifact.mjs";
   const baseBytes = await readRegularArtifactFile(root, basePath);
   const extensionBytes = await readRegularArtifactFile(root, extensionPath);
+  await assert.rejects(
+    lstat(path.join(root, unselectedExtensionPath)),
+    { code: "ENOENT" },
+    "Artifact must contain only the extension selected for its generation",
+  );
   const verifierBytes = await readRegularArtifactFile(root, verifierPath);
   assert.equal(
     sha256(baseBytes),
@@ -251,7 +269,7 @@ const verifyPackagedContract = async ({ root, release, generation }) => {
       extensionPath,
       extensionBytes,
       "Stage 7 deployment extension",
-      1,
+      generationNumberFor(generation) >= 10 ? 2 : 1,
     ],
     [release.stage7Verifier, verifierPath, verifierBytes, "Stage 7 artifact verifier", undefined],
   ];
@@ -272,8 +290,16 @@ const verifyPackagedContract = async ({ root, release, generation }) => {
   );
   assert.equal(
     extension?.candidate?.sourceBranch,
-    "phase-1/stage-7",
+    stage7SourceBranchFor(generation),
     "Packaged Stage 7 branch mismatch",
+  );
+  assert.equal(extension?.schemaVersion, generationNumberFor(generation) >= 10 ? 2 : 1);
+  assert.equal(
+    extension?.contractId,
+    generationNumberFor(generation) >= 10
+      ? "travelos-stage7-runtime-acceptance-cleanup-v2"
+      : "travelos-stage7-portal-isolation-v1",
+    "Packaged Stage 7 contract ID mismatch",
   );
   assert.equal(extension?.extends?.path, "deploy/contracts/deployment-contract.v1.json");
   assert.equal(
@@ -314,6 +340,45 @@ const verifyPackagedContract = async ({ root, release, generation }) => {
         "stage7-staff-password",
         "stage7-staff-totp",
       ],
+      ...(generationNumberFor(generation) >= 10
+        ? {
+            fixtureCleanup: {
+              method: "POST",
+              path: "/api/admin/runtime-acceptance-fixtures/:fixtureRunId/cleanup",
+              environment: "DEVELOPMENT_ONLY",
+              hostPolicy: "EXACT_DEVELOPMENT_MANIFEST_ALLOWLIST",
+              listener: "EXISTING_ADMIN_API",
+              permissionIds: [
+                "runtime_acceptance.fixture.manage",
+                "trip.access.manage",
+                "trip.edit",
+                "trip.withdraw_publication",
+              ],
+              staffRealm: "STAFF_ONLY",
+              activeMembershipRequired: true,
+              exactAgencyScopeRequired: true,
+              recentMfaWindowSeconds: 300,
+              scope: "SAME_AGENCY_AND_CREATOR_REGISTERED_FIXTURE_RUN",
+              acceptsCallerSuppliedResourceIds: false,
+              maxTrips: 2,
+              maxPortalPrincipals: 1,
+              allowedFixtureStates: ["OPEN", "CLEANUP_PENDING"],
+              terminalFixtureState: "CLEANED",
+              retrySafe: true,
+              revokesTripAccessGrants: true,
+              invalidatesPortalSessions: true,
+              withdrawsActivePublication: true,
+              cancelsTrips: true,
+              retiresPortalPrincipal: true,
+              preservesPublicationSnapshots: true,
+              preservesPublicationPayloads: true,
+              preservesAuditAndOutboxHistory: true,
+              preservesTripWorkspace: true,
+              newListener: false,
+              newExternallyReachablePorts: [],
+            },
+          }
+        : {}),
       runtimeDependencies: [
         { appRoot: "apps/portal-api", packageName: "@travelos/config", exportName: "." },
         {
@@ -457,6 +522,13 @@ const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension, gener
       )
     ).toString("utf8"),
   );
+  assert.ok(Array.isArray(baseline.sourceFiles), "Successor provenance must contain source rows");
+  const baselineSourcePaths = baseline.sourceFiles.map((entry) => entry.path);
+  assert.equal(
+    new Set(baselineSourcePaths).size,
+    baselineSourcePaths.length,
+    "Successor provenance contains duplicate source paths",
+  );
   const sourceRow = baseline.sourceFiles.find((entry) => entry.path === acceptance.sourcePath);
   assert.ok(
     sourceRow !== undefined,
@@ -470,7 +542,70 @@ const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension, gener
   const unitSource = baseline.sourceFiles.find(
     (entry) => entry.path === acceptance.operatorUnitSourcePath,
   );
-  assert.equal(unitSource?.sha256, sha256(operatorUnitBytes), "Operator unit differs from source");
+  let expectedSourceUnitBytes = operatorUnitBytes;
+  if (generationNumberFor(generation) >= 10) {
+    const selectedGenerationArgument = `--generation=${generation}`;
+    const unitText = operatorUnitBytes.toString("utf8");
+    assert.equal(
+      unitText.split(selectedGenerationArgument).length - 1,
+      1,
+      "Successor operator unit must bind exactly one selected-generation preflight",
+    );
+    expectedSourceUnitBytes = Buffer.from(
+      unitText.replace(selectedGenerationArgument, "--generation=gen09"),
+    );
+  }
+  assert.equal(
+    unitSource?.sha256,
+    sha256(expectedSourceUnitBytes),
+    "Operator unit differs from the generation-rendered source",
+  );
+  if (generationNumberFor(generation) >= 10) {
+    const requiredSuccessorSourcePaths = [
+      stage7ExtensionSourcePathFor(generation),
+      `migrations/${extension.database.requiredMigration}`,
+      extension.database.checksumManifestPath,
+      "packages/backend-core/src/modules/runtime-acceptance/application/fixture-cleanup.ts",
+      "packages/database/src/portal-access/runtime-acceptance-fixture-repository.ts",
+      "apps/admin-api/test/runtime-acceptance-cleanup-routes.test.ts",
+      "docs/implementation/M1_STAGE_7_RUNTIME_ACCEPTANCE_CLEANUP_SUCCESSOR.md",
+    ];
+    for (const requiredPath of requiredSuccessorSourcePaths) {
+      const row = baseline.sourceFiles.find((entry) => entry.path === requiredPath);
+      assert.ok(row !== undefined, `Successor provenance is missing source path: ${requiredPath}`);
+      assert.ok(Number.isSafeInteger(row.bytes) && row.bytes >= 0);
+      assert.match(row.sha256 ?? "", /^[a-f0-9]{64}$/u);
+    }
+    const packagedExtensionBytes = await readRegularArtifactFile(
+      root,
+      stage7ExtensionArtifactPathFor(generation),
+    );
+    const extensionSourceRow = baseline.sourceFiles.find(
+      (entry) => entry.path === stage7ExtensionSourcePathFor(generation),
+    );
+    assert.equal(extensionSourceRow.sha256, sha256(packagedExtensionBytes));
+    const migrationBytes = await readRegularArtifactFile(
+      root,
+      `migrations/${extension.database.requiredMigration}`,
+    );
+    assert.equal(
+      baseline.sourceFiles.find(
+        (entry) => entry.path === `migrations/${extension.database.requiredMigration}`,
+      ).sha256,
+      sha256(migrationBytes),
+      "Packaged successor migration differs from its source manifest row",
+    );
+    const checksumManifestBytes = await readRegularArtifactFile(
+      root,
+      extension.database.checksumManifestPath,
+    );
+    assert.equal(
+      baseline.sourceFiles.find((entry) => entry.path === extension.database.checksumManifestPath)
+        .sha256,
+      sha256(checksumManifestBytes),
+      "Packaged successor checksum manifest differs from its source manifest row",
+    );
+  }
 
   const runnerModule = await import(pathToFileURL(path.join(root, acceptance.runnerPath)).href);
   for (const dependency of acceptance.runtimeDependencies) {
@@ -505,8 +640,8 @@ const verifyRuntimeAcceptanceArtifact = async ({ root, release, extension, gener
   }
 };
 
-const verifyDeclaredRuntimeAcceptanceRunner = async (root) => {
-  const contractPath = path.join(root, "deployment/stage-7-extension.v1.json");
+const verifyDeclaredRuntimeAcceptanceRunner = async (root, generation) => {
+  const contractPath = path.join(root, stage7ExtensionArtifactPathFor(generation));
   let metadata;
   try {
     metadata = await lstat(contractPath);
@@ -590,15 +725,31 @@ const verifyReleaseMetadataAndLayout = async ({ root, release, generation, contr
     "Stage 7 migration provenance",
   );
   assert.equal(release.database.migrationHead, extension.database.requiredMigration);
-  assert.equal(release.database.migrationFileSha256, extension.database.requiredMigrationSha256);
+  if (extension.database.requiredMigrationSha256 !== undefined) {
+    assert.equal(release.database.migrationFileSha256, extension.database.requiredMigrationSha256);
+  } else {
+    assert.match(
+      release.database.migrationFileSha256 ?? "",
+      /^[a-f0-9]{64}$/u,
+      "Successor migration integrity must be bound through the checksum manifest",
+    );
+  }
   assert.equal(
     release.database.migrationChecksumManifestPath,
     extension.database.checksumManifestPath,
   );
-  assert.equal(
-    release.database.migrationChecksumManifestSha256,
-    extension.database.checksumManifestSha256,
-  );
+  if (extension.database.checksumManifestSha256 !== undefined) {
+    assert.equal(
+      release.database.migrationChecksumManifestSha256,
+      extension.database.checksumManifestSha256,
+    );
+  } else {
+    assert.match(
+      release.database.migrationChecksumManifestSha256 ?? "",
+      /^[a-f0-9]{64}$/u,
+      "Successor checksum manifest integrity must be bound through the source baseline",
+    );
+  }
   assert.equal(release.database.runnerEntrypoint, base.artifact.migrationRunnerEntrypoint);
   assert.equal(release.database.canonicalRunner, base.artifact.canonicalMigrationRunner);
   assert.equal(release.database.deploymentEntrypoint, base.migrator.deploymentEntrypoint);
@@ -727,10 +878,23 @@ const verifyReleaseMetadataAndLayout = async ({ root, release, generation, contr
     assert.match(row.sha256 ?? "", /^[a-f0-9]{64}$/u, "Invalid migration checksum row");
   }
   const priorStage6Migration = path.posix.basename(base.artifact.requiredMigrationPath);
+  const stage7PredecessorMigration = extension.database.previousMigration;
   assert.equal(
     migrationNames.at(-2),
-    priorStage6Migration,
-    "Stage 7 migration chain does not extend the accepted Stage 6 head",
+    stage7PredecessorMigration,
+    "Stage 7 migration chain does not extend the declared Stage 7 predecessor",
+  );
+  const stage7PredecessorRow = checksumManifest.migrations.at(-2);
+  assert.equal(
+    stage7PredecessorRow.sha256,
+    extension.database.previousMigrationSha256,
+    "Stage 7 predecessor migration checksum differs from its accepted contract",
+  );
+  const stage6MigrationIndex = migrationNames.indexOf(priorStage6Migration);
+  assert.equal(
+    stage6MigrationIndex,
+    migrationNames.length - (generationNumberFor(generation) >= 10 ? 3 : 2),
+    "Stage 7 migration chain does not preserve the accepted Stage 6 head position",
   );
   assert.equal(
     migrationNames.at(-1),
@@ -985,7 +1149,7 @@ export const verifyStage7Artifact = async ({
     authorizedCurrentSymlinkPath,
   });
   const payloadRows = await inventoryArtifact(root);
-  await verifyDeclaredRuntimeAcceptanceRunner(root);
+  await verifyDeclaredRuntimeAcceptanceRunner(root, generation);
 
   const releasePath = path.join(root, "release.json");
   const releaseMetadata = await lstat(releasePath);
@@ -1002,7 +1166,11 @@ export const verifyStage7Artifact = async ({
     new RegExp(`^${artifactIdPrefix}[a-f0-9]{8}$`, "u"),
     "Stage 7 artifact ID prefix or format mismatch",
   );
-  assert.equal(release.source?.branch, "phase-1/stage-7", "Stage 7 source branch mismatch");
+  assert.equal(
+    release.source?.branch,
+    stage7SourceBranchFor(generation),
+    "Stage 7 source branch mismatch",
+  );
   assert.match(release.source?.commit ?? "", /^[a-f0-9]{40}$/u, "Invalid Stage 7 source commit");
   if (releaseRoot !== undefined) {
     assert.equal(

@@ -1,6 +1,8 @@
 import {
   asOpaqueId,
   M1InputValidationError,
+  M1RuntimeAcceptanceFixtureConflictError,
+  M1RuntimeAcceptanceFixtureNotFoundError,
   M1OptimisticConflictError,
   M1TransactionConflictError,
   M1StaffAuthorizationError,
@@ -14,12 +16,17 @@ import {
   type M1StaffTripAccessOperations,
   type M1StaffTripOperations,
   type M1StaffTripPublicationOperations,
+  type M1RuntimeAcceptanceFixtureOperations,
   type M1TripSlice,
 } from "@travelos/backend-core";
 import {
+  ADMIN_RUNTIME_ACCEPTANCE_FIXTURE_RUN_HEADER,
   AdminAccommodationUpdateRequestSchema,
   AdminCreateM1TripSliceRequestSchema,
   AdminM1TripSliceResponseSchema,
+  AdminRuntimeAcceptanceCleanupV1ResponseSchema,
+  AdminRuntimeAcceptanceFixtureCleanupV1RequestSchema,
+  AdminRuntimeAcceptanceFixtureConflictV1ResponseSchema,
   AdminSupplierCostNoteUpdateRequestSchema,
   AdminPublishTripV1RequestSchema,
   AdminTripPublicationHistoryV1ResponseSchema,
@@ -69,6 +76,12 @@ export interface AdminM1RouteOptions {
   readonly m1Operations: M1StaffTripOperations;
   readonly m1TripAccessOperations?: M1StaffTripAccessOperations;
   readonly m1PublicationOperations?: M1StaffTripPublicationOperations;
+  readonly runtimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
+}
+
+export interface AdminRuntimeAcceptanceFixtureRouteOperations {
+  readonly createFixtureTrip: M1StaffTripOperations["createRuntimeAcceptanceFixtureTrip"];
+  readonly cleanupFixture: M1RuntimeAcceptanceFixtureOperations["cleanupFixture"];
 }
 
 const headersFor = (request: IncomingHttpRequest): Headers => {
@@ -348,6 +361,25 @@ const runHandler = (
       response.status(404).end();
       return;
     }
+    if (error instanceof M1RuntimeAcceptanceFixtureNotFoundError) {
+      response.status(404).end();
+      return;
+    }
+    if (error instanceof M1RuntimeAcceptanceFixtureConflictError) {
+      const conflictResponse =
+        error.recoveryFixtureRunId === null
+          ? { error: "runtime_acceptance_fixture_conflict" as const }
+          : {
+              error: "runtime_acceptance_fixture_conflict" as const,
+              recoveryFixtureRunId: error.recoveryFixtureRunId,
+            };
+      send(
+        response,
+        409,
+        AdminRuntimeAcceptanceFixtureConflictV1ResponseSchema.parse(conflictResponse),
+      );
+      return;
+    }
     if (error instanceof M1StaffPublicationInputError) {
       badRequest(response);
       return;
@@ -377,8 +409,29 @@ export const registerAdminM1Routes = (
           response.status(rejection).end();
           return;
         }
+        const headers = headersFor(request);
+        const fixtureRunIdHeader = headers.get(ADMIN_RUNTIME_ACCEPTANCE_FIXTURE_RUN_HEADER);
+        if (fixtureRunIdHeader !== null) {
+          const fixtureOperations = options.runtimeAcceptanceFixtureOperations;
+          const fixtureRunId = idFrom(fixtureRunIdHeader);
+          if (fixtureOperations === undefined) {
+            response.status(403).end();
+            return;
+          }
+          if (fixtureRunId === null) {
+            badRequest(response);
+            return;
+          }
+          const slice = await fixtureOperations.createFixtureTrip(
+            headers.get("cookie"),
+            toCreateInput(parsed.data),
+            fixtureRunId,
+          );
+          send(response, 201, mapSlice(slice));
+          return;
+        }
         const slice = await options.m1Operations.createTripSlice(
-          headersFor(request).get("cookie"),
+          headers.get("cookie"),
           toCreateInput(parsed.data),
         );
         send(response, 201, mapSlice(slice));
@@ -415,6 +468,58 @@ export const registerAdminM1Routes = (
       next,
     );
   });
+
+  if (options.runtimeAcceptanceFixtureOperations !== undefined) {
+    const fixtureOperations = options.runtimeAcceptanceFixtureOperations;
+    application.post(
+      "/api/admin/runtime-acceptance-fixtures/:fixtureRunId/cleanup",
+      (request, response, next) => {
+        runHandler(
+          async () => {
+            const fixtureRunId = idFrom(request.params?.fixtureRunId);
+            const parsed = AdminRuntimeAcceptanceFixtureCleanupV1RequestSchema.safeParse(
+              request.body,
+            );
+            if (fixtureRunId === null || !parsed.success) {
+              badRequest(response);
+              return;
+            }
+            const rejection = surfaceRejectionStatus(request, options.policy, true);
+            if (rejection !== null) {
+              response.status(rejection).end();
+              return;
+            }
+            const receipt = await fixtureOperations.cleanupFixture(
+              headersFor(request).get("cookie"),
+              fixtureRunId,
+              parsed.data,
+            );
+            send(
+              response,
+              200,
+              AdminRuntimeAcceptanceCleanupV1ResponseSchema.parse({
+                fixtureRunId: receipt.fixtureRunId,
+                state: receipt.state,
+                counts: {
+                  grantsRevoked: receipt.counts.grantsRevoked,
+                  publicationsWithdrawn: receipt.counts.publicationsWithdrawn,
+                  tripsCancelled: receipt.counts.tripsCancelled,
+                  principalsRetired: receipt.counts.principalsRetired,
+                },
+                retainedHistoryCounts: {
+                  publicationSnapshots: receipt.retainedHistoryCounts.publicationSnapshots,
+                  auditRecords: receipt.retainedHistoryCounts.auditRecords,
+                },
+                errorCode: receipt.errorCode,
+              }),
+            );
+          },
+          response,
+          next,
+        );
+      },
+    );
+  }
 
   application.patch("/api/admin/itinerary/accommodations/:itemId", (request, response, next) => {
     runHandler(

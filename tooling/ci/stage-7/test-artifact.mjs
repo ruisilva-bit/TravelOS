@@ -14,24 +14,35 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
+import {
+  STAGE7_DEFAULT_GENERATION,
+  stage7CandidateBranchFor,
+  stage7ExtensionPathFor,
+} from "../stage-7-successor-baseline.mjs";
 
 const artifactVerifierPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "verify-artifact.mjs",
 );
+const deploymentContractVerifierPath = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "verify-deployment-contract.mjs",
+);
 const artifactVerifier = await import(pathToFileURL(artifactVerifierPath).href).catch(() => null);
+const deploymentContractVerifier = await import(
+  pathToFileURL(deploymentContractVerifierPath).href
+).catch(() => null);
 const artifactBuilder = await import(
   pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), "build-artifact.mjs")).href
 ).catch(() => null);
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const generation = STAGE7_DEFAULT_GENERATION;
+const extensionArtifactPath = `deployment/${path.basename(stage7ExtensionPathFor(generation))}`;
 const baseContractBytes = await readFile(
   path.join(projectRoot, "deploy/contracts/deployment-contract.v1.json"),
 );
-const extensionBytes = await readFile(
-  path.join(projectRoot, "deploy/contracts/stage-7-extension.v1.json"),
-);
+const extensionBytes = await readFile(path.join(projectRoot, stage7ExtensionPathFor(generation)));
+const extension = JSON.parse(extensionBytes.toString("utf8"));
 const verifierBytes = await readFile(artifactVerifierPath);
 assert.equal(
   typeof artifactVerifier?.verifyStage7Artifact,
@@ -72,25 +83,52 @@ try {
     path.join(projectRoot, "tooling/ci/stage-7/runtime-acceptance-runner.mjs"),
   );
   const runnerSha256 = createHash("sha256").update(runnerBytes).digest("hex");
-  const operatorUnitBytes = await readFile(
+  const operatorUnitSourceBytes = await readFile(
     path.join(projectRoot, "deploy/systemd/travelos-stage7-runtime-acceptance.service"),
   );
+  const operatorUnitBytes = Buffer.from(
+    deploymentContractVerifier.renderStage7OperatorUnitForGeneration(
+      operatorUnitSourceBytes.toString("utf8"),
+      generation,
+    ),
+  );
   const operatorUnitSha256 = createHash("sha256").update(operatorUnitBytes).digest("hex");
+  const sourceFiles = [
+    {
+      path: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+      bytes: runnerBytes.length,
+      sha256: runnerSha256,
+    },
+    {
+      path: "deploy/systemd/travelos-stage7-runtime-acceptance.service",
+      bytes: operatorUnitSourceBytes.length,
+      sha256: createHash("sha256").update(operatorUnitSourceBytes).digest("hex"),
+    },
+  ];
+  if (Number(generation.slice(3)) >= 10) {
+    for (const sourcePath of [
+      stage7ExtensionPathFor(generation),
+      `migrations/${extension.database.requiredMigration}`,
+      extension.database.checksumManifestPath,
+      "packages/backend-core/src/modules/runtime-acceptance/application/fixture-cleanup.ts",
+      "packages/database/src/portal-access/runtime-acceptance-fixture-repository.ts",
+      "apps/admin-api/test/runtime-acceptance-cleanup-routes.test.ts",
+      "docs/implementation/M1_STAGE_7_RUNTIME_ACCEPTANCE_CLEANUP_SUCCESSOR.md",
+    ]) {
+      const bytes = await readFile(path.join(projectRoot, sourcePath));
+      sourceFiles.push({
+        path: sourcePath,
+        bytes: bytes.length,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+      });
+    }
+  }
   const baselineBytes = Buffer.from(
     `${JSON.stringify({
       schemaVersion: 1,
-      sourceFiles: [
-        {
-          path: "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
-          bytes: runnerBytes.length,
-          sha256: runnerSha256,
-        },
-        {
-          path: "deploy/systemd/travelos-stage7-runtime-acceptance.service",
-          bytes: operatorUnitBytes.length,
-          sha256: operatorUnitSha256,
-        },
-      ],
+      sourceFiles: sourceFiles.toSorted((left, right) =>
+        left.path < right.path ? -1 : left.path > right.path ? 1 : 0,
+      ),
     })}\n`,
   );
   const baselineSha256 = createHash("sha256").update(baselineBytes).digest("hex");
@@ -107,7 +145,7 @@ try {
     schemaVersion: 1,
     artifactId: `travelos-phase-1-m1-stage-7-${generation}-${sourceCommit.slice(0, 8)}`,
     source: {
-      branch: "phase-1/stage-7",
+      branch: stage7CandidateBranchFor(generation),
       commit: sourceCommit,
       tree: "b".repeat(40),
       successorBaselineGeneration: generation,
@@ -128,7 +166,7 @@ try {
       artifactRoot,
       generation,
     }),
-    /stage-7-extension\.v1\.json/u,
+    new RegExp(path.basename(extensionArtifactPath).replaceAll(".", "\\."), "u"),
     "A candidate package must carry its Stage 7 deployment extension",
   );
 
@@ -180,7 +218,7 @@ try {
     );
   };
   await writeArtifactFile("deployment/deployment-contract.v1.json", baseContractBytes);
-  await writeArtifactFile("deployment/stage-7-extension.v1.json", extensionBytes);
+  await writeArtifactFile(extensionArtifactPath, extensionBytes);
   await writeArtifactFile("deployment/verify-stage7-artifact.mjs", verifierBytes);
   await assert.rejects(
     artifactVerifier.verifyStage7Artifact({ artifactRoot, generation }),
@@ -190,7 +228,7 @@ try {
   await writeArtifactFile("operator/stage7-runtime-acceptance.mjs", runnerBytes);
   await writeArtifactFile("operator/travelos-stage7-runtime-acceptance.service", operatorUnitBytes);
   const migrationBytes = await readFile(
-    path.join(projectRoot, "migrations/0012_stage7_portal_trip_access.cjs"),
+    path.join(projectRoot, "migrations", extension.database.requiredMigration),
   );
   const migrationChecksumBytes = await readFile(
     path.join(projectRoot, "migrations/checksums.json"),
@@ -263,7 +301,7 @@ try {
   const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
   release = artifactBuilder.createStage7ReleaseMetadata({
     generation,
-    branch: "phase-1/stage-7",
+    branch: stage7CandidateBranchFor(generation),
     commit: sourceCommit,
     tree: "b".repeat(40),
     successorBaselineSha256: baselineSha256,
@@ -292,7 +330,7 @@ try {
   assert.equal(accepted.artifactId, release.artifactId);
   const operatorUnitPath = "operator/travelos-stage7-runtime-acceptance.service";
   const wrongGenerationUnit = Buffer.from(
-    operatorUnitBytes.toString("utf8").replace("--generation=gen09", "--generation=gen08"),
+    operatorUnitBytes.toString("utf8").replace(`--generation=${generation}`, "--generation=gen08"),
   );
   assert.notDeepEqual(wrongGenerationUnit, operatorUnitBytes);
   const expectedOperatorUnitSha256 = release.runtimeAcceptance.operatorUnitSha256;
@@ -339,6 +377,44 @@ try {
   );
   await writeFile(packagedStage6MigrationPath, acceptedStage6MigrationBytes);
   await writePayloadManifests();
+  if (extension.database.previousMigration !== acceptedStage6MigrationPath) {
+    const predecessorMigrationPath = extension.database.previousMigration;
+    const canonicalPredecessorPath = `migrations/${predecessorMigrationPath}`;
+    const packagedPredecessorPath = `migrator/migrations/${predecessorMigrationPath}`;
+    const acceptedPredecessorBytes = await readFile(
+      path.join(artifactRoot, ...canonicalPredecessorPath.split("/")),
+    );
+    const tamperedPredecessorBytes = Buffer.concat([
+      acceptedPredecessorBytes,
+      Buffer.from("\n-- tampered predecessor\n"),
+    ]);
+    const checksumManifest = JSON.parse(migrationChecksumBytes.toString("utf8"));
+    const predecessorRow = checksumManifest.migrations.find(
+      (row) => row.file === predecessorMigrationPath,
+    );
+    assert.ok(predecessorRow, "Stage 7 predecessor must be present in the checksum manifest");
+    predecessorRow.sha256 = digest(tamperedPredecessorBytes);
+    const tamperedChecksumBytes = Buffer.from(`${JSON.stringify(checksumManifest, null, 2)}\n`);
+    release.database.migrationChecksumManifestSha256 = digest(tamperedChecksumBytes);
+    await writeArtifactFile(canonicalPredecessorPath, tamperedPredecessorBytes);
+    await writeArtifactFile(packagedPredecessorPath, tamperedPredecessorBytes);
+    await writeArtifactFile("migrations/checksums.json", tamperedChecksumBytes);
+    await writeArtifactFile("migrator/migrations/checksums.json", tamperedChecksumBytes);
+    await writeFile(releasePath, `${JSON.stringify(release)}\n`);
+    await writePayloadManifests();
+    await assert.rejects(
+      artifactVerifier.verifyStage7Artifact({ artifactRoot, generation }),
+      /Stage 7 predecessor migration checksum differs|Packaged successor checksum manifest differs from its source manifest row/u,
+      "The packaged artifact must bind the Stage 7 predecessor migration to its accepted contract and source manifest",
+    );
+    await writeArtifactFile(canonicalPredecessorPath, acceptedPredecessorBytes);
+    await writeArtifactFile(packagedPredecessorPath, acceptedPredecessorBytes);
+    await writeArtifactFile("migrations/checksums.json", migrationChecksumBytes);
+    await writeArtifactFile("migrator/migrations/checksums.json", migrationChecksumBytes);
+    release.database.migrationChecksumManifestSha256 = digest(migrationChecksumBytes);
+    await writeFile(releasePath, `${JSON.stringify(release)}\n`);
+    await writePayloadManifests();
+  }
   const secretPath = path.join(artifactRoot, "synthetic-token.txt");
   await writeFile(secretPath, `ghp_${"A".repeat(36)}\n`);
   await writePayloadManifests();

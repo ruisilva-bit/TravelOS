@@ -22,3 +22,4 @@ export { createTripPublicationSourceRepository } from "./customer-presentation/p
 export { createPortalTripSnapshotSha256Hasher } from "./customer-presentation/snapshot-hash.js";
 export { createPostgresM1StaffTripPublicationOperations } from "./customer-presentation/m1-staff-publication-operations.js";
 export { createPostgresM1StaffTripAccessRepository } from "./portal-access/staff-trip-access-repository.js";
+export { createPostgresRuntimeAcceptanceFixtureCleanupRepository } from "./portal-access/runtime-acceptance-fixture-repository.js";

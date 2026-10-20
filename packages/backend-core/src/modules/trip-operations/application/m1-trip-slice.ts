@@ -54,6 +54,12 @@ export interface UpdateInternalNoteInput {
   readonly internalNote: string;
 }
 
+export interface CancelM1TripInput {
+  readonly tripId: OpaqueId;
+  readonly expectedLockVersion: bigint;
+  readonly idempotencyKey: string;
+}
+
 export class M1OptimisticConflictError extends Error {
   readonly code = "OPTIMISTIC_CONFLICT" as const;
 
@@ -78,6 +84,33 @@ export class M1InputValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "M1InputValidationError";
+  }
+}
+
+export class M1UnsupportedTripStateError extends Error {
+  readonly code = "UNSUPPORTED_TRIP_STATE" as const;
+
+  constructor() {
+    super("The Trip cannot be cancelled from its current state");
+    this.name = "M1UnsupportedTripStateError";
+  }
+}
+
+export class M1TripNotFoundError extends Error {
+  readonly code = "NOT_FOUND" as const;
+
+  constructor() {
+    super("Trip not found");
+    this.name = "M1TripNotFoundError";
+  }
+}
+
+export class M1TripCancellationIdempotencyConflictError extends Error {
+  readonly code = "IDEMPOTENCY_KEY_CONFLICT" as const;
+
+  constructor() {
+    super("The idempotency key was already used for a different cancellation request");
+    this.name = "M1TripCancellationIdempotencyConflictError";
   }
 }
 
@@ -390,6 +423,11 @@ export interface M1OperationalSliceRepository {
     input: CreateM1TripSliceInput,
     authorization: StaffAuthorizationOperationProof,
   ): Promise<M1TripSlice>;
+  createRuntimeAcceptanceFixtureTrip(
+    input: CreateM1TripSliceInput,
+    fixtureRunId: OpaqueId,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<M1TripSlice>;
   getM1TripSlice(
     agencyId: OpaqueId,
     tripId: OpaqueId,
@@ -401,6 +439,10 @@ export interface M1OperationalSliceRepository {
   ): Promise<M1TripSlice>;
   updateInternalSupplierNote(
     input: UpdateInternalNoteInput,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<M1TripSlice>;
+  cancelTrip(
+    input: CancelM1TripInput,
     authorization: StaffAuthorizationOperationProof,
   ): Promise<M1TripSlice>;
 }
@@ -563,6 +605,48 @@ export const updateM1InternalSupplierNote = async (
     validateUpdateM1InternalSupplierNoteInput(input),
     authorization,
   );
+
+const containsControlCharacter = (value: string): boolean =>
+  [...value].some((character) => {
+    const codePoint = character.codePointAt(0);
+    return codePoint !== undefined && (codePoint <= 0x1f || codePoint === 0x7f);
+  });
+
+export const validateCancelM1TripInput = (input: unknown): CancelM1TripInput =>
+  runInputValidation(() => {
+    const record = exactRecord(
+      input,
+      ["expectedLockVersion", "idempotencyKey", "tripId"],
+      "Trip cancellation",
+    );
+    const expectedLockVersionText = requiredString(
+      record,
+      "expectedLockVersion",
+      "Expected Trip lock version",
+      { min: 1, max: 19, trim: false },
+    );
+    if (!/^(0|[1-9][0-9]{0,18})$/u.test(expectedLockVersionText)) {
+      throw new Error("Expected Trip lock version is invalid");
+    }
+    const expectedLockVersion = BigInt(expectedLockVersionText);
+    if (expectedLockVersion > POSTGRES_BIGINT_MAX) {
+      throw new Error("Expected Trip lock version is invalid");
+    }
+    const idempotencyKey = requiredString(
+      record,
+      "idempotencyKey",
+      "Trip cancellation idempotency key",
+      { min: 1, max: 128, trim: false },
+    );
+    if (containsControlCharacter(idempotencyKey)) {
+      throw new Error("Trip cancellation idempotency key is invalid");
+    }
+    return {
+      tripId: requiredOpaqueId(record, "tripId", "Trip ID"),
+      expectedLockVersion,
+      idempotencyKey,
+    };
+  });
 
 export type M1RepositoryPerson = Person;
 export type M1RepositoryCustomer = Customer;

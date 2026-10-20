@@ -911,6 +911,8 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         return repository.updateAccommodation(input, authorization);
       },
       updateInternalSupplierNote: repository.updateInternalSupplierNote,
+      cancelTrip: repository.cancelTrip,
+      createRuntimeAcceptanceFixtureTrip: repository.createRuntimeAcceptanceFixtureTrip,
     };
     const operations = createM1StaffTripOperations({
       repository: revokingRepository,

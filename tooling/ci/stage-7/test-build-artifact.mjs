@@ -110,6 +110,26 @@ assert.deepEqual(release, {
     credentialDirectoryEnv: "CREDENTIALS_DIRECTORY",
   },
 });
+const gen10Release = builder.createStage7ReleaseMetadata({
+  generation: "gen10",
+  branch: "stage7/runtime-acceptance-cleanup-successor",
+  commit,
+  tree,
+  successorBaselineSha256: hash,
+  lockfileSha256: hash,
+  nodeBinarySha256: hash,
+  migrationSha256: hash,
+  migrationChecksumManifestSha256: hash,
+  deploymentContractSha256: hash,
+  stage7DeploymentContractSha256: hash,
+  stage7VerifierSha256: hash,
+  runtimeAcceptanceSha256: hash,
+  operatorUnitSha256: hash,
+});
+assert.equal(gen10Release.source.branch, "stage7/runtime-acceptance-cleanup-successor");
+assert.equal(gen10Release.database.migrationHead, "0013_stage7_runtime_acceptance_cleanup.cjs");
+assert.equal(gen10Release.stage7DeploymentContract.path, "deployment/stage-7-extension.v2.json");
+assert.equal(gen10Release.stage7DeploymentContract.schemaVersion, 2);
 assert.throws(
   () =>
     builder.createStage7ReleaseMetadata({

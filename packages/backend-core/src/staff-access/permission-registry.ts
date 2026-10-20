@@ -1,4 +1,4 @@
-export const PERMISSION_REGISTRY_VERSION = 5 as const;
+export const PERMISSION_REGISTRY_VERSION = 6 as const;
 
 export type AuthorizationScopeKind = "AGENCY" | "ORGANIZATION_UNIT";
 export type ResourceAccessLevel = "OWN" | "TEAM" | "ALL";
@@ -116,11 +116,21 @@ export const STAGE_6_PERMISSION_REGISTRY = [
   },
 ] as const satisfies readonly PermissionDefinition[];
 
-/** Stage 7 adds explicit Agency-scoped management of customer Portal Trip grants. */
+/** Stage 7 adds explicit Agency-scoped Portal grants and runtime acceptance lifecycle permissions. */
 export const STAGE_7_PERMISSION_REGISTRY = [
   ...STAGE_6_PERMISSION_REGISTRY,
   {
     id: "trip.access.manage",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+  {
+    id: "trip.withdraw_publication",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+  {
+    id: "runtime_acceptance.fixture.manage",
     allowedScopeKinds: ["AGENCY"],
     allowedAccessLevels: ["ALL"],
   },

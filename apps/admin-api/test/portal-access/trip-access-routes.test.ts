@@ -63,6 +63,7 @@ const makeHarness = (
   const operations = {
     issueTripAccessGrant: vi.fn(overrides.issue ?? (async () => activeGrant)),
     revokeTripAccessGrant: vi.fn(overrides.revoke ?? (async () => revokedGrant)),
+    retireFixturePortalPrincipal: vi.fn(async () => undefined as never),
   };
   registerAdminM1Routes(application, {
     policy,
@@ -242,6 +243,7 @@ describe("Admin TripAccessGrant routes", () => {
         m1TripAccessOperations: {
           issueTripAccessGrant: vi.fn(),
           revokeTripAccessGrant: vi.fn(),
+          retireFixturePortalPrincipal: vi.fn(),
         },
       } as never,
     );

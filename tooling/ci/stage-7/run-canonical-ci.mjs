@@ -8,6 +8,7 @@ import { captureStage5WorkingTreeSnapshot } from "../stage-5-working-tree-snapsh
 import {
   STAGE7_AUTHORIZED_PATHS,
   STAGE7_DEFAULT_GENERATION,
+  stage7CandidateBranchFor,
   stage7BaselinePathFor,
   verifyStage7SuccessorBaseline,
 } from "../stage-7-successor-baseline.mjs";
@@ -221,7 +222,7 @@ export const verifyCandidateFromRepository = async ({
 } = {}) => {
   const baseline = await verifyBaseline({ root: workspace, generation });
   assert.equal(baseline.result, "PASS");
-  assert.equal(baseline.currentBranch, "phase-1/stage-7");
+  assert.equal(baseline.currentBranch, stage7CandidateBranchFor(generation));
   assert.equal(baseline.currentHead, baseline.candidateCommit);
   const priorEvidenceScope = await verifySourceScope({
     root: workspace,

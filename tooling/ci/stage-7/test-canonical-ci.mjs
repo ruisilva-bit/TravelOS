@@ -230,6 +230,53 @@ try {
   assert.deepEqual(artifactPreflight.priorEvidenceScope, priorEvidenceScope);
   assert.equal(sourceScopeInvocationCount, 1);
   assert.equal(artifactVerificationCount, 1);
+  const gen10Commit = "9".repeat(40);
+  const gen10BaselineSha256 = "8".repeat(64);
+  const gen10PriorEvidenceScope = {
+    ...priorEvidenceScope,
+    candidateGeneration: "gen10",
+    candidateCommit: gen10Commit,
+    baselineSha256: gen10BaselineSha256,
+  };
+  const gen10Candidate = await verifyCandidateFromRepository({
+    root: repositoryRoot,
+    generation: "gen10",
+    verifyBaseline: async () => ({
+      result: "PASS",
+      currentBranch: "stage7/runtime-acceptance-cleanup-successor",
+      currentHead: gen10Commit,
+      candidateCommit: gen10Commit,
+      candidateId: "travelos-phase-1-m1-stage-7-gen10",
+      baselinePath: "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN10.json",
+      baselineSha256: gen10BaselineSha256,
+      stage8Actions: 0,
+    }),
+    verifySourceScope: async (input) => {
+      assert.equal(input.candidateGeneration, "gen10");
+      assert.equal(input.candidateCommit, gen10Commit);
+      assert.equal(input.baselineSha256, gen10BaselineSha256);
+      return gen10PriorEvidenceScope;
+    },
+    verifyDeployment: async (input) => {
+      assert.equal(input.generation, "gen10");
+      assert.equal(input.expectedCommit, gen10Commit);
+      return { result: "PASS", candidateCommit: gen10Commit, contractSha256: "f".repeat(64) };
+    },
+    verifyArtifact: async (input) => {
+      assert.equal(input.generation, "gen10");
+      assert.equal(
+        input.artifactRoot,
+        path.join(repositoryRoot, ".hermes/state/stage7-gen10-artifact"),
+      );
+      assert.equal(input.expectedCommit, gen10Commit);
+      assert.equal(input.expectedBaselineSha256, gen10BaselineSha256);
+      return { result: "PASS", artifactSha256: "b".repeat(64) };
+    },
+  });
+  assert.equal(gen10Candidate.candidateGeneration, "gen10");
+  assert.equal(gen10Candidate.candidateCommit, gen10Commit);
+  assert.equal(gen10Candidate.candidateId, "travelos-phase-1-m1-stage-7-gen10");
+  assert.equal(gen10Candidate.artifactSha256, "b".repeat(64));
   await assert.rejects(
     () =>
       verifyCandidateFromRepository({

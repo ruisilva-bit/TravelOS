@@ -14,7 +14,10 @@ import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
 import type { StaffAccessRepository } from "@travelos/database";
 
 import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
-import { registerAdminM1Routes } from "./m1-routes.js";
+import {
+  registerAdminM1Routes,
+  type AdminRuntimeAcceptanceFixtureRouteOperations,
+} from "./m1-routes.js";
 
 interface IncomingHttpRequest {
   readonly method: string;
@@ -52,10 +55,12 @@ interface NestHttpApplication {
 export interface AdminAuthBridgeOptions {
   readonly realm: AuthRealm;
   readonly policy: AuthSurfacePolicy;
+  readonly environment?: "DEVELOPMENT" | "PRODUCTION";
   readonly staffAccessRepository: Pick<StaffAccessRepository, "getStaffAuthorizationSnapshot">;
   readonly m1Operations?: M1StaffTripOperations;
   readonly m1TripAccessOperations?: M1StaffTripAccessOperations;
   readonly m1PublicationOperations?: M1StaffTripPublicationOperations;
+  readonly m1RuntimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
 }
 
 type SetCookieHeaders = Headers & { readonly getSetCookie?: () => string[] };
@@ -254,6 +259,10 @@ export const registerAdminAuthBridge = (
       ...(options.m1PublicationOperations === undefined
         ? {}
         : { m1PublicationOperations: options.m1PublicationOperations }),
+      ...(options.environment !== "DEVELOPMENT" ||
+      options.m1RuntimeAcceptanceFixtureOperations === undefined
+        ? {}
+        : { runtimeAcceptanceFixtureOperations: options.m1RuntimeAcceptanceFixtureOperations }),
     });
   }
 };

@@ -1,7 +1,10 @@
 import "reflect-metadata";
 
 import { createStaffAuthRealm } from "@travelos/auth-adapters";
-import { createM1StaffTripAccessOperations } from "@travelos/backend-core";
+import {
+  createM1RuntimeAcceptanceFixtureOperations,
+  createM1StaffTripAccessOperations,
+} from "@travelos/backend-core";
 import {
   loadDevelopmentInstanceManifest,
   readSystemdCredentialText,
@@ -11,6 +14,7 @@ import {
   createPostgresM1StaffTripAccessRepository,
   createPostgresM1StaffTripPublicationOperations,
   createPostgresM1StaffTripOperations,
+  createPostgresRuntimeAcceptanceFixtureCleanupRepository,
   createPostgresPersistence,
   createStaffAccessRepository,
 } from "@travelos/database";
@@ -72,27 +76,48 @@ const createAdminAuthOptions = async (
     };
     const staffAccessRepository = createStaffAccessRepository(persistence);
     const sessionResolver = createAdminStaffSessionResolver(realm, policy);
+    const m1Operations = createPostgresM1StaffTripOperations(persistence, sessionResolver);
     const m1TripAccessOperations = createM1StaffTripAccessOperations({
       repository: createPostgresM1StaffTripAccessRepository(persistence),
       authorizationRepository: staffAccessRepository,
       sessionResolver,
     });
+    const m1PublicationOperations = createPostgresM1StaffTripPublicationOperations(
+      persistence,
+      sessionResolver,
+      {
+        validate: (value) => void AdminTripPublicationPreviewV1Schema.shape.projection.parse(value),
+      },
+    );
+    const runtimeAcceptanceFixtureOperations =
+      manifest.environment === "DEVELOPMENT"
+        ? createM1RuntimeAcceptanceFixtureOperations({
+            repository: createPostgresRuntimeAcceptanceFixtureCleanupRepository(persistence),
+            authorizationRepository: staffAccessRepository,
+            sessionResolver,
+            tripOperations: m1Operations,
+            tripAccessOperations: m1TripAccessOperations,
+            publicationOperations: m1PublicationOperations,
+          })
+        : undefined;
     return {
       options: {
         auth: {
           realm,
           policy,
+          environment: manifest.environment,
           staffAccessRepository,
-          m1Operations: createPostgresM1StaffTripOperations(persistence, sessionResolver),
+          m1Operations,
           m1TripAccessOperations,
-          m1PublicationOperations: createPostgresM1StaffTripPublicationOperations(
-            persistence,
-            sessionResolver,
-            {
-              validate: (value) =>
-                void AdminTripPublicationPreviewV1Schema.shape.projection.parse(value),
-            },
-          ),
+          m1PublicationOperations,
+          ...(runtimeAcceptanceFixtureOperations === undefined
+            ? {}
+            : {
+                m1RuntimeAcceptanceFixtureOperations: {
+                  createFixtureTrip: m1Operations.createRuntimeAcceptanceFixtureTrip,
+                  cleanupFixture: runtimeAcceptanceFixtureOperations.cleanupFixture,
+                },
+              }),
         },
       },
       destroy: () => persistence.destroy(),

@@ -1,0 +1,461 @@
+{
+  "schemaVersion": 1,
+  "stage": "PHASE_1_M1_STAGE_7",
+  "result": "PASS",
+  "candidateGeneration": "gen07",
+  "candidateId": "travelos-phase-1-m1-stage-7-gen07",
+  "candidateCommit": "d8ae418ff825b59845b45b7fbf8b4dfa8c141d7d",
+  "artifactSha256": "7d1b42a45924809f1a246e3980fba75934a50f471852fddd7fd8da02057f2727",
+  "baselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN07.json",
+  "baselineSha256": "6f51b8dfb0f722be3387a93f0d2574b445d759c4aec7458bb5406dd3e8eda86d",
+  "deploymentContractSha256": "d546b8efea3a1e1816f3d0efc22781806a97e576f2275ef57b82aadbf7640966",
+  "ciConsumed": "YES",
+  "invocationCount": 1,
+  "startedAtUtc": "2026-10-17T14:39:01.113Z",
+  "completedAtUtc": "2026-10-17T14:42:34.781Z",
+  "expectedGateCount": 42,
+  "completedGateCount": 42,
+  "failedGate": null,
+  "gates": [
+    {
+      "label": "protected-baseline:pre",
+      "script": "protected-baseline:check",
+      "command": "corepack pnpm run protected-baseline:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1217,
+      "outputSha256": "fc8e881b9f12903e0f2a7d09aff5c935a932e39e4eafaf7982684d7f2c878e03"
+    },
+    {
+      "label": "stage5-candidate-coherence:pre",
+      "script": "stage5:candidate-coherence:verify",
+      "command": "corepack pnpm run stage5:candidate-coherence:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 66074,
+      "outputSha256": "9faaf650b2d02d0f63c3e31cfedfc2a45ff7cdcbf7fc7e2d23f876d6a470f0b4"
+    },
+    {
+      "label": "stage7-predecessor:pre",
+      "script": "stage7:predecessor:verify",
+      "command": "corepack pnpm run stage7:predecessor:verify --generation=gen07",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1820,
+      "outputSha256": "da470546d3ef10e769f7c2c608019f1aae4fb756cf6d2ce4b135d240bbee07ab"
+    },
+    {
+      "label": "stage7-successor-baseline:pre",
+      "script": "stage7:successor-baseline:verify",
+      "command": "corepack pnpm run stage7:successor-baseline:verify --generation=gen07",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 744,
+      "outputSha256": "b3aa855505e85da2bc5954c37f6b237405752789bd9bd73a0ee288de458507f2"
+    },
+    {
+      "label": "stage7-source-scope:pre",
+      "script": "stage7:source-scope:verify",
+      "command": "corepack pnpm run stage7:source-scope:verify --generation=gen07",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1106,
+      "outputSha256": "7d26186df509cff8daa5a50fd4d0de0422df9c39a36229d2060ab0751557bd39"
+    },
+    {
+      "label": "stage6-predecessor:security-scan",
+      "script": "stage7:predecessor:security-scan",
+      "command": "corepack pnpm run stage7:predecessor:security-scan --generation=gen07",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 12713,
+      "outputSha256": "ea6469a510003df1376a85947855126f0b67af91d68cbb652280ba9e4fd38cf2"
+    },
+    {
+      "label": "verify:pins",
+      "script": "verify:pins",
+      "command": "corepack pnpm run verify:pins",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 992,
+      "outputSha256": "7f1fe3f78dbc2b5a33ca2d539b90a7b8dcbafa29a6e15a632e2aaf5211e08be0"
+    },
+    {
+      "label": "db:migrations:verify",
+      "script": "db:migrations:verify",
+      "command": "corepack pnpm run db:migrations:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1926,
+      "outputSha256": "862378fde04126eee1eba9a463bfec2c7471c913944454c616b9734bf09fcbd5"
+    },
+    {
+      "label": "auth:schema:verify",
+      "script": "auth:schema:verify",
+      "command": "corepack pnpm run auth:schema:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 356,
+      "outputSha256": "204061c474783b11e73e8c234c2239a07858251edb48db4de61442864de717d8"
+    },
+    {
+      "label": "test:lifecycle-policy",
+      "script": "test:lifecycle-policy",
+      "command": "corepack pnpm run test:lifecycle-policy",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1565,
+      "outputSha256": "9932097c3669f756beee1b2bd39185976bb6b7cd2b83cc54f920ad90788757c1"
+    },
+    {
+      "label": "format:check",
+      "script": "format:check",
+      "command": "corepack pnpm run format:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1254,
+      "outputSha256": "10f2bdb1cc52d407221d61ff094083b58fb52f79225b405a950e58a8b165e89a"
+    },
+    {
+      "label": "lint",
+      "script": "lint",
+      "command": "corepack pnpm run lint",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 69,
+      "outputSha256": "5fdbb95f64b63c6f6d6613434983fed95766f3cd9f1b19655e305c8bfe96de0c"
+    },
+    {
+      "label": "build",
+      "script": "build",
+      "command": "corepack pnpm run build",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 2989,
+      "outputSha256": "84d18bb0a319cda1f2e3fbdcf45bc9e7344f7889949d3e1a8966ca52f8b07a34"
+    },
+    {
+      "label": "typecheck",
+      "script": "typecheck",
+      "command": "corepack pnpm run typecheck",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 126,
+      "outputSha256": "5122de2377398c877794aaa9fd6ecf0901bfd0574c8fcb39c6cd69e2290b8fad"
+    },
+    {
+      "label": "architecture:check",
+      "script": "architecture:check",
+      "command": "corepack pnpm run architecture:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 84854,
+      "outputSha256": "317fd70cebdc590bc6eb8c2e5b267cf357d0d198a33b209d33decacbc0816ef7"
+    },
+    {
+      "label": "test:unit",
+      "script": "test:unit",
+      "command": "corepack pnpm run test:unit",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 290,
+      "outputSha256": "3267304ac65aca33185126b658c6942d667402d4a29d2bf7c214fcd409c388da"
+    },
+    {
+      "label": "config:schema:check",
+      "script": "config:schema:check",
+      "command": "corepack pnpm run config:schema:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 135,
+      "outputSha256": "ab106f6ba6b0740fb116259cb1e8839bd0f3fa2f2aa5b94b27bb1c0604b06cb6"
+    },
+    {
+      "label": "stage3:corrections:verify",
+      "script": "stage3:corrections:verify",
+      "command": "corepack pnpm run stage3:corrections:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1172,
+      "outputSha256": "ee2cbbc46ed7b0f7c3759f1932e1c9298b9023f57424d90ad5788a76d23e4ea7"
+    },
+    {
+      "label": "test:freeze-inputs",
+      "script": "test:freeze-inputs",
+      "command": "corepack pnpm run test:freeze-inputs",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1722,
+      "outputSha256": "59784305642c7e2fe1dbaf3f096963843ede9456f06c007fdf804e34965f0280"
+    },
+    {
+      "label": "test:security-scanner",
+      "script": "test:security-scanner",
+      "command": "corepack pnpm run test:security-scanner",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1250,
+      "outputSha256": "fc786a870e73d8f504e26722c5ba8931a83a5092ad201d4f7f214c44e313dacd"
+    },
+    {
+      "label": "test:stage6-successor-baseline",
+      "script": "test:stage6:successor-baseline",
+      "command": "corepack pnpm run test:stage6:successor-baseline",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 217,
+      "outputSha256": "b63d2e7fcd22c92abbe3b7630ef9ad709629702d12eb788548d29b77cf8afdda"
+    },
+    {
+      "label": "test:stage6-deployment-contract",
+      "script": "test:stage6:deployment-contract",
+      "command": "corepack pnpm run test:stage6:deployment-contract",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 239,
+      "outputSha256": "4101055cb316e18bfb8d94aa230ab351aa6476c52572196531d3631f042649c4"
+    },
+    {
+      "label": "test:stage6-migrator-bootstrap",
+      "script": "test:stage6:migrator-bootstrap",
+      "command": "corepack pnpm run test:stage6:migrator-bootstrap",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 294,
+      "outputSha256": "38b993c386cbf1bf3c3e1160f004a175d1b1be0f85dad0f26ebfb260b2d4e1ed"
+    },
+    {
+      "label": "test:stage7:successor-baseline",
+      "script": "test:stage7:successor-baseline",
+      "command": "corepack pnpm run test:stage7:successor-baseline",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 133,
+      "outputSha256": "301369ea0846e7752d8251c8e65b60a4ccda0534ec939e8d7411959647efb03a"
+    },
+    {
+      "label": "test:stage7:source-scope",
+      "script": "test:stage7:source-scope",
+      "command": "corepack pnpm run test:stage7:source-scope",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 157,
+      "outputSha256": "1a6a6306eb74cd9a36021077f3917c1eeee96ce8ec2af89ba2175335cadb271e"
+    },
+    {
+      "label": "test:stage7:predecessor-security-scan",
+      "script": "test:stage7:predecessor-security-scan",
+      "command": "corepack pnpm run test:stage7:predecessor-security-scan",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 229,
+      "outputSha256": "0e1d683a9652eeb869cde9f6b101d65dbf3ae67c1be92016a3aac1b8a4fac867"
+    },
+    {
+      "label": "test:stage7:canonical-ci",
+      "script": "test:stage7:canonical-ci",
+      "command": "corepack pnpm run test:stage7:canonical-ci",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 266,
+      "outputSha256": "0830a36e1aaf7ddf04ddcb8d9197119a1fe96d3c6cf671e12ff98bb04f623b5c"
+    },
+    {
+      "label": "test:stage7:artifact",
+      "script": "test:stage7:artifact",
+      "command": "corepack pnpm run test:stage7:artifact",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 202,
+      "outputSha256": "8d1ed33d080e1dd42dc3635735687056e20b2293547f26fa4d1aacfa3d0fbb91"
+    },
+    {
+      "label": "test:stage7:deployment-contract",
+      "script": "test:stage7:deployment-contract",
+      "command": "corepack pnpm run test:stage7:deployment-contract",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 132,
+      "outputSha256": "5e74062be76ca2ce1840288622d73dc7cf2bdfae8f5d4122ac583213258e69f4"
+    },
+    {
+      "label": "test:stage7:migrator-package",
+      "script": "test:stage7:migrator-package",
+      "command": "corepack pnpm run test:stage7:migrator-package",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 494,
+      "outputSha256": "7978457accfb97c055b81d03109d76758c99571849ac35e84d0aae79a05b0300"
+    },
+    {
+      "label": "stage7-deployment-contract",
+      "script": "stage7:deployment-contract:verify",
+      "command": "corepack pnpm run stage7:deployment-contract:verify --generation=gen07",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1108,
+      "outputSha256": "228aca37f85360364bf445c2028f0843bd5bb9092828419fa4da64e9fdda6d44"
+    },
+    {
+      "label": "test:stage7:postgres",
+      "script": "test:stage7:postgres",
+      "command": "corepack pnpm run test:stage7:postgres",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 4271,
+      "outputSha256": "4037fbe1b6c76395d571cab7385a4197e297b2cf4e30d1b6d9677c348b6bc4a2"
+    },
+    {
+      "label": "test:rejected-technologies",
+      "script": "test:rejected-technologies",
+      "command": "corepack pnpm run test:rejected-technologies",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 18775,
+      "outputSha256": "f2d45451971ff3580dc34a50afb480591eb05b79720a697e537789886b8ec0a3"
+    },
+    {
+      "label": "verify:rejected-technologies",
+      "script": "verify:rejected-technologies",
+      "command": "corepack pnpm run verify:rejected-technologies",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 67051,
+      "outputSha256": "4b0b330a9f90337c6582c142eac92102d2272c89f2c859f119f28d254fc60346"
+    },
+    {
+      "label": "evidence:stage4:verify",
+      "script": "evidence:stage4:verify",
+      "command": "corepack pnpm run evidence:stage4:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 799,
+      "outputSha256": "69e95a8418b52edb5ab7bae1c1d0ade8dbbfa00d5bfc041f97bda7a0925cc263"
+    },
+    {
+      "label": "security:scan:stage4",
+      "script": "security:scan:stage4",
+      "command": "corepack pnpm run security:scan:stage4",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1536,
+      "outputSha256": "08ef6495729ced182efbb6a93fa93247a3381adbee8d4386b59275ca410d67e7"
+    },
+    {
+      "label": "test:smoke",
+      "script": "test:smoke",
+      "command": "corepack pnpm run test:smoke",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 5304,
+      "outputSha256": "cd97d113c554b41099ea9b66df11192912ff6c42a51a697cec8ff380f97bdf61"
+    },
+    {
+      "label": "security:scan:bundles",
+      "script": "security:scan:bundles",
+      "command": "corepack pnpm run security:scan:bundles",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1387,
+      "outputSha256": "a8019d436bf660afe01da55eeb28b9e68a3e31b8990e9fc5bf89035c6bcbf37d"
+    },
+    {
+      "label": "stage7-successor-baseline:post",
+      "script": "stage7:successor-baseline:verify",
+      "command": "corepack pnpm run stage7:successor-baseline:verify --generation=gen07",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 744,
+      "outputSha256": "b3aa855505e85da2bc5954c37f6b237405752789bd9bd73a0ee288de458507f2"
+    },
+    {
+      "label": "stage7-source-scope:post",
+      "script": "stage7:source-scope:verify",
+      "command": "corepack pnpm run stage7:source-scope:verify --generation=gen07",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1106,
+      "outputSha256": "7d26186df509cff8daa5a50fd4d0de0422df9c39a36229d2060ab0751557bd39"
+    },
+    {
+      "label": "stage5-candidate-coherence:post",
+      "script": "stage5:candidate-coherence:verify",
+      "command": "corepack pnpm run stage5:candidate-coherence:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 66074,
+      "outputSha256": "9faaf650b2d02d0f63c3e31cfedfc2a45ff7cdcbf7fc7e2d23f876d6a470f0b4"
+    },
+    {
+      "label": "protected-baseline:post",
+      "script": "protected-baseline:check",
+      "command": "corepack pnpm run protected-baseline:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1020,
+      "outputSha256": "3baeed4703c99f4cdeb744f9636a93196ccaf16e3474e61ebcc13404fec7da20"
+    }
+  ],
+  "guardPath": ".hermes/state/stage7-gen07-canonical-ci-guard.json",
+  "guardSha256": "f785ab7c0581ce9c3b8479dbed87cb561c7898207ed81f2d51e052e330a3d78e",
+  "candidateStateSha256": "769019a76db7742f56d41753d71c14998b8d661e5694b1347247b92f1f639fef",
+  "logPath": "docs/evidence/phase-1-m1/stage-7/gen07/canonical-ci.log",
+  "logBytes": 357071,
+  "logSha256": "a492c65d36e91676be38e81fd3a9fc52631af0d82652b19ab85803b98f85ec8b",
+  "finalMarker": {
+    "schemaVersion": 1,
+    "stage": "PHASE_1_M1_STAGE_7",
+    "result": "PASS",
+    "candidateGeneration": "gen07",
+    "candidateId": "travelos-phase-1-m1-stage-7-gen07",
+    "candidateCommit": "d8ae418ff825b59845b45b7fbf8b4dfa8c141d7d",
+    "artifactSha256": "7d1b42a45924809f1a246e3980fba75934a50f471852fddd7fd8da02057f2727",
+    "completedGateCount": 42,
+    "expectedGateCount": 42,
+    "failedGate": null,
+    "stage8Actions": 0
+  },
+  "stage8Actions": 0
+}

@@ -3,13 +3,16 @@ import { createHash } from "node:crypto";
 import {
   asOpaqueId,
   IdempotencyConflictError,
+  M1_STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
   M1InputValidationError,
   M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
   M1TransactionConflictError,
   TRIP_ACCESS_CAPABILITY_IDS,
   type IssueTripAccessGrantCommand,
   type M1StaffTripAccessRepository,
+  type PortalPrincipalRetirementResult,
   type RevokeTripAccessGrantCommand,
+  type RetireFixturePortalPrincipalCommand,
   type StaffAuthorizationOperationProof,
   type TripAccessGrant,
 } from "@travelos/backend-core";
@@ -601,6 +604,121 @@ export const createPostgresM1StaffTripAccessRepository = (
           result.grantId,
         );
         return mapGrant(result);
+      });
+    },
+
+    async retireFixturePortalPrincipal(
+      command: RetireFixturePortalPrincipalCommand,
+      authorization: StaffAuthorizationOperationProof,
+    ): Promise<PortalPrincipalRetirementResult | null> {
+      if (
+        command.reason !== "RUNTIME_ACCEPTANCE_CLEANUP" ||
+        typeof command.portalPrincipalId !== "string" ||
+        command.portalPrincipalId.length < 1 ||
+        command.portalPrincipalId.length > 255 ||
+        command.portalPrincipalId !== command.portalPrincipalId.trim() ||
+        hasControlCharacter(command.portalPrincipalId)
+      ) {
+        return invalidInput();
+      }
+      const actorId = authorization?.session?.staffPrincipalId;
+      if (typeof actorId !== "string") {
+        throw new M1InputValidationError("Invalid Staff authorization proof");
+      }
+
+      return serializable(persistence, async (database) => {
+        await assertStaffAuthorizationInTransaction(
+          database,
+          authorization,
+          command.agencyId,
+          M1_STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
+          5 * 60 * 1_000,
+        );
+
+        const fixture = (
+          await sql<{ readonly state: "OPEN" | "CLEANUP_PENDING" }>`
+            SELECT "state"
+              FROM "portal_access"."runtime_acceptance_fixture_run"
+             WHERE "agencyId" = ${command.agencyId}::uuid
+               AND "fixtureRunId" = ${command.fixtureRunId}::uuid
+               AND "createdByStaffPrincipalId" = ${actorId}
+               AND "portalPrincipalId" = ${command.portalPrincipalId}
+               AND "state" IN ('OPEN', 'CLEANUP_PENDING')
+             FOR UPDATE
+          `.execute(database)
+        ).rows[0];
+        if (fixture === undefined) return null;
+
+        const principal = (
+          await sql<{
+            readonly authorizationEpoch: string;
+            readonly retiredAt: Date | null;
+          }>`
+            SELECT "authorizationEpoch"::text AS "authorizationEpoch", "retiredAt"
+              FROM "portal_access"."portal_principal_context"
+             WHERE "agencyId" = ${command.agencyId}::uuid
+               AND "portalPrincipalId" = ${command.portalPrincipalId}
+             FOR UPDATE
+          `.execute(database)
+        ).rows[0];
+        if (principal === undefined) return null;
+
+        if (principal.retiredAt !== null) {
+          const priorEvent = (
+            await sql<{ readonly occurredAt: Date }>`
+              SELECT "occurredAt"
+                FROM "portal_access"."portal_principal_retirement_event"
+               WHERE "agencyId" = ${command.agencyId}::uuid
+                 AND "fixtureRunId" = ${command.fixtureRunId}::uuid
+                 AND "portalPrincipalId" = ${command.portalPrincipalId}
+               ORDER BY "occurredAt" ASC
+               LIMIT 1
+            `.execute(database)
+          ).rows[0];
+          if (priorEvent === undefined) return null;
+          return {
+            portalPrincipalId: command.portalPrincipalId,
+            retiredAt: priorEvent.occurredAt.toISOString(),
+            authorizationEpoch: BigInt(principal.authorizationEpoch),
+          };
+        }
+
+        const retired = (
+          await sql<{
+            readonly authorizationEpoch: string;
+            readonly retiredAt: Date;
+          }>`
+            UPDATE "portal_access"."portal_principal_context"
+               SET "authorizationEpoch" = "authorizationEpoch" + 1,
+                   "retiredAt" = date_trunc('milliseconds', clock_timestamp()),
+                   "updatedAt" = date_trunc('milliseconds', clock_timestamp())
+             WHERE "agencyId" = ${command.agencyId}::uuid
+               AND "portalPrincipalId" = ${command.portalPrincipalId}
+               AND "retiredAt" IS NULL
+            RETURNING "authorizationEpoch"::text AS "authorizationEpoch", "retiredAt"
+          `.execute(database)
+        ).rows[0];
+        if (retired === undefined) throw new M1TransactionConflictError();
+
+        const eventId = createUuidV7();
+        await sql`
+          INSERT INTO "portal_access"."portal_principal_retirement_event"
+            ("eventId", "agencyId", "fixtureRunId", "portalPrincipalId",
+             "actorStaffPrincipalId", "eventType", "reason")
+          VALUES (${eventId}::uuid, ${command.agencyId}::uuid, ${command.fixtureRunId}::uuid,
+                  ${command.portalPrincipalId}, ${actorId}, 'PORTAL_PRINCIPAL_RETIRED', ${command.reason})
+        `.execute(database);
+        await sql`
+          INSERT INTO "integration"."portal_principal_retirement_outbox"
+            ("messageId", "eventId", "agencyId", "fixtureRunId", "portalPrincipalId", "eventType")
+          VALUES (${createUuidV7()}::uuid, ${eventId}::uuid, ${command.agencyId}::uuid,
+                  ${command.fixtureRunId}::uuid, ${command.portalPrincipalId}, 'PORTAL_PRINCIPAL_RETIRED')
+        `.execute(database);
+        return {
+          portalPrincipalId: command.portalPrincipalId,
+          retiredAt: retired.retiredAt.toISOString(),
+          authorizationEpoch: BigInt(retired.authorizationEpoch),
+        };
       });
     },
   };

@@ -281,6 +281,7 @@ const makeHarness = (
     getM1TripSlice: vi.fn().mockResolvedValue(slice),
     updateAccommodation: vi.fn().mockResolvedValue(slice),
     updateInternalSupplierNote: vi.fn().mockResolvedValue(slice),
+    cancelTrip: vi.fn().mockResolvedValue(slice),
   };
   const m1Operations = createM1StaffTripOperations({
     repository: repository as unknown as M1OperationalSliceRepository,

@@ -7,8 +7,25 @@ const source = (relativePath: string): string =>
 export default defineConfig({
   resolve: {
     alias: [
+      {
+        find: "@travelos/auth-adapters/portal",
+        replacement: source("packages/auth-adapters/src/portal.ts"),
+      },
       { find: "@travelos/backend-core", replacement: source("packages/backend-core/src/index.ts") },
+      { find: "@travelos/config", replacement: source("packages/config/src/index.ts") },
+      {
+        find: "@travelos/contracts/portal",
+        replacement: source("packages/contracts/src/portal/index.ts"),
+      },
       { find: "@travelos/database", replacement: source("packages/database/src/index.ts") },
+      {
+        find: "@travelos/portal-safe-core/customer-presentation",
+        replacement: source("packages/portal-safe-core/src/customer-presentation/index.ts"),
+      },
+      {
+        find: "@travelos/portal-safe-core/portal-access",
+        replacement: source("packages/portal-safe-core/src/portal-access/index.ts"),
+      },
     ],
   },
   test: {

@@ -25,14 +25,22 @@ import {
 import {
   asOpaqueId,
   bootstrapRootAgency,
+  createMoney,
+  createScheduledLocalDateTime,
+  authorizeM1Operation,
   IdempotencyConflictError,
+  M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
   M1InputValidationError,
+  M1OptimisticConflictError,
   M1StaffAuthorizationError,
   M1TransactionConflictError,
+  M1UnsupportedTripStateError,
   type IssueTripAccessGrantCommand,
   type M1StaffTripAccessRepository,
+  type RuntimeAcceptanceFixtureCleanupRepository,
   type RevokeTripAccessGrantCommand,
   type StaffAuthorizationOperationProof,
+  type CreateM1TripSliceInput,
 } from "@travelos/backend-core";
 import {
   createPostgresPersistence,
@@ -74,7 +82,7 @@ const postgresBin = process.env["TRAVELOS_STAGE7_PG_BIN"] ?? "";
 const workRoot = process.env["TRAVELOS_STAGE7_WORK_ROOT"] ?? "";
 const emptyDatabaseName = "travelos_stage7_empty_qualification";
 const priorDatabaseName = "travelos_stage7_prior_qualification";
-const stage7Head = "0012_stage7_portal_trip_access";
+const stage7Head = "0013_stage7_runtime_acceptance_cleanup";
 const freeLoopbackPort = async (): Promise<number> =>
   new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -366,9 +374,11 @@ const productionChain: MigrationChain = {
   checksumManifestPath: path.join(repositoryRoot, "migrations/checksums.json"),
 };
 let predecessorMigrationDirectory: string | null = null;
+let stage7V1MigrationDirectory: string | null = null;
 let emptyRun: MigrationRunResult;
 let emptyStage6Run: MigrationRunResult;
 let priorStage6Run: MigrationRunResult;
+let priorStage7V1Run: MigrationRunResult;
 let priorStage7Run: MigrationRunResult;
 let emptyNoOpRun: MigrationRunResult;
 let priorNoOpRun: MigrationRunResult;
@@ -494,6 +504,24 @@ const withPortalLogin = async <Result>(
   }
 };
 
+const withWorkerLogin = async <Result>(
+  work: (client: Client) => Promise<Result>,
+): Promise<Result> => {
+  const client = new Client({
+    host,
+    port,
+    database: priorDatabaseName,
+    user: "travelos_worker",
+    ssl: false,
+  });
+  await client.connect();
+  try {
+    return await work(client);
+  } finally {
+    await client.end();
+  }
+};
+
 const withOwnerLogin = async <Result>(
   database: string,
   work: (client: Client) => Promise<Result>,
@@ -508,6 +536,41 @@ const withOwnerLogin = async <Result>(
     await client.end();
   }
 };
+
+const insertFixtureTrip = async (client: Client, agencyId: string, tripId: string) =>
+  client.query(
+    `WITH fixture_trip AS (
+       INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
+       VALUES ($1::uuid, $2::uuid, 'Stage 7 Fixture Trip', '2026-10-15', '2026-10-16', 'DRAFT')
+       RETURNING "id", "agencyId"
+     )
+     INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
+     SELECT $3::uuid, fixture_trip."agencyId", fixture_trip."id", $4::uuid, 'PRIMARY_TRAVELLER'
+       FROM fixture_trip`,
+    [tripId, agencyId, randomUUID(), primaryPersonId],
+  );
+
+const insertFixtureRun = async (client: Client, agencyId: string, fixtureRunId: string) =>
+  client.query(
+    `INSERT INTO "portal_access"."runtime_acceptance_fixture_run"
+       ("agencyId", "fixtureRunId", "createdByStaffPrincipalId")
+     VALUES ($1::uuid, $2::uuid, $3)`,
+    [agencyId, fixtureRunId, staffPrincipalId],
+  );
+
+const linkFixtureTrip = async (
+  client: Client,
+  agencyId: string,
+  fixtureRunId: string,
+  slot: number,
+  tripId: string,
+) =>
+  client.query(
+    `INSERT INTO "portal_access"."runtime_acceptance_fixture_trip"
+       ("agencyId", "fixtureRunId", "slot", "tripId")
+     VALUES ($1::uuid, $2::uuid, $3, $4::uuid)`,
+    [agencyId, fixtureRunId, slot, tripId],
+  );
 
 const seedTripAccessRepositoryState = async (): Promise<void> => {
   await withOwnerLogin(priorDatabaseName, async (client) => {
@@ -564,7 +627,18 @@ const seedTripAccessRepositoryState = async (): Promise<void> => {
          ($1::uuid, 'trip.access.manage', 'AGENCY', 'ALL'),
          ($1::uuid, 'trip.view', 'AGENCY', 'ALL'),
          ($1::uuid, 'trip.preview', 'AGENCY', 'ALL'),
-         ($1::uuid, 'trip.publish', 'AGENCY', 'ALL')`,
+         ($1::uuid, 'trip.publish', 'AGENCY', 'ALL'),
+         ($1::uuid, 'trip.edit', 'AGENCY', 'ALL'),
+         ($1::uuid, 'trip.withdraw_publication', 'AGENCY', 'ALL'),
+         ($1::uuid, 'runtime_acceptance.fixture.manage', 'AGENCY', 'ALL'),
+         ($1::uuid, 'customer.view', 'AGENCY', 'ALL'),
+         ($1::uuid, 'traveller.view_sensitive', 'AGENCY', 'ALL'),
+         ($1::uuid, 'reservation.view', 'AGENCY', 'ALL'),
+         ($1::uuid, 'finance.view_costs', 'AGENCY', 'ALL'),
+         ($1::uuid, 'customer.edit', 'AGENCY', 'ALL'),
+         ($1::uuid, 'traveller.edit', 'AGENCY', 'ALL'),
+         ($1::uuid, 'reservation.edit', 'AGENCY', 'ALL'),
+         ($1::uuid, 'finance.manage_costs', 'AGENCY', 'ALL')`,
         [staffRoleId],
       );
       await client.query(
@@ -664,6 +738,126 @@ const createTripAccessRepository = (): M1StaffTripAccessRepository | null => {
       persistence: PostgresPersistence<Record<string, never>>,
     ) => M1StaffTripAccessRepository
   )(tripAccessPersistence);
+};
+
+const stage7TripInput = (title: string): CreateM1TripSliceInput => ({
+  agencyId: asOpaqueId(priorAgencyId),
+  person: {
+    givenName: "Synthetic",
+    familyName: "Cleanup Traveller",
+    email: `stage7-cleanup-${randomUUID()}@example.test`,
+  },
+  customer: { displayName: "Stage 7 Cleanup Customer" },
+  customerPersonRole: "PRIMARY_CONTACT",
+  trip: { title, startDate: "2027-10-12", endDate: "2027-10-15", state: "DRAFT" },
+  travellerRole: "PRIMARY_TRAVELLER",
+  flight: {
+    title: "Outbound flight",
+    description: "Synthetic flight description",
+    carrier: "Example Air",
+    flightNumber: "EA100",
+    departureAirport: "LIS",
+    arrivalAirport: "OPO",
+    departure: createScheduledLocalDateTime({
+      localDate: "2027-10-12",
+      localTime: "09:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2027-10-12T08:00:00Z",
+    }),
+    arrival: createScheduledLocalDateTime({
+      localDate: "2027-10-12",
+      localTime: "10:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2027-10-12T09:00:00Z",
+    }),
+    terminal: null,
+    cabin: "ECONOMY",
+    baggage: "One cabin bag",
+    seat: null,
+    customerBookingReference: "SYNTH-FLIGHT-1",
+  },
+  accommodation: {
+    title: "Synthetic hotel",
+    description: "Synthetic accommodation description",
+    propertyName: "Example Hotel",
+    checkIn: createScheduledLocalDateTime({
+      localDate: "2027-10-12",
+      localTime: "15:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2027-10-12T14:00:00Z",
+    }),
+    checkOut: createScheduledLocalDateTime({
+      localDate: "2027-10-15",
+      localTime: "11:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2027-10-15T10:00:00Z",
+    }),
+    roomDescription: "Double room",
+    boardType: "BREAKFAST",
+    customerBookingReference: "SYNTH-HOTEL-1",
+  },
+  reservation: {
+    supplierName: "Synthetic Supplier",
+    supplierReference: `SUP-${randomUUID()}`,
+    customerBookingReference: "SYNTH-RES-1",
+    state: "CONFIRMED",
+  },
+  supplierCost: {
+    amount: createMoney("12345", "EUR", 2),
+    internalNote: "Synthetic cleanup qualification note",
+  },
+});
+
+const createFixtureTripTestHarness = async () => {
+  if (tripAccessPersistence === null) {
+    throw new Error("Stage 7 Staff persistence fixture was not initialized");
+  }
+  const sessionId = `stage7-fixture-create-session-${randomUUID()}`;
+  const sessionToken = randomUUID();
+  await withOwnerLogin(priorDatabaseName, async (client) => {
+    await client.query(
+      `INSERT INTO "staff_access"."staff_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+       VALUES ($1, clock_timestamp() + interval '1 hour', $2, clock_timestamp(), $3)`,
+      [sessionId, sessionToken, staffPrincipalId],
+    );
+    await client.query(
+      `INSERT INTO "staff_access"."staff_session_context"
+         ("sessionId", "staffPrincipalId", "agencyId", "authorizationEpoch", "recentMfaVerifiedAt")
+       SELECT $1, membership."staffPrincipalId", membership."agencyId",
+              membership."authorizationEpoch", clock_timestamp()
+         FROM "staff_access"."staff_membership" AS membership
+        WHERE membership."id" = $2::uuid AND membership."state" = 'ACTIVE'`,
+      [sessionId, staffMembershipId],
+    );
+  });
+  const cookie = await signedSessionCookie(staffRealm, sessionToken);
+  const resolver = createAdminStaffSessionResolver(staffRealm, {
+    canonicalOrigin: "http://admin.travelos.test",
+    expectedHost: "admin.travelos.test",
+  });
+  const operations = databaseModule.createPostgresM1StaffTripOperations(
+    tripAccessPersistence,
+    resolver,
+  );
+  const createFixtureTrip = (
+    input: CreateM1TripSliceInput,
+    fixtureRunId: string,
+  ): Promise<unknown> => {
+    const create = (
+      operations as unknown as {
+        createRuntimeAcceptanceFixtureTrip?: (
+          cookieHeader: unknown,
+          tripInput: unknown,
+          runId: unknown,
+        ) => Promise<unknown>;
+      }
+    ).createRuntimeAcceptanceFixtureTrip;
+    if (create === undefined) {
+      throw new Error("Runtime acceptance fixture Trip creation is not implemented");
+    }
+    return create.call(operations, cookie, input, fixtureRunId);
+  };
+  return { createFixtureTrip, sessionId, cookie, resolver };
 };
 
 const portalHttpPolicy: AuthSurfacePolicy = {
@@ -873,10 +1067,14 @@ const stage6MigrationChain = async (): Promise<MigrationChain> => {
     readonly algorithm: string;
     readonly migrations: readonly { readonly file: string; readonly sha256: string }[];
   };
-  const stage6Migrations = manifest.migrations.filter(
-    ({ file }) => file !== "0012_stage7_portal_trip_access.cjs",
+  const stage6MigrationIndex = manifest.migrations.findIndex(
+    ({ file }) => file === "0011_stage6_trip_publication.cjs",
   );
-  if (stage6Migrations.at(-1)?.file !== "0011_stage6_trip_publication.cjs") {
+  const stage6Migrations = manifest.migrations.slice(0, stage6MigrationIndex + 1);
+  if (
+    stage6MigrationIndex < 0 ||
+    stage6Migrations.at(-1)?.file !== "0011_stage6_trip_publication.cjs"
+  ) {
     throw new Error("The supported predecessor chain must end at 0011_stage6_trip_publication.cjs");
   }
   const directory = await mkdtemp(path.join(workRoot, "stage6-migrations-"));
@@ -891,6 +1089,40 @@ const stage6MigrationChain = async (): Promise<MigrationChain> => {
   await writeFile(
     checksumManifestPath,
     `${JSON.stringify({ ...manifest, migrations: stage6Migrations }, null, 2)}\n`,
+  );
+  return { directory, checksumManifestPath };
+};
+
+const stage7V1MigrationChain = async (): Promise<MigrationChain> => {
+  const manifest = JSON.parse(await readFile(productionChain.checksumManifestPath, "utf8")) as {
+    readonly schemaVersion: number;
+    readonly algorithm: string;
+    readonly migrations: readonly { readonly file: string; readonly sha256: string }[];
+  };
+  const stage7V1MigrationIndex = manifest.migrations.findIndex(
+    ({ file }) => file === "0012_stage7_portal_trip_access.cjs",
+  );
+  const stage7V1Migrations = manifest.migrations.slice(0, stage7V1MigrationIndex + 1);
+  if (
+    stage7V1MigrationIndex < 0 ||
+    stage7V1Migrations.at(-1)?.file !== "0012_stage7_portal_trip_access.cjs"
+  ) {
+    throw new Error(
+      "The immutable gen09 predecessor chain must end at 0012_stage7_portal_trip_access.cjs",
+    );
+  }
+  const directory = await mkdtemp(path.join(workRoot, "stage7-v1-migrations-"));
+  stage7V1MigrationDirectory = directory;
+  for (const migration of stage7V1Migrations) {
+    await copyFile(
+      path.join(productionChain.directory, migration.file),
+      path.join(directory, migration.file),
+    );
+  }
+  const checksumManifestPath = path.join(directory, "checksums.json");
+  await writeFile(
+    checksumManifestPath,
+    `${JSON.stringify({ ...manifest, migrations: stage7V1Migrations }, null, 2)}\n`,
   );
   return { directory, checksumManifestPath };
 };
@@ -910,12 +1142,14 @@ beforeAll(async () => {
   bootstrapDatabase(priorDatabaseName);
 
   const predecessorChain = await stage6MigrationChain();
+  const stage7V1Chain = await stage7V1MigrationChain();
   emptyStage6Run = await runMigrationChain(targetFor(emptyDatabaseName), predecessorChain);
   priorStage6Run = await runMigrationChain(targetFor(priorDatabaseName), predecessorChain);
   await seedRootAgency(emptyDatabaseName, emptyAgencyId, "empty");
   await seedRootAgency(priorDatabaseName, priorAgencyId, "prior");
   await seedPriorPortalState();
   emptyRun = await runMigrationChain(targetFor(emptyDatabaseName), productionChain);
+  priorStage7V1Run = await runMigrationChain(targetFor(priorDatabaseName), stage7V1Chain);
   priorStage7Run = await runMigrationChain(targetFor(priorDatabaseName), productionChain);
   emptyNoOpRun = await runMigrationChain(targetFor(emptyDatabaseName), productionChain);
   priorNoOpRun = await runMigrationChain(targetFor(priorDatabaseName), productionChain);
@@ -959,6 +1193,9 @@ afterAll(async () => {
   } finally {
     if (predecessorMigrationDirectory !== null) {
       await rm(predecessorMigrationDirectory, { recursive: true, force: true });
+    }
+    if (stage7V1MigrationDirectory !== null) {
+      await rm(stage7V1MigrationDirectory, { recursive: true, force: true });
     }
   }
 });
@@ -1133,14 +1370,16 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     expect(emptyStage6Run.currentVersion).toBe("0011_stage6_trip_publication");
     expect(emptyStage6Run.verifiedMigrationCount).toBe(11);
     expect(emptyRun.currentVersion).toBe(stage7Head);
-    expect(emptyRun.verifiedMigrationCount).toBe(12);
-    expect(emptyRun.ledger).toHaveLength(12);
+    expect(emptyRun.verifiedMigrationCount).toBe(13);
+    expect(emptyRun.ledger).toHaveLength(13);
     expect(emptyRun.target.sessionRole).toBe("travelos_migrator");
     expect(emptyRun.target.effectiveRole).toBe("travelos_owner");
   });
 
   it("upgrades the accepted Stage 6 head through the canonical migrator", () => {
     expect(priorStage6Run.currentVersion).toBe("0011_stage6_trip_publication");
+    expect(priorStage7V1Run.currentVersion).toBe("0012_stage7_portal_trip_access");
+    expect(priorStage7V1Run.appliedMigrations).toEqual(["0012_stage7_portal_trip_access"]);
     expect(priorStage7Run.currentVersion).toBe(stage7Head);
     expect(priorStage7Run.appliedMigrations).toEqual([stage7Head]);
     expect(priorStage7Run.target.sessionRole).toBe("travelos_migrator");
@@ -1150,10 +1389,826 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
   it("verifies the exact checksummed chain and performs deterministic no-op reruns", () => {
     expect(emptyNoOpRun.currentVersion).toBe(stage7Head);
     expect(emptyNoOpRun.appliedMigrations).toEqual([]);
-    expect(emptyNoOpRun.verifiedMigrationCount).toBe(12);
+    expect(emptyNoOpRun.verifiedMigrationCount).toBe(13);
     expect(priorNoOpRun.currentVersion).toBe(stage7Head);
     expect(priorNoOpRun.appliedMigrations).toEqual([]);
-    expect(priorNoOpRun.verifiedMigrationCount).toBe(12);
+    expect(priorNoOpRun.verifiedMigrationCount).toBe(13);
+  });
+
+  it("fixtureRunAndFirstTripAssociationAreAtomic", async () => {
+    const fixtureRunId = randomUUID();
+    const tripId = randomUUID();
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query("BEGIN");
+      try {
+        await insertFixtureTrip(client, priorAgencyId, tripId);
+        await insertFixtureRun(client, priorAgencyId, fixtureRunId);
+        await linkFixtureTrip(client, priorAgencyId, fixtureRunId, 1, tripId);
+        const linked = await client.query(
+          `SELECT trip."id"::text AS "tripId", fixture."fixtureRunId"::text AS "fixtureRunId"
+             FROM "trip_ops"."trip" AS trip
+             JOIN "portal_access"."runtime_acceptance_fixture_trip" AS fixture_trip
+               ON fixture_trip."agencyId" = trip."agencyId"
+              AND fixture_trip."tripId" = trip."id"
+             JOIN "portal_access"."runtime_acceptance_fixture_run" AS fixture
+               ON fixture."agencyId" = fixture_trip."agencyId"
+              AND fixture."fixtureRunId" = fixture_trip."fixtureRunId"
+            WHERE fixture."fixtureRunId" = $1::uuid`,
+          [fixtureRunId],
+        );
+        expect(linked.rows).toEqual([{ tripId, fixtureRunId }]);
+        const events = await client.query<{
+          readonly eventType: string;
+          readonly actorKind: string;
+          readonly actorStaffPrincipalId: string | null;
+        }>(
+          `SELECT "eventType", "actorKind", "actorStaffPrincipalId"
+             FROM "audit"."runtime_acceptance_fixture_event"
+            WHERE "fixtureRunId" = $1::uuid
+            ORDER BY "eventType"`,
+          [fixtureRunId],
+        );
+        expect(events.rows).toEqual([
+          {
+            eventType: "FIXTURE_RUN_OPENED",
+            actorKind: "STAFF",
+            actorStaffPrincipalId: staffPrincipalId,
+          },
+          {
+            eventType: "FIXTURE_TRIP_ASSOCIATED",
+            actorKind: "STAFF",
+            actorStaffPrincipalId: staffPrincipalId,
+          },
+        ]);
+      } finally {
+        await client.query("ROLLBACK");
+      }
+
+      const persisted = await client.query<{ trips: string; runs: string; links: string }>(
+        `SELECT
+           (SELECT count(*)::text FROM "trip_ops"."trip" WHERE "id" = $1::uuid) AS "trips",
+           (SELECT count(*)::text FROM "portal_access"."runtime_acceptance_fixture_run"
+             WHERE "fixtureRunId" = $2::uuid) AS "runs",
+           (SELECT count(*)::text FROM "portal_access"."runtime_acceptance_fixture_trip"
+             WHERE "fixtureRunId" = $2::uuid) AS "links"`,
+        [tripId, fixtureRunId],
+      );
+      expect(persisted.rows).toEqual([{ trips: "0", runs: "0", links: "0" }]);
+    });
+  });
+
+  it("fixtureRunAndFirstTripAreAtomic", async () => {
+    const fixtureRunId = databaseModule.createUuidV7();
+    const { createFixtureTrip } = await createFixtureTripTestHarness();
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(`
+        CREATE OR REPLACE FUNCTION "trip_ops"."stage7_reject_fixture_trip_insert"()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+        BEGIN
+          IF NEW."title" = 'Stage 7 atomic failure marker' THEN
+            RAISE EXCEPTION 'synthetic Stage 7 Trip insert failure' USING ERRCODE = 'P0001';
+          END IF;
+          RETURN NEW;
+        END;
+        $$
+      `);
+      await client.query(`
+        CREATE TRIGGER "stage7_reject_fixture_trip_insert"
+        BEFORE INSERT ON "trip_ops"."trip"
+        FOR EACH ROW EXECUTE FUNCTION "trip_ops"."stage7_reject_fixture_trip_insert"()
+      `);
+    });
+    try {
+      await expect(
+        createFixtureTrip(stage7TripInput("Stage 7 atomic failure marker"), fixtureRunId),
+      ).rejects.toBeDefined();
+      const failedCounts = await withOwnerLogin(priorDatabaseName, (client) =>
+        client.query<{ readonly runs: string; readonly trips: string; readonly links: string }>(
+          `SELECT
+             (SELECT count(*)::text FROM "portal_access"."runtime_acceptance_fixture_run"
+               WHERE "fixtureRunId" = $1::uuid) AS "runs",
+             (SELECT count(*)::text FROM "trip_ops"."trip"
+               WHERE "title" = 'Stage 7 atomic failure marker') AS "trips",
+             (SELECT count(*)::text FROM "portal_access"."runtime_acceptance_fixture_trip"
+               WHERE "fixtureRunId" = $1::uuid) AS "links"`,
+          [fixtureRunId],
+        ),
+      );
+      expect(failedCounts.rows).toEqual([{ runs: "0", trips: "0", links: "0" }]);
+    } finally {
+      await withOwnerLogin(priorDatabaseName, async (client) => {
+        await client.query(
+          `DROP TRIGGER IF EXISTS "stage7_reject_fixture_trip_insert" ON "trip_ops"."trip"`,
+        );
+        await client.query(
+          `DROP FUNCTION IF EXISTS "trip_ops"."stage7_reject_fixture_trip_insert"()`,
+        );
+      });
+    }
+
+    await createFixtureTrip(stage7TripInput("Stage 7 atomic success marker"), fixtureRunId);
+    const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query<{
+        readonly runState: string;
+        readonly createdByStaffPrincipalId: string;
+        readonly linkedTrips: string;
+      }>(
+        `SELECT fixture."state" AS "runState",
+                fixture."createdByStaffPrincipalId",
+                count(fixture_trip."tripId")::text AS "linkedTrips"
+           FROM "portal_access"."runtime_acceptance_fixture_run" AS fixture
+           LEFT JOIN "portal_access"."runtime_acceptance_fixture_trip" AS fixture_trip
+             ON fixture_trip."agencyId" = fixture."agencyId"
+            AND fixture_trip."fixtureRunId" = fixture."fixtureRunId"
+          WHERE fixture."agencyId" = $1::uuid AND fixture."fixtureRunId" = $2::uuid
+          GROUP BY fixture."state", fixture."createdByStaffPrincipalId"`,
+        [priorAgencyId, fixtureRunId],
+      ),
+    );
+    expect(persisted.rows).toEqual([
+      { runState: "OPEN", createdByStaffPrincipalId: staffPrincipalId, linkedTrips: "1" },
+    ]);
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANUP_PENDING'
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANED', "cleanedAt" = clock_timestamp()
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+    });
+  });
+
+  it("timeoutAfterTripCommitIsRecoverableByRunId", async () => {
+    const fixtureRunId = databaseModule.createUuidV7();
+    const { createFixtureTrip } = await createFixtureTripTestHarness();
+    await createFixtureTrip(stage7TripInput("Stage 7 lost-response recovery marker"), fixtureRunId);
+
+    const recovered = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query<{ readonly tripId: string; readonly runId: string }>(
+        `SELECT fixture_trip."tripId"::text AS "tripId",
+                fixture_trip."fixtureRunId"::text AS "runId"
+           FROM "portal_access"."runtime_acceptance_fixture_trip" AS fixture_trip
+          WHERE fixture_trip."agencyId" = $1::uuid AND fixture_trip."fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      ),
+    );
+    expect(recovered.rows).toHaveLength(1);
+    expect(recovered.rows[0]?.runId).toBe(fixtureRunId);
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANUP_PENDING'
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANED', "cleanedAt" = clock_timestamp()
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+    });
+  });
+
+  it("noNewRunStartsWhileCleanupIsPending", async () => {
+    const firstRunId = databaseModule.createUuidV7();
+    const secondRunId = databaseModule.createUuidV7();
+    const { createFixtureTrip } = await createFixtureTripTestHarness();
+    await createFixtureTrip(stage7TripInput("Stage 7 unresolved fixture marker"), firstRunId);
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANUP_PENDING'
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, firstRunId],
+      );
+    });
+
+    await expect(
+      createFixtureTrip(stage7TripInput("Stage 7 blocked second run marker"), secondRunId),
+    ).rejects.toMatchObject({ code: "FIXTURE_RUN_CONFLICT", recoveryFixtureRunId: firstRunId });
+    const remaining = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query<{ readonly runCount: string; readonly tripCount: string }>(
+        `SELECT
+           (SELECT count(*)::text FROM "portal_access"."runtime_acceptance_fixture_run"
+             WHERE "agencyId" = $1::uuid AND "state" <> 'CLEANED') AS "runCount",
+           (SELECT count(*)::text FROM "portal_access"."runtime_acceptance_fixture_trip"
+             WHERE "fixtureRunId" = $2::uuid) AS "tripCount"`,
+        [priorAgencyId, secondRunId],
+      ),
+    );
+    expect(remaining.rows).toEqual([{ runCount: "1", tripCount: "0" }]);
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANED', "cleanedAt" = clock_timestamp()
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, firstRunId],
+      );
+    });
+  });
+
+  it("limitsCleanupAuditReadsToScopeAndEventMetadata", async () => {
+    const privileges = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query<{
+        readonly grantScope: boolean;
+        readonly grantKind: boolean;
+        readonly grantActor: boolean;
+        readonly cancellationScope: boolean;
+        readonly cancellationActor: boolean;
+        readonly withdrawalScope: boolean;
+        readonly withdrawalReason: boolean;
+      }>(`
+        SELECT
+          has_column_privilege('travelos_admin_api', 'audit.trip_access_grant_event', 'agencyId', 'SELECT')
+            AND has_column_privilege('travelos_admin_api', 'audit.trip_access_grant_event', 'tripId', 'SELECT')
+            AND has_column_privilege('travelos_admin_api', 'audit.trip_access_grant_event', 'portalPrincipalId', 'SELECT')
+            AS "grantScope",
+          has_column_privilege('travelos_admin_api', 'audit.trip_access_grant_event', 'eventType', 'SELECT')
+            AS "grantKind",
+          has_column_privilege('travelos_admin_api', 'audit.trip_access_grant_event', 'actorStaffPrincipalId', 'SELECT')
+            AS "grantActor",
+          has_column_privilege('travelos_admin_api', 'audit.trip_cancellation_event', 'agencyId', 'SELECT')
+            AND has_column_privilege('travelos_admin_api', 'audit.trip_cancellation_event', 'tripId', 'SELECT')
+            AS "cancellationScope",
+          has_column_privilege('travelos_admin_api', 'audit.trip_cancellation_event', 'actorStaffPrincipalId', 'SELECT')
+            AS "cancellationActor",
+          has_column_privilege('travelos_admin_api', 'audit.trip_publication_withdrawal_event', 'agencyId', 'SELECT')
+            AND has_column_privilege('travelos_admin_api', 'audit.trip_publication_withdrawal_event', 'tripId', 'SELECT')
+            AS "withdrawalScope",
+          has_column_privilege('travelos_admin_api', 'audit.trip_publication_withdrawal_event', 'reason', 'SELECT')
+            AS "withdrawalReason"
+      `),
+    );
+    expect(privileges.rows).toEqual([
+      {
+        grantScope: true,
+        grantKind: true,
+        grantActor: false,
+        cancellationScope: true,
+        cancellationActor: false,
+        withdrawalScope: true,
+        withdrawalReason: false,
+      },
+    ]);
+  });
+
+  it("cleanupRepositoryAuditsPendingAndCompletedTransitions", async () => {
+    const persistence = tripAccessPersistence;
+    if (persistence === null)
+      throw new Error("Stage 7 Staff persistence fixture was not initialized");
+    const repositoryFactory = (
+      databaseModule as unknown as {
+        readonly createPostgresRuntimeAcceptanceFixtureCleanupRepository?: unknown;
+      }
+    ).createPostgresRuntimeAcceptanceFixtureCleanupRepository;
+    expect(
+      repositoryFactory,
+      "PostgreSQL fixture cleanup repository factory must be exported",
+    ).toBeTypeOf("function");
+    if (typeof repositoryFactory !== "function") return;
+
+    const { cookie, resolver } = await createFixtureTripTestHarness();
+    const authorization = await authorizeM1Operation(
+      {
+        authorizationRepository: createStaffAccessRepository(persistence),
+        sessionResolver: resolver,
+      },
+      cookie,
+      null,
+      M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
+      5 * 60 * 1_000,
+    );
+    const createRepository = repositoryFactory as (
+      value: PostgresPersistence<Record<string, never>>,
+    ) => RuntimeAcceptanceFixtureCleanupRepository;
+    const repository = createRepository(persistence);
+    const fixtureRunId = databaseModule.createUuidV7();
+    const command = {
+      agencyId: asOpaqueId(priorAgencyId),
+      fixtureRunId,
+      staffPrincipalId,
+      idempotencyKey: "fixture-cleanup-transition-test",
+    };
+    await withOwnerLogin(priorDatabaseName, (client) =>
+      insertFixtureRun(client, priorAgencyId, fixtureRunId),
+    );
+
+    try {
+      const started = await repository.beginCleanup(command, authorization);
+      expect(started).toMatchObject({
+        status: "READY",
+        plan: {
+          agencyId: priorAgencyId,
+          fixtureRunId,
+          state: "CLEANUP_PENDING",
+          tripIds: [],
+          activePublicationTripIds: [],
+          activeGrants: [],
+          portalPrincipalId: null,
+          portalPrincipalRetired: false,
+          unexpectedResourceCount: 0,
+        },
+      });
+      const completed = await repository.completeCleanup(command, authorization);
+      expect(completed).toMatchObject({
+        fixtureRunId,
+        state: "CLEANED",
+        counts: {
+          grantsRevoked: 0,
+          publicationsWithdrawn: 0,
+          tripsCancelled: 0,
+          principalsRetired: 0,
+        },
+        retainedHistoryCounts: { publicationSnapshots: 0, auditRecords: 3 },
+        errorCode: null,
+      });
+      const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
+        client.query<{ readonly state: string; readonly auditCount: string }>(
+          `SELECT fixture."state",
+                  (SELECT count(*)::text FROM "audit"."runtime_acceptance_fixture_event" AS event
+                    WHERE event."agencyId" = fixture."agencyId"
+                      AND event."fixtureRunId" = fixture."fixtureRunId") AS "auditCount"
+             FROM "portal_access"."runtime_acceptance_fixture_run" AS fixture
+            WHERE fixture."agencyId" = $1::uuid AND fixture."fixtureRunId" = $2::uuid`,
+          [priorAgencyId, fixtureRunId],
+        ),
+      );
+      expect(persisted.rows).toEqual([{ state: "CLEANED", auditCount: "3" }]);
+    } finally {
+      await withOwnerLogin(priorDatabaseName, async (client) => {
+        await client.query(
+          `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+              SET "state" = 'CLEANUP_PENDING'
+            WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid AND "state" = 'OPEN'`,
+          [priorAgencyId, fixtureRunId],
+        );
+        await client.query(
+          `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+              SET "state" = 'CLEANED', "cleanedAt" = clock_timestamp()
+            WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid AND "state" = 'CLEANUP_PENDING'`,
+          [priorAgencyId, fixtureRunId],
+        );
+      });
+    }
+  });
+
+  it("fixtureRunRejectsCrossAgencyAndExcessResources", async () => {
+    const fixtureRunId = randomUUID();
+    const tripIds = [randomUUID(), randomUUID(), randomUUID()];
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await insertFixtureRun(client, priorAgencyId, fixtureRunId);
+      for (const tripId of tripIds) await insertFixtureTrip(client, priorAgencyId, tripId);
+      await linkFixtureTrip(client, priorAgencyId, fixtureRunId, 1, tripIds[0]!);
+      await linkFixtureTrip(client, priorAgencyId, fixtureRunId, 2, tripIds[1]!);
+
+      await expectSqlState(
+        () => linkFixtureTrip(client, priorAgencyId, fixtureRunId, 3, tripIds[2]!),
+        "23514",
+      );
+      await expectSqlState(
+        () => linkFixtureTrip(client, emptyAgencyId, fixtureRunId, 1, tripIds[0]!),
+        "23503",
+      );
+      const links = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS "count"
+           FROM "portal_access"."runtime_acceptance_fixture_trip"
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+      expect(links.rows).toEqual([{ count: "2" }]);
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANUP_PENDING' WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANED', "cleanedAt" = clock_timestamp()
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+    });
+  });
+
+  it("onlyOneUnresolvedFixtureRunExistsPerAgency", async () => {
+    const firstRunId = randomUUID();
+    const secondRunId = randomUUID();
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await insertFixtureRun(client, priorAgencyId, firstRunId);
+      await expectSqlState(() => insertFixtureRun(client, priorAgencyId, secondRunId), "23505");
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANUP_PENDING' WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, firstRunId],
+      );
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANED', "cleanedAt" = clock_timestamp()
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, firstRunId],
+      );
+      await insertFixtureRun(client, priorAgencyId, secondRunId);
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANUP_PENDING' WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, secondRunId],
+      );
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANED', "cleanedAt" = clock_timestamp()
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, secondRunId],
+      );
+      const auditEvents = await client.query<{ readonly eventType: string }>(
+        `SELECT "eventType"
+           FROM "audit"."runtime_acceptance_fixture_event"
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, secondRunId],
+      );
+      expect(auditEvents.rows.map(({ eventType }) => eventType).sort()).toEqual([
+        "FIXTURE_CLEANUP_PENDING",
+        "FIXTURE_RUN_CLEANED",
+        "FIXTURE_RUN_OPENED",
+      ]);
+      const deletePrivileges = await client.query<{
+        readonly runDelete: boolean;
+        readonly tripDelete: boolean;
+        readonly eventDelete: boolean;
+      }>(
+        `SELECT
+           pg_catalog.has_table_privilege(
+             'travelos_admin_runtime',
+             'portal_access.runtime_acceptance_fixture_run',
+             'DELETE'
+           ) AS "runDelete",
+           pg_catalog.has_table_privilege(
+             'travelos_admin_runtime',
+             'portal_access.runtime_acceptance_fixture_trip',
+             'DELETE'
+           ) AS "tripDelete",
+           pg_catalog.has_table_privilege(
+             'travelos_admin_runtime',
+             'audit.runtime_acceptance_fixture_event',
+             'DELETE'
+           ) AS "eventDelete"`,
+      );
+      expect(deletePrivileges.rows).toEqual([
+        { runDelete: false, tripDelete: false, eventDelete: false },
+      ]);
+      await expectSqlState(
+        () =>
+          client.query(
+            `DELETE FROM "audit"."runtime_acceptance_fixture_event"
+              WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+            [priorAgencyId, secondRunId],
+          ),
+        "55000",
+      );
+    });
+  });
+
+  it("portalRuntimeCannotReadFixtureRegistry", async () => {
+    const fixtureRunId = randomUUID();
+    const fixtureFunctionNames = [
+      "append_runtime_acceptance_fixture_audit",
+      "associate_runtime_acceptance_fixture_portal_principal",
+      "enforce_runtime_acceptance_fixture_run_transition",
+      "enforce_runtime_acceptance_fixture_trip_insert",
+      "reject_runtime_acceptance_fixture_history_mutation",
+    ];
+    await withPortalLogin(async (client) => {
+      await expectSqlState(
+        () =>
+          client.query(
+            `SELECT "fixtureRunId" FROM "portal_access"."runtime_acceptance_fixture_run"`,
+          ),
+        "42501",
+      );
+      await expectSqlState(
+        () =>
+          client.query(
+            `INSERT INTO "portal_access"."runtime_acceptance_fixture_run"
+               ("agencyId", "fixtureRunId", "createdByStaffPrincipalId")
+             VALUES ($1::uuid, $2::uuid, $3)`,
+            [priorAgencyId, fixtureRunId, staffPrincipalId],
+          ),
+        "42501",
+      );
+      await expectSqlState(
+        () =>
+          client.query(
+            `UPDATE "portal_access"."runtime_acceptance_fixture_run" SET "state" = 'CLEANUP_PENDING'`,
+          ),
+        "42501",
+      );
+      await expectSqlState(
+        () => client.query(`DELETE FROM "portal_access"."runtime_acceptance_fixture_run"`),
+        "42501",
+      );
+      await expectSqlState(
+        () =>
+          client.query(`SELECT "tripId" FROM "portal_access"."runtime_acceptance_fixture_trip"`),
+        "42501",
+      );
+      await expectSqlState(
+        () =>
+          client.query(
+            `INSERT INTO "portal_access"."runtime_acceptance_fixture_trip"
+               ("agencyId", "fixtureRunId", "slot", "tripId")
+             VALUES ($1::uuid, $2::uuid, 1, $3::uuid)`,
+            [priorAgencyId, fixtureRunId, randomUUID()],
+          ),
+        "42501",
+      );
+      await expectSqlState(
+        () => client.query(`SELECT "eventId" FROM "audit"."runtime_acceptance_fixture_event"`),
+        "42501",
+      );
+      await expectSqlState(
+        () =>
+          client.query(
+            `INSERT INTO "audit"."runtime_acceptance_fixture_event"
+               ("eventId", "agencyId", "fixtureRunId", "eventType", "actorKind")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, 'FIXTURE_RUN_OPENED', 'STAFF')`,
+            [randomUUID(), priorAgencyId, fixtureRunId],
+          ),
+        "42501",
+      );
+      const functionRights = await client.query<{ routineName: string; canExecute: boolean }>(
+        `SELECT proc."proname" AS "routineName",
+                pg_catalog.has_function_privilege(session_user, proc."oid", 'EXECUTE') AS "canExecute"
+           FROM pg_catalog.pg_proc AS proc
+           JOIN pg_catalog.pg_namespace AS schema
+             ON schema."oid" = proc."pronamespace"
+          WHERE schema."nspname" = 'portal_access'
+            AND proc."proname" = ANY($1::text[])
+          ORDER BY proc."proname"`,
+        [fixtureFunctionNames],
+      );
+      expect(functionRights.rows).toEqual([
+        { routineName: "append_runtime_acceptance_fixture_audit", canExecute: false },
+        {
+          routineName: "associate_runtime_acceptance_fixture_portal_principal",
+          canExecute: true,
+        },
+        { routineName: "enforce_runtime_acceptance_fixture_run_transition", canExecute: false },
+        { routineName: "enforce_runtime_acceptance_fixture_trip_insert", canExecute: false },
+        { routineName: "reject_runtime_acceptance_fixture_history_mutation", canExecute: false },
+      ]);
+    });
+
+    await withWorkerLogin(async (client) => {
+      await expectSqlState(
+        () =>
+          client.query(
+            `SELECT "fixtureRunId" FROM "portal_access"."runtime_acceptance_fixture_run"`,
+          ),
+        "42501",
+      );
+      await expectSqlState(
+        () =>
+          client.query(
+            `SELECT "portal_access"."associate_runtime_acceptance_fixture_portal_principal"($1::uuid, $2)`,
+            [fixtureRunId, priorPortalPrincipalId],
+          ),
+        "42501",
+      );
+      const functionRights = await client.query<{ routineName: string; canExecute: boolean }>(
+        `SELECT proc."proname" AS "routineName",
+                pg_catalog.has_function_privilege(session_user, proc."oid", 'EXECUTE') AS "canExecute"
+           FROM pg_catalog.pg_proc AS proc
+           JOIN pg_catalog.pg_namespace AS schema
+             ON schema."oid" = proc."pronamespace"
+          WHERE schema."nspname" = 'portal_access'
+            AND proc."proname" = ANY($1::text[])
+          ORDER BY proc."proname"`,
+        [fixtureFunctionNames],
+      );
+      expect(functionRights.rows).toEqual(
+        fixtureFunctionNames.map((routineName) => ({ routineName, canExecute: false })),
+      );
+    });
+
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      const functionAcl = await client.query<{
+        securityDefiner: boolean;
+        settings: string[] | null;
+        publicExecute: boolean;
+        adminExecute: boolean;
+      }>(
+        `SELECT proc."prosecdef" AS "securityDefiner",
+                proc."proconfig" AS "settings",
+                EXISTS (
+                  SELECT 1 FROM pg_catalog.aclexplode(proc."proacl") AS acl WHERE acl.grantee = 0
+                ) AS "publicExecute",
+                pg_catalog.has_function_privilege(
+                  'travelos_admin_runtime',
+                  'portal_access.associate_runtime_acceptance_fixture_portal_principal(uuid,text)',
+                  'EXECUTE'
+                ) AS "adminExecute"
+           FROM pg_catalog.pg_proc AS proc
+          WHERE proc.oid = 'portal_access.associate_runtime_acceptance_fixture_portal_principal(uuid,text)'::regprocedure`,
+      );
+      expect(functionAcl.rows).toEqual([
+        {
+          securityDefiner: true,
+          settings: ["search_path=pg_catalog"],
+          publicExecute: false,
+          adminExecute: false,
+        },
+      ]);
+    });
+  });
+
+  it("associates only an OPEN fixture with an active verified synthetic Portal Principal", async () => {
+    const fixtureRunId = randomUUID();
+    const noTripsFixtureRunId = randomUUID();
+    const tripId = randomUUID();
+    const verifiedPrincipalId = `stage7-fixture-${randomUUID()}`;
+    const unverifiedPrincipalId = `stage7-fixture-${randomUUID()}`;
+    const nonSyntheticPrincipalId = `stage7-fixture-${randomUUID()}`;
+    const secondVerifiedPrincipalId = `stage7-fixture-${randomUUID()}`;
+    const principals = [
+      {
+        id: verifiedPrincipalId,
+        email: `stage7-fixture-${randomUUID()}@example.test`,
+        emailVerified: true,
+      },
+      {
+        id: unverifiedPrincipalId,
+        email: `stage7-fixture-${randomUUID()}@example.test`,
+        emailVerified: false,
+      },
+      {
+        id: nonSyntheticPrincipalId,
+        email: `stage7-fixture-${randomUUID()}@example.invalid`,
+        emailVerified: true,
+      },
+      {
+        id: secondVerifiedPrincipalId,
+        email: `stage7-fixture-${randomUUID()}@example.test`,
+        emailVerified: true,
+      },
+    ];
+
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await insertFixtureRun(client, priorAgencyId, fixtureRunId);
+      await insertFixtureTrip(client, priorAgencyId, tripId);
+      await linkFixtureTrip(client, priorAgencyId, fixtureRunId, 1, tripId);
+      for (const principal of principals) {
+        await client.query(
+          `INSERT INTO "portal_access"."portal_user" ("id", "name", "email", "emailVerified")
+           VALUES ($1, 'Stage 7 Fixture Principal', $2, $3)`,
+          [principal.id, principal.email, principal.emailVerified],
+        );
+      }
+    });
+
+    await withPortalLogin(async (client) => {
+      const associate = (runId: string, principalId: string) =>
+        client.query<{ associated: boolean }>(
+          `SELECT "portal_access"."associate_runtime_acceptance_fixture_portal_principal"(
+             $1::uuid, $2
+           ) AS "associated"`,
+          [runId, principalId],
+        );
+      expect((await associate(fixtureRunId, verifiedPrincipalId)).rows).toEqual([
+        { associated: true },
+      ]);
+      expect((await associate(fixtureRunId, verifiedPrincipalId)).rows).toEqual([
+        { associated: true },
+      ]);
+      await expectSqlState(() => associate(fixtureRunId, unverifiedPrincipalId), "42501");
+      await expectSqlState(() => associate(fixtureRunId, nonSyntheticPrincipalId), "42501");
+      await expectSqlState(() => associate(randomUUID(), verifiedPrincipalId), "42501");
+      await expectSqlState(() => associate(fixtureRunId, secondVerifiedPrincipalId), "23505");
+    });
+
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANUP_PENDING'
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANED'
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+      await insertFixtureRun(client, priorAgencyId, noTripsFixtureRunId);
+    });
+
+    await withPortalLogin(async (client) => {
+      await expectSqlState(
+        () =>
+          client.query(
+            `SELECT "portal_access"."associate_runtime_acceptance_fixture_portal_principal"(
+               $1::uuid, $2
+             )`,
+            [noTripsFixtureRunId, verifiedPrincipalId],
+          ),
+        "23514",
+      );
+    });
+
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANUP_PENDING'
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, noTripsFixtureRunId],
+      );
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANED'
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, noTripsFixtureRunId],
+      );
+    });
+
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      const persisted = await client.query<{
+        state: string;
+        portalPrincipalId: string | null;
+      }>(
+        `SELECT "state", "portalPrincipalId"
+           FROM "portal_access"."runtime_acceptance_fixture_run"
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+      expect(persisted.rows).toEqual([
+        { state: "CLEANED", portalPrincipalId: verifiedPrincipalId },
+      ]);
+      const associationEvent = await client.query<{
+        actorKind: string;
+        actorStaffPrincipalId: string | null;
+        portalPrincipalId: string | null;
+      }>(
+        `SELECT "actorKind", "actorStaffPrincipalId", "portalPrincipalId"
+           FROM "audit"."runtime_acceptance_fixture_event"
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid
+            AND "eventType" = 'FIXTURE_PORTAL_PRINCIPAL_ASSOCIATED'`,
+        [priorAgencyId, fixtureRunId],
+      );
+      expect(associationEvent.rows).toEqual([
+        {
+          actorKind: "PORTAL_OPERATOR",
+          actorStaffPrincipalId: null,
+          portalPrincipalId: verifiedPrincipalId,
+        },
+      ]);
+    });
+  });
+
+  it("retiredPrincipalHasNoPortalSessionContext", async () => {
+    const principalId = `stage7-retired-${randomUUID()}`;
+    const sessionId = randomUUID();
+    const sessionToken = randomUUID();
+    const email = `stage7-retired-${randomUUID()}@example.test`;
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `INSERT INTO "portal_access"."portal_user" ("id", "name", "email", "emailVerified")
+         VALUES ($1, 'Stage 7 Retired Principal', $2, true)`,
+        [principalId, email],
+      );
+      await client.query(
+        `INSERT INTO "portal_access"."portal_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+         VALUES ($1, clock_timestamp() + interval '1 day', $2, clock_timestamp(), $3)`,
+        [sessionId, sessionToken, principalId],
+      );
+    });
+
+    const cookie = await signedSessionCookie(portalRealm, sessionToken);
+    const beforeRetirement = await portalRealm.getServerSession(
+      new Request("http://portal.travelos.test/", { headers: { cookie } }),
+    );
+    expect(beforeRetirement?.principalId).toBe(principalId);
+
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `UPDATE "portal_access"."portal_principal_context"
+            SET "retiredAt" = clock_timestamp()
+          WHERE "portalPrincipalId" = $1`,
+        [principalId],
+      );
+    });
+
+    await expect(
+      portalRealm.getServerSession(
+        new Request("http://portal.travelos.test/", { headers: { cookie } }),
+      ),
+    ).resolves.toBeNull();
   });
 
   it("backfills a preexisting Portal principal and session with authorization epoch one", async () => {
@@ -1465,6 +2520,43 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
       ),
     );
     expect(recoveredUser.rows).toEqual([{ id: enrolled.portalPrincipalId, emailVerified: true }]);
+  });
+
+  it("portalEnrollmentAssociationRollsBackOnInvalidRun", async () => {
+    const portalDatabase = await portalAuthPersistence!.withConnection(
+      async (connection) => connection,
+    );
+    const localEnrollment = createLocalOperatorPortalEnrollmentService({
+      database: portalDatabase,
+      canonicalOrigin: "http://portal.travelos.test",
+      realmKeyMaterial: stage7RealmKey,
+      environment: "DEVELOPMENT",
+    });
+    const email = `stage7-invalid-fixture-${randomUUID()}@example.test`;
+    const syntheticCredential = createHash("sha512")
+      .update("travelos-stage-7-disposable-portal-credential")
+      .digest("base64url");
+    const enrollmentInput = {
+      email,
+      name: "Stage 7 Invalid Fixture Principal",
+      password: syntheticCredential,
+      fixtureRunId: databaseModule.createUuidV7(),
+    };
+
+    await expect(localEnrollment.enroll(enrollmentInput as never)).rejects.toBeDefined();
+    const persistedIdentity = await withPortalLogin(async (client) =>
+      client.query<{ readonly users: string; readonly contexts: string }>(
+        `SELECT
+           (SELECT count(*)::text FROM "portal_access"."portal_user" WHERE "email" = $1) AS "users",
+           (SELECT count(*)::text
+              FROM "portal_access"."portal_user" AS user_row
+              JOIN "portal_access"."portal_principal_context" AS context
+                ON context."portalPrincipalId" = user_row."id"
+             WHERE user_row."email" = $1) AS "contexts"`,
+        [email],
+      ),
+    );
+    expect(persistedIdentity.rows).toEqual([{ users: "0", contexts: "0" }]);
   });
 
   it("keeps concurrent local Portal enrollment for one normalized address to one verified identity", async () => {
@@ -2327,6 +3419,363 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
       repository.issueTripAccessGrant(issueCommand("stage7-revoked-staff"), staffAuthorization),
     ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
     expect(await readTripAccessCounts()).toEqual(before);
+  });
+
+  it("withdraws the active snapshot, cancels the registered Trip, and retires only its Portal principal", async () => {
+    if (tripAccessPersistence === null) {
+      throw new Error("Stage 7 Staff persistence fixture was not initialized");
+    }
+    await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query(
+        `UPDATE "staff_access"."staff_membership"
+            SET "state" = 'ACTIVE', "revokedAt" = NULL, "updatedAt" = clock_timestamp()
+          WHERE "id" = $1::uuid`,
+        [staffMembershipId],
+      ),
+    );
+
+    const fixtureRunId = databaseModule.createUuidV7();
+    const fixturePrincipalId = `stage7-cleanup-${randomUUID()}`;
+    const fixtureSessionId = `stage7-cleanup-session-${randomUUID()}`;
+    const fixtureSessionToken = randomUUID();
+    const fixtureEmail = `stage7-cleanup-${randomUUID()}@example.test`;
+    const task3StaffSessionId = `stage7-task3-session-${randomUUID()}`;
+    const task3StaffSessionToken = randomUUID();
+    const authorizationSnapshot = await createStaffAccessRepository(
+      tripAccessPersistence,
+    ).getStaffAuthorizationSnapshot(staffPrincipalId, asOpaqueId(priorAgencyId));
+    expect(authorizationSnapshot?.membershipState).toBe("ACTIVE");
+    if (authorizationSnapshot === null) throw new Error("Stage 7 Staff membership fixture missing");
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `INSERT INTO "staff_access"."staff_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+         VALUES ($1, clock_timestamp() + interval '1 hour', $2, clock_timestamp(), $3)`,
+        [task3StaffSessionId, task3StaffSessionToken, staffPrincipalId],
+      );
+      await client.query(
+        `INSERT INTO "staff_access"."staff_session_context"
+           ("sessionId", "staffPrincipalId", "agencyId", "authorizationEpoch", "recentMfaVerifiedAt")
+         SELECT $1, membership."staffPrincipalId", membership."agencyId",
+                membership."authorizationEpoch", clock_timestamp()
+           FROM "staff_access"."staff_membership" AS membership
+          WHERE membership."id" = $2::uuid AND membership."state" = 'ACTIVE'`,
+        [task3StaffSessionId, staffMembershipId],
+      );
+    });
+    const staffCookie = await signedSessionCookie(staffRealm, task3StaffSessionToken);
+    const staffSessionResolver = createAdminStaffSessionResolver(staffRealm, {
+      canonicalOrigin: "http://admin.travelos.test",
+      expectedHost: "admin.travelos.test",
+    });
+    const authorizationNowEpochMs = Date.now();
+    const freshStaffAuthorization: StaffAuthorizationOperationProof = {
+      session: {
+        sessionId: task3StaffSessionId,
+        staffPrincipalId,
+        agencyId: asOpaqueId(priorAgencyId),
+        authorizationEpoch: authorizationSnapshot.authorizationEpoch,
+        expiresAtEpochMs: authorizationNowEpochMs + 60 * 60 * 1_000,
+        recentMfaVerifiedAtEpochMs: authorizationNowEpochMs,
+      },
+      requiredPermissionIds: ["trip.access.manage"],
+      nowEpochMs: authorizationNowEpochMs,
+    };
+    await expect(staffSessionResolver.resolveStaffSession(staffCookie)).resolves.toMatchObject({
+      staffPrincipalId,
+      agencyId: priorAgencyId,
+      authorizationEpoch: authorizationSnapshot.authorizationEpoch,
+    });
+    expect(
+      authorizationSnapshot?.assignments
+        .filter((assignment) => assignment.active)
+        .map((assignment) => assignment.permissionId),
+    ).toEqual(
+      expect.arrayContaining([
+        "customer.view",
+        "traveller.view_sensitive",
+        "trip.view",
+        "reservation.view",
+        "finance.view_costs",
+        "customer.edit",
+        "traveller.edit",
+        "trip.edit",
+        "reservation.edit",
+        "finance.manage_costs",
+        "trip.access.manage",
+        "trip.withdraw_publication",
+        "runtime_acceptance.fixture.manage",
+      ]),
+    );
+    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
+      tripAccessPersistence,
+      staffSessionResolver,
+    );
+    const tripSlice = await tripOperations.createTripSlice(
+      staffCookie,
+      stage7TripInput("Stage 7 runtime cleanup target"),
+    );
+    const tripId = String(tripSlice.trip.id);
+    const initialTripLockVersion = tripSlice.trip.lockVersion;
+    const initialTripWorkspaceRevision = tripSlice.trip.workspaceRevision;
+    const publicationId = databaseModule.createUuidV7();
+
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query("BEGIN");
+      try {
+        await insertFixtureRun(client, priorAgencyId, fixtureRunId);
+        await linkFixtureTrip(client, priorAgencyId, fixtureRunId, 1, tripId);
+        await client.query(
+          `INSERT INTO "portal_access"."portal_user" ("id", "name", "email", "emailVerified")
+           VALUES ($1, 'Stage 7 Cleanup Principal', $2, true)`,
+          [fixturePrincipalId, fixtureEmail],
+        );
+        await client.query(
+          `INSERT INTO "portal_access"."portal_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+           VALUES ($1, clock_timestamp() + interval '1 day', $2, clock_timestamp(), $3)`,
+          [fixtureSessionId, fixtureSessionToken, fixturePrincipalId],
+        );
+        await client.query(
+          `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+              SET "portalPrincipalId" = $3
+            WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+          [priorAgencyId, fixtureRunId, fixturePrincipalId],
+        );
+        await client.query(
+          `INSERT INTO "trip_ops"."publication_version"
+             ("publicationId", "agencyId", "tripId", "version", "workspaceRevision",
+              "schemaVersion", "projectionHash", "publisherStaffPrincipalId", "assuranceVerifiedAt", "publishedAt")
+           VALUES ($1::uuid, $2::uuid, $3::uuid, 1, 0, 1, $4, $5, clock_timestamp(), clock_timestamp())`,
+          [publicationId, priorAgencyId, tripId, stage7ProjectionHash, staffPrincipalId],
+        );
+        await client.query(
+          `INSERT INTO "trip_ops"."publication_snapshot"
+             ("publicationId", "agencyId", "tripId", "canonicalPayload")
+           VALUES ($1::uuid, $2::uuid, $3::uuid, $4)`,
+          [publicationId, priorAgencyId, tripId, stage7SnapshotPayload],
+        );
+        await client.query(
+          `INSERT INTO "trip_ops"."publication_pointer"
+             ("agencyId", "tripId", "activePublicationId", "activeVersion")
+           VALUES ($1::uuid, $2::uuid, $3::uuid, 1)`,
+          [priorAgencyId, tripId, publicationId],
+        );
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => undefined);
+        throw error;
+      }
+    });
+
+    const tripAccessRepository = createTripAccessRepository();
+    expect(tripAccessRepository).not.toBeNull();
+    if (tripAccessRepository === null) return;
+    const grant = await tripAccessRepository.issueTripAccessGrant(
+      {
+        agencyId: asOpaqueId(priorAgencyId),
+        portalPrincipalId: fixturePrincipalId,
+        tripId: asOpaqueId(tripId),
+        capabilities: ["trip.view_current"],
+        idempotencyKey: `stage7-cleanup-grant-${fixtureRunId}`,
+        expiresAt: null,
+        relationshipLabel: "Runtime acceptance",
+      },
+      freshStaffAuthorization,
+    );
+    expect(grant).not.toBeNull();
+    if (grant === null) return;
+    const portalCookie = await signedSessionCookie(portalRealm, fixtureSessionToken);
+    await withPortalHttp(async (baseUrl) => {
+      const beforeCleanup = await portalTripRequest(baseUrl, tripId, portalCookie);
+      expect(beforeCleanup.status).toBe(200);
+      expect(beforeCleanup.body.trip.title).toBe("Stage 7 Published Snapshot");
+    });
+
+    const publicationOperations = databaseModule.createPostgresM1StaffTripPublicationOperations(
+      tripAccessPersistence,
+      staffSessionResolver,
+      { validate: (value) => void PortalTripSnapshotV1Schema.parse(value) },
+    );
+    const withdrawn = await publicationOperations.withdrawActivePublication(staffCookie, tripId, {
+      reason: "RUNTIME_ACCEPTANCE_CLEANUP",
+      idempotencyKey: `withdraw-${fixtureRunId}`,
+    });
+    expect(withdrawn).toMatchObject({ status: "WITHDRAWN", publicationId, version: 1 });
+    expect(
+      await publicationOperations.withdrawActivePublication(staffCookie, tripId, {
+        reason: "RUNTIME_ACCEPTANCE_CLEANUP",
+        idempotencyKey: `withdraw-${fixtureRunId}`,
+      }),
+    ).toEqual(withdrawn);
+
+    const tripCancelled = await tripOperations.cancelTrip(staffCookie, {
+      tripId,
+      expectedLockVersion: initialTripLockVersion.toString(),
+      idempotencyKey: `cancel-${fixtureRunId}`,
+    });
+    expect(tripCancelled.trip.state).toBe("CANCELLED");
+    expect(tripCancelled.trip.lockVersion).toBe(initialTripLockVersion + 1n);
+    expect(tripCancelled.trip.workspaceRevision).toBe(initialTripWorkspaceRevision + 1n);
+    expect(
+      await tripOperations.cancelTrip(staffCookie, {
+        tripId,
+        expectedLockVersion: initialTripLockVersion.toString(),
+        idempotencyKey: `cancel-${fixtureRunId}`,
+      }),
+    ).toEqual(tripCancelled);
+
+    const staleTrip = await tripOperations.createTripSlice(
+      staffCookie,
+      stage7TripInput("Stage 7 stale cleanup target"),
+    );
+    await expect(
+      tripOperations.cancelTrip(staffCookie, {
+        tripId: staleTrip.trip.id,
+        expectedLockVersion: "99",
+        idempotencyKey: `stale-${fixtureRunId}`,
+      }),
+    ).rejects.toBeInstanceOf(M1OptimisticConflictError);
+    await expect(
+      tripOperations.readTripSlice(staffCookie, staleTrip.trip.id),
+    ).resolves.toMatchObject({
+      trip: { state: "DRAFT", workspaceRevision: staleTrip.trip.workspaceRevision },
+    });
+
+    const completedTrip = await tripOperations.createTripSlice(
+      staffCookie,
+      stage7TripInput("Stage 7 completed cleanup target"),
+    );
+    await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query(
+        `UPDATE "trip_ops"."trip" SET "state" = 'COMPLETED'
+          WHERE "agencyId" = $1::uuid AND "id" = $2::uuid`,
+        [priorAgencyId, completedTrip.trip.id],
+      ),
+    );
+    await expect(
+      tripOperations.cancelTrip(staffCookie, {
+        tripId: completedTrip.trip.id,
+        expectedLockVersion: completedTrip.trip.lockVersion.toString(),
+        idempotencyKey: `completed-${fixtureRunId}`,
+      }),
+    ).rejects.toBeInstanceOf(M1UnsupportedTripStateError);
+
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      const retained = await client.query<{
+        readonly canonicalPayload: string;
+        readonly pointerCount: string;
+        readonly publicationCount: string;
+      }>(
+        `SELECT snapshot."canonicalPayload",
+                (SELECT count(*)::text FROM "trip_ops"."publication_pointer"
+                  WHERE "agencyId" = $1::uuid AND "tripId" = $2::uuid) AS "pointerCount",
+                (SELECT count(*)::text FROM "trip_ops"."publication_version"
+                  WHERE "agencyId" = $1::uuid AND "tripId" = $2::uuid) AS "publicationCount"
+           FROM "trip_ops"."publication_snapshot" AS snapshot
+          WHERE snapshot."publicationId" = $3::uuid`,
+        [priorAgencyId, tripId, publicationId],
+      );
+      expect(retained.rows).toEqual([
+        { canonicalPayload: stage7SnapshotPayload, pointerCount: "0", publicationCount: "1" },
+      ]);
+    });
+
+    const unrelatedPrincipalId = `stage7-unrelated-${randomUUID()}`;
+    const unrelatedSessionToken = randomUUID();
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `INSERT INTO "portal_access"."portal_user" ("id", "name", "email", "emailVerified")
+         VALUES ($1, 'Unrelated Stage 7 Principal', $2, true)`,
+        [unrelatedPrincipalId, `stage7-unrelated-${randomUUID()}@example.test`],
+      );
+      await client.query(
+        `INSERT INTO "portal_access"."portal_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+         VALUES ($1, clock_timestamp() + interval '1 day', $2, clock_timestamp(), $3)`,
+        [`stage7-unrelated-session-${randomUUID()}`, unrelatedSessionToken, unrelatedPrincipalId],
+      );
+    });
+
+    const retirementRepository = createTripAccessRepository();
+    expect(retirementRepository).not.toBeNull();
+    if (retirementRepository === null) return;
+    const retirementAuthorization: StaffAuthorizationOperationProof = {
+      ...freshStaffAuthorization,
+      requiredPermissionIds: ["runtime_acceptance.fixture.manage", "trip.access.manage"],
+    };
+    const retirement = await retirementRepository.retireFixturePortalPrincipal(
+      {
+        agencyId: asOpaqueId(priorAgencyId),
+        fixtureRunId: asOpaqueId(fixtureRunId),
+        portalPrincipalId: fixturePrincipalId,
+        reason: "RUNTIME_ACCEPTANCE_CLEANUP",
+      },
+      retirementAuthorization,
+    );
+    expect(retirement).toMatchObject({
+      portalPrincipalId: fixturePrincipalId,
+      authorizationEpoch: 2n,
+    });
+    await expect(
+      portalRealm.getServerSession(
+        new Request("http://portal.travelos.test/", { headers: { cookie: portalCookie } }),
+      ),
+    ).resolves.toBeNull();
+    await expectSqlState(
+      () =>
+        withOwnerLogin(priorDatabaseName, (client) =>
+          client.query(
+            `INSERT INTO "portal_access"."portal_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+             VALUES ($1, clock_timestamp() + interval '1 day', $2, clock_timestamp(), $3)`,
+            [`stage7-retired-new-session-${randomUUID()}`, randomUUID(), fixturePrincipalId],
+          ),
+        ),
+      "23503",
+    );
+    await expect(
+      portalRealm.getServerSession(
+        new Request("http://portal.travelos.test/", {
+          headers: {
+            cookie: await signedSessionCookie(portalRealm, unrelatedSessionToken),
+          },
+        }),
+      ),
+    ).resolves.toMatchObject({ principalId: unrelatedPrincipalId });
+    await withPortalHttp(async (baseUrl) => {
+      const denied = await portalTripRequest(baseUrl, tripId, portalCookie);
+      expect(denied.status).toBe(401);
+      expect(denied.text).toBe("");
+    });
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      const evidence = await client.query<{
+        readonly retirementEvents: string;
+        readonly retirementOutbox: string;
+        readonly fixtureRetirementAudits: string;
+      }>(
+        `SELECT
+           (SELECT count(*)::text FROM "portal_access"."portal_principal_retirement_event"
+             WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid) AS "retirementEvents",
+           (SELECT count(*)::text FROM "integration"."portal_principal_retirement_outbox"
+             WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid) AS "retirementOutbox",
+           (SELECT count(*)::text FROM "audit"."runtime_acceptance_fixture_event"
+             WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid
+               AND "eventType" = 'FIXTURE_PORTAL_PRINCIPAL_RETIRED') AS "fixtureRetirementAudits"`,
+        [priorAgencyId, fixtureRunId],
+      );
+      expect(evidence.rows).toEqual([
+        { retirementEvents: "1", retirementOutbox: "1", fixtureRetirementAudits: "1" },
+      ]);
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANUP_PENDING'
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+      await client.query(
+        `UPDATE "portal_access"."runtime_acceptance_fixture_run"
+            SET "state" = 'CLEANED'
+          WHERE "agencyId" = $1::uuid AND "fixtureRunId" = $2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      );
+    });
   });
 
   it("exports the PostgreSQL Staff Trip access repository", () => {

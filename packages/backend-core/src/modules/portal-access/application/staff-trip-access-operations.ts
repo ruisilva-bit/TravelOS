@@ -13,6 +13,11 @@ export const TRIP_ACCESS_MANAGE_PERMISSION_ID =
 export const M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS = Object.freeze([
   TRIP_ACCESS_MANAGE_PERMISSION_ID,
 ] as const);
+export const M1_STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS = Object.freeze([
+  "runtime_acceptance.fixture.manage",
+  TRIP_ACCESS_MANAGE_PERMISSION_ID,
+] as const satisfies readonly StaffPermissionId[]);
+export const FIXTURE_PORTAL_PRINCIPAL_RETIREMENT_REASON = "RUNTIME_ACCEPTANCE_CLEANUP" as const;
 
 export interface IssueTripAccessGrantCommand {
   readonly agencyId: OpaqueId;
@@ -30,6 +35,19 @@ export interface RevokeTripAccessGrantCommand {
   readonly idempotencyKey: string;
 }
 
+export interface RetireFixturePortalPrincipalCommand {
+  readonly agencyId: OpaqueId;
+  readonly fixtureRunId: OpaqueId;
+  readonly portalPrincipalId: string;
+  readonly reason: typeof FIXTURE_PORTAL_PRINCIPAL_RETIREMENT_REASON;
+}
+
+export interface PortalPrincipalRetirementResult {
+  readonly portalPrincipalId: string;
+  readonly retiredAt: string;
+  readonly authorizationEpoch: bigint;
+}
+
 export interface M1StaffTripAccessRepository {
   issueTripAccessGrant(
     command: IssueTripAccessGrantCommand,
@@ -39,11 +57,20 @@ export interface M1StaffTripAccessRepository {
     command: RevokeTripAccessGrantCommand,
     authorization: StaffAuthorizationOperationProof,
   ): Promise<TripAccessGrant | null>;
+  retireFixturePortalPrincipal(
+    command: RetireFixturePortalPrincipalCommand,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<PortalPrincipalRetirementResult | null>;
 }
 
 export interface M1StaffTripAccessOperations {
   issueTripAccessGrant(cookieHeader: unknown, input: unknown): Promise<TripAccessGrant>;
   revokeTripAccessGrant(cookieHeader: unknown, input: unknown): Promise<TripAccessGrant>;
+  retireFixturePortalPrincipal(
+    cookieHeader: unknown,
+    fixtureRunId: unknown,
+    portalPrincipalId: unknown,
+  ): Promise<PortalPrincipalRetirementResult>;
 }
 
 export interface M1StaffTripAccessOperationsDependencies extends M1StaffAuthorizationDependencies {
@@ -208,6 +235,15 @@ const parseRevokeCommand = (value: unknown): RevokeTripAccessGrantCommand => {
   }
 };
 
+const parseFixtureRunId = (value: unknown): OpaqueId => {
+  if (typeof value !== "string") return invalidInput();
+  try {
+    return asOpaqueId(value);
+  } catch {
+    return invalidInput();
+  }
+};
+
 export const createM1StaffTripAccessOperations = (
   dependencies: M1StaffTripAccessOperationsDependencies,
 ): M1StaffTripAccessOperations => {
@@ -242,6 +278,29 @@ export const createM1StaffTripAccessOperations = (
       const grant = await dependencies.repository.revokeTripAccessGrant(command, authorization);
       if (grant === null) throw new M1StaffTripAccessNotFoundError();
       return grant;
+    },
+
+    async retireFixturePortalPrincipal(cookieHeader, fixtureRunIdValue, principalIdValue) {
+      const fixtureRunId = parseFixtureRunId(fixtureRunIdValue);
+      const portalPrincipalId = portalPrincipalIdField({ portalPrincipalId: principalIdValue });
+      const authorization = await authorizeM1Operation(
+        dependencies,
+        cookieHeader,
+        null,
+        M1_STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
+        5 * 60 * 1_000,
+      );
+      const result = await dependencies.repository.retireFixturePortalPrincipal(
+        {
+          agencyId: asOpaqueId(authorization.session.agencyId),
+          fixtureRunId,
+          portalPrincipalId,
+          reason: FIXTURE_PORTAL_PRINCIPAL_RETIREMENT_REASON,
+        },
+        authorization,
+      );
+      if (result === null) throw new M1StaffTripAccessNotFoundError();
+      return result;
     },
   };
   return Object.freeze(operations);

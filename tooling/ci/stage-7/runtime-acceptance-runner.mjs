@@ -18,6 +18,35 @@ const SYSTEMD_REFERENCE_PREFIX = "systemd-credential:";
 const MAX_RESPONSE_BYTES = 1_048_576;
 const DEVELOPMENT_STAFF_COOKIE = "travelos-dev-staff-session";
 const DEVELOPMENT_PORTAL_COOKIE = "travelos-dev-portal-session";
+const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+
+const createUuidV7 = () => {
+  const bytes = randomBytes(16);
+  let timestamp = BigInt(Date.now());
+  for (let index = 5; index >= 0; index -= 1) {
+    bytes[index] = Number(timestamp & 0xffn);
+    timestamp >>= 8n;
+  }
+  bytes[6] = 0x70 | (bytes[6] & 0x0f);
+  bytes[8] = 0x80 | (bytes[8] & 0x3f);
+  const text = bytes.toString("hex");
+  return [
+    text.slice(0, 8),
+    text.slice(8, 12),
+    text.slice(12, 16),
+    text.slice(16, 20),
+    text.slice(20),
+  ].join("-");
+};
+
+const requireUuidV7 = (value, label) => {
+  if (typeof value !== "string" || !UUID_V7_PATTERN.test(value)) {
+    throw Object.assign(new Error(`${label} is invalid`), {
+      code: "RUNTIME_ACCEPTANCE_FIXTURE_CONFLICT",
+    });
+  }
+  return value;
+};
 
 const cleanCredentialName = (reference, expectedName) => {
   assert.equal(typeof reference, "string");
@@ -259,7 +288,7 @@ export const runStage7RuntimeAcceptance = async ({
   enrollment,
   makeStaffTotpCode,
   readImmutablePublication,
-  makeUuid = randomUUID,
+  makeUuid = createUuidV7,
   makePassword = () => randomBytes(32).toString("base64url"),
 }) => {
   assert.equal(manifest?.environment, "DEVELOPMENT", "Runtime acceptance is DEVELOPMENT-only");
@@ -294,11 +323,80 @@ export const runStage7RuntimeAcceptance = async ({
   let staffSignedOut = false;
   let portalPassword;
   let failure;
+  let cleanupFailure;
+  let fixtureRunId;
+  const staffAuthenticationRequest = (request) => {
+    const cookie =
+      request.cookie ??
+      (request.path === "/api/auth/staff/sign-in/email" ? undefined : staffCookie);
+    return requestAdmin({ ...request, cookie });
+  };
+  const cleanupError = (code = "STAGE7_RUNTIME_ACCEPTANCE_CLEANUP_FAILED") =>
+    Object.assign(new Error("Runtime acceptance fixture cleanup failed"), {
+      code,
+      isRuntimeAcceptanceCleanupFailure: true,
+    });
+  const cleanupFixtureRun = async (runId, { allowNotFound = false } = {}) => {
+    const targetRunId = requireUuidV7(runId, "Fixture run identifier");
+    const sendCleanup = () =>
+      requestAdmin({
+        method: "POST",
+        path: `/api/admin/runtime-acceptance-fixtures/${targetRunId}/cleanup`,
+        body: { idempotencyKey: `stage7-runtime-cleanup-${randomUUID()}` },
+        cookie: staffCookie,
+      });
+    let response;
+    try {
+      response = await sendCleanup();
+    } catch {
+      throw cleanupError();
+    }
+    if (response.status === 401) {
+      try {
+        staffCookie = await signInStaff({
+          requestAdmin: staffAuthenticationRequest,
+          credentials,
+          makeStaffTotpCode,
+        });
+      } catch (error) {
+        if (error?.isRuntimeAcceptanceCleanupFailure === true) throw error;
+        throw cleanupError("STAFF_MFA_REAUTHENTICATION_FAILED");
+      }
+      try {
+        response = await sendCleanup();
+      } catch {
+        throw cleanupError();
+      }
+    }
+    if (response.status === 404) {
+      if (!allowNotFound) throw cleanupError();
+      probes.push("fixture-cleanup-not-found-noop");
+      return "NOT_FOUND";
+    }
+    if (response.status !== 200) throw cleanupError();
+    let receipt;
+    try {
+      receipt = objectBody(response, "Runtime acceptance fixture cleanup");
+    } catch {
+      throw cleanupError();
+    }
+    if (receipt.fixtureRunId !== targetRunId) throw cleanupError();
+    if (receipt.state === "CLEANED" && receipt.errorCode === null) {
+      probes.push("runtime-acceptance-fixture-cleaned");
+      return "CLEANED";
+    }
+    if (
+      receipt.state === "CLEANUP_PENDING" &&
+      ["CLEANUP_STEP_FAILED", "UNEXPECTED_RESOURCE"].includes(receipt.errorCode)
+    ) {
+      throw cleanupError(receipt.errorCode);
+    }
+    throw cleanupError();
+  };
 
   try {
     staffCookie = await signInStaff({
-      requestAdmin: (request) =>
-        requestAdmin({ ...request, cookie: request.cookie ?? staffCookie }),
+      requestAdmin: staffAuthenticationRequest,
       credentials,
       makeStaffTotpCode,
     });
@@ -321,18 +419,58 @@ export const runStage7RuntimeAcceptance = async ({
     agencyId = context.agencyId;
     probes.push("staff-session-scope-confirmed");
 
-    const suffix = makeUuid();
+    const suffix = requireUuidV7(makeUuid(), "Fixture run identifier");
+    fixtureRunId = suffix;
     const sentinel = `STAGE7_INTERNAL_ONLY_${suffix}`;
     const tripInput = tripSliceRequest({ agencyId: context.agencyId, suffix, sentinel });
-    const createResponse = requireStatus(
-      await requestAdmin({
+    const createFixtureTrip = async (input, label, allowRecovery) => {
+      let response = await requestAdmin({
         method: "POST",
         path: "/api/admin/trips",
-        body: tripInput,
+        body: input,
         cookie: staffCookie,
-      }),
-      201,
+        fixtureRunId,
+      });
+      if (allowRecovery && response.status === 409) {
+        const conflict = objectBody(response, "Runtime acceptance fixture conflict");
+        if (conflict.error === "runtime_acceptance_fixture_conflict") {
+          const recoveryRunId = conflict.recoveryFixtureRunId;
+          const recoveryFailure = Object.assign(
+            new Error("Runtime acceptance fixture conflict could not be safely recovered"),
+            { code: "RUNTIME_ACCEPTANCE_FIXTURE_CONFLICT" },
+          );
+          if (
+            typeof recoveryRunId !== "string" ||
+            !UUID_V7_PATTERN.test(recoveryRunId) ||
+            recoveryRunId === fixtureRunId
+          ) {
+            throw recoveryFailure;
+          }
+          try {
+            await cleanupFixtureRun(recoveryRunId);
+          } catch (error) {
+            error.acceptanceFailureCode = recoveryFailure.code;
+            throw error;
+          }
+          const previousRunId = fixtureRunId;
+          fixtureRunId = requireUuidV7(makeUuid(), "Fresh fixture run identifier");
+          if (fixtureRunId === previousRunId || fixtureRunId === recoveryRunId)
+            throw recoveryFailure;
+          response = await requestAdmin({
+            method: "POST",
+            path: "/api/admin/trips",
+            body: input,
+            cookie: staffCookie,
+            fixtureRunId,
+          });
+        }
+      }
+      return requireStatus(response, 201, label);
+    };
+    const createResponse = await createFixtureTrip(
+      tripInput,
       "Synthetic Trip creation through Admin API",
+      true,
     );
     const created = objectBody(createResponse, "Synthetic Trip creation");
     tripId = created.trip?.id;
@@ -350,15 +488,10 @@ export const runStage7RuntimeAcceptance = async ({
       suffix: `${suffix}-cross-trip`,
       sentinel: `STAGE7_INTERNAL_ONLY_CROSS_${suffix}`,
     });
-    const ungrantedResponse = requireStatus(
-      await requestAdmin({
-        method: "POST",
-        path: "/api/admin/trips",
-        body: ungrantedInput,
-        cookie: staffCookie,
-      }),
-      201,
+    const ungrantedResponse = await createFixtureTrip(
+      ungrantedInput,
       "Synthetic ungranted Trip creation through Admin API",
+      false,
     );
     ungrantedTripId = objectBody(ungrantedResponse, "Synthetic ungranted Trip creation").trip?.id;
     assert.ok(typeof ungrantedTripId === "string" && ungrantedTripId !== tripId);
@@ -369,6 +502,7 @@ export const runStage7RuntimeAcceptance = async ({
       email,
       name: "Stage 7 Runtime Acceptance",
       password: portalPassword,
+      fixtureRunId,
     });
     enrolledPrincipalId = enrollmentResult.portalPrincipalId;
     assert.ok(typeof enrolledPrincipalId === "string" && enrolledPrincipalId.length > 0);
@@ -617,7 +751,16 @@ export const runStage7RuntimeAcceptance = async ({
     requireStatus(afterRevoke, 401, "Portal Trip read after authorization-epoch revocation");
     probes.push("grant-revocation-invalidates-existing-portal-session");
   } catch (error) {
-    failure = error;
+    if (error?.isRuntimeAcceptanceCleanupFailure === true) {
+      cleanupFailure = error;
+      if (typeof error.acceptanceFailureCode === "string") {
+        failure = Object.assign(new Error("Runtime acceptance fixture recovery failed"), {
+          code: error.acceptanceFailureCode,
+        });
+      }
+    } else {
+      failure = error;
+    }
   } finally {
     if (issuedGrantId !== undefined && !grantRevoked && staffCookie !== undefined) {
       try {
@@ -631,9 +774,13 @@ export const runStage7RuntimeAcceptance = async ({
           },
           cookie: staffCookie,
         });
-        if (revokeResponse.status >= 200 && revokeResponse.status < 300) grantRevoked = true;
+        if (revokeResponse.status >= 200 && revokeResponse.status < 300) {
+          grantRevoked = true;
+        } else {
+          cleanupFailure ??= cleanupError("PORTAL_ACCESS_GRANT_REVOCATION_FAILED");
+        }
       } catch {
-        failure ??= new Error("Runtime acceptance could not revoke its temporary grant");
+        cleanupFailure ??= cleanupError("PORTAL_ACCESS_GRANT_REVOCATION_FAILED");
       }
     }
     if (portalCookie !== undefined) {
@@ -645,12 +792,20 @@ export const runStage7RuntimeAcceptance = async ({
           cookie: portalCookie,
         });
         if (signOut.status < 200 || signOut.status >= 300) {
-          failure ??= new Error("Runtime acceptance could not revoke its Portal session");
+          cleanupFailure ??= cleanupError("PORTAL_SESSION_SIGN_OUT_FAILED");
         } else {
           portalSignedOut = true;
         }
       } catch {
-        failure ??= new Error("Runtime acceptance could not revoke its Portal session");
+        cleanupFailure ??= cleanupError("PORTAL_SESSION_SIGN_OUT_FAILED");
+      }
+    }
+    if (fixtureRunId !== undefined && staffCookie !== undefined) {
+      try {
+        await cleanupFixtureRun(fixtureRunId, { allowNotFound: true });
+      } catch (error) {
+        cleanupFailure ??=
+          error?.isRuntimeAcceptanceCleanupFailure === true ? error : cleanupError();
       }
     }
     if (staffCookie !== undefined) {
@@ -662,16 +817,13 @@ export const runStage7RuntimeAcceptance = async ({
           cookie: staffCookie,
         });
         if (signOut.status < 200 || signOut.status >= 300) {
-          failure ??= new Error("Runtime acceptance could not revoke its Staff session");
+          cleanupFailure ??= cleanupError("STAFF_SESSION_SIGN_OUT_FAILED");
         } else {
           staffSignedOut = true;
         }
       } catch {
-        failure ??= new Error("Runtime acceptance could not revoke its Staff session");
+        cleanupFailure ??= cleanupError("STAFF_SESSION_SIGN_OUT_FAILED");
       }
-    }
-    if (credentials && typeof credentials === "object") {
-      for (const key of Object.keys(credentials)) credentials[key] = "";
     }
     if (portalSignedOut && portalCookie !== undefined && tripId !== undefined) {
       try {
@@ -686,10 +838,10 @@ export const runStage7RuntimeAcceptance = async ({
         ) {
           probes.push("portal-session-revoked-after-sign-out");
         } else {
-          failure ??= new Error("Runtime acceptance Portal session remained active after sign-out");
+          cleanupFailure ??= cleanupError("PORTAL_SESSION_REVOCATION_UNVERIFIED");
         }
       } catch {
-        failure ??= new Error("Runtime acceptance could not verify Portal session revocation");
+        cleanupFailure ??= cleanupError("PORTAL_SESSION_REVOCATION_UNVERIFIED");
       }
     }
     if (staffSignedOut && staffCookie !== undefined) {
@@ -700,17 +852,23 @@ export const runStage7RuntimeAcceptance = async ({
           cookie: staffCookie,
         });
         if (context.status === 401) probes.push("staff-session-revoked-after-sign-out");
-        else
-          failure ??= new Error("Runtime acceptance Staff session remained active after sign-out");
+        else cleanupFailure ??= cleanupError("STAFF_SESSION_REVOCATION_UNVERIFIED");
       } catch {
-        failure ??= new Error("Runtime acceptance could not verify Staff session revocation");
+        cleanupFailure ??= cleanupError("STAFF_SESSION_REVOCATION_UNVERIFIED");
       }
     }
+    if (credentials && typeof credentials === "object") {
+      for (const key of Object.keys(credentials)) credentials[key] = "";
+    }
   }
-  if (failure !== undefined) {
+  if (failure !== undefined || cleanupFailure !== undefined) {
     const acceptanceFailure = new Error(
       "Stage 7 runtime acceptance failed; sensitive values were not retained",
     );
+    acceptanceFailure.code = safeFailureCode(failure ?? cleanupFailure);
+    if (cleanupFailure !== undefined) {
+      acceptanceFailure.cleanupCode = safeFailureCode(cleanupFailure);
+    }
     acceptanceFailure.completedProbes = probes
       .filter((probe) => typeof probe === "string" && /^[a-z0-9-]{1,96}$/u.test(probe))
       .slice(0, 32);
@@ -722,7 +880,7 @@ export const runStage7RuntimeAcceptance = async ({
 
 const requestLoopback =
   (listener, expectedHost, canonicalOrigin) =>
-  ({ method, path: requestPath, body, cookie }) =>
+  ({ method, path: requestPath, body, cookie, fixtureRunId }) =>
     new Promise((resolve, reject) => {
       if (!requestPath.startsWith("/") || requestPath.startsWith("//")) {
         reject(new Error("Invalid local acceptance request path"));
@@ -736,6 +894,9 @@ const requestLoopback =
           ? {}
           : { "content-type": "application/json", "content-length": payload.length }),
         ...(cookie === undefined ? {} : { cookie }),
+        ...(fixtureRunId === undefined
+          ? {}
+          : { "x-travelos-acceptance-fixture-run": fixtureRunId }),
         ...(method === "GET" ? {} : { origin: canonicalOrigin }),
       };
       const request = http.request(
@@ -791,8 +952,12 @@ export const createRuntimeTotpGenerator = async (appRoot) => {
   const { base32 } = betterAuthRequire("@better-auth/utils/base32");
   return async (encodedSeed) => {
     assert.match(encodedSeed, /^[A-Z2-7]{16,128}$/u, "Invalid Staff TOTP seed");
-    const secret = new TextDecoder("utf-8", { fatal: true }).decode(base32.decode(encodedSeed));
-    return createOTP(secret).totp();
+    const decodedSeed = base32.decode(encodedSeed);
+    try {
+      return createOTP(new TextDecoder("utf-8", { fatal: true }).decode(decodedSeed)).totp();
+    } finally {
+      decodedSeed.fill(0);
+    }
   };
 };
 
@@ -808,10 +973,11 @@ export const resolveRuntimePackageImport = async ({ appRoot, packageName, export
   return pathToFileURL(entryPath).href;
 };
 
+const safeFailureCodeValue = (value) =>
+  typeof value === "string" && /^[A-Z0-9_]{1,64}$/u.test(value) ? value : null;
+
 const safeFailureCode = (error) =>
-  typeof error?.code === "string" && /^[A-Z0-9_]{1,64}$/u.test(error.code)
-    ? error.code
-    : "STAGE7_RUNTIME_ACCEPTANCE_ERROR";
+  safeFailureCodeValue(error?.code) ?? "STAGE7_RUNTIME_ACCEPTANCE_ERROR";
 
 export const requirePortalPrivilegeDenial = async (database, table, column) => {
   try {
@@ -949,10 +1115,12 @@ const runCli = async () => {
           .filter((probe) => typeof probe === "string" && /^[a-z0-9-]{1,96}$/u.test(probe))
           .slice(0, 32)
       : null;
+    const cleanupCode = safeFailureCodeValue(error?.cleanupCode);
     failure = {
       result: "FAIL",
       stage: failureStage,
       code: safeFailureCode(error),
+      ...(cleanupCode === null ? {} : { cleanupCode }),
       ...(completedProbes === null ? {} : { completedProbes }),
     };
   } finally {

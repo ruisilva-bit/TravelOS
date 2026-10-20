@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -24,10 +25,59 @@ assert.equal(typeof loadStage7PriorCandidateDispositions, "function");
 assert.equal(typeof verifyStage7CandidateSourceScope, "function");
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const actualHistory = await loadStage7PriorCandidateDispositions({
+const selectedHistory = await loadStage7PriorCandidateDispositions({
   root: repositoryRoot,
-  candidateGeneration: "gen09",
+  candidateGeneration: "gen10",
 });
+assert.equal(selectedHistory.priorCandidates.length, 9);
+assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen09");
+const historicalGen09Root = await mkdtemp(
+  path.join(process.env.TMPDIR ?? tmpdir(), "travelos-stage7-gen09-history-"),
+);
+const historicalHistoryBytes = execFileSync(
+  "git",
+  [
+    "show",
+    "0cf07d04e93171c1de6300629a3759ce888da6a7:tooling/ci/stage-7/prior-candidate-dispositions.json",
+  ],
+  { cwd: repositoryRoot },
+);
+let actualHistory;
+try {
+  const historicalHistoryPath = path.join(
+    historicalGen09Root,
+    STAGE7_PRIOR_CANDIDATE_DISPOSITIONS_PATH,
+  );
+  await mkdir(path.dirname(historicalHistoryPath), { recursive: true });
+  await writeFile(historicalHistoryPath, historicalHistoryBytes);
+  const historicalPriorCandidates = JSON.parse(
+    historicalHistoryBytes.toString("utf8"),
+  ).priorCandidates;
+  const copyHistoricalInput = async (relativePath) => {
+    const destinationPath = path.join(historicalGen09Root, relativePath);
+    await mkdir(path.dirname(destinationPath), { recursive: true });
+    await copyFile(path.join(repositoryRoot, relativePath), destinationPath);
+  };
+  for (const candidate of historicalPriorCandidates) {
+    await copyHistoricalInput(candidate.baseline.path);
+    await copyHistoricalInput(candidate.predecessorReceipts.stage6.path);
+    await copyHistoricalInput(candidate.predecessorReceipts.stage7.path);
+    if (candidate.canonicalCiReceipt) {
+      await copyHistoricalInput(candidate.canonicalCiReceipt.path);
+      await copyHistoricalInput(
+        `docs/evidence/phase-1-m1/stage-7/${candidate.generation}/canonical-ci.log`,
+      );
+    }
+    if (candidate.validationPath) await copyHistoricalInput(candidate.validationPath);
+    if (candidate.freezePath) await copyHistoricalInput(candidate.freezePath);
+  }
+  actualHistory = await loadStage7PriorCandidateDispositions({
+    root: historicalGen09Root,
+    candidateGeneration: "gen09",
+  });
+} finally {
+  await rm(historicalGen09Root, { recursive: true, force: true });
+}
 assert.deepEqual(
   actualHistory.priorCandidates.map(({ generation, candidateCommit }) => [
     generation,
@@ -176,7 +226,12 @@ try {
     await mkdir(path.dirname(targetPath), { recursive: true });
     await copyFile(path.join(repositoryRoot, relativePath), targetPath);
   };
-  await copyRepositoryFile(STAGE7_PRIOR_CANDIDATE_DISPOSITIONS_PATH);
+  const historicalFixtureHistoryPath = path.join(
+    scopeFixtureRoot,
+    STAGE7_PRIOR_CANDIDATE_DISPOSITIONS_PATH,
+  );
+  await mkdir(path.dirname(historicalFixtureHistoryPath), { recursive: true });
+  await writeFile(historicalFixtureHistoryPath, historicalHistoryBytes);
   for (const candidate of actualHistory.priorCandidates) {
     await copyRepositoryFile(candidate.baseline.path);
     await copyRepositoryFile(candidate.predecessorReceipts.stage6.path);

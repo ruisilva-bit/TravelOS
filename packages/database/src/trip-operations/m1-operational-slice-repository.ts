@@ -1,15 +1,22 @@
+import { createHash } from "node:crypto";
 import {
   asOpaqueId,
   authorizeStaffRequest,
   createMoney,
   createScheduledLocalDateTime,
+  M1TripCancellationIdempotencyConflictError,
+  M1InputValidationError,
   M1OptimisticConflictError,
+  M1TripNotFoundError,
   M1_OPERATION_PERMISSION_REQUIREMENTS,
+  M1RuntimeAcceptanceFixtureConflictError,
   M1StaffAuthorizationError,
   M1TransactionConflictError,
+  M1UnsupportedTripStateError,
   isStaffPermissionId,
   type M1OperationalSliceRepository,
   type M1TripSlice,
+  type CancelM1TripInput,
   type OpaqueId,
   type ScheduledLocalDateTime,
   type CreateM1TripSliceInput,
@@ -23,6 +30,14 @@ import { sql, type Kysely } from "kysely";
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
 import { lockStaffAuthorizationSnapshotInTransaction } from "../staff-access/staff-access-repository.js";
 import { createUuidV7 } from "../uuidv7.js";
+
+const containsControlCharacter = (value: string): boolean => {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint !== undefined && (codePoint <= 0x1f || codePoint === 0x7f)) return true;
+  }
+  return false;
+};
 
 type DatabaseShape = Record<string, never>;
 
@@ -628,6 +643,74 @@ const insertScheduled = (
   new Date(value.instant).toISOString(),
 ];
 
+const resolveRuntimeAcceptanceFixtureTripSlot = async (
+  database: Kysely<DatabaseShape>,
+  agencyId: OpaqueId,
+  fixtureRunId: OpaqueId,
+  staffPrincipalId: string,
+): Promise<1 | 2> => {
+  const inserted = await sql<{ readonly fixtureRunId: string }>`
+    INSERT INTO "portal_access"."runtime_acceptance_fixture_run"
+      ("agencyId", "fixtureRunId", "createdByStaffPrincipalId")
+    VALUES (${agencyId}::uuid, ${fixtureRunId}::uuid, ${staffPrincipalId})
+    ON CONFLICT DO NOTHING
+    RETURNING "fixtureRunId"::text AS "fixtureRunId"
+  `.execute(database);
+  if (inserted.rows[0] !== undefined) return 1;
+
+  const existing = (
+    await sql<{
+      readonly fixtureRunId: string;
+      readonly createdByStaffPrincipalId: string;
+      readonly state: string;
+    }>`
+      SELECT "fixtureRunId"::text AS "fixtureRunId", "createdByStaffPrincipalId", "state"
+        FROM "portal_access"."runtime_acceptance_fixture_run"
+       WHERE "agencyId" = ${agencyId}::uuid AND "fixtureRunId" = ${fixtureRunId}::uuid
+       FOR UPDATE
+    `.execute(database)
+  ).rows[0];
+  if (existing !== undefined) {
+    const sameCreator = existing.createdByStaffPrincipalId === staffPrincipalId;
+    if (!sameCreator || existing.state !== "OPEN") {
+      throw new M1RuntimeAcceptanceFixtureConflictError(
+        sameCreator && existing.state === "CLEANUP_PENDING" ? fixtureRunId : null,
+      );
+    }
+    const linkedTrips = (
+      await sql<{ readonly count: number }>`
+        SELECT count(*)::integer AS "count"
+          FROM "portal_access"."runtime_acceptance_fixture_trip"
+         WHERE "agencyId" = ${agencyId}::uuid AND "fixtureRunId" = ${fixtureRunId}::uuid
+      `.execute(database)
+    ).rows[0]?.count;
+    if (linkedTrips === undefined) throw new Error("Fixture Trip count query returned no row");
+    if (linkedTrips >= 2) {
+      throw new M1RuntimeAcceptanceFixtureConflictError(fixtureRunId);
+    }
+    return (linkedTrips + 1) as 1 | 2;
+  }
+
+  const unresolved = (
+    await sql<{
+      readonly fixtureRunId: string;
+      readonly createdByStaffPrincipalId: string;
+    }>`
+      SELECT "fixtureRunId"::text AS "fixtureRunId", "createdByStaffPrincipalId"
+        FROM "portal_access"."runtime_acceptance_fixture_run"
+       WHERE "agencyId" = ${agencyId}::uuid AND "state" IN ('OPEN', 'CLEANUP_PENDING')
+       ORDER BY "createdAt", "fixtureRunId"
+       LIMIT 1
+       FOR UPDATE
+    `.execute(database)
+  ).rows[0];
+  const recoveryFixtureRunId =
+    unresolved?.createdByStaffPrincipalId === staffPrincipalId
+      ? asOpaqueId(unresolved.fixtureRunId)
+      : null;
+  throw new M1RuntimeAcceptanceFixtureConflictError(recoveryFixtureRunId);
+};
+
 class PostgresM1OperationalSliceRepository implements M1OperationalSliceRepository {
   constructor(private readonly persistence: PostgresPersistence<DatabaseShape>) {}
 
@@ -635,16 +718,50 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
     input: CreateM1TripSliceInput,
     authorization: StaffAuthorizationOperationProof,
   ): Promise<M1TripSlice> {
+    return this.createTripSlice(input, authorization, null);
+  }
+
+  async createRuntimeAcceptanceFixtureTrip(
+    input: CreateM1TripSliceInput,
+    fixtureRunId: OpaqueId,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<M1TripSlice> {
+    return this.createTripSlice(input, authorization, fixtureRunId);
+  }
+
+  private async createTripSlice(
+    input: CreateM1TripSliceInput,
+    authorization: StaffAuthorizationOperationProof,
+    fixtureRunId: OpaqueId | null,
+  ): Promise<M1TripSlice> {
     return withMappedPostgresError(() =>
       this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
-          await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`.execute(database);
+          if (fixtureRunId === null) {
+            await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`.execute(database);
+          } else {
+            await sql`SET TRANSACTION ISOLATION LEVEL READ COMMITTED`.execute(database);
+          }
+          const requiredPermissions =
+            fixtureRunId === null
+              ? M1_OPERATION_PERMISSION_REQUIREMENTS.CREATE
+              : M1_OPERATION_PERMISSION_REQUIREMENTS.FIXTURE_CREATE;
           await assertStaffAuthorizationInTransaction(
             database,
             authorization,
             input.agencyId,
-            M1_OPERATION_PERMISSION_REQUIREMENTS.CREATE,
+            requiredPermissions,
+            fixtureRunId === null ? null : 5 * 60 * 1_000,
           );
+          const fixtureTripSlot =
+            fixtureRunId === null
+              ? null
+              : await resolveRuntimeAcceptanceFixtureTripSlot(
+                  database,
+                  input.agencyId,
+                  fixtureRunId,
+                  authorization.session.staffPrincipalId,
+                );
           const personId = createUuidV7();
           const customerId = createUuidV7();
           const tripId = createUuidV7();
@@ -669,6 +786,13 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
           INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
           VALUES (${tripId}::uuid, ${input.agencyId}::uuid, ${input.trip.title.trim()}, ${input.trip.startDate}, ${input.trip.endDate}, ${input.trip.state})
         `.execute(database);
+          if (fixtureRunId !== null && fixtureTripSlot !== null) {
+            await sql`
+              INSERT INTO "portal_access"."runtime_acceptance_fixture_trip"
+                ("agencyId", "fixtureRunId", "slot", "tripId")
+              VALUES (${input.agencyId}::uuid, ${fixtureRunId}::uuid, ${fixtureTripSlot}, ${tripId}::uuid)
+            `.execute(database);
+          }
           await sql`
           INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
           VALUES (${travellerId}::uuid, ${input.agencyId}::uuid, ${tripId}::uuid, ${personId}::uuid, 'PRIMARY_TRAVELLER')
@@ -821,6 +945,156 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
     } catch (error) {
       return rethrowPersistenceError(error);
     }
+  }
+
+  async cancelTrip(
+    input: CancelM1TripInput,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<M1TripSlice> {
+    if (
+      typeof input.tripId !== "string" ||
+      typeof input.expectedLockVersion !== "bigint" ||
+      input.expectedLockVersion < 0n ||
+      input.expectedLockVersion > 9_223_372_036_854_775_807n ||
+      typeof input.idempotencyKey !== "string" ||
+      input.idempotencyKey.length < 1 ||
+      input.idempotencyKey.length > 128 ||
+      containsControlCharacter(input.idempotencyKey)
+    ) {
+      throw new M1InputValidationError("Invalid Trip cancellation request");
+    }
+    const session = authorization?.session;
+    if (
+      typeof session?.agencyId !== "string" ||
+      typeof session.staffPrincipalId !== "string" ||
+      session.staffPrincipalId.length === 0
+    ) {
+      throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    }
+    let agencyId: OpaqueId;
+    try {
+      agencyId = asOpaqueId(session.agencyId);
+    } catch {
+      throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    }
+    const actorId = session.staffPrincipalId;
+    const requestHash = createHash("sha256")
+      .update(`${input.tripId}\u0000${input.expectedLockVersion.toString()}`, "utf8")
+      .digest("hex");
+
+    return withMappedPostgresError(() =>
+      this.persistence.transaction.runInTransaction(async (context) =>
+        this.persistence.withTransactionContext(context, async (database) => {
+          await sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`.execute(database);
+          await assertStaffAuthorizationInTransaction(
+            database,
+            authorization,
+            agencyId,
+            M1_OPERATION_PERMISSION_REQUIREMENTS.CANCEL,
+            5 * 60 * 1_000,
+          );
+
+          const existing = first(
+            (
+              await sql<{
+                readonly tripId: string;
+                readonly requestHash: string;
+              }>`
+                SELECT "tripId"::text AS "tripId", "requestHash"
+                  FROM "trip_ops"."trip_cancellation_idempotency"
+                 WHERE "agencyId" = ${agencyId}::uuid
+                   AND "staffPrincipalId" = ${actorId}
+                   AND "command" = 'trip.cancel'
+                   AND "idempotencyKey" = ${input.idempotencyKey}
+              `.execute(database)
+            ).rows,
+          );
+          if (existing !== null) {
+            if (existing.tripId !== input.tripId || existing.requestHash.trim() !== requestHash) {
+              throw new M1TripCancellationIdempotencyConflictError();
+            }
+            const prior = await readSlice(database, agencyId, input.tripId);
+            if (prior === null) throw new M1TripNotFoundError();
+            return prior;
+          }
+
+          const cancellation = first(
+            (
+              await sql<{
+                readonly outcome: string;
+                readonly previousLockVersion: number | null;
+                readonly currentLockVersion: number | null;
+              }>`
+                SELECT "outcome", "previousLockVersion", "currentLockVersion"
+                  FROM "trip_ops"."cas_cancel_trip"(
+                    ${agencyId}::uuid,
+                    ${input.tripId}::uuid,
+                    ${input.expectedLockVersion.toString()}::bigint
+                  )
+              `.execute(database)
+            ).rows,
+          );
+          if (cancellation === null || cancellation.outcome === "NOT_FOUND") {
+            throw new M1TripNotFoundError();
+          }
+          if (cancellation.outcome === "STALE_VERSION") {
+            throw new M1OptimisticConflictError();
+          }
+          if (
+            cancellation.outcome === "UNSUPPORTED_STATE" ||
+            cancellation.outcome === "ACTIVE_PUBLICATION"
+          ) {
+            throw new M1UnsupportedTripStateError();
+          }
+          if (
+            cancellation.outcome !== "CANCELLED" &&
+            cancellation.outcome !== "ALREADY_CANCELLED"
+          ) {
+            throw new Error("Trip cancellation returned an unknown database outcome");
+          }
+
+          if (cancellation.outcome === "CANCELLED") {
+            const eventId = createUuidV7();
+            const auditId = createUuidV7();
+            await sql`
+              INSERT INTO "trip_ops"."trip_cancellation_event"
+                ("eventId", "agencyId", "tripId", "actorStaffPrincipalId",
+                 "previousLockVersion", "currentLockVersion", "eventType")
+              VALUES
+                (${eventId}::uuid, ${agencyId}::uuid, ${input.tripId}::uuid, ${actorId},
+                 ${cancellation.previousLockVersion}, ${cancellation.currentLockVersion}, 'TRIP_CANCELLED')
+            `.execute(database);
+            await sql`
+              INSERT INTO "audit"."trip_cancellation_event"
+                ("auditId", "agencyId", "tripId", "actorStaffPrincipalId", "action",
+                 "previousLockVersion", "currentLockVersion")
+              VALUES
+                (${auditId}::uuid, ${agencyId}::uuid, ${input.tripId}::uuid, ${actorId}, 'TRIP_CANCELLED',
+                 ${cancellation.previousLockVersion}, ${cancellation.currentLockVersion})
+            `.execute(database);
+            await sql`
+              INSERT INTO "integration"."trip_cancellation_outbox"
+                ("messageId", "eventId", "agencyId", "tripId", "eventType")
+              VALUES
+                (${createUuidV7()}::uuid, ${eventId}::uuid, ${agencyId}::uuid,
+                 ${input.tripId}::uuid, 'TRIP_CANCELLED')
+            `.execute(database);
+          }
+
+          await sql`
+            INSERT INTO "trip_ops"."trip_cancellation_idempotency"
+              ("agencyId", "staffPrincipalId", "command", "idempotencyKey", "tripId", "requestHash")
+            VALUES
+              (${agencyId}::uuid, ${actorId}, 'trip.cancel', ${input.idempotencyKey},
+               ${input.tripId}::uuid, ${requestHash})
+          `.execute(database);
+
+          const result = await readSlice(database, agencyId, input.tripId);
+          if (result === null) throw new M1TripNotFoundError();
+          return result;
+        }),
+      ),
+    );
   }
 }
 

@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 import {
   STAGE7_DEFAULT_GENERATION,
+  stage7CandidateBranchFor,
   verifyStage7SuccessorBaseline,
 } from "../stage-7-successor-baseline.mjs";
 import { verifyStage7CandidateSourceScope } from "./source-scope.mjs";
@@ -15,7 +16,7 @@ export const verifyStage7SourceScope = async ({
 } = {}) => {
   const baseline = await verifyStage7SuccessorBaseline({ root: workspace, generation });
   assert.equal(baseline.result, "PASS", "Stage 7 successor baseline must pass");
-  assert.equal(baseline.currentBranch, "phase-1/stage-7");
+  assert.equal(baseline.currentBranch, stage7CandidateBranchFor(generation));
   assert.equal(baseline.currentHead, baseline.candidateCommit);
 
   const sourceScope = await verifyStage7CandidateSourceScope({

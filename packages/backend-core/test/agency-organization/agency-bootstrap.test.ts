@@ -53,7 +53,7 @@ describe("root Agency bootstrap identifiers", () => {
   });
 
   it("preserves the Stage 5 cost-mutation capability after the Stage 7 registry extension", () => {
-    expect(PERMISSION_REGISTRY_VERSION).toBe(5);
+    expect(PERMISSION_REGISTRY_VERSION).toBe(6);
     expect(permissionDefinitionFor("finance.manage_costs")).toEqual({
       id: "finance.manage_costs",
       allowedScopeKinds: ["AGENCY"],

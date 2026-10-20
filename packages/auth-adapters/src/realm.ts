@@ -81,6 +81,35 @@ type PortalSessionContextRow = {
   readonly authorizationEpoch: string;
 };
 
+type PortalSessionContextCandidateRow = {
+  readonly agencyId: string;
+  readonly sessionAuthorizationEpoch: string;
+  readonly principalAuthorizationEpoch: string;
+  readonly principalRetiredAt: Date | null;
+};
+
+export const resolveCurrentPortalSessionContext = (
+  candidate: PortalSessionContextCandidateRow,
+): PortalSessionContextRow | null => {
+  if (
+    candidate.agencyId.length === 0 ||
+    candidate.principalRetiredAt !== null ||
+    !/^(0|[1-9]\d*)$/u.test(candidate.sessionAuthorizationEpoch) ||
+    !/^(0|[1-9]\d*)$/u.test(candidate.principalAuthorizationEpoch)
+  ) {
+    return null;
+  }
+  if (
+    BigInt(candidate.sessionAuthorizationEpoch) !== BigInt(candidate.principalAuthorizationEpoch)
+  ) {
+    return null;
+  }
+  return {
+    agencyId: candidate.agencyId,
+    authorizationEpoch: candidate.principalAuthorizationEpoch,
+  };
+};
+
 type SetCookieHeaders = Headers & { readonly getSetCookie?: () => string[] };
 
 const cookieHeaderFor = (headers: Headers, cookieName: string): string | null => {
@@ -119,19 +148,20 @@ const portalSessionContextFor = async (
   principalId: string,
 ): Promise<PortalSessionContextRow | null> => {
   const row = (
-    await sql<PortalSessionContextRow>`
+    await sql<PortalSessionContextCandidateRow>`
       SELECT context."agencyId"::text AS "agencyId",
-             context."authorizationEpoch"::text AS "authorizationEpoch"
+             context."authorizationEpoch"::text AS "sessionAuthorizationEpoch",
+             principal."authorizationEpoch"::text AS "principalAuthorizationEpoch",
+             principal."retiredAt" AS "principalRetiredAt"
         FROM "portal_access"."portal_session_context" AS context
         JOIN "portal_access"."portal_principal_context" AS principal
           ON principal."agencyId" = context."agencyId"
          AND principal."portalPrincipalId" = context."portalPrincipalId"
-         AND principal."authorizationEpoch" = context."authorizationEpoch"
        WHERE context."sessionId" = ${sessionId}
          AND context."portalPrincipalId" = ${principalId}
     `.execute(database)
   ).rows[0];
-  return row ?? null;
+  return row === undefined ? null : resolveCurrentPortalSessionContext(row);
 };
 
 type InternalRealmConfiguration = AuthRealmConfiguration & {
@@ -344,6 +374,7 @@ export interface LocalOperatorPortalEnrollmentInput {
   readonly email: string;
   readonly name: string;
   readonly password: string;
+  readonly fixtureRunId?: string;
 }
 
 export interface LocalOperatorPortalEnrollmentResult {
@@ -367,6 +398,14 @@ export const createLocalOperatorPortalEnrollmentService = (
       const email = input.email.trim().toLowerCase();
       if (!email.endsWith("@example.test")) {
         throw new Error("Local Portal enrollment requires a synthetic @example.test address");
+      }
+      if (
+        input.fixtureRunId !== undefined &&
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(
+          input.fixtureRunId,
+        )
+      ) {
+        throw new Error("Local Portal fixture run identifier is invalid");
       }
       return configuration.database.transaction().execute(async (database) => {
         const verificationToken: { value: string | undefined } = { value: undefined };
@@ -392,7 +431,7 @@ export const createLocalOperatorPortalEnrollmentService = (
                   "content-type": "application/json",
                   origin: configuration.canonicalOrigin,
                 },
-                body: JSON.stringify({ ...input, email }),
+                body: JSON.stringify({ email, name: input.name, password: input.password }),
               },
             ),
           );
@@ -433,6 +472,17 @@ export const createLocalOperatorPortalEnrollmentService = (
               : null;
           if (verificationRecord?.status !== true) {
             throw new Error("Local Portal identity verification did not complete");
+          }
+          if (input.fixtureRunId !== undefined) {
+            const association = await sql<{ readonly associated: boolean }>`
+              SELECT "portal_access"."associate_runtime_acceptance_fixture_portal_principal"(
+                ${input.fixtureRunId}::uuid,
+                ${portalPrincipalId}
+              ) AS "associated"
+            `.execute(database);
+            if (association.rows[0]?.associated !== true) {
+              throw new Error("Local Portal fixture association did not complete");
+            }
           }
           return { portalPrincipalId };
         } finally {

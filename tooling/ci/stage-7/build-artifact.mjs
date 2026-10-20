@@ -18,13 +18,20 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
-import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
-import { verifyStage7DeploymentContract } from "./verify-deployment-contract.mjs";
+import {
+  STAGE7_DEFAULT_GENERATION,
+  stage7CandidateBranchFor,
+  stage7ExtensionPathFor,
+} from "../stage-7-successor-baseline.mjs";
+import {
+  renderStage7OperatorUnitForGeneration,
+  verifyStage7DeploymentContract,
+} from "./verify-deployment-contract.mjs";
 import { verifyStage7Artifact } from "./verify-artifact.mjs";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const expectedToolchain = Object.freeze({ node: "24.19.0", corepack: "0.35.0", pnpm: "11.21.0" });
-const migrationName = "0012_stage7_portal_trip_access.cjs";
+
 const bytewise = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const hashPath = (filePath) =>
@@ -44,6 +51,10 @@ const assertGeneration = (generation) => {
   assert.match(generation, /^gen[0-9]{2,}$/u, "Invalid Stage 7 generation");
   assert.ok(Number(generation.slice(3)) > 0, "Invalid Stage 7 generation");
 };
+const migrationNameFor = (generation) =>
+  Number(generation.slice(3)) >= 10
+    ? "0013_stage7_runtime_acceptance_cleanup.cjs"
+    : "0012_stage7_portal_trip_access.cjs";
 const stage7Paths = (root, generation) => {
   const prefix = `.hermes/state/stage7-${generation}-artifact`;
   return {
@@ -70,7 +81,7 @@ export const createStage7ReleaseMetadata = ({
   operatorUnitSha256,
 }) => {
   assertGeneration(generation);
-  assert.equal(branch, "phase-1/stage-7", "Stage 7 source branch mismatch");
+  assert.equal(branch, stage7CandidateBranchFor(generation), "Stage 7 source branch mismatch");
   assert.match(commit, /^[a-f0-9]{40}$/u, "Invalid Stage 7 source commit");
   assert.match(tree, /^[a-f0-9]{40}$/u, "Invalid Stage 7 source tree");
   for (const [name, value] of Object.entries({
@@ -104,7 +115,7 @@ export const createStage7ReleaseMetadata = ({
     toolchain: { ...expectedToolchain },
     qualification: { canonicalCi: "PENDING_ONE_AUTHORIZED_RUN", runCountForGeneration: 0 },
     database: {
-      migrationHead: migrationName,
+      migrationHead: migrationNameFor(generation),
       migrationFileSha256: migrationSha256,
       migrationChecksumManifestPath: "migrations/checksums.json",
       migrationChecksumManifestSha256,
@@ -140,8 +151,8 @@ export const createStage7ReleaseMetadata = ({
       sha256: deploymentContractSha256,
     },
     stage7DeploymentContract: {
-      path: "deployment/stage-7-extension.v1.json",
-      schemaVersion: 1,
+      path: `deployment/${path.posix.basename(stage7ExtensionPathFor(generation))}`,
+      schemaVersion: Number(generation.slice(3)) >= 10 ? 2 : 1,
       sha256: stage7DeploymentContractSha256,
     },
     stage7Verifier: {
@@ -332,17 +343,22 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
   const baseContractBytes = await readFile(
     path.join(root, "deploy/contracts/deployment-contract.v1.json"),
   );
-  const extensionBytes = await readFile(
-    path.join(root, "deploy/contracts/stage-7-extension.v1.json"),
-  );
+  const extensionPath = stage7ExtensionPathFor(generation);
+  const packagedExtensionPath = `deployment/${path.posix.basename(extensionPath)}`;
+  const extensionBytes = await readFile(path.join(root, extensionPath));
   const verifierBytes = await readFile(path.join(root, "tooling/ci/stage-7/verify-artifact.mjs"));
-  const migrationBytes = await readFile(path.join(root, "migrations", migrationName));
+  const migrationBytes = await readFile(
+    path.join(root, "migrations", deployment.requiredMigration),
+  );
   const migrationChecksumBytes = await readFile(path.join(root, "migrations/checksums.json"));
   const runtimeAcceptanceBytes = await readFile(
     path.join(root, "tooling/ci/stage-7/runtime-acceptance-runner.mjs"),
   );
-  const operatorUnitBytes = await readFile(
+  const operatorUnitSourceBytes = await readFile(
     path.join(root, "deploy/systemd/travelos-stage7-runtime-acceptance.service"),
+  );
+  const operatorUnitBytes = Buffer.from(
+    renderStage7OperatorUnitForGeneration(operatorUnitSourceBytes.toString("utf8"), generation),
   );
   const nodeBinary = process.execPath;
   const nodeBinaryDigest = await hashPath(nodeBinary);
@@ -385,10 +401,7 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
     path.join(root, "deploy/contracts/deployment-contract.v1.json"),
     path.join(stagingRoot, "deployment/deployment-contract.v1.json"),
   );
-  await copyFile(
-    path.join(root, "deploy/contracts/stage-7-extension.v1.json"),
-    path.join(stagingRoot, "deployment/stage-7-extension.v1.json"),
-  );
+  await copyFile(path.join(root, extensionPath), path.join(stagingRoot, packagedExtensionPath));
   await copyFile(
     path.join(root, "tooling/ci/stage-7/verify-artifact.mjs"),
     path.join(stagingRoot, "deployment/verify-stage7-artifact.mjs"),
@@ -397,9 +410,10 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
     path.join(root, "tooling/ci/stage-7/runtime-acceptance-runner.mjs"),
     path.join(stagingRoot, "operator/stage7-runtime-acceptance.mjs"),
   );
-  await copyFile(
-    path.join(root, "deploy/systemd/travelos-stage7-runtime-acceptance.service"),
+  await writeFile(
     path.join(stagingRoot, "operator/travelos-stage7-runtime-acceptance.service"),
+    operatorUnitBytes,
+    { flag: "wx", mode: 0o644 },
   );
   await copyFile(
     path.join(root, "deploy/manifests/development.example.json"),

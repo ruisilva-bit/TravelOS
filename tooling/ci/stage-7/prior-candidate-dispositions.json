@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "stage": "PHASE_1_M1_STAGE_7",
-  "candidateGeneration": "gen09",
+  "candidateGeneration": "gen10",
   "predecessorCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
   "stage8Actions": 0,
   "priorCandidates": [
@@ -308,6 +308,47 @@
       },
       "canonicalCiStatus": "NOT_RUN",
       "canonicalCiReceipt": null,
+      "validationStatus": "NOT_REACHED",
+      "validationPath": null,
+      "finalCandidateScan": "NOT_REACHED",
+      "freezeStatus": "NOT_REACHED",
+      "freezePath": null,
+      "stage8Actions": 0
+    },
+    {
+      "generation": "gen09",
+      "candidateCommit": "0cf07d04e93171c1de6300629a3759ce888da6a7",
+      "baseline": {
+        "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN09.json",
+        "sha256": "c53eca88e72966f71dd0411b19f318b46dc4a993254ecc010e86381fef98dd07"
+      },
+      "predecessorReceipts": {
+        "stage6": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN09_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+          "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+        },
+        "stage7": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN09_STAGE7_PREDECESSOR_VERIFY.json",
+          "sha256": "e8c69f6d3597cb234b758fc852b9b102b39edb8124d503171e5828e1d2987f5c"
+        }
+      },
+      "lastPassedGate": "CANONICAL_CI_AND_CT200_DEVELOPMENT_ACTIVATION",
+      "disposition": "Canonical CI 42/42 PASS; exact gen09 artifact active on CT200 DEVELOPMENT at migration head 0012; authenticated acceptance remains pending because existing persistent Trips and Portal identity require the approved fixture-cleanup successor; Stage 8 actions 0.",
+      "artifact": {
+        "result": "PASS",
+        "path": ".hermes/state/stage7-gen09-artifact.tar.gz",
+        "sha256": "272bd285763e9a0aa1c4dcc49f127b9b92f503b1dc44883fc8c8563f0bbad07c",
+        "bytes": 80513894,
+        "buildReceipt": {
+          "path": ".hermes/state/stage7-gen09-artifact-build.json",
+          "sha256": "f3c794609126eb8e2f85302c0ac6f280465e5947fc17bcee0a2c29b4ecce12b4"
+        }
+      },
+      "canonicalCiStatus": "PASS",
+      "canonicalCiReceipt": {
+        "path": "docs/evidence/phase-1-m1/stage-7/gen09/canonical-ci-execution.json",
+        "sha256": "7fae8215122b18383a969188873f792b86e04de9280126397ce841e3208e4ee9"
+      },
       "validationStatus": "NOT_REACHED",
       "validationPath": null,
       "finalCandidateScan": "NOT_REACHED",

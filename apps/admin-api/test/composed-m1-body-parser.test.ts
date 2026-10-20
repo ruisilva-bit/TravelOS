@@ -191,6 +191,10 @@ const startAuthorizedAdminApi = async (failCreate = false) => {
     getM1TripSlice: vi.fn().mockResolvedValue(authorizedTripSlice),
     updateAccommodation: vi.fn().mockResolvedValue(authorizedTripSlice),
     updateInternalSupplierNote: vi.fn().mockResolvedValue(authorizedTripSlice),
+    cancelTrip: vi.fn().mockResolvedValue(authorizedTripSlice),
+    createRuntimeAcceptanceFixtureTrip: vi
+      .fn()
+      .mockRejectedValue(new Error("Unexpected fixture Trip creation in body-parser test")),
   };
   const staffAccessRepository = {
     getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue(authorizedSnapshot),
@@ -219,6 +223,8 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
       getM1TripSlice: vi.fn(),
       updateAccommodation: vi.fn(),
       updateInternalSupplierNote: vi.fn(),
+      cancelTrip: vi.fn(),
+      createRuntimeAcceptanceFixtureTrip: vi.fn(),
     };
     const m1Operations = createM1StaffTripOperations({
       repository: m1Repository,

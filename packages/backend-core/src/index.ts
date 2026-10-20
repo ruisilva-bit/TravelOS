@@ -77,9 +77,14 @@ export {
   type ScheduledLocalDateTime,
 } from "./shared-kernel/time.js";
 export {
+  M1TripCancellationIdempotencyConflictError,
   M1OptimisticConflictError,
+  M1TripNotFoundError,
   M1TransactionConflictError,
+  M1UnsupportedTripStateError,
   M1InputValidationError,
+  validateCancelM1TripInput,
+  type CancelM1TripInput,
   type CreateM1TripSliceInput,
   type M1OperationalSliceRepository,
   type UpdateAccommodationInput,
@@ -89,6 +94,7 @@ export {
   createM1StaffTripOperations,
   authorizeM1Operation,
   M1_OPERATION_PERMISSION_REQUIREMENTS,
+  M1RuntimeAcceptanceFixtureConflictError,
   M1StaffAuthorizationError,
   type M1StaffAuthorizationDependencies,
   type M1StaffAuthorizationRepository,
@@ -97,15 +103,19 @@ export {
   type M1StaffTripOperationsDependencies,
 } from "./modules/trip-operations/application/m1-staff-operations.js";
 export {
+  FIXTURE_PORTAL_PRINCIPAL_RETIREMENT_REASON,
+  M1_STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
   M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
   createM1StaffTripAccessOperations,
   M1StaffTripAccessNotFoundError,
   TRIP_ACCESS_MANAGE_PERMISSION_ID,
   type IssueTripAccessGrantCommand,
+  type PortalPrincipalRetirementResult,
   type M1StaffTripAccessOperations,
   type M1StaffTripAccessOperationsDependencies,
   type M1StaffTripAccessRepository,
   type RevokeTripAccessGrantCommand,
+  type RetireFixturePortalPrincipalCommand,
 } from "./modules/portal-access/application/staff-trip-access-operations.js";
 export {
   TRIP_ACCESS_CAPABILITY_IDS,
@@ -113,6 +123,24 @@ export {
   type TripAccessGrant,
   type TripAccessGrantCapabilitySet,
 } from "./modules/portal-access/domain/trip-access-grant.js";
+export {
+  RUNTIME_ACCEPTANCE_FIXTURE_RUN_STATES,
+  type RuntimeAcceptanceFixtureRunState,
+} from "./modules/runtime-acceptance/domain/fixture-run-state.js";
+export {
+  createM1RuntimeAcceptanceFixtureOperations,
+  M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
+  M1RuntimeAcceptanceFixtureNotFoundError,
+  type M1RuntimeAcceptanceFixtureOperations,
+  type M1RuntimeAcceptanceFixtureOperationsDependencies,
+  type RuntimeAcceptanceCleanupCommand,
+  type RuntimeAcceptanceCleanupCounts,
+  type RuntimeAcceptanceCleanupHistoryCounts,
+  type RuntimeAcceptanceCleanupReceipt,
+  type RuntimeAcceptanceCleanupStart,
+  type RuntimeAcceptanceFixtureCleanupPlan,
+  type RuntimeAcceptanceFixtureCleanupRepository,
+} from "./modules/runtime-acceptance/application/fixture-cleanup.js";
 export {
   INTERNAL_ONLY_FIELD_CLASSIFICATION,
   type SupplierCostDraft,
@@ -178,7 +206,9 @@ export {
   type PublicationHistoryEntry,
   type PublicationHistoryPage,
   type PublishTripRequest,
+  type TripPublicationWithdrawalResult,
   type TripPublicationResult,
+  type WithdrawActivePublicationRequest,
 } from "./modules/customer-presentation/application/staff-publication-operations.js";
 export type {
   AccommodationPublicationSourcePort,

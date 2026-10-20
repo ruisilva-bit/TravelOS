@@ -49,6 +49,10 @@
     {
       "file": "0012_stage7_portal_trip_access.cjs",
       "sha256": "4bf653fdc7522443ea321d98d448934ec1b5d0c4e8d4abd904360182ada5ade8"
+    },
+    {
+      "file": "0013_stage7_runtime_acceptance_cleanup.cjs",
+      "sha256": "f8d45edb3625a79882c8b8569b45ce2c449168b8ef02fb1f97bfea6f6bcbd3ec"
     }
   ]
 }
