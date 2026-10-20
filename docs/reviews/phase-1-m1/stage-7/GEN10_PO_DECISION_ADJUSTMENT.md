@@ -1,4 +1,4 @@
-# Stage 7 successor decision — runtime-acceptance cleanup
+# Product Owner decision adjustment — Stage 7 runtime-acceptance cleanup
 
 - **Decision owner:** Rui, Product Owner
 - **Recorded:** 2026-10-20

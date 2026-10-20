@@ -29,13 +29,13 @@ Cleanup is retry-safe and proceeds through supported application operations:
 5. Retire the synthetic Portal Principal and increment its authorization epoch so existing and new sessions no longer resolve to authorized Portal context.
 6. Mark the run `CLEANED` only after every registered effect and invariant is verified.
 
-Unexpected resources fail closed and remain pending with a sanitized error code. Repeated calls reconcile the same run and do not duplicate business effects. The system preserves immutable publication snapshots, publication payloads, Trip workspace, and minimum audit/outbox/principal history. It does not physically delete retained history, directly edit Better Auth user/session tables, or claim immediate cryptographic erasure.
+Unexpected resources fail closed and remain pending with a sanitized error code. Repeated calls reconcile the same run and do not duplicate business effects. The system preserves immutable publication snapshots, publication payloads, Trip workspace, and minimum audit/outbox history plus minimum principal history. It does not physically delete retained history, directly edit Better Auth user/session tables, or claim immediate cryptographic erasure.
 
 ## Database and migration boundary
 
 Migration `0013_stage7_runtime_acceptance_cleanup.cjs` is append-only after migration head `0012_stage7_portal_trip_access`. It adds the bounded fixture registry, same-Agency constraints, creator/run links, lifecycle state, audit support, permission registry version 6, and least-privilege ACLs. Portal runtime receives no fixture registry `SELECT` or direct write. Any Portal association uses only the narrowly named `SECURITY DEFINER` function with fixed `search_path`, explicit ACL, same-Agency validation, and strict cardinality. Worker and `PUBLIC` receive no capability.
 
-The v2 deployment contract binds the accepted gen09 checksum-manifest prefix and the exact 0013 bytes through the successor source baseline. The immutable gen09 v1 contract and migration 0012 remain untouched. Migration execution is forward-only through the approved migration runner after the successor's local and canonical CI gates pass.
+The v2 deployment contract uses evidence-binding mode `CHECKSUM_MANIFEST_AND_SUCCESSOR_SOURCE_BASELINE`: it binds the accepted gen09 checksum-manifest prefix and the exact 0013 bytes through the successor source baseline. The immutable gen09 v1 contract and migration 0012 remain untouched. Migration execution is forward-only through the approved migration runner after the successor's local and canonical CI gates pass.
 
 ## Runner and credentials
 

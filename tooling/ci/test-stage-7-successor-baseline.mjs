@@ -36,9 +36,45 @@ const successorImplementationDocument = await readFile(
   ),
   "utf8",
 );
-assert.ok(
-  successorImplementationDocument.includes("same Agency"),
-  "The gen10 implementation document must include the verifier's same-Agency marker",
+const successorDecisionDocument = await readFile(
+  new URL("../../docs/reviews/phase-1-m1/stage-7/GEN10_PO_DECISION_ADJUSTMENT.md", import.meta.url),
+  "utf8",
+);
+const requiredGen10ExtensionMarkers = [
+  "Stage 7 Runtime Acceptance Cleanup Successor",
+  "POST /api/admin/runtime-acceptance-fixtures/:fixtureRunId/cleanup",
+  "DEVELOPMENT_ONLY",
+  "EXACT_DEVELOPMENT_MANIFEST_ALLOWLIST",
+  "EXISTING_ADMIN_API",
+  "runtime_acceptance.fixture.manage",
+  "same Agency",
+  "creator",
+  "registered fixture run",
+  "recent MFA",
+  "immutable publication snapshots",
+  "audit/outbox history",
+  "0013_stage7_runtime_acceptance_cleanup.cjs",
+  "CHECKSUM_MANIFEST_AND_SUCCESSOR_SOURCE_BASELINE",
+  "Stage 7 actions = 1",
+  "Stage 8 actions = 0",
+];
+const requiredGen10DecisionMarkers = [
+  "Product Owner decision adjustment",
+  "Rui approved the narrow DEVELOPMENT cleanup route on the existing Admin API listener.",
+  "Immutable publication snapshots and audit/outbox history remain retained.",
+  "Stage 8 actions = 0",
+];
+assert.deepEqual(
+  {
+    extension: requiredGen10ExtensionMarkers.filter(
+      (marker) => !successorImplementationDocument.includes(marker),
+    ),
+    decision: requiredGen10DecisionMarkers.filter(
+      (marker) => !successorDecisionDocument.includes(marker),
+    ),
+  },
+  { extension: [], decision: [] },
+  "The actual gen10 implementation and PO-decision documents must satisfy every verifier marker",
 );
 const gen09BaselineBytes = await readFile(
   new URL("../../docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN09.json", import.meta.url),
