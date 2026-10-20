@@ -29,6 +29,17 @@ const legacyContractBytes = await readFile(
 const successorContractBytes = await readFile(
   new URL("../../deploy/contracts/stage-7-extension.v2.json", import.meta.url),
 );
+const successorImplementationDocument = await readFile(
+  new URL(
+    "../../docs/implementation/M1_STAGE_7_RUNTIME_ACCEPTANCE_CLEANUP_SUCCESSOR.md",
+    import.meta.url,
+  ),
+  "utf8",
+);
+assert.ok(
+  successorImplementationDocument.includes("same Agency"),
+  "The gen10 implementation document must include the verifier's same-Agency marker",
+);
 const gen09BaselineBytes = await readFile(
   new URL("../../docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN09.json", import.meta.url),
 );
