@@ -5,8 +5,8 @@ import path from "node:path";
 const validationStatuses = new Set(["NOT_REACHED", "CREATED"]);
 const freezeStatuses = new Set(["NOT_REACHED", "CREATED", "VERIFIED"]);
 const scanStatuses = new Set(["NOT_REACHED", "PASS", "FAIL"]);
-const canonicalCiStatuses = new Set(["NOT_RUN", "PASS", "FAIL"]);
-const canonicalCiResultMarker = "=== TRAVELOS_STAGE7_CANONICAL_CI_RESULT ===\n";
+const canonicalCiStatuses = new Set(["NOT_RUN", "PASS", "FAIL", "INTERRUPTED"]);
+const canonicalCiResultMarker = "=== TRAVELOS_STAGE7_CANONICAL_CI_RESULT ===";
 export const STAGE7_PRIOR_CANDIDATE_DISPOSITIONS_PATH =
   "tooling/ci/stage-7/prior-candidate-dispositions.json";
 const stage7PredecessorCommit = "6242e023953ccb8fe883bff97a0d62e64af8b66a";
@@ -59,6 +59,179 @@ const readHashedJson = async ({ root, path: relativePath, sha256, label }) => {
   return JSON.parse(bytes.toString("utf8"));
 };
 
+const verifyInterruptedCiEvidence = async ({ root, candidate, interruptionReference }) => {
+  const evidenceDirectory = evidenceRootFor(candidate.generation);
+  const expectedRecordPath = `${evidenceDirectory}canonical-ci-interruption.json`;
+  const expectedLogPath = `${evidenceDirectory}canonical-ci.log`;
+  const expectedReceiptPath = `${evidenceDirectory}canonical-ci-execution.json`;
+  if (
+    !isRecord(interruptionReference) ||
+    Object.keys(interruptionReference).toSorted().join(",") !== "path,sha256" ||
+    interruptionReference.path !== expectedRecordPath
+  ) {
+    throw new Error(`${candidate.generation} canonical CI interruption reference is invalid`);
+  }
+
+  const interruption = await readHashedJson({
+    root,
+    ...interruptionReference,
+    label: `${candidate.generation} canonical CI interruption record`,
+  });
+  const exactKeys = (value, keys) =>
+    isRecord(value) && Object.keys(value).toSorted().join(",") === keys.toSorted().join(",");
+  const claim = interruption?.oneShotState?.claim;
+  const guard = interruption?.oneShotState?.guard;
+  if (
+    !exactKeys(interruption, [
+      "schemaVersion",
+      "recordType",
+      "stage",
+      "result",
+      "candidateGeneration",
+      "candidateId",
+      "candidateCommit",
+      "artifactSha256",
+      "baseline",
+      "execution",
+      "oneShotState",
+      "partialLog",
+      "finalMarkerPresent",
+      "executionReceiptPresent",
+      "stage8Actions",
+    ]) ||
+    interruption.schemaVersion !== 1 ||
+    interruption.recordType !== "TRAVELOS_STAGE7_CANONICAL_CI_INTERRUPTION" ||
+    interruption.stage !== "PHASE_1_M1_STAGE_7" ||
+    interruption.result !== "INTERRUPTED" ||
+    interruption.candidateGeneration !== candidate.generation ||
+    interruption.candidateId !== `travelos-phase-1-m1-stage-7-${candidate.generation}` ||
+    interruption.candidateCommit !== candidate.candidateCommit ||
+    interruption.artifactSha256 !== candidate.artifact?.sha256 ||
+    !exactKeys(interruption.baseline, ["path", "sha256"]) ||
+    interruption.baseline.path !== candidate.baseline?.path ||
+    interruption.baseline.sha256 !== candidate.baseline?.sha256 ||
+    !exactKeys(interruption.execution, [
+      "command",
+      "invocationCount",
+      "terminationKind",
+      "requestedTimeoutSeconds",
+      "reportedTimeoutSeconds",
+      "sessionId",
+      "toolCallId",
+    ]) ||
+    interruption.execution.command !==
+      `node tooling/ci/stage-7/run-canonical-ci.mjs --generation=${candidate.generation}` ||
+    interruption.execution.invocationCount !== 1 ||
+    typeof interruption.execution.terminationKind !== "string" ||
+    !interruption.execution.terminationKind ||
+    !Number.isSafeInteger(interruption.execution.requestedTimeoutSeconds) ||
+    interruption.execution.requestedTimeoutSeconds <= 0 ||
+    !Number.isSafeInteger(interruption.execution.reportedTimeoutSeconds) ||
+    interruption.execution.reportedTimeoutSeconds <= 0 ||
+    typeof interruption.execution.sessionId !== "string" ||
+    !interruption.execution.sessionId ||
+    typeof interruption.execution.toolCallId !== "string" ||
+    !interruption.execution.toolCallId ||
+    !exactKeys(interruption.oneShotState, ["claim", "guard"]) ||
+    !exactKeys(claim, ["path", "sha256", "state", "invocationCount"]) ||
+    claim.path !== `.hermes/state/stage7-${candidate.generation}-canonical-ci-claim.json` ||
+    !/^[a-f0-9]{64}$/u.test(claim.sha256 ?? "") ||
+    claim.state !== "RUNNING" ||
+    claim.invocationCount !== 1 ||
+    !exactKeys(guard, ["path", "sha256", "state", "invocationCount", "ciConsumed"]) ||
+    guard.path !== `.hermes/state/stage7-${candidate.generation}-canonical-ci-guard.json` ||
+    !/^[a-f0-9]{64}$/u.test(guard.sha256 ?? "") ||
+    guard.state !== "ARMED" ||
+    guard.invocationCount !== 0 ||
+    guard.ciConsumed !== "NO" ||
+    !exactKeys(interruption.partialLog, [
+      "path",
+      "bytes",
+      "sha256",
+      "completedGateCount",
+      "expectedGateCount",
+      "lastCompletedGate",
+    ]) ||
+    interruption.partialLog.path !== expectedLogPath ||
+    !Number.isSafeInteger(interruption.partialLog.bytes) ||
+    interruption.partialLog.bytes <= 0 ||
+    !/^[a-f0-9]{64}$/u.test(interruption.partialLog.sha256 ?? "") ||
+    !Number.isSafeInteger(interruption.partialLog.completedGateCount) ||
+    interruption.partialLog.completedGateCount < 0 ||
+    !Number.isSafeInteger(interruption.partialLog.expectedGateCount) ||
+    interruption.partialLog.expectedGateCount !== 42 ||
+    interruption.partialLog.expectedGateCount <= interruption.partialLog.completedGateCount ||
+    (interruption.partialLog.completedGateCount === 0
+      ? interruption.partialLog.lastCompletedGate !== null
+      : typeof interruption.partialLog.lastCompletedGate !== "string" ||
+        !interruption.partialLog.lastCompletedGate) ||
+    interruption.finalMarkerPresent !== false ||
+    interruption.executionReceiptPresent !== false ||
+    interruption.stage8Actions !== 0
+  ) {
+    throw new Error(
+      `${candidate.generation} canonical CI interruption record does not match its disposition`,
+    );
+  }
+
+  const logAbsolutePath = path.resolve(root, expectedLogPath);
+  const logInfo = await lstat(logAbsolutePath);
+  if (!logInfo.isFile() || logInfo.isSymbolicLink()) {
+    throw new Error(`${candidate.generation} interrupted canonical CI log must be a regular file`);
+  }
+  const logBytes = await readFile(logAbsolutePath);
+  if (
+    logBytes.length !== interruption.partialLog.bytes ||
+    sha256Of(logBytes) !== interruption.partialLog.sha256
+  ) {
+    throw new Error(
+      `${candidate.generation} interrupted canonical CI log hash or byte count differs`,
+    );
+  }
+  const logText = logBytes.toString("utf8").replaceAll("\r\n", "\n");
+  if (logText.includes(canonicalCiResultMarker)) {
+    throw new Error(
+      `${candidate.generation} interrupted canonical CI log contains a final result marker`,
+    );
+  }
+  const logLines = logText.split("\n");
+  for (const expectedLine of [
+    `Candidate: ${interruption.candidateId}`,
+    `Commit: ${interruption.candidateCommit}`,
+    `Artifact SHA-256: ${interruption.artifactSha256}`,
+  ]) {
+    if (!logLines.includes(expectedLine)) {
+      throw new Error(
+        `${candidate.generation} interrupted canonical CI log has a candidate binding mismatch`,
+      );
+    }
+  }
+  const gatePrefix = "=== TravelOS Stage 7 CI gate: ";
+  const gateHeaders = logLines.filter((line) => line.startsWith(gatePrefix));
+  const lastGate = gateHeaders.at(-1);
+  const lastGateLabel = lastGate
+    ? /^=== TravelOS Stage 7 CI gate: (.+) ===$/u.exec(lastGate)?.[1]
+    : null;
+  if (
+    gateHeaders.length !== interruption.partialLog.completedGateCount ||
+    lastGateLabel !== interruption.partialLog.lastCompletedGate
+  ) {
+    throw new Error(
+      `${candidate.generation} interrupted canonical CI gate count or last gate differs`,
+    );
+  }
+
+  try {
+    await lstat(path.resolve(root, expectedReceiptPath));
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+    return;
+  }
+  throw new Error(
+    `${candidate.generation} interrupted canonical CI must not have a canonical CI receipt file`,
+  );
+};
+
 export const loadStage7PriorCandidateDispositions = async ({
   root = process.cwd(),
   candidateGeneration,
@@ -75,7 +248,7 @@ export const loadStage7PriorCandidateDispositions = async ({
   const history = JSON.parse(historyBytes.toString("utf8"));
   if (
     !isRecord(history) ||
-    history.schemaVersion !== 1 ||
+    ![1, 2].includes(history.schemaVersion) ||
     history.stage !== "PHASE_1_M1_STAGE_7" ||
     history.candidateGeneration !== candidateGeneration ||
     history.predecessorCommit !== stage7PredecessorCommit ||
@@ -83,6 +256,12 @@ export const loadStage7PriorCandidateDispositions = async ({
     !Array.isArray(history.priorCandidates)
   ) {
     throw new Error("prior-candidate dispositions have an invalid header");
+  }
+  if (
+    history.schemaVersion === 1 &&
+    history.priorCandidates.some((candidate) => candidate?.canonicalCiStatus === "INTERRUPTED")
+  ) {
+    throw new Error("interrupted canonical CI requires schemaVersion 2");
   }
   if (history.priorCandidates.length !== currentGenerationNumber - 1) {
     throw new Error("prior-candidate dispositions must cover every earlier generation");
@@ -162,11 +341,38 @@ export const loadStage7PriorCandidateDispositions = async ({
       if (candidate.canonicalCiReceipt !== null) {
         throw new Error(`${candidate.generation} unrun canonical CI must have no receipt`);
       }
+      if (
+        candidate.canonicalCiInterruption !== undefined &&
+        candidate.canonicalCiInterruption !== null
+      ) {
+        throw new Error(
+          `${candidate.generation} unrun canonical CI must have no interruption record`,
+        );
+      }
+    } else if (candidate.canonicalCiStatus === "INTERRUPTED") {
+      if (candidate.canonicalCiReceipt !== null) {
+        throw new Error(
+          `${candidate.generation} interrupted canonical CI must not have an execution receipt`,
+        );
+      }
+      await verifyInterruptedCiEvidence({
+        root,
+        candidate,
+        interruptionReference: candidate.canonicalCiInterruption,
+      });
     } else {
       const evidenceDirectory = evidenceRootFor(candidate.generation);
       const expectedReceiptPath = `${evidenceDirectory}canonical-ci-execution.json`;
       const expectedLogPath = `${evidenceDirectory}canonical-ci.log`;
       const receiptReference = candidate.canonicalCiReceipt;
+      if (
+        candidate.canonicalCiInterruption !== undefined &&
+        candidate.canonicalCiInterruption !== null
+      ) {
+        throw new Error(
+          `${candidate.generation} completed canonical CI must not have an interruption record`,
+        );
+      }
       if (
         !isRecord(receiptReference) ||
         Object.keys(receiptReference).toSorted().join(",") !== "path,sha256" ||
@@ -329,10 +535,42 @@ export const evaluateStage7PriorEvidenceScope = ({ priorCandidates, sourcePaths 
       if (candidate.canonicalCiReceipt !== null) {
         candidateViolation("unrun canonical CI must have no receipt");
       }
+      if (
+        candidate.canonicalCiInterruption !== undefined &&
+        candidate.canonicalCiInterruption !== null
+      ) {
+        candidateViolation("unrun canonical CI must have no interruption record");
+      }
+    } else if (candidate.canonicalCiStatus === "INTERRUPTED") {
+      const expectedInterruptionPath = `${evidenceRootFor(generation)}canonical-ci-interruption.json`;
+      const expectedLogPath = `${evidenceRootFor(generation)}canonical-ci.log`;
+      const interruptionReference = candidate?.canonicalCiInterruption;
+      if (candidate.canonicalCiReceipt !== null) {
+        candidateViolation("interrupted canonical CI must not have an execution receipt");
+      }
+      if (
+        !isRecord(interruptionReference) ||
+        Object.keys(interruptionReference).toSorted().join(",") !== "path,sha256" ||
+        interruptionReference.path !== expectedInterruptionPath ||
+        !/^[a-f0-9]{64}$/u.test(interruptionReference.sha256 ?? "")
+      ) {
+        candidateViolation(
+          "interrupted canonical CI requires its canonical interruption record reference",
+        );
+      } else {
+        requiredEvidencePaths.add(interruptionReference.path);
+      }
+      requiredEvidencePaths.add(expectedLogPath);
     } else {
       const expectedReceiptPath = `${evidenceRootFor(generation)}canonical-ci-execution.json`;
       const expectedLogPath = `${evidenceRootFor(generation)}canonical-ci.log`;
       const receiptReference = candidate?.canonicalCiReceipt;
+      if (
+        candidate.canonicalCiInterruption !== undefined &&
+        candidate.canonicalCiInterruption !== null
+      ) {
+        candidateViolation("completed canonical CI must not have an interruption record");
+      }
       if (
         !isRecord(receiptReference) ||
         Object.keys(receiptReference).toSorted().join(",") !== "path,sha256" ||
@@ -353,6 +591,19 @@ export const evaluateStage7PriorEvidenceScope = ({ priorCandidates, sourcePaths 
     }
     if (!scanStatuses.has(candidate?.finalCandidateScan)) {
       candidateViolation("invalid final-candidate scan status");
+    }
+
+    if (
+      candidate?.canonicalCiStatus === "INTERRUPTED" &&
+      (candidate?.validationStatus !== "NOT_REACHED" ||
+        candidate?.validationPath !== null ||
+        candidate?.finalCandidateScan !== "NOT_REACHED" ||
+        candidate?.freezeStatus !== "NOT_REACHED" ||
+        candidate?.freezePath !== null)
+    ) {
+      candidateViolation(
+        "interrupted canonical CI cannot have post-CI validation or freeze evidence",
+      );
     }
 
     const validationCreated = candidate?.validationStatus === "CREATED";
@@ -478,7 +729,10 @@ export const verifyStage7CandidateSourceScope = async ({
   });
   const historicalEvidencePaths = new Set();
   for (const candidate of priorHistory.priorCandidates) {
-    if (candidate.canonicalCiStatus !== "NOT_RUN") {
+    if (candidate.canonicalCiStatus === "INTERRUPTED") {
+      historicalEvidencePaths.add(candidate.canonicalCiInterruption.path);
+      historicalEvidencePaths.add(`${evidenceRootFor(candidate.generation)}canonical-ci.log`);
+    } else if (candidate.canonicalCiStatus !== "NOT_RUN") {
       historicalEvidencePaths.add(candidate.canonicalCiReceipt.path);
       historicalEvidencePaths.add(`${evidenceRootFor(candidate.generation)}canonical-ci.log`);
     }

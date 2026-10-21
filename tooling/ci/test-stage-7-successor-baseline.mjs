@@ -6,7 +6,7 @@ import * as stage7 from "./stage-7-successor-baseline.mjs";
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const bytewise = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
-assert.equal(stage7.STAGE7_DEFAULT_GENERATION, "gen11");
+assert.equal(stage7.STAGE7_DEFAULT_GENERATION, "gen12");
 assert.equal(
   stage7.stage7AuthorizedPathsPathFor("gen09"),
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS.json",
@@ -19,6 +19,10 @@ assert.equal(
   stage7.stage7AuthorizedPathsPathFor("gen11"),
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS_GEN11.json",
 );
+assert.equal(
+  stage7.stage7AuthorizedPathsPathFor("gen12"),
+  "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS_GEN12.json",
+);
 assert.equal(stage7.stage7ExtensionPathFor("gen09"), "deploy/contracts/stage-7-extension.v1.json");
 assert.equal(stage7.stage7ExtensionPathFor("gen10"), "deploy/contracts/stage-7-extension.v2.json");
 assert.equal(
@@ -26,11 +30,19 @@ assert.equal(
   "deploy/contracts/stage-7-extension.v2-gen11.json",
 );
 assert.equal(
+  stage7.stage7ExtensionPathFor("gen12"),
+  "deploy/contracts/stage-7-extension.v2-gen12.json",
+);
+assert.equal(
   stage7.stage7ExtensionArtifactPathFor("gen10"),
   "deployment/stage-7-extension.v2.json",
 );
 assert.equal(
   stage7.stage7ExtensionArtifactPathFor("gen11"),
+  "deployment/stage-7-extension.v2.json",
+);
+assert.equal(
+  stage7.stage7ExtensionArtifactPathFor("gen12"),
   "deployment/stage-7-extension.v2.json",
 );
 const authorizedPathsDocument = JSON.parse(
@@ -47,6 +59,20 @@ const successorContractBytes = await readFile(
 );
 const gen11SuccessorContractBytes = await readFile(
   new URL("../../deploy/contracts/stage-7-extension.v2-gen11.json", import.meta.url),
+);
+const gen12SuccessorContractBytes = await readFile(
+  new URL("../../deploy/contracts/stage-7-extension.v2-gen12.json", import.meta.url),
+);
+const gen12SuccessorContract = JSON.parse(gen12SuccessorContractBytes.toString("utf8"));
+assert.deepEqual(gen12SuccessorContract.candidate, {
+  generation: "gen12",
+  sourceBranch: "stage7/runtime-acceptance-cleanup-successor",
+  artifactIdPrefix: "travelos-phase-1-m1-stage-7-gen12-",
+  successorBaselinePath: "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN12.json",
+});
+assert.equal(
+  gen12SuccessorContract.artifact.successorBaselinePath,
+  "provenance/stage7-successor-baseline-gen12.json",
 );
 const successorImplementationDocument = await readFile(
   new URL(
@@ -84,6 +110,17 @@ const requiredGen11DecisionMarkers = [
   "Candidate rollover only; no product-scope expansion.",
   "Stage 8 actions = 0",
 ];
+const gen12DecisionDocument = await readFile(
+  new URL("../../docs/reviews/phase-1-m1/stage-7/GEN12_PO_DECISION_ADJUSTMENT.md", import.meta.url),
+  "utf8",
+);
+const requiredGen12DecisionMarkers = [
+  "Product Owner decision adjustment",
+  "Rui explicitly authorized one additional successor, gen12, and exactly one monitored canonical-CI invocation",
+  "Gen11 remains `INTERRUPTED`",
+  "does not authorize gen13",
+  "Stage 8 actions = 0",
+];
 assert.deepEqual(
   {
     extension: requiredCleanupExtensionMarkers.filter(
@@ -95,6 +132,11 @@ assert.deepEqual(
   },
   { extension: [], decision: [] },
   "The gen11 implementation and carried-forward decision document must satisfy every verifier marker",
+);
+assert.deepEqual(
+  requiredGen12DecisionMarkers.filter((marker) => !gen12DecisionDocument.includes(marker)),
+  [],
+  "The gen12 decision record must bind the one-time CI authorization and preserve the prior interruption",
 );
 const gen09BaselineBytes = await readFile(
   new URL("../../docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN09.json", import.meta.url),
@@ -119,13 +161,38 @@ assert.deepEqual(
   stage7.STAGE7_AUTHORIZED_PATHS_V1,
   "The historical gen09 authorized-path document must match its immutable v1 allowlist",
 );
+const gen11AuthorizedPathsDocument = JSON.parse(
+  await readFile(
+    new URL(
+      "../../docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS_GEN11.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+const gen12AuthorizedPathsDocument = JSON.parse(
+  await readFile(
+    new URL(
+      "../../docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS_GEN12.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
 assert.deepEqual(
   stage7.stage7AuthorizedPathsFor("gen11"),
-  stage7.STAGE7_AUTHORIZED_PATHS,
-  "The gen11 authorized-path document must match the verifier-owned v2 allowlist",
+  gen11AuthorizedPathsDocument,
+  "The historical gen11 authorized-path document must remain bound to its own allowlist",
 );
+assert.deepEqual(
+  stage7.stage7AuthorizedPathsFor("gen12"),
+  gen12AuthorizedPathsDocument,
+  "The gen12 authorized-path document must exactly match the verifier-owned v2 allowlist",
+);
+assert.deepEqual(stage7.STAGE7_AUTHORIZED_PATHS, gen12AuthorizedPathsDocument);
 assert.equal(stage7.stage7AuthorizedPathsFor("gen10").candidateGeneration, "gen10");
 assert.equal(stage7.stage7AuthorizedPathsFor("gen11").candidateGeneration, "gen11");
+assert.equal(stage7.stage7AuthorizedPathsFor("gen12").candidateGeneration, "gen12");
 assert.ok(
   stage7
     .stage7AuthorizedPathsFor("gen10")
@@ -147,14 +214,34 @@ assert.ok(
     .exactSourceFiles.includes("deploy/contracts/stage-7-extension.v2.json"),
   "Gen11 authorization must retain gen10's source contract as historical candidate input",
 );
-const gen11History = JSON.parse(
+assert.ok(
+  stage7
+    .stage7AuthorizedPathsFor("gen12")
+    .exactSourceFiles.includes("deploy/contracts/stage-7-extension.v2-gen11.json"),
+  "Gen12 authorization must retain gen11's source contract as historical candidate input",
+);
+assert.ok(
+  stage7
+    .stage7AuthorizedPathsFor("gen12")
+    .exactSourceFiles.includes("deploy/contracts/stage-7-extension.v2-gen12.json"),
+  "Gen12 authorization must include its generation-specific active contract",
+);
+const currentHistory = JSON.parse(
   await readFile(
     new URL("../../tooling/ci/stage-7/prior-candidate-dispositions.json", import.meta.url),
     "utf8",
   ),
 );
-const failedGen10 = gen11History.priorCandidates.at(-1);
-assert.equal(gen11History.candidateGeneration, "gen11");
+const failedGen10 = currentHistory.priorCandidates.at(-2);
+const interruptedGen11 = currentHistory.priorCandidates.at(-1);
+assert.equal(currentHistory.candidateGeneration, "gen12");
+assert.equal(interruptedGen11.generation, "gen11");
+assert.equal(interruptedGen11.canonicalCiStatus, "INTERRUPTED");
+assert.equal(interruptedGen11.canonicalCiReceipt, null);
+assert.equal(
+  interruptedGen11.canonicalCiInterruption.path,
+  "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",
+);
 assert.equal(failedGen10.generation, "gen10");
 assert.equal(failedGen10.candidateCommit, "0670b9ff46b2870ee97b118181f7d0136c566b54");
 assert.equal(

@@ -27,14 +27,19 @@ assert.equal(typeof verifyStage7CandidateSourceScope, "function");
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const selectedHistory = await loadStage7PriorCandidateDispositions({
   root: repositoryRoot,
-  candidateGeneration: "gen11",
+  candidateGeneration: "gen12",
 });
-assert.equal(selectedHistory.priorCandidates.length, 10);
-assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen10");
-assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiStatus, "FAIL");
+assert.equal(selectedHistory.priorCandidates.length, 11);
+assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen11");
+assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiStatus, "INTERRUPTED");
 assert.equal(
   selectedHistory.priorCandidates.at(-1).candidateCommit,
-  "0670b9ff46b2870ee97b118181f7d0136c566b54",
+  "91b109493a9e462f7caea62e7d04c9a99e892cff",
+);
+assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiReceipt, null);
+assert.equal(
+  selectedHistory.priorCandidates.at(-1).canonicalCiInterruption.path,
+  "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",
 );
 const historicalGen09Root = await mkdtemp(
   path.join(process.env.TMPDIR ?? tmpdir(), "travelos-stage7-gen09-history-"),
@@ -134,29 +139,96 @@ assert.deepEqual(preFreeze.missingPaths, []);
 assert.deepEqual(preFreeze.freezeEligibleGenerations, []);
 assert.equal(preFreeze.candidateCount, 8);
 
-const gen11PriorCiEvidencePaths = [
+const gen12PriorCiEvidencePaths = [
   ...priorCiEvidencePaths,
   "docs/evidence/phase-1-m1/stage-7/gen09/canonical-ci-execution.json",
   "docs/evidence/phase-1-m1/stage-7/gen09/canonical-ci.log",
   "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci-execution.json",
   "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci.log",
+  "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",
+  "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci.log",
 ];
-const gen11PreFreeze = evaluateStage7PriorEvidenceScope({
+const gen12PreFreeze = evaluateStage7PriorEvidenceScope({
   priorCandidates: selectedHistory.priorCandidates,
-  sourcePaths: gen11PriorCiEvidencePaths,
+  sourcePaths: gen12PriorCiEvidencePaths,
 });
-assert.equal(gen11PreFreeze.result, "PASS");
-assert.equal(gen11PreFreeze.candidateCount, 10);
+assert.equal(gen12PreFreeze.result, "PASS");
+assert.equal(gen12PreFreeze.candidateCount, 11);
 assert.ok(
-  gen11PreFreeze.requiredEvidencePaths.includes(
-    "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci-execution.json",
+  gen12PreFreeze.requiredEvidencePaths.includes(
+    "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",
   ),
 );
 assert.ok(
-  gen11PreFreeze.requiredEvidencePaths.includes(
-    "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci.log",
+  gen12PreFreeze.requiredEvidencePaths.includes(
+    "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci.log",
   ),
 );
+assert.ok(
+  !gen12PreFreeze.requiredEvidencePaths.includes(
+    "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-execution.json",
+  ),
+);
+
+const gen11InterruptionPath =
+  "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json";
+const gen11PartialLogPath = "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci.log";
+const interruptedGen11 = {
+  generation: "gen11",
+  lastPassedGate: "stage7-source-scope:post",
+  disposition: "CANONICAL_CI_INTERRUPTED_WITHOUT_FINAL_RESULT",
+  canonicalCiStatus: "INTERRUPTED",
+  canonicalCiReceipt: null,
+  canonicalCiInterruption: {
+    path: gen11InterruptionPath,
+    sha256: "f".repeat(64),
+  },
+  validationStatus: "NOT_REACHED",
+  validationPath: null,
+  finalCandidateScan: "NOT_REACHED",
+  freezeStatus: "NOT_REACHED",
+  freezePath: null,
+  stage8Actions: 0,
+};
+const interruptedScope = evaluateStage7PriorEvidenceScope({
+  priorCandidates: [interruptedGen11],
+  sourcePaths: [gen11InterruptionPath, gen11PartialLogPath],
+});
+assert.equal(interruptedScope.result, "PASS");
+assert.deepEqual(
+  interruptedScope.requiredEvidencePaths,
+  [gen11InterruptionPath, gen11PartialLogPath].toSorted(),
+);
+assert.deepEqual(interruptedScope.missingPaths, []);
+assert.deepEqual(interruptedScope.freezeEligibleGenerations, []);
+
+const missingInterruptedRecord = evaluateStage7PriorEvidenceScope({
+  priorCandidates: [interruptedGen11],
+  sourcePaths: [gen11PartialLogPath],
+});
+assert.equal(missingInterruptedRecord.result, "FAIL");
+assert.deepEqual(missingInterruptedRecord.missingPaths, [gen11InterruptionPath]);
+assert.deepEqual(missingInterruptedRecord.freezeEligibleGenerations, []);
+
+const interruptedWithReceipt = evaluateStage7PriorEvidenceScope({
+  priorCandidates: [
+    {
+      ...interruptedGen11,
+      canonicalCiReceipt: {
+        path: "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-execution.json",
+        sha256: "e".repeat(64),
+      },
+    },
+  ],
+  sourcePaths: [gen11InterruptionPath, gen11PartialLogPath],
+});
+assert.equal(interruptedWithReceipt.result, "FAIL");
+assert.ok(
+  interruptedWithReceipt.violations.includes(
+    "gen11: interrupted canonical CI must not have an execution receipt",
+  ),
+);
+assert.deepEqual(interruptedWithReceipt.freezeEligibleGenerations, []);
 
 const frozenValidationPath = "docs/evidence/phase-1-m1/stage-7/gen99/candidate-validation.json";
 const frozenManifestPath = "docs/evidence/phase-1-m1/stage-7/gen99/candidate-freeze.json";
@@ -416,6 +488,132 @@ try {
     [ciReceiptPath, ciLogPath, ...priorCiEvidencePaths].toSorted(),
   );
 
+  const interruptionPath = `${ciEvidenceDirectory}/canonical-ci-interruption.json`;
+  const candidate = fixtureHistory.priorCandidates[0];
+  const partialLogBytes = Buffer.from(
+    [
+      "TravelOS Stage 7 canonical CI",
+      "Candidate: travelos-phase-1-m1-stage-7-gen01",
+      `Commit: ${candidate.candidateCommit}`,
+      `Artifact SHA-256: ${candidate.artifact.sha256}`,
+      "",
+      "=== TravelOS Stage 7 CI gate: lint ===",
+      JSON.stringify({ result: "PASS" }),
+      "",
+    ].join(String.fromCharCode(10)),
+  );
+  await writeFile(path.join(scopeFixtureRoot, ciLogPath), partialLogBytes);
+  await rm(path.join(scopeFixtureRoot, ciReceiptPath), { force: true });
+  const partialLogSha256 = createHash("sha256").update(partialLogBytes).digest("hex");
+  const interruptionRecord = {
+    schemaVersion: 1,
+    recordType: "TRAVELOS_STAGE7_CANONICAL_CI_INTERRUPTION",
+    stage: "PHASE_1_M1_STAGE_7",
+    result: "INTERRUPTED",
+    candidateGeneration: "gen01",
+    candidateId: "travelos-phase-1-m1-stage-7-gen01",
+    candidateCommit: candidate.candidateCommit,
+    artifactSha256: candidate.artifact.sha256,
+    baseline: candidate.baseline,
+    execution: {
+      command: "node tooling/ci/stage-7/run-canonical-ci.mjs --generation=gen01",
+      invocationCount: 1,
+      terminationKind: "TERMINAL_TOOL_TIMEOUT",
+      requestedTimeoutSeconds: 600,
+      reportedTimeoutSeconds: 420,
+      sessionId: "fixture-session",
+      toolCallId: "fixture-call",
+    },
+    oneShotState: {
+      claim: {
+        path: ".hermes/state/stage7-gen01-canonical-ci-claim.json",
+        sha256: "a".repeat(64),
+        state: "RUNNING",
+        invocationCount: 1,
+      },
+      guard: {
+        path: ".hermes/state/stage7-gen01-canonical-ci-guard.json",
+        sha256: "b".repeat(64),
+        state: "ARMED",
+        invocationCount: 0,
+        ciConsumed: "NO",
+      },
+    },
+    partialLog: {
+      path: ciLogPath,
+      bytes: partialLogBytes.length,
+      sha256: partialLogSha256,
+      completedGateCount: 1,
+      expectedGateCount: 42,
+      lastCompletedGate: "lint",
+    },
+    finalMarkerPresent: false,
+    executionReceiptPresent: false,
+    stage8Actions: 0,
+  };
+  const interruptionBytes = Buffer.from(JSON.stringify(interruptionRecord, null, 2));
+  await writeFile(path.join(scopeFixtureRoot, interruptionPath), interruptionBytes);
+  fixtureHistory.schemaVersion = 2;
+  candidate.canonicalCiStatus = "INTERRUPTED";
+  candidate.canonicalCiReceipt = null;
+  candidate.canonicalCiInterruption = {
+    path: interruptionPath,
+    sha256: createHash("sha256").update(interruptionBytes).digest("hex"),
+  };
+  await writeFile(fixtureHistoryPath, JSON.stringify(fixtureHistory, null, 2));
+  const historyAfterInterruptedCi = await loadStage7PriorCandidateDispositions({
+    root: scopeFixtureRoot,
+    candidateGeneration,
+  });
+  assert.equal(historyAfterInterruptedCi.priorCandidates[0].canonicalCiStatus, "INTERRUPTED");
+  const interruptedCandidateBaselineSha256 = await writeCandidateBaseline(coveredSourcePaths);
+  const interruptedCandidateScope = await verifyStage7CandidateSourceScope({
+    root: scopeFixtureRoot,
+    candidateGeneration,
+    candidateCommit,
+    baselinePath,
+    baselineSha256: interruptedCandidateBaselineSha256,
+  });
+  assert.equal(interruptedCandidateScope.result, "PASS");
+  assert.deepEqual(
+    interruptedCandidateScope.requiredEvidencePaths,
+    [interruptionPath, ciLogPath, ...priorCiEvidencePaths].toSorted(),
+  );
+  assert.ok(!interruptedCandidateScope.requiredEvidencePaths.includes(ciReceiptPath));
+
+  await writeFile(path.join(scopeFixtureRoot, ciReceiptPath), "{}");
+  await assert.rejects(
+    () => loadStage7PriorCandidateDispositions({ root: scopeFixtureRoot, candidateGeneration }),
+    /gen01 interrupted canonical CI must not have a canonical CI receipt file/u,
+  );
+  await rm(path.join(scopeFixtureRoot, ciReceiptPath), { force: true });
+
+  const originalPartialLog = { ...interruptionRecord.partialLog };
+  const markedLogBytes = Buffer.from(
+    `${partialLogBytes.toString("utf8")}=== TRAVELOS_STAGE7_CANONICAL_CI_RESULT ===`,
+  );
+  interruptionRecord.partialLog.bytes = markedLogBytes.length;
+  interruptionRecord.partialLog.sha256 = createHash("sha256").update(markedLogBytes).digest("hex");
+  await writeFile(path.join(scopeFixtureRoot, ciLogPath), markedLogBytes);
+  const markedInterruptionBytes = Buffer.from(JSON.stringify(interruptionRecord, null, 2));
+  await writeFile(path.join(scopeFixtureRoot, interruptionPath), markedInterruptionBytes);
+  candidate.canonicalCiInterruption.sha256 = createHash("sha256")
+    .update(markedInterruptionBytes)
+    .digest("hex");
+  await writeFile(fixtureHistoryPath, JSON.stringify(fixtureHistory, null, 2));
+  await assert.rejects(
+    () => loadStage7PriorCandidateDispositions({ root: scopeFixtureRoot, candidateGeneration }),
+    /gen01 interrupted canonical CI log contains a final result marker/u,
+  );
+
+  Object.assign(interruptionRecord.partialLog, originalPartialLog);
+  await writeFile(path.join(scopeFixtureRoot, ciLogPath), partialLogBytes);
+  await writeFile(path.join(scopeFixtureRoot, interruptionPath), interruptionBytes);
+  candidate.canonicalCiInterruption.sha256 = createHash("sha256")
+    .update(interruptionBytes)
+    .digest("hex");
+  await writeFile(fixtureHistoryPath, JSON.stringify(fixtureHistory, null, 2));
+
   const incompleteBaselineSha256 = await writeCandidateBaseline([
     "tooling/ci/stage-7/prior-candidate-dispositions.json",
   ]);
@@ -439,7 +637,7 @@ try {
 console.log(
   JSON.stringify({
     result: "PASS",
-    cases: 13,
+    cases: 19,
     preFreezePredecessors: preFreeze.candidateCount,
     frozenInputsRequired: frozen.requiredEvidencePaths.length,
     freezeEligible: frozen.freezeEligibleGenerations.length,

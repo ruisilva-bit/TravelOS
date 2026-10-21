@@ -103,19 +103,21 @@ export const STAGE7_EXTENSION_V1_CONTRACT_PATH = "deploy/contracts/stage-7-exten
 export const STAGE7_EXTENSION_V2_CONTRACT_PATH = "deploy/contracts/stage-7-extension.v2.json";
 export const STAGE7_EXTENSION_V2_GEN11_CONTRACT_PATH =
   "deploy/contracts/stage-7-extension.v2-gen11.json";
+export const STAGE7_EXTENSION_V2_GEN12_CONTRACT_PATH =
+  "deploy/contracts/stage-7-extension.v2-gen12.json";
 export const STAGE7_AUTHORIZED_PATHS_V1_PATH =
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS.json";
-export const STAGE7_DEFAULT_GENERATION = "gen11";
+export const STAGE7_DEFAULT_GENERATION = "gen12";
 const generationNumber = (generation) => {
   assert.match(generation, /^gen[0-9]{2,}$/, "Invalid Stage 7 candidate generation");
   return Number(generation.slice(3));
 };
-export const stage7ExtensionPathFor = (generation) =>
-  generation === "gen11"
-    ? STAGE7_EXTENSION_V2_GEN11_CONTRACT_PATH
-    : generationNumber(generation) >= 10
-      ? STAGE7_EXTENSION_V2_CONTRACT_PATH
-      : STAGE7_EXTENSION_V1_CONTRACT_PATH;
+export const stage7ExtensionPathFor = (generation) => {
+  const number = generationNumber(generation);
+  if (number === 11) return STAGE7_EXTENSION_V2_GEN11_CONTRACT_PATH;
+  if (number === 12) return STAGE7_EXTENSION_V2_GEN12_CONTRACT_PATH;
+  return number >= 10 ? STAGE7_EXTENSION_V2_CONTRACT_PATH : STAGE7_EXTENSION_V1_CONTRACT_PATH;
+};
 export const stage7ExtensionArtifactPathFor = (generation) =>
   `deployment/stage-7-extension.${generationNumber(generation) >= 10 ? "v2" : "v1"}.json`;
 export const stage7ExtensionDocumentPathFor = (generation) =>
@@ -488,11 +490,22 @@ const STAGE7_AUTHORIZED_PATHS_GEN11 = Object.freeze({
     STAGE7_EXTENSION_V2_GEN11_CONTRACT_PATH,
   ],
 });
+const STAGE7_AUTHORIZED_PATHS_GEN12 = Object.freeze({
+  ...STAGE7_AUTHORIZED_PATHS_GEN11,
+  candidateGeneration: "gen12",
+  exactSourceFiles: [
+    ...STAGE7_AUTHORIZED_PATHS_GEN11.exactSourceFiles,
+    STAGE7_EXTENSION_V2_GEN12_CONTRACT_PATH,
+  ],
+});
 
 export const stage7AuthorizedPathsFor = (generation) => {
   const number = generationNumber(generation);
   if (number === 11) {
     return Object.freeze({ ...STAGE7_AUTHORIZED_PATHS_GEN11, candidateGeneration: generation });
+  }
+  if (number === 12) {
+    return Object.freeze({ ...STAGE7_AUTHORIZED_PATHS_GEN12, candidateGeneration: generation });
   }
   return number >= 10
     ? Object.freeze({ ...STAGE7_AUTHORIZED_PATHS_V2, candidateGeneration: generation })
