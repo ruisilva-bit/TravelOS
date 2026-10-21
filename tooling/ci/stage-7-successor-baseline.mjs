@@ -483,11 +483,10 @@ const STAGE7_AUTHORIZED_PATHS_V2 = Object.freeze({
 const STAGE7_AUTHORIZED_PATHS_GEN11 = Object.freeze({
   ...STAGE7_AUTHORIZED_PATHS_V2,
   candidateGeneration: "gen11",
-  exactSourceFiles: STAGE7_AUTHORIZED_PATHS_V2.exactSourceFiles.map((sourcePath) =>
-    sourcePath === STAGE7_EXTENSION_V2_CONTRACT_PATH
-      ? STAGE7_EXTENSION_V2_GEN11_CONTRACT_PATH
-      : sourcePath,
-  ),
+  exactSourceFiles: [
+    ...STAGE7_AUTHORIZED_PATHS_V2.exactSourceFiles,
+    STAGE7_EXTENSION_V2_GEN11_CONTRACT_PATH,
+  ],
 });
 
 export const stage7AuthorizedPathsFor = (generation) => {

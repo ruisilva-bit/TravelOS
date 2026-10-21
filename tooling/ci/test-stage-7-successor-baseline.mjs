@@ -142,9 +142,10 @@ assert.ok(
     .exactSourceFiles.includes("deploy/contracts/stage-7-extension.v2-gen11.json"),
 );
 assert.ok(
-  !stage7
+  stage7
     .stage7AuthorizedPathsFor("gen11")
     .exactSourceFiles.includes("deploy/contracts/stage-7-extension.v2.json"),
+  "Gen11 authorization must retain gen10's source contract as historical candidate input",
 );
 const gen11History = JSON.parse(
   await readFile(
@@ -538,7 +539,7 @@ assert.ok(
   ),
 );
 assert.ok(
-  !stage7.STAGE7_AUTHORIZED_PATHS.exactSourceFiles.includes(
+  stage7.STAGE7_AUTHORIZED_PATHS.exactSourceFiles.includes(
     "deploy/contracts/stage-7-extension.v2.json",
   ),
 );
