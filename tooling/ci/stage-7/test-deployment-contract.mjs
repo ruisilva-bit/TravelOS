@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { URL } from "node:url";
-import { STAGE7_DEFAULT_GENERATION } from "../stage-7-successor-baseline.mjs";
+import {
+  STAGE7_DEFAULT_GENERATION,
+  stage7ExtensionPathFor,
+} from "../stage-7-successor-baseline.mjs";
 import {
   renderStage7OperatorUnitForGeneration,
   validateStage7DeploymentContractSource,
@@ -13,11 +16,11 @@ const cloneJson = (value) => JSON.parse(JSON.stringify(value));
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const legacyGeneration = "gen09";
 const generation = STAGE7_DEFAULT_GENERATION;
-assert.equal(generation, "gen10");
+assert.equal(generation, "gen11");
 const readJson = async (relativePath) =>
   JSON.parse(await readFile(new URL(`../../../${relativePath}`, import.meta.url), "utf8"));
 const legacyExtension = await readJson("deploy/contracts/stage-7-extension.v1.json");
-const extension = await readJson("deploy/contracts/stage-7-extension.v2.json");
+const extension = await readJson(stage7ExtensionPathFor(generation));
 const legacyContractBytes = await readFile(
   new URL("../../../deploy/contracts/stage-7-extension.v1.json", import.meta.url),
 );

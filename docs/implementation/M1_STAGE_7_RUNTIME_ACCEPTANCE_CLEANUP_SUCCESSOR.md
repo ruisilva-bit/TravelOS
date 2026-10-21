@@ -1,14 +1,14 @@
 # Stage 7 Runtime Acceptance Cleanup Successor
 
 - **Stage:** Phase 1 M1 Stage 7
-- **Successor generation:** gen10
+- **Successor generation:** gen11
 - **Branch:** `stage7/runtime-acceptance-cleanup-successor`
 - **Predecessor:** immutable gen09, commit `0cf07d04e93171c1de6300629a3759ce888da6a7`
-- **Contract:** `deploy/contracts/stage-7-extension.v2.json`
+- **Contract:** source `deploy/contracts/stage-7-extension.v2-gen11.json` (schema v2; packaged at `deployment/stage-7-extension.v2.json`)
 
 ## Purpose and scope
 
-The gen09 acceptance runner creates synthetic Trips and a Portal identity but has no supported application cleanup path. The gen10 successor adds a narrow, retry-safe lifecycle for only the resources registered to one runtime-acceptance fixture run. It does not change the gen09 artifact, its v1 deployment contract, its canonical baseline, or its 42/42 PASS CI evidence.
+The gen09 acceptance runner creates synthetic Trips and a Portal identity but has no supported application cleanup path. The gen11 successor carries the approved narrow, retry-safe lifecycle for only the resources registered to one runtime-acceptance fixture run. It does not change the gen09 artifact, its v1 deployment contract, its canonical baseline, or its 42/42 PASS CI evidence.
 
 The one-shot acceptance runner uses one generated fixture-run UUID for both Trips and Portal enrollment. Application code registers resources atomically and cleanup derives all resource identifiers from that run. A fixture UUID is not a bearer capability. At most one unresolved run per Agency is allowed; the run records its creator, Agency, typed resource links, timestamps, and `OPEN`, `CLEANUP_PENDING`, or `CLEANED` state. It carries no credentials or arbitrary payload.
 
@@ -45,7 +45,7 @@ The existing DEVELOPMENT operator one-shot and credential bindings remain unchan
 
 ## Successor data ownership, classification, and permissions
 
-This successor supplement carries the Stage 7 schema and permission delta without modifying the byte-protected Phase 0 `docs/DATA_MODEL.md` and `docs/PERMISSIONS.md`. The exact supplement is bound by the gen10 source manifest.
+This successor supplement carries the Stage 7 schema and permission delta without modifying the byte-protected Phase 0 `docs/DATA_MODEL.md` and `docs/PERMISSIONS.md`. The exact supplement is bound by the gen11 source manifest.
 
 | Field group | Owner | Classification | Portal eligibility | Retention |
 |---|---|---|---|---|
@@ -61,7 +61,7 @@ Migration 0013 advances the permission registry to version 6 and adds Agency-sco
 
 ## Evidence and phase limits
 
-The gen10 successor baseline preserves the exact gen09 baseline, v1 extension, artifact digest, and canonical CI receipt as predecessor evidence. Gen09 canonical CI remains **42/42 PASS** and is not rerun. The gen10 candidate is not frozen until implementation, integration, and local qualification are complete; ordinary test failures are corrected in this same successor worktree.
+The gen11 successor baseline preserves the exact gen09 baseline, v1 extension, artifact digest, and canonical CI receipt as predecessor evidence. The consumed gen10 CI failure remains immutable historical evidence and is not reused. Gen09 canonical CI remains **42/42 PASS** and is not rerun. The gen11 candidate is not frozen until implementation, integration, and local qualification are complete; ordinary test failures are corrected in this same successor worktree.
 
 - **Stage 7 actions = 1.**
 - **Stage 8 actions = 0.**

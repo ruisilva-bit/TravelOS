@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 2,
+  "contractId": "travelos-stage7-runtime-acceptance-cleanup-v2",
+  "stage": "PHASE_1_M1_STAGE_7",
+  "extends": {
+    "path": "deploy/contracts/deployment-contract.v1.json",
+    "sha256": "d97709506b69d133f13cbd9c74c1f9a790477180cbcd124b7135c26bb0c75633"
+  },
+  "candidate": {
+    "generation": "gen11",
+    "sourceBranch": "stage7/runtime-acceptance-cleanup-successor",
+    "artifactIdPrefix": "travelos-phase-1-m1-stage-7-gen11-",
+    "successorBaselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN11.json"
+  },
+  "artifact": {
+    "designation": "DEVELOPMENT_CANDIDATE_UNQUALIFIED",
+    "releaseMetadataPath": "release.json",
+    "payloadManifestPath": "payload-manifest.json",
+    "checksumsPath": "checksums.txt",
+    "stage7ExtensionPath": "deployment/stage-7-extension.v2.json",
+    "stage7VerifierPath": "deployment/verify-stage7-artifact.mjs",
+    "successorBaselinePath": "provenance/stage7-successor-baseline-gen11.json",
+    "archiveFormat": "tar.gz",
+    "canonicalCiStatusAtBuild": "PENDING_ONE_AUTHORIZED_RUN",
+    "currentSymlink": "/opt/travelos/current",
+    "releaseRoot": "/opt/travelos/releases",
+    "buildOncePromoteSameDigest": true,
+    "compileOnCT200": false,
+    "baseRuntimeContractUnchanged": true
+  },
+  "runtimeAcceptance": {
+    "sourcePath": "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+    "runnerPath": "operator/stage7-runtime-acceptance.mjs",
+    "operatorUnitSourcePath": "deploy/systemd/travelos-stage7-runtime-acceptance.service",
+    "operatorUnitPath": "operator/travelos-stage7-runtime-acceptance.service",
+    "executionMode": "DEVELOPMENT_OPERATOR_ONE_SHOT",
+    "operatorOnly": true,
+    "persistentService": false,
+    "listener": false,
+    "publicSignupEndpoint": false,
+    "newExternallyReachablePorts": [],
+    "credentialDirectoryEnv": "CREDENTIALS_DIRECTORY",
+    "staffTotpCredentialKind": "BETTER_AUTH_BASE32_SEED",
+    "requiredCredentialNames": [
+      "portal-api-db",
+      "portal-auth-realm",
+      "stage7-staff-email",
+      "stage7-staff-password",
+      "stage7-staff-totp"
+    ],
+    "fixtureCleanup": {
+      "method": "POST",
+      "path": "/api/admin/runtime-acceptance-fixtures/:fixtureRunId/cleanup",
+      "environment": "DEVELOPMENT_ONLY",
+      "hostPolicy": "EXACT_DEVELOPMENT_MANIFEST_ALLOWLIST",
+      "listener": "EXISTING_ADMIN_API",
+      "permissionIds": [
+        "runtime_acceptance.fixture.manage",
+        "trip.access.manage",
+        "trip.edit",
+        "trip.withdraw_publication"
+      ],
+      "staffRealm": "STAFF_ONLY",
+      "activeMembershipRequired": true,
+      "exactAgencyScopeRequired": true,
+      "recentMfaWindowSeconds": 300,
+      "scope": "SAME_AGENCY_AND_CREATOR_REGISTERED_FIXTURE_RUN",
+      "acceptsCallerSuppliedResourceIds": false,
+      "maxTrips": 2,
+      "maxPortalPrincipals": 1,
+      "allowedFixtureStates": ["OPEN", "CLEANUP_PENDING"],
+      "terminalFixtureState": "CLEANED",
+      "retrySafe": true,
+      "revokesTripAccessGrants": true,
+      "invalidatesPortalSessions": true,
+      "withdrawsActivePublication": true,
+      "cancelsTrips": true,
+      "retiresPortalPrincipal": true,
+      "preservesPublicationSnapshots": true,
+      "preservesPublicationPayloads": true,
+      "preservesAuditAndOutboxHistory": true,
+      "preservesTripWorkspace": true,
+      "newListener": false,
+      "newExternallyReachablePorts": []
+    },
+    "runtimeDependencies": [
+      {
+        "appRoot": "apps/portal-api",
+        "packageName": "@travelos/config",
+        "exportName": "."
+      },
+      {
+        "appRoot": "apps/portal-api",
+        "packageName": "@travelos/auth-adapters",
+        "exportName": "./portal"
+      },
+      {
+        "appRoot": "apps/portal-api",
+        "packageName": "@travelos/auth-adapters",
+        "internalModule": "dist/realm.js"
+      }
+    ]
+  },
+  "database": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "name": "travelos_development",
+    "tlsPolicy": "DISABLED_LOOPBACK_ONLY",
+    "previousMigration": "0012_stage7_portal_trip_access.cjs",
+    "previousMigrationSha256": "4bf653fdc7522443ea321d98d448934ec1b5d0c4e8d4abd904360182ada5ade8",
+    "requiredMigration": "0013_stage7_runtime_acceptance_cleanup.cjs",
+    "requiredMigrationIntegrity": "CHECKSUM_MANIFEST_AND_SUCCESSOR_SOURCE_BASELINE",
+    "checksumManifestPath": "migrations/checksums.json",
+    "predecessorChecksumManifestSha256": "dd545bf5ae7ad0947dee21780cf392a6b873261b8953d8b04ca0962db21b6b81",
+    "migratorExecutor": "travelos-migrator-exec",
+    "migratorSessionUser": "travelos_migrator",
+    "ownerRole": "travelos_owner",
+    "ownerRoleSwitch": "SET ROLE travelos_owner",
+    "betterAuthRuntimeMigrations": false
+  },
+  "portal": {
+    "authenticationRealm": "PORTAL_ONLY",
+    "loginRole": "travelos_portal_api",
+    "capabilityRole": "travelos_portal_runtime",
+    "activePublicationOnly": true,
+    "snapshotContract": "PortalTripSnapshotV1",
+    "explicitTripAccessGrantRequired": true,
+    "capability": "trip.view_current",
+    "staffGrantPermission": "trip.access.manage",
+    "mutableWorkspaceRead": false,
+    "mutableWorkspaceFallback": false,
+    "internalOnlyOutput": false,
+    "unknownFieldPassthrough": false
+  },
+  "stage7Actions": 1,
+  "stage8Actions": 0
+}

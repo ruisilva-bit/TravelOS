@@ -21,6 +21,7 @@ import { fileURLToPath, pathToFileURL, URL } from "node:url";
 import {
   STAGE7_DEFAULT_GENERATION,
   stage7CandidateBranchFor,
+  stage7ExtensionArtifactPathFor,
   stage7ExtensionPathFor,
 } from "../stage-7-successor-baseline.mjs";
 import {
@@ -151,7 +152,7 @@ export const createStage7ReleaseMetadata = ({
       sha256: deploymentContractSha256,
     },
     stage7DeploymentContract: {
-      path: `deployment/${path.posix.basename(stage7ExtensionPathFor(generation))}`,
+      path: stage7ExtensionArtifactPathFor(generation),
       schemaVersion: Number(generation.slice(3)) >= 10 ? 2 : 1,
       sha256: stage7DeploymentContractSha256,
     },
@@ -344,7 +345,7 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
     path.join(root, "deploy/contracts/deployment-contract.v1.json"),
   );
   const extensionPath = stage7ExtensionPathFor(generation);
-  const packagedExtensionPath = `deployment/${path.posix.basename(extensionPath)}`;
+  const packagedExtensionPath = stage7ExtensionArtifactPathFor(generation);
   const extensionBytes = await readFile(path.join(root, extensionPath));
   const verifierBytes = await readFile(path.join(root, "tooling/ci/stage-7/verify-artifact.mjs"));
   const migrationBytes = await readFile(

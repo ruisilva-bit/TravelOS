@@ -17,6 +17,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   STAGE7_DEFAULT_GENERATION,
   stage7CandidateBranchFor,
+  stage7ExtensionArtifactPathFor,
   stage7ExtensionPathFor,
 } from "../stage-7-successor-baseline.mjs";
 
@@ -37,7 +38,7 @@ const artifactBuilder = await import(
 ).catch(() => null);
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const generation = STAGE7_DEFAULT_GENERATION;
-const extensionArtifactPath = `deployment/${path.basename(stage7ExtensionPathFor(generation))}`;
+const extensionArtifactPath = stage7ExtensionArtifactPathFor(generation);
 const baseContractBytes = await readFile(
   path.join(projectRoot, "deploy/contracts/deployment-contract.v1.json"),
 );

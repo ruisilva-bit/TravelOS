@@ -101,17 +101,23 @@ export const STAGE7_EXTENSION_V2_DOCUMENT_PATH =
 export const STAGE7_EXTENSION_PATH = STAGE7_EXTENSION_V1_DOCUMENT_PATH;
 export const STAGE7_EXTENSION_V1_CONTRACT_PATH = "deploy/contracts/stage-7-extension.v1.json";
 export const STAGE7_EXTENSION_V2_CONTRACT_PATH = "deploy/contracts/stage-7-extension.v2.json";
+export const STAGE7_EXTENSION_V2_GEN11_CONTRACT_PATH =
+  "deploy/contracts/stage-7-extension.v2-gen11.json";
 export const STAGE7_AUTHORIZED_PATHS_V1_PATH =
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS.json";
-export const STAGE7_DEFAULT_GENERATION = "gen10";
+export const STAGE7_DEFAULT_GENERATION = "gen11";
 const generationNumber = (generation) => {
   assert.match(generation, /^gen[0-9]{2,}$/, "Invalid Stage 7 candidate generation");
   return Number(generation.slice(3));
 };
 export const stage7ExtensionPathFor = (generation) =>
-  generationNumber(generation) >= 10
-    ? STAGE7_EXTENSION_V2_CONTRACT_PATH
-    : STAGE7_EXTENSION_V1_CONTRACT_PATH;
+  generation === "gen11"
+    ? STAGE7_EXTENSION_V2_GEN11_CONTRACT_PATH
+    : generationNumber(generation) >= 10
+      ? STAGE7_EXTENSION_V2_CONTRACT_PATH
+      : STAGE7_EXTENSION_V1_CONTRACT_PATH;
+export const stage7ExtensionArtifactPathFor = (generation) =>
+  `deployment/stage-7-extension.${generationNumber(generation) >= 10 ? "v2" : "v1"}.json`;
 export const stage7ExtensionDocumentPathFor = (generation) =>
   generationNumber(generation) >= 10
     ? STAGE7_EXTENSION_V2_DOCUMENT_PATH
@@ -445,7 +451,7 @@ export const STAGE7_AUTHORIZED_PATHS_V1 = Object.freeze({
   ],
 });
 
-export const STAGE7_AUTHORIZED_PATHS = Object.freeze({
+const STAGE7_AUTHORIZED_PATHS_V2 = Object.freeze({
   ...STAGE7_AUTHORIZED_PATHS_V1,
   schemaVersion: 2,
   candidateGeneration: "gen10",
@@ -474,9 +480,26 @@ export const STAGE7_AUTHORIZED_PATHS = Object.freeze({
     "packages/backend-core/test/trip-operations/",
   ],
 });
+const STAGE7_AUTHORIZED_PATHS_GEN11 = Object.freeze({
+  ...STAGE7_AUTHORIZED_PATHS_V2,
+  candidateGeneration: "gen11",
+  exactSourceFiles: STAGE7_AUTHORIZED_PATHS_V2.exactSourceFiles.map((sourcePath) =>
+    sourcePath === STAGE7_EXTENSION_V2_CONTRACT_PATH
+      ? STAGE7_EXTENSION_V2_GEN11_CONTRACT_PATH
+      : sourcePath,
+  ),
+});
 
-export const stage7AuthorizedPathsFor = (generation) =>
-  generationNumber(generation) >= 10 ? STAGE7_AUTHORIZED_PATHS : STAGE7_AUTHORIZED_PATHS_V1;
+export const stage7AuthorizedPathsFor = (generation) => {
+  const number = generationNumber(generation);
+  if (number === 11) {
+    return Object.freeze({ ...STAGE7_AUTHORIZED_PATHS_GEN11, candidateGeneration: generation });
+  }
+  return number >= 10
+    ? Object.freeze({ ...STAGE7_AUTHORIZED_PATHS_V2, candidateGeneration: generation })
+    : STAGE7_AUTHORIZED_PATHS_V1;
+};
+export const STAGE7_AUTHORIZED_PATHS = stage7AuthorizedPathsFor(STAGE7_DEFAULT_GENERATION);
 
 const STAGE7_EXTENSION_MARKERS = [
   "6242e023953ccb8fe883bff97a0d62e64af8b66a",

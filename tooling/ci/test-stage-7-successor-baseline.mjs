@@ -6,7 +6,7 @@ import * as stage7 from "./stage-7-successor-baseline.mjs";
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const bytewise = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
-assert.equal(stage7.STAGE7_DEFAULT_GENERATION, "gen10");
+assert.equal(stage7.STAGE7_DEFAULT_GENERATION, "gen11");
 assert.equal(
   stage7.stage7AuthorizedPathsPathFor("gen09"),
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS.json",
@@ -15,8 +15,24 @@ assert.equal(
   stage7.stage7AuthorizedPathsPathFor("gen10"),
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS_GEN10.json",
 );
+assert.equal(
+  stage7.stage7AuthorizedPathsPathFor("gen11"),
+  "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS_GEN11.json",
+);
 assert.equal(stage7.stage7ExtensionPathFor("gen09"), "deploy/contracts/stage-7-extension.v1.json");
 assert.equal(stage7.stage7ExtensionPathFor("gen10"), "deploy/contracts/stage-7-extension.v2.json");
+assert.equal(
+  stage7.stage7ExtensionPathFor("gen11"),
+  "deploy/contracts/stage-7-extension.v2-gen11.json",
+);
+assert.equal(
+  stage7.stage7ExtensionArtifactPathFor("gen10"),
+  "deployment/stage-7-extension.v2.json",
+);
+assert.equal(
+  stage7.stage7ExtensionArtifactPathFor("gen11"),
+  "deployment/stage-7-extension.v2.json",
+);
 const authorizedPathsDocument = JSON.parse(
   await readFile(
     new URL("../../docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS.json", import.meta.url),
@@ -29,6 +45,9 @@ const legacyContractBytes = await readFile(
 const successorContractBytes = await readFile(
   new URL("../../deploy/contracts/stage-7-extension.v2.json", import.meta.url),
 );
+const gen11SuccessorContractBytes = await readFile(
+  new URL("../../deploy/contracts/stage-7-extension.v2-gen11.json", import.meta.url),
+);
 const successorImplementationDocument = await readFile(
   new URL(
     "../../docs/implementation/M1_STAGE_7_RUNTIME_ACCEPTANCE_CLEANUP_SUCCESSOR.md",
@@ -37,10 +56,10 @@ const successorImplementationDocument = await readFile(
   "utf8",
 );
 const successorDecisionDocument = await readFile(
-  new URL("../../docs/reviews/phase-1-m1/stage-7/GEN10_PO_DECISION_ADJUSTMENT.md", import.meta.url),
+  new URL("../../docs/reviews/phase-1-m1/stage-7/GEN11_PO_DECISION_ADJUSTMENT.md", import.meta.url),
   "utf8",
 );
-const requiredGen10ExtensionMarkers = [
+const requiredCleanupExtensionMarkers = [
   "Stage 7 Runtime Acceptance Cleanup Successor",
   "POST /api/admin/runtime-acceptance-fixtures/:fixtureRunId/cleanup",
   "DEVELOPMENT_ONLY",
@@ -58,23 +77,24 @@ const requiredGen10ExtensionMarkers = [
   "Stage 7 actions = 1",
   "Stage 8 actions = 0",
 ];
-const requiredGen10DecisionMarkers = [
+const requiredGen11DecisionMarkers = [
   "Product Owner decision adjustment",
   "Rui approved the narrow DEVELOPMENT cleanup route on the existing Admin API listener.",
   "Immutable publication snapshots and audit/outbox history remain retained.",
+  "Candidate rollover only; no product-scope expansion.",
   "Stage 8 actions = 0",
 ];
 assert.deepEqual(
   {
-    extension: requiredGen10ExtensionMarkers.filter(
+    extension: requiredCleanupExtensionMarkers.filter(
       (marker) => !successorImplementationDocument.includes(marker),
     ),
-    decision: requiredGen10DecisionMarkers.filter(
+    decision: requiredGen11DecisionMarkers.filter(
       (marker) => !successorDecisionDocument.includes(marker),
     ),
   },
   { extension: [], decision: [] },
-  "The actual gen10 implementation and PO-decision documents must satisfy every verifier marker",
+  "The gen11 implementation and carried-forward decision document must satisfy every verifier marker",
 );
 const gen09BaselineBytes = await readFile(
   new URL("../../docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN09.json", import.meta.url),
@@ -100,9 +120,54 @@ assert.deepEqual(
   "The historical gen09 authorized-path document must match its immutable v1 allowlist",
 );
 assert.deepEqual(
-  stage7.stage7AuthorizedPathsFor("gen10"),
+  stage7.stage7AuthorizedPathsFor("gen11"),
   stage7.STAGE7_AUTHORIZED_PATHS,
-  "The successor authorized-path document must match the verifier-owned v2 allowlist",
+  "The gen11 authorized-path document must match the verifier-owned v2 allowlist",
+);
+assert.equal(stage7.stage7AuthorizedPathsFor("gen10").candidateGeneration, "gen10");
+assert.equal(stage7.stage7AuthorizedPathsFor("gen11").candidateGeneration, "gen11");
+assert.ok(
+  stage7
+    .stage7AuthorizedPathsFor("gen10")
+    .exactSourceFiles.includes("deploy/contracts/stage-7-extension.v2.json"),
+);
+assert.ok(
+  !stage7
+    .stage7AuthorizedPathsFor("gen10")
+    .exactSourceFiles.includes("deploy/contracts/stage-7-extension.v2-gen11.json"),
+);
+assert.ok(
+  stage7
+    .stage7AuthorizedPathsFor("gen11")
+    .exactSourceFiles.includes("deploy/contracts/stage-7-extension.v2-gen11.json"),
+);
+assert.ok(
+  !stage7
+    .stage7AuthorizedPathsFor("gen11")
+    .exactSourceFiles.includes("deploy/contracts/stage-7-extension.v2.json"),
+);
+const gen11History = JSON.parse(
+  await readFile(
+    new URL("../../tooling/ci/stage-7/prior-candidate-dispositions.json", import.meta.url),
+    "utf8",
+  ),
+);
+const failedGen10 = gen11History.priorCandidates.at(-1);
+assert.equal(gen11History.candidateGeneration, "gen11");
+assert.equal(failedGen10.generation, "gen10");
+assert.equal(failedGen10.candidateCommit, "0670b9ff46b2870ee97b118181f7d0136c566b54");
+assert.equal(
+  failedGen10.baseline.sha256,
+  "8435480b3fc053e27d1921d024dc81d523bb78fd18172b61bb9b5dd6575b092e",
+);
+assert.equal(
+  failedGen10.artifact.sha256,
+  "4f628985cb0b726597b032ca921b059d46ce883d223b62c1fe94729a5e546417",
+);
+assert.equal(failedGen10.canonicalCiStatus, "FAIL");
+assert.equal(
+  failedGen10.canonicalCiReceipt.sha256,
+  "2a6696ed345e076ca63ce49f88ee6a4cc4d90815681433cdeb2b639af71f7f40",
 );
 const aggregate = (rows) =>
   sha256(rows.map((row) => `${row.path}\t${row.bytes}\t${row.sha256}\n`).join(""));
@@ -229,6 +294,8 @@ const makeFixture = (generation = "gen01") => {
   const actualExtensionText = isV2 ? successorExtensionText : extensionText;
   const decisionPath = stage7.stage7DecisionDocumentPathFor(generation);
   const contractPath = stage7.stage7ExtensionPathFor(generation);
+  const contractBytes =
+    generation === "gen11" ? gen11SuccessorContractBytes : successorContractBytes;
   const allowlistBytes = Buffer.from(`${JSON.stringify(authorizedPaths, null, 2)}\n`);
   const predecessorReceiptBytes = Buffer.from(
     `${JSON.stringify(PREDECESSOR_RECEIPT_FIXTURE, null, 2)}\n`,
@@ -236,7 +303,7 @@ const makeFixture = (generation = "gen01") => {
   const predecessorReceiptPath = `docs/reviews/phase-1-m1/stage-7/${generation.toUpperCase()}_STAGE6_PREDECESSOR_BASELINE_VERIFY.json`;
   const bytesByPath = new Map([
     [extensionPath, actualExtensionText],
-    [contractPath, isV2 ? successorContractBytes : legacyContractBytes],
+    [contractPath, isV2 ? contractBytes : legacyContractBytes],
     ["tooling/ci/test-stage-7-successor-baseline.mjs", sourceText],
   ]);
   const sourceFiles = [...bytesByPath.entries()]
@@ -280,7 +347,7 @@ const makeFixture = (generation = "gen01") => {
         ? {
             previousCandidate: globalThis.structuredClone(stage7.STAGE7_GEN09_PREDECESSOR),
             decisionDocument: { path: decisionPath, sha256: sha256(successorDecisionText) },
-            contractDocument: { path: contractPath, sha256: sha256(successorContractBytes) },
+            contractDocument: { path: contractPath, sha256: sha256(contractBytes) },
           }
         : {}),
     },
@@ -467,6 +534,11 @@ assert.equal(gen10Semantics.stage7Actions, 1);
 assert.equal(gen10Semantics.stage8Actions, 0);
 assert.ok(
   stage7.STAGE7_AUTHORIZED_PATHS.exactSourceFiles.includes(
+    "deploy/contracts/stage-7-extension.v2-gen11.json",
+  ),
+);
+assert.ok(
+  !stage7.STAGE7_AUTHORIZED_PATHS.exactSourceFiles.includes(
     "deploy/contracts/stage-7-extension.v2.json",
   ),
 );
@@ -484,13 +556,16 @@ for (const requiredGen10SourcePath of [
   "tests/integration/stage-5-postgresql.test.ts",
 ]) {
   assert.ok(
-    stage7.STAGE7_AUTHORIZED_PATHS.exactSourceFiles.includes(requiredGen10SourcePath),
+    stage7.stage7AuthorizedPathsFor("gen10").exactSourceFiles.includes(requiredGen10SourcePath),
     `The gen10 authorized source list must include ${requiredGen10SourcePath}`,
   );
 }
-assert.equal(stage7.STAGE7_AUTHORIZED_PATHS.exactSourceFiles.includes("docs/DATA_MODEL.md"), false);
 assert.equal(
-  stage7.STAGE7_AUTHORIZED_PATHS.exactSourceFiles.includes("docs/PERMISSIONS.md"),
+  stage7.stage7AuthorizedPathsFor("gen10").exactSourceFiles.includes("docs/DATA_MODEL.md"),
+  false,
+);
+assert.equal(
+  stage7.stage7AuthorizedPathsFor("gen10").exactSourceFiles.includes("docs/PERMISSIONS.md"),
   false,
 );
 

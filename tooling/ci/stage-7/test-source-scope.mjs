@@ -27,10 +27,15 @@ assert.equal(typeof verifyStage7CandidateSourceScope, "function");
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const selectedHistory = await loadStage7PriorCandidateDispositions({
   root: repositoryRoot,
-  candidateGeneration: "gen10",
+  candidateGeneration: "gen11",
 });
-assert.equal(selectedHistory.priorCandidates.length, 9);
-assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen09");
+assert.equal(selectedHistory.priorCandidates.length, 10);
+assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen10");
+assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiStatus, "FAIL");
+assert.equal(
+  selectedHistory.priorCandidates.at(-1).candidateCommit,
+  "0670b9ff46b2870ee97b118181f7d0136c566b54",
+);
 const historicalGen09Root = await mkdtemp(
   path.join(process.env.TMPDIR ?? tmpdir(), "travelos-stage7-gen09-history-"),
 );
@@ -128,6 +133,30 @@ assert.deepEqual(preFreeze.requiredEvidencePaths, priorCiEvidencePaths);
 assert.deepEqual(preFreeze.missingPaths, []);
 assert.deepEqual(preFreeze.freezeEligibleGenerations, []);
 assert.equal(preFreeze.candidateCount, 8);
+
+const gen11PriorCiEvidencePaths = [
+  ...priorCiEvidencePaths,
+  "docs/evidence/phase-1-m1/stage-7/gen09/canonical-ci-execution.json",
+  "docs/evidence/phase-1-m1/stage-7/gen09/canonical-ci.log",
+  "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci-execution.json",
+  "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci.log",
+];
+const gen11PreFreeze = evaluateStage7PriorEvidenceScope({
+  priorCandidates: selectedHistory.priorCandidates,
+  sourcePaths: gen11PriorCiEvidencePaths,
+});
+assert.equal(gen11PreFreeze.result, "PASS");
+assert.equal(gen11PreFreeze.candidateCount, 10);
+assert.ok(
+  gen11PreFreeze.requiredEvidencePaths.includes(
+    "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci-execution.json",
+  ),
+);
+assert.ok(
+  gen11PreFreeze.requiredEvidencePaths.includes(
+    "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci.log",
+  ),
+);
 
 const frozenValidationPath = "docs/evidence/phase-1-m1/stage-7/gen99/candidate-validation.json";
 const frozenManifestPath = "docs/evidence/phase-1-m1/stage-7/gen99/candidate-freeze.json";

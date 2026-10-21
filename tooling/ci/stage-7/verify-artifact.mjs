@@ -18,7 +18,9 @@ const generationNumberFor = (generation) => Number(generation.slice(3));
 const stage7ExtensionArtifactPathFor = (generation) =>
   `deployment/stage-7-extension.${generationNumberFor(generation) >= 10 ? "v2" : "v1"}.json`;
 const stage7ExtensionSourcePathFor = (generation) =>
-  `deploy/contracts/stage-7-extension.${generationNumberFor(generation) >= 10 ? "v2" : "v1"}.json`;
+  generation === "gen11"
+    ? "deploy/contracts/stage-7-extension.v2-gen11.json"
+    : `deploy/contracts/stage-7-extension.${generationNumberFor(generation) >= 10 ? "v2" : "v1"}.json`;
 const stage7SourceBranchFor = (generation) =>
   generationNumberFor(generation) >= 10
     ? "stage7/runtime-acceptance-cleanup-successor"
