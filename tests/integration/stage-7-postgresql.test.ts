@@ -3880,6 +3880,54 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     }
   });
 
+  it("denies a same-Agency non-creator both cleanup repository paths without changing the fixture", async () => {
+    const persistence = tripAccessPersistence!;
+    const { cookie, resolver } = await createFixtureTripTestHarness();
+    const otherPrincipalId = `stage7-other-fixture-creator-${randomUUID()}`;
+    const fixtureRunId = databaseModule.createUuidV7();
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(
+        `INSERT INTO staff_access.staff_user (id, name, email, "emailVerified") VALUES ($1, 'Other synthetic fixture creator', $2, true)`,
+        [otherPrincipalId, `${otherPrincipalId}@example.test`],
+      );
+      await client.query(
+        `INSERT INTO staff_access.staff_membership (id, "agencyId", "staffPrincipalId", state) VALUES ($1::uuid, $2::uuid, $3, 'ACTIVE')`,
+        [randomUUID(), priorAgencyId, otherPrincipalId],
+      );
+      await client.query(
+        `INSERT INTO portal_access.runtime_acceptance_fixture_run ("agencyId", "fixtureRunId", "createdByStaffPrincipalId") VALUES ($1::uuid, $2::uuid, $3)`,
+        [priorAgencyId, fixtureRunId, otherPrincipalId],
+      );
+    });
+    const authorization = await authorizeM1Operation(
+      {
+        authorizationRepository: createStaffAccessRepository(persistence),
+        sessionResolver: resolver,
+      },
+      cookie,
+      null,
+      M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
+      5 * 60 * 1_000,
+    );
+    const repository =
+      databaseModule.createPostgresRuntimeAcceptanceFixtureCleanupRepository(persistence);
+    const command = {
+      agencyId: asOpaqueId(priorAgencyId),
+      fixtureRunId,
+      staffPrincipalId,
+      idempotencyKey: "non-creator-cleanup",
+    };
+    expect(await repository.beginCleanup(command, authorization)).toBeNull();
+    expect(await repository.completeCleanup(command, authorization)).toBeNull();
+    const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query<{ state: string; auditCount: string }>(
+        `SELECT fixture.state, (SELECT count(*)::text FROM audit.runtime_acceptance_fixture_event AS event WHERE event."agencyId"=fixture."agencyId" AND event."fixtureRunId"=fixture."fixtureRunId") AS "auditCount" FROM portal_access.runtime_acceptance_fixture_run AS fixture WHERE fixture."agencyId"=$1::uuid AND fixture."fixtureRunId"=$2::uuid`,
+        [priorAgencyId, fixtureRunId],
+      ),
+    );
+    expect(persisted.rows).toEqual([{ state: "OPEN", auditCount: "1" }]);
+  });
+
   it("exports the PostgreSQL Staff Trip access repository", () => {
     expect("createPostgresM1StaffTripAccessRepository" in databaseModule).toBe(true);
   });

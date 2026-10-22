@@ -159,7 +159,12 @@ const makeM1Operations = () => {
 };
 
 const makeCleanupOperations = ({
-  permissions = ["runtime_acceptance.fixture.manage"],
+  permissions = [
+    "runtime_acceptance.fixture.manage",
+    "trip.access.manage",
+    "trip.edit",
+    "trip.withdraw_publication",
+  ],
   recentMfaVerifiedAtEpochMs = nowEpochMs,
   session = true,
   beginCleanup = defaultBeginCleanup,

@@ -27,11 +27,11 @@ assert.equal(typeof verifyStage7CandidateSourceScope, "function");
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const selectedHistory = await loadStage7PriorCandidateDispositions({
   root: repositoryRoot,
-  candidateGeneration: "gen14",
+  candidateGeneration: "gen15",
 });
-assert.equal(selectedHistory.priorCandidates.length, 13);
-assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen13");
-assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiStatus, "NOT_RUN");
+assert.equal(selectedHistory.priorCandidates.length, 14);
+assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen14");
+assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiStatus, "FAIL");
 const selectedGen11 = selectedHistory.priorCandidates.find(
   ({ generation }) => generation === "gen11",
 );
@@ -150,13 +150,15 @@ const gen12PriorCiEvidencePaths = [
   "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci.log",
   "docs/evidence/phase-1-m1/stage-7/gen12/canonical-ci-execution.json",
   "docs/evidence/phase-1-m1/stage-7/gen12/canonical-ci.log",
+  "docs/evidence/phase-1-m1/stage-7/gen14/canonical-ci-execution.json",
+  "docs/evidence/phase-1-m1/stage-7/gen14/canonical-ci.log",
 ];
 const gen12PreFreeze = evaluateStage7PriorEvidenceScope({
   priorCandidates: selectedHistory.priorCandidates,
   sourcePaths: gen12PriorCiEvidencePaths,
 });
 assert.equal(gen12PreFreeze.result, "PASS");
-assert.equal(gen12PreFreeze.candidateCount, 13);
+assert.equal(gen12PreFreeze.candidateCount, 14);
 assert.ok(
   gen12PreFreeze.requiredEvidencePaths.includes(
     "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",

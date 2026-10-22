@@ -13,6 +13,9 @@ import { M1InputValidationError } from "../../trip-operations/application/m1-tri
 
 export const M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS = Object.freeze([
   "runtime_acceptance.fixture.manage",
+  "trip.access.manage",
+  "trip.edit",
+  "trip.withdraw_publication",
 ] as const satisfies readonly StaffPermissionId[]);
 
 export interface RuntimeAcceptanceCleanupCounts {

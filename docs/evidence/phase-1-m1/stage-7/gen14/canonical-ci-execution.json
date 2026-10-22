@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "stage": "PHASE_1_M1_STAGE_7",
+  "result": "FAIL",
+  "candidateGeneration": "gen14",
+  "candidateId": "travelos-phase-1-m1-stage-7-gen14",
+  "candidateCommit": "767aaf492706d1a693ad59fc30abb9db2f5eb614",
+  "artifactSha256": "1402d04199e4393474e4e9e04f54ed320c272483811036881a27bd175df3b75f",
+  "baselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN14.json",
+  "baselineSha256": "ff5a6508f1ee2b9d832f25d544002a3a46cc3497ad8d7adce9fee2bed6377b85",
+  "deploymentContractSha256": "ba9c322c7064e9e8b2662b0d1c4f9a99a660e3a21663ce098646edb0a52f2fb6",
+  "ciConsumed": "YES",
+  "invocationCount": 1,
+  "startedAtUtc": "2026-10-22T11:36:13.127Z",
+  "completedAtUtc": "2026-10-22T11:36:30.939Z",
+  "expectedGateCount": 42,
+  "completedGateCount": 6,
+  "failedGate": "stage6-predecessor:security-scan",
+  "gates": [
+    {
+      "label": "protected-baseline:pre",
+      "script": "protected-baseline:check",
+      "command": "corepack pnpm run protected-baseline:check",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1217,
+      "outputSha256": "f09d66421e65f3ae20354fba09b5ae5f3a40360557573f6b56cf7520258b5f99"
+    },
+    {
+      "label": "stage5-candidate-coherence:pre",
+      "script": "stage5:candidate-coherence:verify",
+      "command": "corepack pnpm run stage5:candidate-coherence:verify",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 66074,
+      "outputSha256": "9faaf650b2d02d0f63c3e31cfedfc2a45ff7cdcbf7fc7e2d23f876d6a470f0b4"
+    },
+    {
+      "label": "stage7-predecessor:pre",
+      "script": "stage7:predecessor:verify",
+      "command": "corepack pnpm run stage7:predecessor:verify --generation=gen14",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 2439,
+      "outputSha256": "18b109253fbd45ea46186739850e441af7d832aee3be8adef769cea044212a9e"
+    },
+    {
+      "label": "stage7-successor-baseline:pre",
+      "script": "stage7:successor-baseline:verify",
+      "command": "corepack pnpm run stage7:successor-baseline:verify --generation=gen14",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 773,
+      "outputSha256": "b92e387766543d6b91dcb3e20cca22e86ad480f1561248482d398028a6ff4eae"
+    },
+    {
+      "label": "stage7-source-scope:pre",
+      "script": "stage7:source-scope:verify",
+      "command": "corepack pnpm run stage7:source-scope:verify --generation=gen14",
+      "result": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "outputBytes": 1795,
+      "outputSha256": "807d8fe5835b8d508f6e8314acac5a4239644be4bbd31013b06c10df2e9db1a4"
+    },
+    {
+      "label": "stage6-predecessor:security-scan",
+      "script": "stage7:predecessor:security-scan",
+      "command": "corepack pnpm run stage7:predecessor:security-scan --generation=gen14",
+      "result": "FAIL",
+      "exitCode": 1,
+      "signal": null,
+      "outputBytes": 710,
+      "outputSha256": "3e5537ce377705891f7557a7b5099067f77b87141eaf0c6516753f2bd4995ba0"
+    }
+  ],
+  "guardPath": ".hermes/state/stage7-gen14-canonical-ci-guard.json",
+  "guardSha256": "bf5baecd77280c6d0bb508071dfd4f749464fa50446e167e069d6983b202314e",
+  "candidateStateSha256": "961cc6b40c9e5d8853acc63829f2e1ab2d1e7c8f0a373bfd1bae5584e49cabf1",
+  "logPath": "docs/evidence/phase-1-m1/stage-7/gen14/canonical-ci.log",
+  "logBytes": 74088,
+  "logSha256": "34798d728ed13234cc4a77ac6e261028efe8f248c57965f1ab336422ac6de92c",
+  "finalMarker": {
+    "schemaVersion": 1,
+    "stage": "PHASE_1_M1_STAGE_7",
+    "result": "FAIL",
+    "candidateGeneration": "gen14",
+    "candidateId": "travelos-phase-1-m1-stage-7-gen14",
+    "candidateCommit": "767aaf492706d1a693ad59fc30abb9db2f5eb614",
+    "artifactSha256": "1402d04199e4393474e4e9e04f54ed320c272483811036881a27bd175df3b75f",
+    "completedGateCount": 6,
+    "expectedGateCount": 42,
+    "failedGate": "stage6-predecessor:security-scan",
+    "stage8Actions": 0
+  },
+  "stage8Actions": 0
+}

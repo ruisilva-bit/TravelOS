@@ -121,6 +121,7 @@ const readRun = async (
         FROM "portal_access"."runtime_acceptance_fixture_run"
        WHERE "agencyId" = ${command.agencyId}::uuid
          AND "fixtureRunId" = ${command.fixtureRunId}::uuid
+         AND "createdByStaffPrincipalId" = ${command.staffPrincipalId}
        FOR UPDATE
     `.execute(database)
   ).rows[0];

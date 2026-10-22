@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "stage": "PHASE_1_M1_STAGE_7",
+  "result": "PASS",
+  "generation": "gen14",
+  "attempt": "01",
+  "candidateCommit": "767aaf492706d1a693ad59fc30abb9db2f5eb614",
+  "artifactId": "travelos-phase-1-m1-stage-7-gen14-767aaf49",
+  "artifactRoot": ".hermes/state/stage7-gen14-artifact",
+  "archivePath": ".hermes/state/stage7-gen14-artifact.tar.gz",
+  "artifactSha256": "1402d04199e4393474e4e9e04f54ed320c272483811036881a27bd175df3b75f",
+  "artifactBytes": 80541353,
+  "releaseMetadataSha256": "cbbf03008d372bd74868c358abe1bf807f23bb6440808b8a498f9cc20651ab1e",
+  "baselineSha256": "ff5a6508f1ee2b9d832f25d544002a3a46cc3497ad8d7adce9fee2bed6377b85",
+  "lockfileSha256": "104d02a20ec3182ae012ff2e8b761f77f10509f49a0ced58d8cf3c7b2727eaaa",
+  "payloadEntries": 24229,
+  "payloadFiles": 22826,
+  "payloadSymlinks": 1403,
+  "toolchain": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "stage8Actions": 0
+}

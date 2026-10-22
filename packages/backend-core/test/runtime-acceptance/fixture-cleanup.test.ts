@@ -10,6 +10,12 @@ const grantId = "018f47b2-9c6e-7a31-8e4d-3c9b6a10d006";
 const staffPrincipalId = "018f47b2-9c6e-7a31-8e4d-3c9b6a10d007";
 const sessionId = "stage7-cleanup-test-session";
 const nowEpochMs = 1_800_000_000_000;
+const cleanupPermissions = [
+  "runtime_acceptance.fixture.manage",
+  "trip.access.manage",
+  "trip.edit",
+  "trip.withdraw_publication",
+] as const;
 
 interface CleanupReceipt {
   readonly fixtureRunId: string;
@@ -64,9 +70,11 @@ const fixturePlan = (overrides: Record<string, unknown> = {}) => ({
 const makeDependencies = ({
   plan = fixturePlan(),
   failEffect,
+  permissions = cleanupPermissions,
 }: {
   plan?: ReturnType<typeof fixturePlan>;
   failEffect?: "revoke" | "withdraw" | "cancel" | "retire";
+  permissions?: readonly string[];
 } = {}) => {
   const events: string[] = [];
   const effectCalls: Array<{ effect: string; idempotencyKey?: unknown }> = [];
@@ -158,16 +166,14 @@ const makeDependencies = ({
         agencyId,
         membershipState: "ACTIVE",
         authorizationEpoch: 1n,
-        assignments: [
-          {
-            agencyId,
-            permissionId: "runtime_acceptance.fixture.manage",
-            scopeKind: "AGENCY",
-            organizationUnitId: null,
-            accessLevel: "ALL",
-            active: true,
-          },
-        ],
+        assignments: permissions.map((permissionId) => ({
+          agencyId,
+          permissionId,
+          scopeKind: "AGENCY",
+          organizationUnitId: null,
+          accessLevel: "ALL",
+          active: true,
+        })),
       })),
     },
     sessionResolver: {
@@ -194,6 +200,28 @@ const makeDependencies = ({
 };
 
 describe("runtime-acceptance fixture cleanup", () => {
+  it.each(cleanupPermissions)(
+    "requires %s before beginning even an empty cleanup",
+    async (missing) => {
+      const harness = makeDependencies({
+        plan: fixturePlan({
+          tripIds: [],
+          activePublicationTripIds: [],
+          activeGrants: [],
+          portalPrincipalId: null,
+        }),
+        permissions: cleanupPermissions.filter((permission) => permission !== missing),
+      });
+      await expect(
+        harness.operations.cleanupFixture("staff-session-cookie=opaque", fixtureRunId, {
+          idempotencyKey: "missing-cleanup-permission",
+        }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(harness.repository.beginCleanup).not.toHaveBeenCalled();
+      expect(harness.repository.completeCleanup).not.toHaveBeenCalled();
+    },
+  );
+
   it("cleanupRetriesAfterFailureAtEachEffect", async () => {
     for (const failEffect of ["revoke", "withdraw", "cancel", "retire"] as const) {
       const harness = makeDependencies({ failEffect });

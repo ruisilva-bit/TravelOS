@@ -16,7 +16,7 @@ const cloneJson = (value) => JSON.parse(JSON.stringify(value));
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const legacyGeneration = "gen09";
 const generation = STAGE7_DEFAULT_GENERATION;
-assert.equal(generation, "gen14");
+assert.equal(generation, "gen15");
 const readJson = async (relativePath) =>
   JSON.parse(await readFile(new URL(`../../../${relativePath}`, import.meta.url), "utf8"));
 const legacyExtension = await readJson("deploy/contracts/stage-7-extension.v1.json");

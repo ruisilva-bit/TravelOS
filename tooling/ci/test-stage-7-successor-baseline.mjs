@@ -6,7 +6,7 @@ import * as stage7 from "./stage-7-successor-baseline.mjs";
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const bytewise = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
-assert.equal(stage7.STAGE7_DEFAULT_GENERATION, "gen14");
+assert.equal(stage7.STAGE7_DEFAULT_GENERATION, "gen15");
 assert.equal(
   stage7.stage7ExtensionPathFor("gen13"),
   "deploy/contracts/stage-7-extension.v2-gen13.json",
@@ -203,7 +203,7 @@ const gen13AuthorizedPathsDocument = JSON.parse(
   ),
 );
 assert.deepEqual(stage7.stage7AuthorizedPathsFor("gen13"), gen13AuthorizedPathsDocument);
-assert.equal(stage7.STAGE7_AUTHORIZED_PATHS.candidateGeneration, "gen14");
+assert.equal(stage7.STAGE7_AUTHORIZED_PATHS.candidateGeneration, "gen15");
 assert.ok(
   stage7.STAGE7_AUTHORIZED_PATHS.exactSourceFiles.includes(
     "deploy/contracts/stage-7-extension.v2-gen13.json",
@@ -265,9 +265,9 @@ const failedGen10 = currentHistory.priorCandidates.find(({ generation }) => gene
 const interruptedGen11 = currentHistory.priorCandidates.find(
   ({ generation }) => generation === "gen11",
 );
-assert.equal(currentHistory.candidateGeneration, "gen14");
-assert.equal(currentHistory.priorCandidates.at(-1).generation, "gen13");
-assert.equal(currentHistory.priorCandidates.at(-1).canonicalCiStatus, "NOT_RUN");
+assert.equal(currentHistory.candidateGeneration, "gen15");
+assert.equal(currentHistory.priorCandidates.at(-1).generation, "gen14");
+assert.equal(currentHistory.priorCandidates.at(-1).canonicalCiStatus, "FAIL");
 assert.equal(interruptedGen11.generation, "gen11");
 assert.equal(interruptedGen11.canonicalCiStatus, "INTERRUPTED");
 assert.equal(interruptedGen11.canonicalCiReceipt, null);

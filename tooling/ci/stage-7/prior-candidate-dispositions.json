@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "stage": "PHASE_1_M1_STAGE_7",
-  "candidateGeneration": "gen14",
+  "candidateGeneration": "gen15",
   "predecessorCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
   "stage8Actions": 0,
   "priorCandidates": [
@@ -511,6 +511,47 @@
       },
       "canonicalCiStatus": "NOT_RUN",
       "canonicalCiReceipt": null,
+      "validationStatus": "NOT_REACHED",
+      "validationPath": null,
+      "finalCandidateScan": "NOT_REACHED",
+      "freezeStatus": "NOT_REACHED",
+      "freezePath": null,
+      "stage8Actions": 0
+    },
+    {
+      "generation": "gen14",
+      "candidateCommit": "767aaf492706d1a693ad59fc30abb9db2f5eb614",
+      "baseline": {
+        "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN14.json",
+        "sha256": "ff5a6508f1ee2b9d832f25d544002a3a46cc3497ad8d7adce9fee2bed6377b85"
+      },
+      "predecessorReceipts": {
+        "stage6": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN14_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+          "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+        },
+        "stage7": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN14_STAGE7_PREDECESSOR_VERIFY.json",
+          "sha256": "a8641850840ca86b9335a1c4746f6b13ff05303da64b368077c1e642ca81a734"
+        }
+      },
+      "lastPassedGate": "stage7-source-scope:pre",
+      "disposition": "Real packaged rehearsal PASS including authenticated cleanup. One canonical CI consumed and FAIL at gate6: predecessor security scanner required detached Stage6 worktree, but the accepted worktree was attached to phase-1/stage-6. Preserve exact FAIL receipt/log; no CT200 mutation. Existing-contract creator/all-permission gaps were separately reproduced before successor delivery.",
+      "artifact": {
+        "result": "PASS",
+        "path": ".hermes/state/stage7-gen14-artifact.tar.gz",
+        "sha256": "1402d04199e4393474e4e9e04f54ed320c272483811036881a27bd175df3b75f",
+        "bytes": 80541353,
+        "buildReceipt": {
+          "path": ".hermes/state/stage7-gen14-artifact-build.json",
+          "sha256": "389dea9870eebbd225ebfca7fd304a33487099cabd065ee1bba628dd9b03aa38"
+        }
+      },
+      "canonicalCiStatus": "FAIL",
+      "canonicalCiReceipt": {
+        "path": "docs/evidence/phase-1-m1/stage-7/gen14/canonical-ci-execution.json",
+        "sha256": "1d5dad6e50563d6e4de3fc260d7bc674f0517241bd356c4f0621ce8c738ebc75"
+      },
       "validationStatus": "NOT_REACHED",
       "validationPath": null,
       "finalCandidateScan": "NOT_REACHED",
