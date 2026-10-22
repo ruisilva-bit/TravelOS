@@ -253,14 +253,14 @@ const readPlan = async (
       ? []
       : (
           await sql<ActiveGrantRow>`
-            SELECT grant."grantId"::text AS "grantId",
-                   grant."tripId"::text AS "tripId",
-                   grant."portalPrincipalId"
-              FROM "portal_access"."trip_access_grant" AS grant
-             WHERE grant."agencyId" = ${run.agencyId}::uuid
-               AND grant."tripId" IN (${sql.join(tripIds.map((tripId) => sql`${tripId}::uuid`))})
-               AND grant."grantState" = 'ACTIVE'
-             ORDER BY grant."grantId"
+            SELECT access_grant."grantId"::text AS "grantId",
+                   access_grant."tripId"::text AS "tripId",
+                   access_grant."portalPrincipalId"
+              FROM "portal_access"."trip_access_grant" AS access_grant
+             WHERE access_grant."agencyId" = ${run.agencyId}::uuid
+               AND access_grant."tripId" IN (${sql.join(tripIds.map((tripId) => sql`${tripId}::uuid`))})
+               AND access_grant."grantState" = 'ACTIVE'
+             ORDER BY access_grant."grantId"
              LIMIT 3
           `.execute(database)
         ).rows;

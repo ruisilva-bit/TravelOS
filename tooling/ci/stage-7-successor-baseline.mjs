@@ -107,7 +107,7 @@ export const STAGE7_EXTENSION_V2_GEN12_CONTRACT_PATH =
   "deploy/contracts/stage-7-extension.v2-gen12.json";
 export const STAGE7_AUTHORIZED_PATHS_V1_PATH =
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS.json";
-export const STAGE7_DEFAULT_GENERATION = "gen13";
+export const STAGE7_DEFAULT_GENERATION = "gen14";
 const generationNumber = (generation) => {
   assert.match(generation, /^gen[0-9]{2,}$/, "Invalid Stage 7 candidate generation");
   return Number(generation.slice(3));
@@ -514,7 +514,9 @@ export const stage7AuthorizedPathsFor = (generation) => {
       candidateGeneration: generation,
       exactSourceFiles: [
         ...STAGE7_AUTHORIZED_PATHS_GEN12.exactSourceFiles,
-        stage7ExtensionPathFor(generation),
+        ...Array.from({ length: number - 12 }, (_, index) =>
+          stage7ExtensionPathFor(`gen${String(index + 13).padStart(2, "0")}`),
+        ),
         ".gitattributes",
       ],
     });

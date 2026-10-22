@@ -141,6 +141,12 @@ const syntheticFixtureEmailAllowlist = [
     rule: "email-address",
     line: 231,
   },
+  // Invocation-local randomBytes expression, not a persisted credential value.
+  ...["high-entropy-secret-assignment", "secret-assignment"].map((rule) => ({
+    path: "tests/integration/stage-7-postgresql.test.ts",
+    rule,
+    line: 3811,
+  })),
 ];
 const readRegularFiles = async (relativeDirectory) => {
   const files = [];

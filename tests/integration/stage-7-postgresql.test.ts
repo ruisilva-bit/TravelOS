@@ -10,6 +10,7 @@ import { Client } from "pg";
 import request from "supertest";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AuthSurfacePolicy, PortalAuthRealm } from "@travelos/auth-adapters/portal";
+import { createAdminApi } from "../../apps/admin-api/src/app.js";
 import { createAdminStaffSessionResolver } from "../../apps/admin-api/src/m1-session-resolver.js";
 import { createPortalApi } from "../../apps/portal-api/src/app.js";
 import * as databaseModule from "../../packages/database/src/index.js";
@@ -25,6 +26,8 @@ import {
 import {
   asOpaqueId,
   bootstrapRootAgency,
+  createM1RuntimeAcceptanceFixtureOperations,
+  createM1StaffTripAccessOperations,
   createMoney,
   createScheduledLocalDateTime,
   authorizeM1Operation,
@@ -3776,6 +3779,105 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         [priorAgencyId, fixtureRunId],
       );
     });
+  });
+
+  it("cleans registered Trips and an enrolled Portal principal through the real Admin HTTP route", async () => {
+    const persistence = tripAccessPersistence!;
+    const { cookie, resolver } = await createFixtureTripTestHarness();
+    const fixtureRunId = databaseModule.createUuidV7();
+    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
+      persistence,
+      resolver,
+    );
+    for (const title of ["HTTP cleanup first Trip", "HTTP cleanup second Trip"]) {
+      await tripOperations.createRuntimeAcceptanceFixtureTrip(
+        cookie,
+        stage7TripInput(title),
+        fixtureRunId,
+      );
+    }
+    const portalDatabase = await portalAuthPersistence!.withConnection(
+      async (connection) => connection,
+    );
+    const enrollment = createLocalOperatorPortalEnrollmentService({
+      database: portalDatabase,
+      canonicalOrigin: "http://portal.travelos.test",
+      realmKeyMaterial: stage7RealmKey,
+      environment: "DEVELOPMENT",
+    });
+    await enrollment.enroll({
+      email: `stage7-http-cleanup-${randomUUID()}@example.test`,
+      name: "Stage 7 HTTP cleanup principal",
+      password: randomBytes(32).toString("base64url"),
+      fixtureRunId,
+    });
+    const staffAccessRepository = createStaffAccessRepository(persistence);
+    const tripAccessOperations = createM1StaffTripAccessOperations({
+      repository: databaseModule.createPostgresM1StaffTripAccessRepository(persistence),
+      authorizationRepository: staffAccessRepository,
+      sessionResolver: resolver,
+    });
+    const publicationOperations = databaseModule.createPostgresM1StaffTripPublicationOperations(
+      persistence,
+      resolver,
+      { validate: (value) => void PortalTripSnapshotV1Schema.parse(value) },
+    );
+    const repository =
+      databaseModule.createPostgresRuntimeAcceptanceFixtureCleanupRepository(persistence);
+    const cleanup = createM1RuntimeAcceptanceFixtureOperations({
+      repository,
+      authorizationRepository: staffAccessRepository,
+      sessionResolver: resolver,
+      tripOperations,
+      tripAccessOperations,
+      publicationOperations,
+    });
+    const application = await createAdminApi({
+      expectedHost: "admin.travelos.test",
+      auth: {
+        realm: staffRealm,
+        policy: {
+          canonicalOrigin: "http://admin.travelos.test",
+          expectedHost: "admin.travelos.test",
+        },
+        environment: "DEVELOPMENT",
+        staffAccessRepository,
+        m1Operations: tripOperations,
+        m1TripAccessOperations: tripAccessOperations,
+        m1PublicationOperations: publicationOperations,
+        m1RuntimeAcceptanceFixtureOperations: {
+          createFixtureTrip: tripOperations.createRuntimeAcceptanceFixtureTrip,
+          cleanupFixture: cleanup.cleanupFixture,
+        },
+      },
+    });
+    try {
+      const response = await request(application.getHttpServer())
+        .post(`/api/admin/runtime-acceptance-fixtures/${fixtureRunId}/cleanup`)
+        .set("Host", "admin.travelos.test")
+        .set("Origin", "http://admin.travelos.test")
+        .set("Cookie", cookie)
+        .send({ idempotencyKey: `http-cleanup-${fixtureRunId}` });
+      expect({ status: response.status, body: response.body }).toMatchObject({
+        status: 200,
+        body: {
+          fixtureRunId,
+          state: "CLEANED",
+          errorCode: null,
+          counts: { tripsCancelled: 2, principalsRetired: 1 },
+        },
+      });
+      const replay = await request(application.getHttpServer())
+        .post(`/api/admin/runtime-acceptance-fixtures/${fixtureRunId}/cleanup`)
+        .set("Host", "admin.travelos.test")
+        .set("Origin", "http://admin.travelos.test")
+        .set("Cookie", cookie)
+        .send({ idempotencyKey: `http-cleanup-replay-${fixtureRunId}` });
+      expect(replay.status).toBe(200);
+      expect(replay.body).toEqual(response.body);
+    } finally {
+      await application.close();
+    }
   });
 
   it("exports the PostgreSQL Staff Trip access repository", () => {

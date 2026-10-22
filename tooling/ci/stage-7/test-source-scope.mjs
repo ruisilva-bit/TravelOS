@@ -27,11 +27,11 @@ assert.equal(typeof verifyStage7CandidateSourceScope, "function");
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const selectedHistory = await loadStage7PriorCandidateDispositions({
   root: repositoryRoot,
-  candidateGeneration: "gen13",
+  candidateGeneration: "gen14",
 });
-assert.equal(selectedHistory.priorCandidates.length, 12);
-assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen12");
-assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiStatus, "PASS");
+assert.equal(selectedHistory.priorCandidates.length, 13);
+assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen13");
+assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiStatus, "NOT_RUN");
 const selectedGen11 = selectedHistory.priorCandidates.find(
   ({ generation }) => generation === "gen11",
 );
@@ -156,7 +156,7 @@ const gen12PreFreeze = evaluateStage7PriorEvidenceScope({
   sourcePaths: gen12PriorCiEvidencePaths,
 });
 assert.equal(gen12PreFreeze.result, "PASS");
-assert.equal(gen12PreFreeze.candidateCount, 12);
+assert.equal(gen12PreFreeze.candidateCount, 13);
 assert.ok(
   gen12PreFreeze.requiredEvidencePaths.includes(
     "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",

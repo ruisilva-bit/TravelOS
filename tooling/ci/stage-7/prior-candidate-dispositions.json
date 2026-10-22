@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "stage": "PHASE_1_M1_STAGE_7",
-  "candidateGeneration": "gen13",
+  "candidateGeneration": "gen14",
   "predecessorCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
   "stage8Actions": 0,
   "priorCandidates": [
@@ -473,6 +473,44 @@
         "path": "docs/evidence/phase-1-m1/stage-7/gen12/canonical-ci-execution.json",
         "sha256": "fc6c09dcd51ac3aa9da5590c5755626295de00bd824b7dc6099ca9056211b1c5"
       },
+      "validationStatus": "NOT_REACHED",
+      "validationPath": null,
+      "finalCandidateScan": "NOT_REACHED",
+      "freezeStatus": "NOT_REACHED",
+      "freezePath": null,
+      "stage8Actions": 0
+    },
+    {
+      "generation": "gen13",
+      "candidateCommit": "0b45f33b4da83e8caefd9bc013fcb5d34a7c95a2",
+      "baseline": {
+        "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN13.json",
+        "sha256": "907fbdb5db489425e8a3edc678af9b8ef5a5fd7f7320aa7181815eb239ef48e6"
+      },
+      "predecessorReceipts": {
+        "stage6": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN13_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+          "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+        },
+        "stage7": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN13_STAGE7_PREDECESSOR_VERIFY.json",
+          "sha256": "31be6075fde54cc43f34e503475ce4b8fe1dfd7dab337f34ffd9859ed86f20b5"
+        }
+      },
+      "lastPassedGate": "ARTIFACT_INTEGRITY_AND_AUTHENTICATED_ACCEPTANCE_BEFORE_CLEANUP",
+      "disposition": "Packaged rehearsal failed final fixture cleanup before canonical CI. Real HTTP regression localized SQLSTATE 42601: reserved keyword grant used as an unquoted alias for non-empty fixture Trip scope. Preserve gen13 artifact, baseline and exact failure log; no CT200 mutation or CI invocation.",
+      "artifact": {
+        "result": "PASS",
+        "path": ".hermes/state/stage7-gen13-artifact.tar.gz",
+        "sha256": "677a3b0e3fc3996efe306baf1d5976c5a4e74b4f6640825edb014ad2a498b01d",
+        "bytes": 80527374,
+        "buildReceipt": {
+          "path": ".hermes/state/stage7-gen13-artifact-build.json",
+          "sha256": "58d9c06c0fc50ee59983ebde0226829218871a58e1386989b39ab43cdd364511"
+        }
+      },
+      "canonicalCiStatus": "NOT_RUN",
+      "canonicalCiReceipt": null,
       "validationStatus": "NOT_REACHED",
       "validationPath": null,
       "finalCandidateScan": "NOT_REACHED",

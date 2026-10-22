@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "stage": "PHASE_1_M1_STAGE_7",
+  "generation": "gen13",
+  "result": "FAIL",
+  "gate": "PACKAGED_OPERATOR_REHEARSAL",
+  "candidateCommit": "0b45f33b4da83e8caefd9bc013fcb5d34a7c95a2",
+  "execution": {
+    "command": "TRAVELOS_STAGE7_ARTIFACT_ROOT=<clean scratch extraction> corepack pnpm run test:stage7:postgres",
+    "exitCode": 1,
+    "logPath": "docs/evidence/phase-1-m1/stage-7/gen13/packaged-rehearsal-failure.log",
+    "logSha256": "8c4723392648c536403c3ee6ab1c8f25836a1ef024c693f750fc880f37563bfc"
+  },
+  "observedFailure": {
+    "code": "STAGE7_RUNTIME_ACCEPTANCE_CLEANUP_FAILED",
+    "completedThrough": "staff-session-revoked-after-sign-out",
+    "authenticatedAcceptanceCleanup": "FAILED"
+  },
+  "diagnosis": {
+    "regression": "cleans registered Trips and an enrolled Portal principal through the real Admin HTTP route",
+    "httpStatus": 500,
+    "sqlState": "42601",
+    "rootCause": "Unquoted reserved keyword grant used as raw-SQL alias only when fixture tripIds is non-empty",
+    "correction": "Use access_grant alias; no schema/migration or credential change"
+  },
+  "canonicalCiStatus": "NOT_RUN",
+  "ct200Actions": 0,
+  "stage8Actions": 0
+}

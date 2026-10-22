@@ -1,0 +1,104 @@
+$ node tooling/database/run-stage-7-disposable.mjs
+
+ RUN  v4.1.10 /home/hermes/.hermes/worktrees/travelos-stage7-successor
+
+ × tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > authenticates the acceptance runner against a real DEVELOPMENT Staff MFA realm 207139ms
+   → Packaged operator rehearsal failed: {"result":"FAIL","stage":"authenticated one-shot acceptance","code":"ERR_ASSERTION","artifactId":"travelos-phase-1-m1-stage-7-gen13-0b45f33b","preActivation":"PASS","postActivation":"PASS","missingCredentialStatus":1,"invalidCredentialStatus":1,"runner":null,"acceptedOneShot":{"preflightStatus":0,"status":1,"failure":{"stage":"authenticated API acceptance","code":"STAGE7_RUNTIME_ACCEPTANCE_CLEANUP_FAILED","completedProbes":["staff-realm-authenticated-with-recent-mfa","staff-session-context-http-200","staff-session-context-agency-id-string","staff-session-context-principal-id-string","staff-session-context-mfa-number","staff-session-scope-confirmed","synthetic-business-data-created-through-admin-api","local-operator-portal-enrollment-verified","unauthenticated-portal-trip-denied","portal-realm-authenticated","portal-default-deny-before-grant","immutable-publication-created-through-admin-api","explicit-trip-access-grant-issued-through-admin-api","cross-trip-access-denied","authorized-portal-read-uses-allowlisted-snapshot","portal-snapshot-unchanged-after-workspace-edit","publication-v2-visible-v1-immutable","portal-access-grant-revocation-http-200","portal-access-grant-revocation-revoked-at-string","portal-trip-read-after-revocation-http-401","grant-revocation-invalidates-existing-portal-session","portal-session-revoked-after-sign-out","staff-session-revoked-after-sign-out"]}},"services":{"adminStarted":true,"portalStarted":true,"stopped":true,"listenersClosed":true}}: expected 1 to be +0 // Object.is equality
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > applies the ordered Stage 7 migration to an empty supported database
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > upgrades the accepted Stage 6 head through the canonical migrator
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > verifies the exact checksummed chain and performs deterministic no-op reruns
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > fixtureRunAndFirstTripAssociationAreAtomic
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > fixtureRunAndFirstTripAreAtomic
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > timeoutAfterTripCommitIsRecoverableByRunId
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > noNewRunStartsWhileCleanupIsPending
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > limitsCleanupAuditReadsToScopeAndEventMetadata
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > cleanupRepositoryAuditsPendingAndCompletedTransitions
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > fixtureRunRejectsCrossAgencyAndExcessResources
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > onlyOneUnresolvedFixtureRunExistsPerAgency
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > portalRuntimeCannotReadFixtureRegistry
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > associates only an OPEN fixture with an active verified synthetic Portal Principal
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > retiredPrincipalHasNoPortalSessionContext
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > backfills a preexisting Portal principal and session with authorization epoch one
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > keeps realm sessions separate when the email fields share one opaque marker
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > creates Portal principal and session context on Portal-realm registration
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > limits Portal enrollment to local operators and authenticates via the normal Portal realm
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > rolls back a synthetic Portal enrollment when native verification fails
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > portalEnrollmentAssociationRollsBackOnInvalidRun
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > keeps concurrent local Portal enrollment for one normalized address to one verified identity
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > gives existing Agency Owner templates the Stage 7 grant-management permission
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > allows the Portal role only scoped grant, epoch/session, and immutable snapshot reads
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > owns Stage 7 grant and event tables by travelos_owner without PUBLIC ACLs
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > rejects expired, stale, wrong-scope, and wrong-Agency issue attempts without mutation
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > issues one same-Agency grant with atomic immutable event and outbox records
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > rejects idempotency-key reuse with a different request and duplicate active grants
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > allows Portal runtime to read an issued grant through its explicit columns
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > serves only the current immutable snapshot through the Portal HTTP route
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > prevents mutation and deletion of grant, audit, and outbox history
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > revokes atomically, increments the Portal authorization epoch, and replays idempotently
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > expires stale active grants before issuing a new grant
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > rejects commands after the Staff membership is revoked
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > withdraws the active snapshot, cancels the registered Trip, and retires only its Portal principal
+ · tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > exports the PostgreSQL Staff Trip access repository
+
+ Test Files  1 failed (1)
+      Tests  1 failed (36)
+   Start at  11:52:52
+   Duration  214.91s (transform 854ms, setup 0ms, import 2.31s, tests 212.41s, environment 0ms)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > authenticates the acceptance runner against a real DEVELOPMENT Staff MFA realm
+AssertionError: Packaged operator rehearsal failed: {"result":"FAIL","stage":"authenticated one-shot acceptance","code":"ERR_ASSERTION","artifactId":"travelos-phase-1-m1-stage-7-gen13-0b45f33b","preActivation":"PASS","postActivation":"PASS","missingCredentialStatus":1,"invalidCredentialStatus":1,"runner":null,"acceptedOneShot":{"preflightStatus":0,"status":1,"failure":{"stage":"authenticated API acceptance","code":"STAGE7_RUNTIME_ACCEPTANCE_CLEANUP_FAILED","completedProbes":["staff-realm-authenticated-with-recent-mfa","staff-session-context-http-200","staff-session-context-agency-id-string","staff-session-context-principal-id-string","staff-session-context-mfa-number","staff-session-scope-confirmed","synthetic-business-data-created-through-admin-api","local-operator-portal-enrollment-verified","unauthenticated-portal-trip-denied","portal-realm-authenticated","portal-default-deny-before-grant","immutable-publication-created-through-admin-api","explicit-trip-access-grant-issued-through-admin-api","cross-trip-access-denied","authorized-portal-read-uses-allowlisted-snapshot","portal-snapshot-unchanged-after-workspace-edit","publication-v2-visible-v1-immutable","portal-access-grant-revocation-http-200","portal-access-grant-revocation-revoked-at-string","portal-trip-read-after-revocation-http-401","grant-revocation-invalidates-existing-portal-session","portal-session-revoked-after-sign-out","staff-session-revoked-after-sign-out"]}},"services":{"adminStarted":true,"portalStarted":true,"stopped":true,"listenersClosed":true}}: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ runPackagedOperatorRehearsal tests/integration/stage-7-postgresql.test.ts:284:7
+    282|         services: report.services ?? null,
+    283|       })}`,
+    284|     ).toBe(0);
+       |       ^
+    285|     expect(rehearsalResult.stderr).toBe("");
+    286|     expect(report.result).toBe("PASS");
+ ❯ tests/integration/stage-7-postgresql.test.ts:1357:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+{"evidence":"/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-postgresql-1217089","result":"FAIL"}
+file:///home/hermes/.hermes/worktrees/travelos-stage7-successor/tooling/database/run-stage-7-disposable.mjs:54
+  if (result.exitCode !== 0) throw new Error(`${label} failed: ${result.stderr.slice(0, 4_000)}`);
+                                   ^
+
+Error: Stage 7 PostgreSQL integration qualification failed: 
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > authenticates the acceptance runner against a real DEVELOPMENT Staff MFA realm
+AssertionError: Packaged operator rehearsal failed: {"result":"FAIL","stage":"authenticated one-shot acceptance","code":"ERR_ASSERTION","artifactId":"travelos-phase-1-m1-stage-7-gen13-0b45f33b","preActivation":"PASS","postActivation":"PASS","missingCredentialStatus":1,"invalidCredentialStatus":1,"runner":null,"acceptedOneShot":{"preflightStatus":0,"status":1,"failure":{"stage":"authenticated API acceptance","code":"STAGE7_RUNTIME_ACCEPTANCE_CLEANUP_FAILED","completedProbes":["staff-realm-authenticated-with-recent-mfa","staff-session-context-http-200","staff-session-context-agency-id-string","staff-session-context-principal-id-string","staff-session-context-mfa-number","staff-session-scope-confirmed","synthetic-business-data-created-through-admin-api","local-operator-portal-enrollment-verified","unauthenticated-portal-trip-denied","portal-realm-authenticated","portal-default-deny-before-grant","immutable-publication-created-through-admin-api","explicit-trip-access-grant-issued-through-admin-api","cross-trip-access-denied","authorized-portal-read-uses-allowlisted-snapshot","portal-snapshot-unchanged-after-workspace-edit","publication-v2-visible-v1-immutable","portal-access-grant-revocation-http-200","portal-access-grant-revocation-revoked-at-string","portal-trip-read-after-revocation-http-401","grant-revocation-invalidates-existing-portal-session","portal-session-revoked-after-sign-out","staff-session-revoked-after-sign-out"]}},"services":{"adminStarted":true,"portalStarted":true,"stopped":true,"listenersClosed":true}}: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ runPackagedOperatorRehearsal tests/integration/stage-7-postgresql.test.ts:284:7
+    282|         services: report.services ?? null,
+    283|       })}`,
+    284|     ).toBe(0);
+       |       ^
+    285|     expect(rehearsalResult.stderr).toBe("");
+    286|     expect(report.result).toBe("PASS");
+ ❯ tests/integration/stage-7-postgresql.test.ts:1357:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+    at requirePass (file:///home/hermes/.hermes/worktrees/travelos-stage7-successor/tooling/database/run-stage-7-disposable.mjs:54:36)
+    at file:///home/hermes/.hermes/worktrees/travelos-stage7-successor/tooling/database/run-stage-7-disposable.mjs:221:3
+
+Node.js v24.19.0
+[ELIFECYCLE] Command failed with exit code 1.
