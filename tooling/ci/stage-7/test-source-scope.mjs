@@ -27,18 +27,19 @@ assert.equal(typeof verifyStage7CandidateSourceScope, "function");
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const selectedHistory = await loadStage7PriorCandidateDispositions({
   root: repositoryRoot,
-  candidateGeneration: "gen12",
+  candidateGeneration: "gen13",
 });
-assert.equal(selectedHistory.priorCandidates.length, 11);
-assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen11");
-assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiStatus, "INTERRUPTED");
-assert.equal(
-  selectedHistory.priorCandidates.at(-1).candidateCommit,
-  "91b109493a9e462f7caea62e7d04c9a99e892cff",
+assert.equal(selectedHistory.priorCandidates.length, 12);
+assert.equal(selectedHistory.priorCandidates.at(-1).generation, "gen12");
+assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiStatus, "PASS");
+const selectedGen11 = selectedHistory.priorCandidates.find(
+  ({ generation }) => generation === "gen11",
 );
-assert.equal(selectedHistory.priorCandidates.at(-1).canonicalCiReceipt, null);
+assert.equal(selectedGen11.canonicalCiStatus, "INTERRUPTED");
+assert.equal(selectedGen11.candidateCommit, "91b109493a9e462f7caea62e7d04c9a99e892cff");
+assert.equal(selectedGen11.canonicalCiReceipt, null);
 assert.equal(
-  selectedHistory.priorCandidates.at(-1).canonicalCiInterruption.path,
+  selectedGen11.canonicalCiInterruption.path,
   "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",
 );
 const historicalGen09Root = await mkdtemp(
@@ -147,13 +148,15 @@ const gen12PriorCiEvidencePaths = [
   "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci.log",
   "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",
   "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci.log",
+  "docs/evidence/phase-1-m1/stage-7/gen12/canonical-ci-execution.json",
+  "docs/evidence/phase-1-m1/stage-7/gen12/canonical-ci.log",
 ];
 const gen12PreFreeze = evaluateStage7PriorEvidenceScope({
   priorCandidates: selectedHistory.priorCandidates,
   sourcePaths: gen12PriorCiEvidencePaths,
 });
 assert.equal(gen12PreFreeze.result, "PASS");
-assert.equal(gen12PreFreeze.candidateCount, 11);
+assert.equal(gen12PreFreeze.candidateCount, 12);
 assert.ok(
   gen12PreFreeze.requiredEvidencePaths.includes(
     "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",

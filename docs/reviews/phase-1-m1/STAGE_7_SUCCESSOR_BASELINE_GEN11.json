@@ -1,0 +1,738 @@
+{
+  "schemaVersion": 1,
+  "candidateGeneration": "gen11",
+  "candidateId": "travelos-phase-1-m1-stage-7-gen11",
+  "candidateCommit": "91b109493a9e462f7caea62e7d04c9a99e892cff",
+  "stage": "PHASE_1_M1_STAGE_7",
+  "stage7Actions": 1,
+  "stage8Actions": 0,
+  "predecessor": {
+    "tag": "travelos-phase-1-m1-stage-6-gen07-revision-04-go",
+    "commit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
+    "annotatedTagObject": "8d951cbf739a69695ea98e2a31b5532ee0b0d951",
+    "stage6SourceBaseline": {
+      "path": "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_07_REVISION_03.json",
+      "sha256": "bb8890cacb720d43360997ff0e5c5ac0c6fa945b3dc5f87fb298d80c6e4e1695",
+      "sourceCount": 61,
+      "sourceAggregateSha256": "a736add8226933ac9d2a78268357dd654d16322f722fe377cdb28bbd9a8cde6b"
+    },
+    "stage6CandidateFreeze": {
+      "path": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_04_CANDIDATE_FREEZE.json",
+      "sha256": "df844f6ac08adca1779bde325f9b1da9c134396c38ec8448cf13d718e4286ebc"
+    },
+    "stage6IndependentReview": {
+      "path": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_04_INDEPENDENT_REVIEW.json",
+      "sha256": "0c899b6696749075d8c5de7db66df6f92351896e10457cc5ba15f23a2db792b4"
+    },
+    "stage6FinalDecision": {
+      "path": "docs/reviews/phase-1-m1/stage-6/GEN07_REVISION_04_FINAL_DECISION.json",
+      "sha256": "f7d51f7eac9ed194f3f1ada129d61bb6467f7cb02c9b4886d43f321bc55ed571"
+    },
+    "stage6Verification": {
+      "result": "PASS",
+      "branch": "phase-1/stage-6",
+      "sourceCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
+      "stage6BaselinePath": "docs/reviews/phase-1-m1/STAGE_6_SUCCESSOR_BASELINE_GENERATION_07_REVISION_03.json",
+      "stage6BaselineSha256": "bb8890cacb720d43360997ff0e5c5ac0c6fa945b3dc5f87fb298d80c6e4e1695",
+      "sourceCount": 61,
+      "sourceAggregateSha256": "a736add8226933ac9d2a78268357dd654d16322f722fe377cdb28bbd9a8cde6b",
+      "predecessor": {
+        "result": "PASS",
+        "tag": "phase-1-stage-5-go",
+        "commit": "8dd62157d14e88400a9df1e97452a3807f3ed50e",
+        "phase0BaselineSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+        "stage5BaselineSha256": "ff41985b197738faa9585af2b4686612d420a9c118801a801c8d38087f1d29b6",
+        "stage5ProtectedFileCount": 38,
+        "stage5AggregateSha256": "decc422c49ab17d44e700331b95ac3fdf0bee8d6058b244682ecdc6ab8940255",
+        "stage6Actions": 0
+      },
+      "stage6Actions": 1,
+      "stage7Actions": 0
+    }
+  },
+  "predecessorReceiptDocument": {
+    "path": "docs/reviews/phase-1-m1/stage-7/GEN11_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+    "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+  },
+  "extension": {
+    "schemaVersion": 2,
+    "stage": "PHASE_1_M1_STAGE_7",
+    "predecessorContract": {
+      "contractId": "travelos-stage7-portal-isolation-v1",
+      "sha256": "27f7ee63c3afde0e54b13795d34a5ba0ac774d7429aecb10cd74eb4959e01afb"
+    },
+    "staffGrantPermission": {
+      "id": "trip.access.manage",
+      "registryVersion": 6,
+      "scope": "AGENCY",
+      "ownerTemplate": "agency-owner-v1"
+    },
+    "fixtureManagementPermission": {
+      "id": "runtime_acceptance.fixture.manage",
+      "registryVersion": 6,
+      "scope": "AGENCY",
+      "ownerTemplate": "agency-owner-v1"
+    },
+    "tripAccessGrant": {
+      "scope": [
+        "agencyId",
+        "portalPrincipalId",
+        "tripId"
+      ],
+      "capability": "trip.view_current",
+      "issuedAndRevokedActorAndTimestamp": true,
+      "optionalExpiry": true,
+      "optionalRelationshipLabelUxOnly": true,
+      "explicitOnly": true,
+      "identityOrCustomerInference": false,
+      "portalSelfGrant": false,
+      "revocationIncrementsPrincipalAuthorizationEpoch": true,
+      "portalSessionsCarryAndCheckEpoch": true,
+      "authorizationCache": false
+    },
+    "portal": {
+      "authenticationRealm": "PORTAL_ONLY",
+      "runtimeLoginRole": "travelos_portal_api",
+      "runtimeCapabilityRole": "travelos_portal_runtime",
+      "activePublicationOnly": true,
+      "contract": "PortalTripSnapshotV1",
+      "contractVersion": 1,
+      "mutableWorkspaceRead": false,
+      "mutableWorkspaceFallback": false,
+      "unknownFieldPassthrough": false,
+      "writeCapability": false
+    },
+    "migration": {
+      "previousFile": "0012_stage7_portal_trip_access.cjs",
+      "previousSha256": "4bf653fdc7522443ea321d98d448934ec1b5d0c4e8d4abd904360182ada5ade8",
+      "file": "0013_stage7_runtime_acceptance_cleanup.cjs",
+      "checksumIntegrity": "CHECKSUM_MANIFEST_AND_SUCCESSOR_SOURCE_BASELINE",
+      "sessionUser": "travelos_migrator",
+      "currentUser": "travelos_owner",
+      "betterAuthRuntimeMigrations": false
+    },
+    "runtimeAcceptanceCleanup": {
+      "method": "POST",
+      "path": "/api/admin/runtime-acceptance-fixtures/:fixtureRunId/cleanup",
+      "environment": "DEVELOPMENT_ONLY",
+      "hostPolicy": "EXACT_DEVELOPMENT_MANIFEST_ALLOWLIST",
+      "listener": "EXISTING_ADMIN_API",
+      "permissionIds": [
+        "runtime_acceptance.fixture.manage",
+        "trip.access.manage",
+        "trip.edit",
+        "trip.withdraw_publication"
+      ],
+      "staffRealm": "STAFF_ONLY",
+      "activeMembershipRequired": true,
+      "exactAgencyScopeRequired": true,
+      "recentMfaWindowSeconds": 300,
+      "scope": "SAME_AGENCY_AND_CREATOR_REGISTERED_FIXTURE_RUN",
+      "acceptsCallerResourceIds": false,
+      "maxTrips": 2,
+      "maxPortalPrincipals": 1,
+      "allowedFixtureStates": [
+        "OPEN",
+        "CLEANUP_PENDING"
+      ],
+      "terminalFixtureState": "CLEANED",
+      "retrySafe": true,
+      "revokesTripAccessGrants": true,
+      "invalidatesPortalSessions": true,
+      "withdrawsActivePublication": true,
+      "cancelsTrips": true,
+      "retiresPortalPrincipal": true,
+      "preservesPublicationSnapshots": true,
+      "preservesPublicationPayloads": true,
+      "preservesAuditAndOutboxHistory": true,
+      "preservesTripWorkspace": true,
+      "newListener": false,
+      "newExternallyReachablePorts": []
+    },
+    "stage7Actions": 1,
+    "stage8Actions": 0
+  },
+  "extensionDocument": {
+    "path": "docs/implementation/M1_STAGE_7_RUNTIME_ACCEPTANCE_CLEANUP_SUCCESSOR.md",
+    "sha256": "5f79ea5acf926e674a0f3714cedabd7a57dd47415bf0e0c9b08923a5f214c761"
+  },
+  "authorizedPathsDocument": {
+    "path": "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS_GEN11.json",
+    "sha256": "2afa2e046ef066f4f5bdb2493a20d636a81af1ede0576ee3d7d90e9e79785b8e"
+  },
+  "sourceCount": 107,
+  "sourceFiles": [
+    {
+      "path": "apps/admin-api/src/auth-bridge.ts",
+      "bytes": 9340,
+      "sha256": "ebf5ddddfc0729b8449e099704135ac2ef56f02fb0bda3008eb17ec07c7d2f88"
+    },
+    {
+      "path": "apps/admin-api/src/m1-routes.ts",
+      "bytes": 25729,
+      "sha256": "25138528c8b71f0c08e98cbf301c923d404323c09e78c75dc595b344cb6585ae"
+    },
+    {
+      "path": "apps/admin-api/src/m1-session-resolver.ts",
+      "bytes": 1362,
+      "sha256": "3b9a5611ad64e6391f91089768acbf843e85424fe38bf386776b57882ccbac36"
+    },
+    {
+      "path": "apps/admin-api/src/main.ts",
+      "bytes": 8176,
+      "sha256": "67697ab49d202a9c4502b5d77980b819676d34b53a5b3176ac2ab21da7f97511"
+    },
+    {
+      "path": "apps/admin-api/test/auth-bridge.test.ts",
+      "bytes": 8528,
+      "sha256": "cd721cd939ce9f7ecf8c61499b512217e918d55db945c3fcc3efb80e265a1f9c"
+    },
+    {
+      "path": "apps/admin-api/test/composed-m1-body-parser.test.ts",
+      "bytes": 13039,
+      "sha256": "68ff6ca347b07ac1d2f460e84bd4a93d7132a5cd34d751aed85245b0119a1df6"
+    },
+    {
+      "path": "apps/admin-api/test/m1-routes.test.ts",
+      "bytes": 18346,
+      "sha256": "ac02e6023351d34f7b4799d9d1a623669648e61084c60436e7f55fc673c48847"
+    },
+    {
+      "path": "apps/admin-api/test/m1-session-resolver.test.ts",
+      "bytes": 2665,
+      "sha256": "c711fb9d75055cb78e31871b4bc4469ce2d09c2e0ee214dd4705ce340fd978d6"
+    },
+    {
+      "path": "apps/admin-api/test/portal-access/trip-access-routes.test.ts",
+      "bytes": 8349,
+      "sha256": "e3b364d07bb42375a791cd8d9175510a88f7a95f43c19a904039da620635e97e"
+    },
+    {
+      "path": "apps/admin-api/test/publication-routes.test.ts",
+      "bytes": 5820,
+      "sha256": "a3915842013646843180fc7973a37eb581cc051af93bb957037abf6b71afd2d1"
+    },
+    {
+      "path": "apps/admin-api/test/runtime-acceptance-cleanup-routes.test.ts",
+      "bytes": 18062,
+      "sha256": "c542d777571d5cb7cac2fe1e9ddf73f0d430a63b179e6247884287df6377d1f6"
+    },
+    {
+      "path": "apps/portal-api/package.json",
+      "bytes": 552,
+      "sha256": "17267a7ac5f1f784271883f983b7f9ec6d24d362fde086813833f3e989790779"
+    },
+    {
+      "path": "apps/portal-api/src/app.ts",
+      "bytes": 2483,
+      "sha256": "9894c077bba5ae6fe057bc18a9dfbc9eccc81fa930e035400ce7fd391c1f1afe"
+    },
+    {
+      "path": "apps/portal-api/src/auth-bridge.ts",
+      "bytes": 5501,
+      "sha256": "0271506c7e80b3840b01b84bfd80050305d1c8af3ff78b848c60397ffaf49e0e"
+    },
+    {
+      "path": "apps/portal-api/src/host-validation.ts",
+      "bytes": 2054,
+      "sha256": "6b0bc6561199cfc81225e169cdf5164794823b795a7a65ddeca4b64730b3e21b"
+    },
+    {
+      "path": "apps/portal-api/src/main.ts",
+      "bytes": 6057,
+      "sha256": "0c420a6ece8182f85d93375c2eceac2e31fbcdc27d9e37bf72b4960e0bce3365"
+    },
+    {
+      "path": "apps/portal-api/src/trip-read-repository.ts",
+      "bytes": 3211,
+      "sha256": "c20d8ba4de7251ef990aec796f5eaaeafba0324fadd52a49f0fde876e9b13477"
+    },
+    {
+      "path": "apps/portal-api/src/trip-routes.ts",
+      "bytes": 4498,
+      "sha256": "6ed405be89c97126e732f8af73cb7389d12c5e78075e7da03078b92484d93bfd"
+    },
+    {
+      "path": "apps/portal-api/test/auth-bridge.test.ts",
+      "bytes": 4376,
+      "sha256": "d5838d29c300a9e8d1f71a8fd19bd2b8d7814081e7e95786305b5a501712fe4c"
+    },
+    {
+      "path": "apps/portal-api/test/host-routing-boundary.test.ts",
+      "bytes": 7121,
+      "sha256": "3ae7eccedc3ad92a7a7f2f86df04a304cc72ce66958425154f61c8cbaee8907f"
+    },
+    {
+      "path": "apps/portal-api/test/portal-access/trip-routes.test.ts",
+      "bytes": 8605,
+      "sha256": "b977fe62fd23beb781c816a26345fbe637e2188d67fb181240ff0d23d1853d73"
+    },
+    {
+      "path": "deploy/contracts/stage-7-extension.v1.json",
+      "bytes": 3905,
+      "sha256": "27f7ee63c3afde0e54b13795d34a5ba0ac774d7429aecb10cd74eb4959e01afb"
+    },
+    {
+      "path": "deploy/contracts/stage-7-extension.v2-gen11.json",
+      "bytes": 5262,
+      "sha256": "fc7f1463295a332fcf9ee655b4036bf24fff8169ec2d50dbb9c87b960edeb600"
+    },
+    {
+      "path": "deploy/contracts/stage-7-extension.v2.json",
+      "bytes": 5262,
+      "sha256": "afe20e9543d95bb8a099d2ab1e12cc0a3dd756594081d666e41aff3499bef0e7"
+    },
+    {
+      "path": "deploy/systemd/travelos-stage7-runtime-acceptance.service",
+      "bytes": 1487,
+      "sha256": "c29eb9ace79c4c57e42a20d2211762d66605101f30f768d67feae2adb60b6d97"
+    },
+    {
+      "path": "docs/implementation/M1_STAGE_7_PORTAL_ISOLATION.md",
+      "bytes": 10058,
+      "sha256": "a20a39e17977b2cedb9427e0f03612bb608f1153b0b53236824839dea1c69f09"
+    },
+    {
+      "path": "docs/implementation/M1_STAGE_7_RUNTIME_ACCEPTANCE_CLEANUP_SUCCESSOR.md",
+      "bytes": 9330,
+      "sha256": "5f79ea5acf926e674a0f3714cedabd7a57dd47415bf0e0c9b08923a5f214c761"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-15-stage-7-portal-isolation.md",
+      "bytes": 15890,
+      "sha256": "2eeb9a0c0f000f09d4c25aa37c8c89eb48d9d91ecf49bb14f3b25fd4b4d6827a"
+    },
+    {
+      "path": "migrations/0012_stage7_portal_trip_access.cjs",
+      "bytes": 17862,
+      "sha256": "4bf653fdc7522443ea321d98d448934ec1b5d0c4e8d4abd904360182ada5ade8"
+    },
+    {
+      "path": "migrations/0013_stage7_runtime_acceptance_cleanup.cjs",
+      "bytes": 41676,
+      "sha256": "f8d45edb3625a79882c8b8569b45ce2c449168b8ef02fb1f97bfea6f6bcbd3ec"
+    },
+    {
+      "path": "migrations/checksums.json",
+      "bytes": 2024,
+      "sha256": "df6ffc6ab40e705e9b974bcb0ec383a9c9028848e0b080465db1cfaaa1b0ef59"
+    },
+    {
+      "path": "package.json",
+      "bytes": 12464,
+      "sha256": "cc12ce2cf0bc1f4c8ea4cb652c97108dd4d88b0250f0a93d10d4e0aec941cc70"
+    },
+    {
+      "path": "packages/auth-adapters/package.json",
+      "bytes": 569,
+      "sha256": "e74c9584dab600bd84eee1b49fa8902f8356ea7032abb82ec5659a211a0fe20d"
+    },
+    {
+      "path": "packages/auth-adapters/src/portal.ts",
+      "bytes": 490,
+      "sha256": "9e8d4016c60dec6a10c0401fc4014fb793e07d0e740a88b74cf368314bc1e482"
+    },
+    {
+      "path": "packages/auth-adapters/src/realm.ts",
+      "bytes": 18982,
+      "sha256": "10fd577f6c8d5d7bae38906ed6fffb78c09570a3f731363fa08a77a1de138b1f"
+    },
+    {
+      "path": "packages/auth-adapters/test/portal-principal-retirement.test.ts",
+      "bytes": 1971,
+      "sha256": "a89d229db0d0f59a9a9480ae3c98ffabe08fa74265e6a6b7bff3df776b1a68a5"
+    },
+    {
+      "path": "packages/backend-core/src/index.ts",
+      "bytes": 7119,
+      "sha256": "c7bed3d612ead4e5a82525715e43baa9e9da6918b06e76b80f034dd1edad0cb1"
+    },
+    {
+      "path": "packages/backend-core/src/modules/customer-presentation/application/staff-publication-operations.ts",
+      "bytes": 10645,
+      "sha256": "19b9eb8babcba426dbbfd4ba9cd2ef9e07e60e41f42dbde0a341bd48f10ac541"
+    },
+    {
+      "path": "packages/backend-core/src/modules/portal-access/application/staff-trip-access-operations.ts",
+      "bytes": 10676,
+      "sha256": "4d8fca549af792ff0e641a39695b3aff9e526538abfb9c555d36ab46c33efb69"
+    },
+    {
+      "path": "packages/backend-core/src/modules/portal-access/domain/trip-access-grant.ts",
+      "bytes": 884,
+      "sha256": "3c559d150d4b34d2f76623da107c3ecd710ff167daab66222d0a8a9e5cbe27e0"
+    },
+    {
+      "path": "packages/backend-core/src/modules/runtime-acceptance/application/fixture-cleanup.ts",
+      "bytes": 12954,
+      "sha256": "c6146965c7c5d53cc4ffe576ec51562b4574dc703d0cbf4c02e764c705c59de1"
+    },
+    {
+      "path": "packages/backend-core/src/modules/runtime-acceptance/domain/fixture-run-state.ts",
+      "bytes": 217,
+      "sha256": "b101a694710e960536ef2e3f98e7c893abc5a96d3cf674011126f54ecbf5ff12"
+    },
+    {
+      "path": "packages/backend-core/src/modules/trip-operations/application/m1-staff-operations.ts",
+      "bytes": 11219,
+      "sha256": "8aa4b136a52fb02997546b13985f4878895e217ee51a45b4efe903fced72533a"
+    },
+    {
+      "path": "packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.ts",
+      "bytes": 20957,
+      "sha256": "af08efee983422d80162973667b8c8d6b1135a2b32663b1819ecb306cc207ea9"
+    },
+    {
+      "path": "packages/backend-core/src/staff-access/permission-registry.ts",
+      "bytes": 4454,
+      "sha256": "68a7ecf17a76b600c9bb5ed1b92cfbba4a34581aafa0ac25fe5564a684135c97"
+    },
+    {
+      "path": "packages/backend-core/test/agency-organization/agency-bootstrap.test.ts",
+      "bytes": 2339,
+      "sha256": "e84bf7baaae0fa0f012ed8dbbc305be7c5f378ba457674e38eef771120d8be4e"
+    },
+    {
+      "path": "packages/backend-core/test/customer-presentation/withdraw-publication.test.ts",
+      "bytes": 5605,
+      "sha256": "64949358c88be0921adeb2e93c7eabd0d02f119a4ca13a1648e7f002538aba6c"
+    },
+    {
+      "path": "packages/backend-core/test/m1/application.test.ts",
+      "bytes": 30750,
+      "sha256": "d942bd26a1cbadd9d715a1953341c89002825920056636e2d4cdab009b3a162d"
+    },
+    {
+      "path": "packages/backend-core/test/portal-access/application.test.ts",
+      "bytes": 11546,
+      "sha256": "921c63ceb13bcf1d7a123620cf5a872dd5ef605231b99ab9c969542a4581bea6"
+    },
+    {
+      "path": "packages/backend-core/test/portal-access/permission-registry.test.ts",
+      "bytes": 1740,
+      "sha256": "af3b3784aad9d32bce1b8c95c6fc1ace3281f9eef1e40480225d990b5db2ba72"
+    },
+    {
+      "path": "packages/backend-core/test/portal-access/retire-fixture-portal-principal.test.ts",
+      "bytes": 4577,
+      "sha256": "b88c4123f239241af8498405341dbb11d77bcd78900ce30b5bba6274a9269fcc"
+    },
+    {
+      "path": "packages/backend-core/test/runtime-acceptance/fixture-cleanup.test.ts",
+      "bytes": 8792,
+      "sha256": "ee57a4fde75b09f4e241ee789b4909d409a1a37b5dbf6c8b50f8cd0bfb907970"
+    },
+    {
+      "path": "packages/backend-core/test/trip-operations/cancel-trip.test.ts",
+      "bytes": 6969,
+      "sha256": "5381fe13db7d5cd24396403cd533b9e59778b24a80443e6ef9148a0c722d7937"
+    },
+    {
+      "path": "packages/contracts/src/admin/index.ts",
+      "bytes": 987,
+      "sha256": "0e488211e0dcd258ba950adebbc93fc315fb22db829702ebaad48c96e1a839b5"
+    },
+    {
+      "path": "packages/contracts/src/admin/runtime-acceptance/fixture-cleanup-v1.ts",
+      "bytes": 2328,
+      "sha256": "2b7f7bbb8b5cc77f32d5e0bb954e54ff490b913ade93cd7994e3865d566150d0"
+    },
+    {
+      "path": "packages/contracts/src/admin/trips/index.ts",
+      "bytes": 989,
+      "sha256": "9e16d82c4d1e3e7b513b47cfa1fe71dd00177969a64f888d6f18ce7a96828d25"
+    },
+    {
+      "path": "packages/contracts/src/admin/trips/portal-access/index.ts",
+      "bytes": 294,
+      "sha256": "0b8ed66dcdf942d4c56c5e3202107f1a2c6fd84396e7a1b498707bee6d88218b"
+    },
+    {
+      "path": "packages/contracts/src/admin/trips/portal-access/trip-access-v1.ts",
+      "bytes": 2853,
+      "sha256": "b20a482de7a3110281816068737edfecfa2a66560da16c9d7868522ee2889858"
+    },
+    {
+      "path": "packages/contracts/test/portal-access/trip-access-contracts.test.ts",
+      "bytes": 4319,
+      "sha256": "99a979c988cc02f5c52ff427c3cf7818f1b8162d042ba306ba50487a8a0f3fd1"
+    },
+    {
+      "path": "packages/database/src/customer-presentation/staff-publication-repository.ts",
+      "bytes": 31128,
+      "sha256": "561cfad1555a70acd948eecefceb4ba8d05f8c87dc8ea701cb6b4dacf4492cfd"
+    },
+    {
+      "path": "packages/database/src/index.ts",
+      "bytes": 1410,
+      "sha256": "b236285c1e600a0e2b4fa4424dd0691f450c908e4fc3fe6a9f0400aa0e5661ce"
+    },
+    {
+      "path": "packages/database/src/portal-access/runtime-acceptance-fixture-repository.ts",
+      "bytes": 17357,
+      "sha256": "e9cf1a136df31733803ea6b2d10eacf8c8d3e856e8d725aafa7c1b033e6f53f8"
+    },
+    {
+      "path": "packages/database/src/portal-access/staff-trip-access-repository.ts",
+      "bytes": 28256,
+      "sha256": "c875c64f4937e37140b94085d554588fd25c614bcc9b6a9791c0b16fcb826dc9"
+    },
+    {
+      "path": "packages/database/src/trip-operations/m1-operational-slice-repository.ts",
+      "bytes": 44624,
+      "sha256": "acc0767eba57f8843f7ef10613528f1288aecd59824f2636d5acc6bf8814520a"
+    },
+    {
+      "path": "packages/portal-safe-core/package.json",
+      "bytes": 713,
+      "sha256": "333e9f78a02ab39626b0a22ef47d532eed442873bb54f1d440d2f2528123fc06"
+    },
+    {
+      "path": "packages/portal-safe-core/src/customer-presentation/index.ts",
+      "bytes": 454,
+      "sha256": "c30c26e7f4e58a346e915d85fe0fac66d19286f09271c887384a095a506ecec1"
+    },
+    {
+      "path": "packages/portal-safe-core/src/customer-presentation/read-current-portal-trip-snapshot.ts",
+      "bytes": 2507,
+      "sha256": "64e3df3648f87d8cfe6872ca7e64cce03af94e43fe29dbf662ac13d65e1ebfbe"
+    },
+    {
+      "path": "packages/portal-safe-core/src/portal-access/identity.ts",
+      "bytes": 1494,
+      "sha256": "7327eafd513f677f32a946b0941e613d1c0a52049ec13ae8169bb1f00a049840"
+    },
+    {
+      "path": "packages/portal-safe-core/test/customer-presentation/read-current-trip.test.ts",
+      "bytes": 4865,
+      "sha256": "aafacb3c6ded6760af14b0fb471ed1a9c6a5e4e065dbf8596dd31579b5eb7322"
+    },
+    {
+      "path": "packages/portal-safe-core/test/portal-access/identity.test.ts",
+      "bytes": 1579,
+      "sha256": "fda3a183414b77aedfcb24fb3a9aff67c8c29b52f12b3b261d1c19fa18022d28"
+    },
+    {
+      "path": "packages/portal-safe-core/tsconfig.build.json",
+      "bytes": 397,
+      "sha256": "1b78c36d90c869120db6c3d4a282b491122e8b68b9cf449a439dc5e13c257c80"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 210725,
+      "sha256": "104d02a20ec3182ae012ff2e8b761f77f10509f49a0ced58d8cf3c7b2727eaaa"
+    },
+    {
+      "path": "tests/integration/stage-5-postgresql.test.ts",
+      "bytes": 128737,
+      "sha256": "d1d6a89273fc4325cdc32ca6ba772a67f80b4ca5770cdb6d8b473b795cda53e2"
+    },
+    {
+      "path": "tests/integration/stage-7-postgresql.test.ts",
+      "bytes": 153758,
+      "sha256": "bf953b58bd07f8b84d7a4169ab711fb4b18437551cb197a4acbeb6e071ea6d1f"
+    },
+    {
+      "path": "tooling/architecture/check.mjs",
+      "bytes": 8831,
+      "sha256": "9d3db55c48b39cea8a1d48fbfd36cb636cadef7d000034dd6d5532402db8a806"
+    },
+    {
+      "path": "tooling/architecture/fixtures/stage-7/portal-import-boundaries.json",
+      "bytes": 1196,
+      "sha256": "a304d987da9ae07af7aa7b57efc4fdc64354e59707a409a21325305ccbfcd34e"
+    },
+    {
+      "path": "tooling/architecture/fixtures/stage-7/verify-portal-import-boundaries.mjs",
+      "bytes": 2226,
+      "sha256": "1fc9affe8d1ad6f443b7fbf65be06167d0c1149133450b12c925f08ea000c58a"
+    },
+    {
+      "path": "tooling/architecture/package-boundary-policy.mjs",
+      "bytes": 17696,
+      "sha256": "54efa2e49f1238a1751b614438b24b665b7b920e79607511b10dac828a7fb8f1"
+    },
+    {
+      "path": "tooling/ci/scan-source-secrets.mjs",
+      "bytes": 23725,
+      "sha256": "9cc705e1971801b2c8479db1472ec13dee6819d2ef79f38ba74662d7dabd3d98"
+    },
+    {
+      "path": "tooling/ci/stage-7-successor-baseline.mjs",
+      "bytes": 53436,
+      "sha256": "ad5fb97d04c6e313516cca0a64d598ed481eee53e0c351c3dcdd1ee374f879dd"
+    },
+    {
+      "path": "tooling/ci/stage-7/build-artifact.mjs",
+      "bytes": 21905,
+      "sha256": "5d05b80327831cc25f2bb5fe4411e306eef49a0f31d7a4fe082d48c4eca311f9"
+    },
+    {
+      "path": "tooling/ci/stage-7/prior-candidate-dispositions.json",
+      "bytes": 17698,
+      "sha256": "4b78e8bc6fa66c57fb37a049adfc1d3002ab78397bbd524990fb2b1a8b86554e"
+    },
+    {
+      "path": "tooling/ci/stage-7/rehearse-packaged-operator.mjs",
+      "bytes": 20148,
+      "sha256": "2566c416b4c5756c5b32e705cb495964d33c3cd90173289d6a4d0286d15a4f0f"
+    },
+    {
+      "path": "tooling/ci/stage-7/run-canonical-ci.mjs",
+      "bytes": 21745,
+      "sha256": "063693260c7d550e4be516293f3a4c87deac7b282badf8b225c483f1ae604ae3"
+    },
+    {
+      "path": "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+      "bytes": 42953,
+      "sha256": "6b03377d316ca831d666aa8095a18deae841c3b51717a30f589e2234ebee5d64"
+    },
+    {
+      "path": "tooling/ci/stage-7/scan-predecessor-security.mjs",
+      "bytes": 4521,
+      "sha256": "7da3b08ed4195398eec1c0bde5ba3112a365506f83be7af535a2a3687d08dd3d"
+    },
+    {
+      "path": "tooling/ci/stage-7/source-scope.mjs",
+      "bytes": 21416,
+      "sha256": "bc4828d2bc5b6641e12bef67c7deddb7f86a4a8bd3c8fa8a7415226656d7385c"
+    },
+    {
+      "path": "tooling/ci/stage-7/test-artifact.mjs",
+      "bytes": 22160,
+      "sha256": "70d8d049ad4b4013c7ea69c02a878010527df0430a09224a962d504b71c8d706"
+    },
+    {
+      "path": "tooling/ci/stage-7/test-build-artifact.mjs",
+      "bytes": 8308,
+      "sha256": "4f51cc10cabe2127d29cbc73258a3228bc260bef97acfa9f0077ed215c2c9a36"
+    },
+    {
+      "path": "tooling/ci/stage-7/test-canonical-ci.mjs",
+      "bytes": 18415,
+      "sha256": "5a129efae5f672b3faadca981929ec8e5e771621d46752bf20daf9d8bc76b230"
+    },
+    {
+      "path": "tooling/ci/stage-7/test-deployment-contract.mjs",
+      "bytes": 12962,
+      "sha256": "302d3c21c0dc871f5fe9dd7a90bfb3169173d2f0d805067d5d3a133b1db5bcaa"
+    },
+    {
+      "path": "tooling/ci/stage-7/test-migrator-package.mjs",
+      "bytes": 5018,
+      "sha256": "18b4e320f99ebb0eecfe8e102a0f37caa36b04e825aa09593859e19efb2239f3"
+    },
+    {
+      "path": "tooling/ci/stage-7/test-packaged-verifier.mjs",
+      "bytes": 11421,
+      "sha256": "8bf7399d5e088948da59bb81094afa7e291382271f3d5f373717c2ca8a6f6fb1"
+    },
+    {
+      "path": "tooling/ci/stage-7/test-predecessor-security-scan.mjs",
+      "bytes": 3535,
+      "sha256": "9bc514c136a39340c1785716f2372a77669f3b3e297c57b4d98b5623ab502e85"
+    },
+    {
+      "path": "tooling/ci/stage-7/test-runtime-acceptance-runner.mjs",
+      "bytes": 37537,
+      "sha256": "6025df25efeba893776912deeacc6e382a8ad77c99d4e09aab2212341361e2ad"
+    },
+    {
+      "path": "tooling/ci/stage-7/test-source-scope.mjs",
+      "bytes": 17421,
+      "sha256": "157a782c31a38abfdde644341a835a24b31e1f8d52062df221e729935c7c1b96"
+    },
+    {
+      "path": "tooling/ci/stage-7/verify-artifact.mjs",
+      "bytes": 50581,
+      "sha256": "7143c543909084be768f56e5d59af4bd11f7b968972535048b9d3d300a3bd412"
+    },
+    {
+      "path": "tooling/ci/stage-7/verify-deployment-contract.mjs",
+      "bytes": 20820,
+      "sha256": "93a8e26af2396979f07539564ffb4aae63ba7dab64ffb5eb0f2d153297e9a793"
+    },
+    {
+      "path": "tooling/ci/stage-7/verify-source-scope.mjs",
+      "bytes": 2083,
+      "sha256": "558a173ed10f116633a4a1b7b9feca671216c8e808550ac1b0665e2e7ac0cb07"
+    },
+    {
+      "path": "tooling/ci/test-stage-7-successor-baseline.mjs",
+      "bytes": 30266,
+      "sha256": "0447c27c5af040eb1ee37a59e62fe100051a9e322d55df51300db6a3120c7e44"
+    },
+    {
+      "path": "tooling/ci/verify-stage-7-predecessor.mjs",
+      "bytes": 582,
+      "sha256": "b29d1950ee42c191450c1fd28fc270db22e3888f4a3b5d233f0a738b1f36f981"
+    },
+    {
+      "path": "tooling/ci/verify-stage-7-successor-baseline.mjs",
+      "bytes": 594,
+      "sha256": "6307ea0db86f850460fb466663723b428e66765a49dbd83c5d05a4a3e587f249"
+    },
+    {
+      "path": "tooling/ci/write-stage-7-predecessor-receipt.mjs",
+      "bytes": 2555,
+      "sha256": "67c825eeb5e2d9cb9dd4aab3ceb0393dac545e6bb16e978666e8f2fb8983eb29"
+    },
+    {
+      "path": "tooling/ci/write-stage-7-successor-baseline.mjs",
+      "bytes": 2187,
+      "sha256": "8c4fb9c627d3c546020a24231caef04cae500d1bacf32a9cfc58ce43a88fc02c"
+    },
+    {
+      "path": "tooling/database/run-stage-7-disposable.mjs",
+      "bytes": 9799,
+      "sha256": "e57b19c36675a8544e02eeefbd96eaeb99825e31c7fa8bb00ff56d1dfbc4c658"
+    },
+    {
+      "path": "tooling/testing/vitest.stage-7.config.ts",
+      "bytes": 1477,
+      "sha256": "cc970576b68b11188e9e3e92eb2dcac08372a27a62bcb96ac1da7137151b4c0f"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "bytes": 1748,
+      "sha256": "fb0c996eee6dc90d4e7fd1ac4374b789e39076dc8fee88c3fd3216d04f41af2c"
+    }
+  ],
+  "sourceAggregateSha256": "2e97efc7d911569e3f601f7df6522b9e8ffba2fce114776796463589f5c0c24e",
+  "previousCandidate": {
+    "candidateGeneration": "gen09",
+    "candidateId": "travelos-phase-1-m1-stage-7-gen09",
+    "candidateCommit": "0cf07d04e93171c1de6300629a3759ce888da6a7",
+    "artifactSha256": "272bd285763e9a0aa1c4dcc49f127b9b92f503b1dc44883fc8c8563f0bbad07c",
+    "baseline": {
+      "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN09.json",
+      "sha256": "c53eca88e72966f71dd0411b19f318b46dc4a993254ecc010e86381fef98dd07",
+      "sourceCount": 83,
+      "sourceAggregateSha256": "a552d96e8d618f5acc031cebda88e973cb0e487749cf2892ffedd65e7814a06c"
+    },
+    "deploymentContractSha256": "27f7ee63c3afde0e54b13795d34a5ba0ac774d7429aecb10cd74eb4959e01afb",
+    "canonicalCiReceipt": {
+      "path": "docs/evidence/phase-1-m1/stage-7/gen09/canonical-ci-execution.json",
+      "sha256": "7fae8215122b18383a969188873f792b86e04de9280126397ce841e3208e4ee9",
+      "result": "PASS",
+      "ciConsumed": "YES",
+      "invocationCount": 1,
+      "expectedGateCount": 42,
+      "completedGateCount": 42,
+      "failedGate": null,
+      "artifactSha256": "272bd285763e9a0aa1c4dcc49f127b9b92f503b1dc44883fc8c8563f0bbad07c",
+      "baselineSha256": "c53eca88e72966f71dd0411b19f318b46dc4a993254ecc010e86381fef98dd07",
+      "deploymentContractSha256": "27f7ee63c3afde0e54b13795d34a5ba0ac774d7429aecb10cd74eb4959e01afb"
+    },
+    "stage7Actions": 1,
+    "stage8Actions": 0
+  },
+  "decisionDocument": {
+    "path": "docs/reviews/phase-1-m1/stage-7/GEN11_PO_DECISION_ADJUSTMENT.md",
+    "sha256": "c031d26984a3d43b2ed5295b2063cde39bb664a2fb8f60702b2da9fba4f7e776"
+  },
+  "contractDocument": {
+    "path": "deploy/contracts/stage-7-extension.v2-gen11.json",
+    "sha256": "fc7f1463295a332fcf9ee655b4036bf24fff8169ec2d50dbb9c87b960edeb600"
+  }
+}

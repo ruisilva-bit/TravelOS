@@ -127,7 +127,17 @@ const runSync = (command, args, { cwd, env, timeout = 30_000 } = {}) => {
   };
 };
 
-const runVerifier = (nodePath, script, args, cwd) => {
+export const stage7RehearsalGeneration = (release) => {
+  const generation = release.source?.successorBaselineGeneration;
+  assert.match(generation ?? "", /^gen[0-9]{2,}$/u);
+  assert.match(
+    release.artifactId ?? "",
+    new RegExp(`^travelos-phase-1-m1-stage-7-${generation}-[a-f0-9]{8}$`, "u"),
+  );
+  return generation;
+};
+
+const runVerifier = (nodePath, script, args, cwd, generation) => {
   const result = runSync(nodePath, [script, ...args], {
     cwd,
     timeout: PACKAGED_VERIFIER_TIMEOUT_MS,
@@ -136,7 +146,7 @@ const runVerifier = (nodePath, script, args, cwd) => {
   assert.equal(result.stderr, "");
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.result, "PASS");
-  assert.equal(parsed.generation, "gen09");
+  assert.equal(parsed.generation, generation);
   return { result: parsed.result, generation: parsed.generation, artifactId: parsed.artifactId };
 };
 
@@ -231,10 +241,10 @@ const namespaceWorker = async (inputs) => {
     const release = JSON.parse(
       await readFile(path.join(inputs.artifactRoot, "release.json"), "utf8"),
     );
-    assert.match(release.artifactId, /^travelos-phase-1-m1-stage-7-gen09-[a-f0-9]{8}$/u);
+    const generation = stage7RehearsalGeneration(release);
     const artifactId = release.artifactId;
     const suffix = artifactId.slice(-8);
-    const releaseName = `travelos-stage7-gen09-${suffix}`;
+    const releaseName = `travelos-stage7-${generation}-${suffix}`;
     const physicalRelease = `/opt/travelos/releases/${releaseName}`;
     const manifestInNamespace = "/etc/travelos/instances/development.json";
     const config = JSON.parse(await readFile(inputs.manifestPath, "utf8"));
@@ -273,7 +283,7 @@ const namespaceWorker = async (inputs) => {
       "/opt/travelos/current/deployment/verify-stage7-artifact.mjs",
       "--artifact-root=/opt/travelos/current",
       "--release-root=/opt/travelos/releases",
-      "--generation=gen09",
+      `--generation=${generation}`,
     ]);
     assert.deepEqual(execStart, [
       "/opt/travelos/current/runtime/node/bin/node",
@@ -321,9 +331,10 @@ const namespaceWorker = async (inputs) => {
       [
         `--artifact-root=${physicalRelease}`,
         "--release-root=/opt/travelos/releases",
-        "--generation=gen09",
+        `--generation=${generation}`,
       ],
       physicalRelease,
+      generation,
     );
     assert.equal(
       await realpath("/opt/travelos/current"),
@@ -553,14 +564,15 @@ const main = async () => {
   if (result.status !== 0 || report.result !== "PASS") process.exitCode = 1;
 };
 
-main().catch((error) => {
-  const failure = {
-    schemaVersion: 1,
-    result: "FAIL",
-    stage: "rehearsal setup",
-    code: safeCode(error),
-    stage8Actions: 0,
-  };
-  process.stderr.write(`${JSON.stringify(failure)}\n`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && (await realpath(process.argv[1])) === (await realpath(scriptPath)))
+  main().catch((error) => {
+    const failure = {
+      schemaVersion: 1,
+      result: "FAIL",
+      stage: "rehearsal setup",
+      code: safeCode(error),
+      stage8Actions: 0,
+    };
+    process.stderr.write(`${JSON.stringify(failure)}\n`);
+    process.exitCode = 1;
+  });

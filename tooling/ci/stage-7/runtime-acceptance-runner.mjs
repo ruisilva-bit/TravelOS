@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import http from "node:http";
 import { createRequire } from "node:module";
@@ -1017,8 +1017,24 @@ const runCli = async () => {
 
     failureStage = "artifact identity preflight";
     const release = JSON.parse(await readFile(path.join(artifactRoot, "release.json"), "utf8"));
-    assert.match(release.artifactId, /^travelos-phase-1-m1-stage-7-gen09-[a-f0-9]{8}$/u);
-    assert.equal(release.source?.successorBaselineGeneration, "gen09");
+    const generation = release.source?.successorBaselineGeneration;
+    assert.match(generation ?? "", /^gen[0-9]{2,}$/u);
+    assert.match(release.source?.commit ?? "", /^[a-f0-9]{40}$/u);
+    assert.equal(
+      release.artifactId,
+      `travelos-phase-1-m1-stage-7-${generation}-${release.source.commit.slice(0, 8)}`,
+    );
+    const extensionPath = `deployment/stage-7-extension.${Number(generation.slice(3)) >= 10 ? "v2" : "v1"}.json`;
+    assert.equal(release.stage7DeploymentContract?.path, extensionPath);
+    const extensionBytes = await readFile(path.join(artifactRoot, extensionPath));
+    assert.equal(
+      createHash("sha256").update(extensionBytes).digest("hex"),
+      release.stage7DeploymentContract.sha256,
+    );
+    const extension = JSON.parse(extensionBytes.toString("utf8"));
+    assert.equal(extension.candidate?.generation, generation);
+    assert.equal(extension.stage7Actions, 1);
+    assert.equal(extension.stage8Actions, 0);
 
     const portalPackageRoot = path.join(artifactRoot, "apps/portal-api");
     failureStage = "runtime dependency resolution";

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "stage": "PHASE_1_M1_STAGE_7",
-  "candidateGeneration": "gen12",
+  "candidateGeneration": "gen13",
   "predecessorCommit": "6242e023953ccb8fe883bff97a0d62e64af8b66a",
   "stage8Actions": 0,
   "priorCandidates": [
@@ -431,6 +431,47 @@
       "canonicalCiInterruption": {
         "path": "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",
         "sha256": "2f88cbc51befe2d2e17b5c77d30b0db11598f49c4c3d65a6ba36d5e0c5d56859"
+      },
+      "validationStatus": "NOT_REACHED",
+      "validationPath": null,
+      "finalCandidateScan": "NOT_REACHED",
+      "freezeStatus": "NOT_REACHED",
+      "freezePath": null,
+      "stage8Actions": 0
+    },
+    {
+      "generation": "gen12",
+      "candidateCommit": "809dd25f14f283e05a1321fcd06a5940d3e1279d",
+      "baseline": {
+        "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN12.json",
+        "sha256": "863e03ab86093fe3629fdabd451694561af5478f679e21490bd9c840e8a15bc1"
+      },
+      "predecessorReceipts": {
+        "stage6": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN12_STAGE6_PREDECESSOR_BASELINE_VERIFY.json",
+          "sha256": "f0b7eb827ac87734814f6ef3c604bf7dc2cd5da88081ee6fae4db1c2a0a02410"
+        },
+        "stage7": {
+          "path": "docs/reviews/phase-1-m1/stage-7/GEN12_STAGE7_PREDECESSOR_VERIFY.json",
+          "sha256": "dd1aa6206e1e71b955a45464ab500788b95620d419a78983dcbef0fc3ebe3ea2"
+        }
+      },
+      "lastPassedGate": "CANONICAL_CI_AND_CT200_BACKUP_RESTORE",
+      "disposition": "Canonical CI PASS 42/42 consumed once. CT200 acceptance preflight rejected gen12 because its runner required gen09; no migration or activation. Preserve original preflight blocker and gen09 active state.",
+      "artifact": {
+        "result": "PASS",
+        "path": ".hermes/state/stage7-gen12-artifact.tar.gz",
+        "sha256": "d7cfec80a50e0223ba33d9af0ed495fd3cd4e67c8d456bd0dd28f360de03eacb",
+        "bytes": 80534478,
+        "buildReceipt": {
+          "path": ".hermes/state/stage7-gen12-artifact-build.json",
+          "sha256": "48c2892bcb747ef4a9d8888a4e6d1ebf7b461b1677d4f9a6f416fe3d524ab32d"
+        }
+      },
+      "canonicalCiStatus": "PASS",
+      "canonicalCiReceipt": {
+        "path": "docs/evidence/phase-1-m1/stage-7/gen12/canonical-ci-execution.json",
+        "sha256": "fc6c09dcd51ac3aa9da5590c5755626295de00bd824b7dc6099ca9056211b1c5"
       },
       "validationStatus": "NOT_REACHED",
       "validationPath": null,

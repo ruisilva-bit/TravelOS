@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "recordType": "STAGE7_CT200_GEN12_RUNTIME_ACCEPTANCE_PREFLIGHT_BLOCKER",
+  "observedAt": "2026-10-21T16:04:22Z",
+  "scope": {
+    "stage": "Stage 7",
+    "environment": "DEVELOPMENT",
+    "candidateGeneration": "gen12",
+    "production": false
+  },
+  "candidate": {
+    "commit": "809dd25f14f283e05a1321fcd06a5940d3e1279d",
+    "tree": "feec31454f44170c3b07b5d9ec0d6d8af2c9a04c",
+    "artifactId": "travelos-phase-1-m1-stage-7-gen12-809dd25f",
+    "artifactSha256": "d7cfec80a50e0223ba33d9af0ed495fd3cd4e67c8d456bd0dd28f360de03eacb",
+    "artifactBytes": 80534478,
+    "releaseMetadataSha256": "3a23a689e2c9895f89d10f634a22a9b72f4d214c2174334df24c0cabaffa8db2"
+  },
+  "payloadVerification": {
+    "result": "PASS",
+    "entrypoint": "deployment/verify-stage7-artifact.mjs",
+    "payloadEntries": 24228,
+    "payloadFiles": 22825,
+    "payloadSymlinks": 1403,
+    "sensitiveDataScan": "PASS",
+    "scannedFiles": 22825,
+    "releaseGeneration": "gen12"
+  },
+  "migrationRunner": {
+    "result": "STATIC_AND_BINDINGS_PASS",
+    "deploymentEntrypoint": "migrator/run-stage6-migrations.mjs",
+    "deploymentEntrypointSha256": "1f679b84c6d58e968abb7e69c32bda6195f35759388b20f06387e6ffce79f9bd",
+    "runnerEntrypoint": "migrator/dist/packages/migrator/src/run-migrations.js",
+    "runnerEntrypointSha256": "c41963d8b94b627e3abe90b1d9f0067d0885268789fb91a11c099234719fe60f",
+    "canonicalRunner": "migrator/dist/tooling/database/migration-runner.js",
+    "canonicalRunnerSha256": "4457bf3c1ce66ae567d469b81472dc6c6d6fa269ea7b4670f5ef977b32b4886f",
+    "migration0013Sha256": "f8d45edb3625a79882c8b8569b45ce2c449168b8ef02fb1f97bfea6f6bcbd3ec",
+    "syntaxChecks": "PASS",
+    "identityContract": {
+      "sessionUser": "travelos_migrator",
+      "currentUser": "travelos_owner"
+    },
+    "persistentMigrationExecuted": false
+  },
+  "runtimeAcceptance": {
+    "result": "BLOCKED",
+    "runnerPath": "operator/stage7-runtime-acceptance.mjs",
+    "runnerSha256": "6b03377d316ca831d666aa8095a18deae841c3b51717a30f589e2234ebee5d64",
+    "sourcePath": "tooling/ci/stage-7/runtime-acceptance-runner.mjs",
+    "sourceAndPackagedBytesMatch": true,
+    "identityPreflightLines": "1020-1021",
+    "runnerRequiresGeneration": "gen09",
+    "artifactGeneration": "gen12",
+    "reproduction": {
+      "execution": "local extracted-artifact identity preflight only",
+      "exitCode": 1,
+      "result": "FAIL",
+      "stage": "artifact identity preflight",
+      "code": "ERR_ASSERTION",
+      "credentialsRead": false,
+      "manifestRead": false,
+      "networkOrDatabaseAction": false
+    },
+    "consequence": "The gen12 one-shot acceptance runner rejects its own gen12 release before manifest validation or credential access. Fixing gen12 would mutate the CI-passed immutable artifact; a separately qualified successor is required."
+  },
+  "installedAcceptanceUnit": {
+    "result": "INCOMPATIBLE_WITH_GEN12",
+    "fragmentPath": "/etc/systemd/system/travelos-stage7-runtime-acceptance.service",
+    "sha256": "c29eb9ace79c4c57e42a20d2211762d66605101f30f768d67feae2adb60b6d97",
+    "loadState": "loaded",
+    "activeState": "inactive",
+    "type": "oneshot",
+    "workingDirectory": "/opt/travelos/current",
+    "execStartPreGeneration": "gen09",
+    "candidatePackagedUnitPath": "operator/travelos-stage7-runtime-acceptance.service",
+    "candidatePackagedUnitGeneration": "gen12",
+    "candidatePackagedUnitSha256": "a3ccb362a885b24b8d07ad30e1a65422a082be4dbea08c37d3650e29ac43a87f",
+    "unitDifference": "The packaged gen12 unit changes only ExecStartPre --generation from gen09 to gen12; the installed gen09 unit is unchanged."
+  },
+  "approvedHelperSurface": {
+    "travelosAgentctlActions": [
+      "backup-sha",
+      "prepare-release",
+      "seal-release",
+      "activate-release",
+      "current-release",
+      "restart-runtime",
+      "runtime-status",
+      "logs",
+      "migrator"
+    ],
+    "travelosDeployctlActions": [
+      "prepare-release",
+      "seal-release",
+      "activate-release",
+      "restart-runtime",
+      "runtime-status"
+    ],
+    "unitInstallOrDaemonReloadActionAvailable": false
+  },
+  "liveCT200ReadOnlyState": {
+    "activeRelease": "/opt/travelos/releases/travelos-stage7-gen09-0cf07d04",
+    "runtimeServices": {
+      "travelos-admin-api.service": "active/running",
+      "travelos-portal-api.service": "active/running",
+      "travelos-worker.service": "active/running"
+    },
+    "database": "travelos_development",
+    "postgresVersion": "18.6",
+    "sessionUser": "travelos_migrator",
+    "currentUser": "travelos_owner",
+    "migrationCount": 12,
+    "migrationHead": "0012_stage7_portal_trip_access",
+    "migration0013Count": 0,
+    "readOnlyTransaction": true
+  },
+  "operationsPerformed": [
+    "Read-only gen12 archive, payload, release-metadata and sensitive-scan verification",
+    "Read-only packaged migration-runner syntax/hash/contract verification",
+    "Local extracted-artifact runtime-acceptance identity preflight, which failed before manifest or credential access",
+    "Read-only CT200 service, active-release, helper-surface, acceptance-unit and migration-ledger inspection"
+  ],
+  "operationsNotPerformed": [
+    "Migration 0013",
+    "Remote gen12 release preparation, sealing or activation",
+    "Systemd unit replacement or daemon-reload",
+    "Runtime service restart",
+    "Authenticated CT200 acceptance",
+    "Production operation",
+    "Stage 8 action",
+    "Push"
+  ],
+  "decision": {
+    "status": "STOP_BEFORE_MIGRATION",
+    "gen12CanonicalCi": "PASS_42_OF_42_CONSUMED_ONCE_NO_RERUN",
+    "gen13Authorized": false,
+    "requiredInput": "Product-owner decision on whether to supersede the explicit no-gen13 restriction and authorize one separately qualified successor/one canonical CI, plus an approved versioned path for installing the candidate one-shot unit."
+  },
+  "stage8Actions": 0
+}

@@ -6,7 +6,11 @@ import * as stage7 from "./stage-7-successor-baseline.mjs";
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const bytewise = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
-assert.equal(stage7.STAGE7_DEFAULT_GENERATION, "gen12");
+assert.equal(stage7.STAGE7_DEFAULT_GENERATION, "gen13");
+assert.equal(
+  stage7.stage7ExtensionPathFor("gen13"),
+  "deploy/contracts/stage-7-extension.v2-gen13.json",
+);
 assert.equal(
   stage7.stage7AuthorizedPathsPathFor("gen09"),
   "docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS.json",
@@ -189,7 +193,21 @@ assert.deepEqual(
   gen12AuthorizedPathsDocument,
   "The gen12 authorized-path document must exactly match the verifier-owned v2 allowlist",
 );
-assert.deepEqual(stage7.STAGE7_AUTHORIZED_PATHS, gen12AuthorizedPathsDocument);
+const gen13AuthorizedPathsDocument = JSON.parse(
+  await readFile(
+    new URL(
+      "../../docs/reviews/phase-1-m1/stage-7/STAGE_7_AUTHORIZED_PATHS_GEN13.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+assert.deepEqual(stage7.STAGE7_AUTHORIZED_PATHS, gen13AuthorizedPathsDocument);
+assert.ok(
+  stage7.STAGE7_AUTHORIZED_PATHS.exactSourceFiles.includes(
+    "deploy/contracts/stage-7-extension.v2-gen12.json",
+  ),
+);
 assert.equal(stage7.stage7AuthorizedPathsFor("gen10").candidateGeneration, "gen10");
 assert.equal(stage7.stage7AuthorizedPathsFor("gen11").candidateGeneration, "gen11");
 assert.equal(stage7.stage7AuthorizedPathsFor("gen12").candidateGeneration, "gen12");
@@ -232,9 +250,13 @@ const currentHistory = JSON.parse(
     "utf8",
   ),
 );
-const failedGen10 = currentHistory.priorCandidates.at(-2);
-const interruptedGen11 = currentHistory.priorCandidates.at(-1);
-assert.equal(currentHistory.candidateGeneration, "gen12");
+const failedGen10 = currentHistory.priorCandidates.find(({ generation }) => generation === "gen10");
+const interruptedGen11 = currentHistory.priorCandidates.find(
+  ({ generation }) => generation === "gen11",
+);
+assert.equal(currentHistory.candidateGeneration, "gen13");
+assert.equal(currentHistory.priorCandidates.at(-1).generation, "gen12");
+assert.equal(currentHistory.priorCandidates.at(-1).canonicalCiStatus, "PASS");
 assert.equal(interruptedGen11.generation, "gen11");
 assert.equal(interruptedGen11.canonicalCiStatus, "INTERRUPTED");
 assert.equal(interruptedGen11.canonicalCiReceipt, null);

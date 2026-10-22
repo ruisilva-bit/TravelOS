@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -949,12 +950,33 @@ try {
   );
   await mkdir(operatorDirectory, { recursive: true });
   await mkdir(configDirectory, { recursive: true });
+  await mkdir(path.join(operatorRelease, "deployment"));
+  const operatorExtension = Buffer.from(
+    JSON.stringify({
+      schemaVersion: 2,
+      candidate: { generation: "gen13" },
+      stage7Actions: 1,
+      stage8Actions: 0,
+    }),
+  );
+  await writeFile(
+    path.join(operatorRelease, "deployment/stage-7-extension.v2.json"),
+    operatorExtension,
+  );
+  const operatorReleaseMetadata = {
+    artifactId: "travelos-phase-1-m1-stage-7-gen13-0015a8e1",
+    source: {
+      successorBaselineGeneration: "gen13",
+      commit: "0015a8e1be16195d3333a8c9dfe53c107f83c30b",
+    },
+    stage7DeploymentContract: {
+      path: "deployment/stage-7-extension.v2.json",
+      sha256: createHash("sha256").update(operatorExtension).digest("hex"),
+    },
+  };
   await writeFile(
     path.join(operatorRelease, "release.json"),
-    JSON.stringify({
-      artifactId: "travelos-phase-1-m1-stage-7-gen09-0015a8e1",
-      source: { successorBaselineGeneration: "gen09" },
-    }),
+    JSON.stringify(operatorReleaseMetadata),
   );
   await writeFile(
     path.join(operatorRelease, "apps/portal-api/node_modules/@travelos/config/package.json"),
@@ -990,6 +1012,36 @@ try {
   assert.match(symlinkRunner.stderr, /"result":"FAIL"/u);
   assert.match(symlinkRunner.stderr, /manifest validation/u);
   assert.match(symlinkRunner.stderr, /ENOENT/u);
+  for (const mutation of [
+    { ...operatorReleaseMetadata, artifactId: "travelos-phase-1-m1-stage-7-gen09-0015a8e1" },
+    {
+      ...operatorReleaseMetadata,
+      source: { ...operatorReleaseMetadata.source, successorBaselineGeneration: "gen09" },
+    },
+    {
+      ...operatorReleaseMetadata,
+      stage7DeploymentContract: {
+        ...operatorReleaseMetadata.stage7DeploymentContract,
+        sha256: "0".repeat(64),
+      },
+    },
+  ]) {
+    await writeFile(path.join(operatorRelease, "release.json"), JSON.stringify(mutation));
+    const rejected = spawnSync(
+      process.execPath,
+      [
+        path.join(operatorCurrent, "operator/stage7-runtime-acceptance.mjs"),
+        `--manifest=${path.join(temporaryRoot, "missing-development-manifest.json")}`,
+      ],
+      { cwd: temporaryRoot, encoding: "utf8" },
+    );
+    assert.equal(rejected.status, 1);
+    assert.match(rejected.stderr, /artifact identity preflight/u);
+    assert.doesNotMatch(rejected.stderr, /credential delivery/u);
+  }
+  task6Cases.push(
+    "successor-cli-passes-identity-and-rejects-cross-generation-or-contract-tampering",
+  );
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });
 }

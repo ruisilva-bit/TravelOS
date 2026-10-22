@@ -411,6 +411,12 @@ const prepareArtifactPayload = async ({ root, generation, stagingRoot, toolchain
     path.join(root, "tooling/ci/stage-7/runtime-acceptance-runner.mjs"),
     path.join(stagingRoot, "operator/stage7-runtime-acceptance.mjs"),
   );
+  if (Number(generation.slice(3)) >= 13) {
+    await copyFile(
+      path.join(root, "tooling/ci/stage-7/install-operator-unit.mjs"),
+      path.join(stagingRoot, "operator/install-operator-unit.mjs"),
+    );
+  }
   await writeFile(
     path.join(stagingRoot, "operator/travelos-stage7-runtime-acceptance.service"),
     operatorUnitBytes,

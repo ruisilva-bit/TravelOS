@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "recordType": "TRAVELOS_STAGE7_CANONICAL_CI_INTERRUPTION",
+  "stage": "PHASE_1_M1_STAGE_7",
+  "result": "INTERRUPTED",
+  "candidateGeneration": "gen11",
+  "candidateId": "travelos-phase-1-m1-stage-7-gen11",
+  "candidateCommit": "91b109493a9e462f7caea62e7d04c9a99e892cff",
+  "artifactSha256": "d2741a521b38f46de50aba2cde2664565baf96f459c884e387e67e39d8638a13",
+  "baseline": {
+    "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN11.json",
+    "sha256": "18bf6c67d77ce1f3eb3659a57f8ece42245a786b46a2131c90058514f1f78ed7"
+  },
+  "execution": {
+    "command": "node tooling/ci/stage-7/run-canonical-ci.mjs --generation=gen11",
+    "invocationCount": 1,
+    "terminationKind": "TERMINAL_TOOL_TIMEOUT",
+    "requestedTimeoutSeconds": 600,
+    "reportedTimeoutSeconds": 420,
+    "sessionId": "20261019_102547_82bc8e",
+    "toolCallId": "call_27741cff75d0414cb4fe102e573f6de2"
+  },
+  "oneShotState": {
+    "claim": {
+      "path": ".hermes/state/stage7-gen11-canonical-ci-claim.json",
+      "sha256": "b984db0df1f737203798abc1d78ccceed9b502f4d4c458e0577765417e3b110a",
+      "state": "RUNNING",
+      "invocationCount": 1
+    },
+    "guard": {
+      "path": ".hermes/state/stage7-gen11-canonical-ci-guard.json",
+      "sha256": "2c8970652c4d0c37da6b1e554df9e7f84a1f4c0330d45e445fd1a29eb656f7e8",
+      "state": "ARMED",
+      "invocationCount": 0,
+      "ciConsumed": "NO"
+    }
+  },
+  "partialLog": {
+    "path": "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci.log",
+    "bytes": 298319,
+    "sha256": "2dc1d2dbb03cec937dcf6261b5e285e64adaa3a60a7fb607f6d32f1b1b6fde4d",
+    "completedGateCount": 40,
+    "expectedGateCount": 42,
+    "lastCompletedGate": "stage7-source-scope:post"
+  },
+  "finalMarkerPresent": false,
+  "executionReceiptPresent": false,
+  "stage8Actions": 0
+}
