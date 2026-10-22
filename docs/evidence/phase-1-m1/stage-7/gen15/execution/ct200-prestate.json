@@ -1,0 +1,39 @@
+{
+  "environment": "DEVELOPMENT",
+  "hosts": {
+    "admin": "admin.travelos.test",
+    "portal": "portal.travelos.test"
+  },
+  "listeners": {
+    "adminApi": {
+      "host": "127.0.0.1",
+      "port": 3101
+    },
+    "portalApi": {
+      "host": "127.0.0.1",
+      "port": 3102
+    }
+  },
+  "activeRelease": "/opt/travelos/releases/travelos-stage7-gen09-0cf07d04",
+  "services": {
+    "travelos-admin-api.service": "active",
+    "travelos-portal-api.service": "active",
+    "travelos-worker.service": "active"
+  },
+  "oldOperatorUnit": {
+    "resolvedPath": "/opt/travelos/releases/travelos-stage7-gen09-0cf07d04/operator/travelos-stage7-runtime-acceptance.service",
+    "sha256": "c29eb9ace79c4c57e42a20d2211762d66605101f30f768d67feae2adb60b6d97"
+  },
+  "oldHelperSha256": "3bc48b0215e64a4bd03b3478c3fdd3f1cce1a738c35349897a0f9f205bac7fbe",
+  "encryptedCredentialReferences": [
+    "portal-api-db:/etc/credstore.encrypted/travelos-portal-api-db",
+    "portal-auth-realm:/etc/credstore.encrypted/travelos-portal-auth-realm",
+    "stage7-staff-email:/etc/credstore.encrypted/travelos-stage7-staff-email",
+    "stage7-staff-password:/etc/credstore.encrypted/travelos-stage7-staff-password",
+    "stage7-staff-totp:/etc/credstore.encrypted/travelos-stage7-staff-totp"
+  ],
+  "credentialReferenceCheck": "PASS",
+  "credentialValuesEmitted": false,
+  "availableReleaseBytes": 15710261248,
+  "stage8Actions": 0
+}

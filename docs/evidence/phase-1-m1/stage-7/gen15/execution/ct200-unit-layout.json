@@ -1,0 +1,12 @@
+{
+  "result": "PASS",
+  "installedUnitPathsPresent": [
+    "apps/admin-api/dist/main.js",
+    "apps/portal-api/dist/main.js",
+    "apps/worker/dist/main.js",
+    "migrator/run-stage6-migrations.mjs",
+    "migrator/migrations/0013_stage7_runtime_acceptance_cleanup.cjs",
+    "admin-web/index.html",
+    "portal-web/index.html"
+  ]
+}

@@ -1,0 +1,7 @@
+# Preserve exact archived execution output; no application-source exception.
+canonical-ci.log whitespace=-blank-at-eol,-blank-at-eof
+execution/canonical-ci.log whitespace=-blank-at-eol,-blank-at-eof
+execution/child-pin-report.log whitespace=-blank-at-eol,-blank-at-eof
+execution/ct200-migration-noop.log whitespace=-blank-at-eol,-blank-at-eof
+execution/ct200-migration-up.log whitespace=-blank-at-eol,-blank-at-eof
+execution/packaged-rehearsal.log whitespace=-blank-at-eol,-blank-at-eof

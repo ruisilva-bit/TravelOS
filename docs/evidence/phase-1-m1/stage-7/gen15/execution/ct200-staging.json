@@ -1,0 +1,15 @@
+{
+  "result": "PASS",
+  "generation": "gen15",
+  "releaseRoot": "/opt/travelos/releases/travelos-stage7-gen15-5609bcb4",
+  "archiveSha256": "88e5817721c60395700e36ab2ea30adde1a15d60878e485b6c9d888ae7243273",
+  "ciReceiptSha256": "acfc09323c591a6fed16be5b1f807b730918e9e36e30776877c04dae764f987e",
+  "sealedOwner": "root:root:755",
+  "artifactVerification": "PASS",
+  "installedServiceLayout": "PASS",
+  "packagedInstallerCheck": "PASS",
+  "activeReleaseStillGen09": true,
+  "migrationApplied": false,
+  "activated": false,
+  "stage8Actions": 0
+}

@@ -1,0 +1,18 @@
+{
+  "result": "PASS",
+  "transportArtifacts": [
+    "/home/hermes/travelos-stage7-gen15-5609bcb4.tar.gz",
+    "/home/hermes/travelos-stage7-gen15-5609bcb4-ci.json"
+  ],
+  "transportAbsent": true,
+  "credentialDirectoryAbsent": true,
+  "unitProperties": "MainPID=0\nControlPID=0\nResult=success\nExecMainStatus=0\nActiveState=inactive\nSubState=dead",
+  "services": {
+    "travelos-admin-api.service": "active",
+    "travelos-portal-api.service": "active",
+    "travelos-worker.service": "active"
+  },
+  "activeRelease": "/opt/travelos/releases/travelos-stage7-gen15-5609bcb4",
+  "caddyObservedSha256": "0c5a22ecc033b17d2920ddcd63e359dc97631c9ebc6855137aaab3f29a3c7bb4",
+  "stage8Actions": 0
+}

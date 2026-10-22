@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "candidateGeneration": "gen15",
+  "candidateCommit": "5609bcb44edb9baa2d10ff43e7e69c356de6ca35",
+  "author": "Alex",
+  "result": "PASS_AUTHOR_VALIDATION",
+  "independentReview": "PENDING_REQUIRED",
+  "finalCandidateScan": "PENDING_POST_FREEZE_READ_ONLY_SCAN",
+  "sourceRows": 114,
+  "sourceAggregateSha256": "9f38cabb7d3f7a145a75b9464d5ef9678e88dba2b79b24da486ca15f10e2be60",
+  "baselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN15.json",
+  "baselineSha256": "f684a54551e0a119a27022e139f536a5a296f4959ba2b7682e8062db760a9366",
+  "artifactSha256": "88e5817721c60395700e36ab2ea30adde1a15d60878e485b6c9d888ae7243273",
+  "ci": {
+    "result": "PASS",
+    "invocationCount": 1,
+    "completedGateCount": 42,
+    "expectedGateCount": 42,
+    "receiptSha256": "acfc09323c591a6fed16be5b1f807b730918e9e36e30776877c04dae764f987e",
+    "logSha256": "3693417f1bd37269b599dae7af16336e8a0355f2392d1f685d978a35542b3a44"
+  },
+  "evidenceIndex": {
+    "path": "docs/evidence/phase-1-m1/stage-7/gen15/execution/EVIDENCE_INDEX.json",
+    "sha256": "af11fbf1314392ae7dbed9be6c4e5ea7cfc558c143d8ffd7dafb61c1390c1e10",
+    "artifactCount": 42,
+    "aggregateSha256": "c91eb020783c65a5f1af589be8695fe240c05875fea4c386f1d08ebfc15723f3"
+  },
+  "preFreezeScan": {
+    "path": "docs/evidence/phase-1-m1/stage-7/gen15/pre-freeze-scan.json",
+    "sha256": "faa6dbbd94708e713ee6bd2734822775c76b3a76d2177e1ae683108e5464e0ad",
+    "result": "PASS",
+    "filesScanned": 161
+  },
+  "ct200": {
+    "result": "PASS",
+    "generation": "gen15",
+    "activeRelease": "/opt/travelos/releases/travelos-stage7-gen15-5609bcb4",
+    "invocationId": "5fd5770d56424e8cb51b322129afdc05",
+    "assertionProbes": 25,
+    "registeredRunsCleaned": 1,
+    "registeredTripsCancelled": 2,
+    "fixturePrincipalsRetired": 1,
+    "retainedPublicationSnapshots": 2,
+    "retainedFixtureAuditEvents": 7,
+    "activeFixtureGrants": 0,
+    "activeFixturePublications": 0,
+    "liveFixturePortalSessions": 0,
+    "liveAcceptanceStaffSessions": 0,
+    "oneShotInactive": true,
+    "credentialDirectoryAbsent": true,
+    "unregisteredHistoricalRowsPreserved": true,
+    "stage8Actions": 0
+  },
+  "scope": "Phase1 M1 Stage7, CT200 DEVELOPMENT. This author validation is not independent GO. Immutable retained history is not physically deleted. No production readiness or whole-host immutability claim.",
+  "stage7Actions": 1,
+  "stage8Actions": 0
+}

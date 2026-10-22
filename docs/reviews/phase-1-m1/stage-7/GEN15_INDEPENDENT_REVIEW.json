@@ -1,0 +1,69 @@
+{
+  "decision": "GO",
+  "reviewedFreezeSha256": "c2ab7e26a077d8647731c5520b3336bad67fe5cbaef9e70c48ffb979dace3ec5",
+  "integrity": {
+    "freeze": {
+      "rowsVerified": 163,
+      "declaredRows": 163,
+      "rowHashOrSizeMismatches": 0,
+      "aggregateSha256": "74011d6d2cbbeed409048e4ad7079fd6deb5931d657ab8f9f5c9b4cd4078a19d",
+      "freezeFileSha256Verified": true
+    },
+    "executionEvidenceIndex": {
+      "fileSha256": "af11fbf1314392ae7dbed9be6c4e5ea7cfc558c143d8ffd7dafb61c1390c1e10",
+      "artifactsVerified": 42,
+      "declaredArtifacts": 42,
+      "artifactHashOrSizeMismatches": 0,
+      "aggregateSha256": "c91eb020783c65a5f1af589be8695fe240c05875fea4c386f1d08ebfc15723f3",
+      "executionDirectoryMatchesIndex": true
+    },
+    "finalCandidateScan": {
+      "result": "PASS",
+      "filesScanned": 164,
+      "findings": [],
+      "finalFreezeEligible": true
+    },
+    "sourceScope": {
+      "result": "PASS",
+      "candidateCount": 14,
+      "freezeEligibleGenerations": [],
+      "missingPaths": [],
+      "violations": []
+    },
+    "readOnly": true,
+    "filesModifiedByReviewer": false
+  },
+  "findings": [],
+  "strengths": [
+    "Cleanup authorization is default-deny and requires all four documented permission IDs, recent MFA, Agency scope, and the recorded fixture creator; the database repository repeats authorization checks inside its transaction.",
+    "Cleanup derives bounded resources from the registered run, uses stable effect idempotency keys, verifies completion, and preserves immutable publication and audit history rather than claiming physical deletion.",
+    "Portal reads join current session epoch, active grant, active publication pointer, immutable snapshot, and strict V1 contract; there is no mutable-workspace fallback.",
+    "Migration 0013 uses same-Agency constraints, narrowly scoped runtime privileges, fixed-search-path security-definer association, and immutable-history protections.",
+    "Evidence includes one canonical CI invocation with 42/42 gates, 212 unit tests and 38 PostgreSQL tests passing, plus assertion-level CT200 DEVELOPMENT evidence and independent retention inventory."
+  ],
+  "declinedToJudge": [
+    "Production deployment/readiness and production-data privacy or legal retention approval are outside this CT200 DEVELOPMENT-only Stage 7 decision.",
+    "Stage 8 functionality and broad Portal capabilities such as documents, invitations, or generalized sharing are outside the approved Stage 7 scope.",
+    "Whole-host immutability is not judged; the captured Caddy hash is explicitly bounded to an observed post-activation value, not a pre-task host baseline."
+  ],
+  "reasoning": "The gen15 freeze and all 42 indexed execution artifacts recompute cleanly, and the final candidate scan reports eligible with no findings. The inspected authorization, Portal read boundary, cleanup lifecycle, migration ACLs, retention evidence, and tests align with the approved Stage 7 DEVELOPMENT scope; I found no evidenced blocker. Reviewer model: gpt-6-luna.",
+  "citations": [
+    "docs/evidence/phase-1-m1/stage-7/gen15/candidate-freeze.json:1-836",
+    "docs/evidence/phase-1-m1/stage-7/gen15/execution/EVIDENCE_INDEX.json:1-497",
+    "docs/evidence/phase-1-m1/stage-7/gen15/final-candidate-scan.json:1-190",
+    "docs/evidence/phase-1-m1/stage-7/gen15/execution/final-source-scope.json:7-40",
+    "packages/backend-core/src/modules/runtime-acceptance/application/fixture-cleanup.ts:14-19,243-260,283-337",
+    "packages/database/src/portal-access/runtime-acceptance-fixture-repository.ts:86-128,326-353,367-445",
+    "apps/portal-api/src/trip-read-repository.ts:24-67",
+    "packages/portal-safe-core/src/customer-presentation/read-current-portal-trip-snapshot.ts:47-80",
+    "packages/database/src/portal-access/staff-trip-access-repository.ts:555-595,629-722",
+    "migrations/0013_stage7_runtime_acceptance_cleanup.cjs:287-361,572-716",
+    "tests/integration/stage-7-postgresql.test.ts:1667-1729,3883-3929",
+    "packages/backend-core/test/runtime-acceptance/fixture-cleanup.test.ts:202-261",
+    "docs/evidence/phase-1-m1/stage-7/gen15/execution/canonical-ci-execution.json:1-100",
+    "docs/evidence/phase-1-m1/stage-7/gen15/execution/ct200-runtime-acceptance.json:1",
+    "docs/evidence/phase-1-m1/stage-7/gen15/execution/ct200-retention.json:1-24",
+    "docs/evidence/phase-1-m1/stage-7/gen15/execution/ct200-final-inventory.json:1-26",
+    "docs/evidence/phase-1-m1/stage-7/gen15/execution/evidence-provenance.json:218-229"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "generation": "gen15",
+  "observedAtUtc": "2026-10-22T12:13:30.250632+00:00",
+  "activeRelease": "/opt/travelos/releases/travelos-stage7-gen09-0cf07d04",
+  "services": {
+    "travelos-admin-api.service": "active",
+    "travelos-portal-api.service": "active",
+    "travelos-worker.service": "active"
+  },
+  "credentialReferencesChecked": 5,
+  "credentialValuesEmitted": false,
+  "database": {
+    "sessionUser": "travelos_migrator",
+    "currentUser": "travelos_owner",
+    "database": "travelos_development",
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "listenAddresses": "127.0.0.1,::1",
+    "migrationCount": 12,
+    "migrationHead": "0012_stage7_portal_trip_access"
+  },
+  "backup": {
+    "path": "/var/tmp/travelos-stage7-pre-migration.gen15-20261022T121325Z_e4fea7",
+    "metadataAndSha256": "path=/var/tmp/travelos-stage7-pre-migration.gen15-20261022T121325Z_e4fea7 owner=postgres:postgres mode=664 bytes=293537\nfc234f707c6717f94c1d85622630ff8b2032a00fc76bfe4cef3d7c2fdd2ca33e  /var/tmp/travelos-stage7-pre-migration.gen15-20261022T121325Z_e4fea7",
+    "retained": true
+  },
+  "restoreProbe": {
+    "database": "travelos_stage7_restore_gen15_20261022t121325z_e4fea7",
+    "structuralLedgerParity": "PASS",
+    "inventorySha256": "f6498d48c04d01fbdcfbbe8a208e0d416d519c78fa7ab2212850aab39785914d",
+    "inventoryBytes": 182631,
+    "counts": {
+      "ledger": 12,
+      "relations": 50,
+      "constraints": 594,
+      "indexes": 105,
+      "triggers": 42,
+      "functions": 41,
+      "portalPrivileges": 1
+    },
+    "dropped": true,
+    "absenceVerified": true
+  },
+  "stage8Actions": 0
+}

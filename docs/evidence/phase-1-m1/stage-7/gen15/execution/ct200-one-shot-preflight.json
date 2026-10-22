@@ -1,0 +1,15 @@
+{
+  "result": "PASS",
+  "generation": "gen15",
+  "releaseMetadataSha256": "98e3aec2c4e59f2430316f9e82c5d8e65aaac28358ea12d76b93a68c871865cb",
+  "artifactId": "travelos-phase-1-m1-stage-7-gen15-5609bcb4",
+  "artifactSha256": null,
+  "artifactBytes": null,
+  "payloadEntries": 24229,
+  "payloadFiles": 22826,
+  "payloadSymlinks": 1403,
+  "sensitiveDataScan": {
+    "result": "PASS",
+    "scannedFiles": 22826
+  }
+}

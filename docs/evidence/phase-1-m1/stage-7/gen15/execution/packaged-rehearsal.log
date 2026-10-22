@@ -1,0 +1,56 @@
+Scope: all 16 workspace projects
+✓ Lockfile passes supply-chain policies (verified 6d ago)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+Done in 5.9s using pnpm v11.21.0
+$ node tooling/database/run-stage-7-disposable.mjs
+
+ RUN  v4.1.10 /home/hermes/.hermes/worktrees/travelos-stage7-successor
+
+STAGE7_PACKAGED_REHEARSAL {"result":"PASS","artifactId":"travelos-phase-1-m1-stage-7-gen15-5609bcb4","preActivationVerifier":{"result":"PASS","generation":"gen15","artifactId":"travelos-phase-1-m1-stage-7-gen15-5609bcb4"},"postActivationVerifier":{"result":"PASS","generation":"gen15","artifactId":"travelos-phase-1-m1-stage-7-gen15-5609bcb4"},"missingCredentials":{"status":1,"stage":"credential delivery","code":"STAGE7_RUNTIME_ACCEPTANCE_ERROR"},"invalidCredentials":{"status":1,"stage":"credential delivery","code":"STAGE7_RUNTIME_ACCEPTANCE_ERROR"},"probes":["staff-realm-authenticated-with-recent-mfa","staff-session-context-http-200","staff-session-context-agency-id-string","staff-session-context-principal-id-string","staff-session-context-mfa-number","staff-session-scope-confirmed","synthetic-business-data-created-through-admin-api","local-operator-portal-enrollment-verified","unauthenticated-portal-trip-denied","portal-realm-authenticated","portal-default-deny-before-grant","immutable-publication-created-through-admin-api","explicit-trip-access-grant-issued-through-admin-api","cross-trip-access-denied","authorized-portal-read-uses-allowlisted-snapshot","portal-snapshot-unchanged-after-workspace-edit","publication-v2-visible-v1-immutable","portal-access-grant-revocation-http-200","portal-access-grant-revocation-revoked-at-string","portal-trip-read-after-revocation-http-401","grant-revocation-invalidates-existing-portal-session","runtime-acceptance-fixture-cleaned","portal-session-revoked-after-sign-out","staff-session-revoked-after-sign-out","portal-role-denies-workspace-and-internal-table-reads"],"services":{"adminStarted":true,"portalStarted":true,"stopped":true,"listenersClosed":true},"stage8Actions":0}
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > authenticates the acceptance runner against a real DEVELOPMENT Staff MFA realm 219544ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > applies the ordered Stage 7 migration to an empty supported database 1ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > upgrades the accepted Stage 6 head through the canonical migrator 0ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > verifies the exact checksummed chain and performs deterministic no-op reruns 0ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > fixtureRunAndFirstTripAssociationAreAtomic 46ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > fixtureRunAndFirstTripAreAtomic 211ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > timeoutAfterTripCommitIsRecoverableByRunId 78ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > noNewRunStartsWhileCleanupIsPending 91ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > limitsCleanupAuditReadsToScopeAndEventMetadata 8ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > cleanupRepositoryAuditsPendingAndCompletedTransitions 109ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > fixtureRunRejectsCrossAgencyAndExcessResources 112ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > onlyOneUnresolvedFixtureRunExistsPerAgency 32ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > portalRuntimeCannotReadFixtureRegistry 34ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > associates only an OPEN fixture with an active verified synthetic Portal Principal 103ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > retiredPrincipalHasNoPortalSessionContext 36ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > backfills a preexisting Portal principal and session with authorization epoch one 7ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > keeps realm sessions separate when the email fields share one opaque marker 14ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > creates Portal principal and session context on Portal-realm registration 15ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > limits Portal enrollment to local operators and authenticates via the normal Portal realm 240ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > rolls back a synthetic Portal enrollment when native verification fails 275ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > portalEnrollmentAssociationRollsBackOnInvalidRun 118ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > keeps concurrent local Portal enrollment for one normalized address to one verified identity 123ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > gives existing Agency Owner templates the Stage 7 grant-management permission 8ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > allows the Portal role only scoped grant, epoch/session, and immutable snapshot reads 28ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > owns Stage 7 grant and event tables by travelos_owner without PUBLIC ACLs 9ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > rejects expired, stale, wrong-scope, and wrong-Agency issue attempts without mutation 34ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > issues one same-Agency grant with atomic immutable event and outbox records 85ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > rejects idempotency-key reuse with a different request and duplicate active grants 24ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > allows Portal runtime to read an issued grant through its explicit columns 13ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > serves only the current immutable snapshot through the Portal HTTP route 774ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > prevents mutation and deletion of grant, audit, and outbox history 34ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > revokes atomically, increments the Portal authorization epoch, and replays idempotently 118ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > expires stale active grants before issuing a new grant 67ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > rejects commands after the Staff membership is revoked 31ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > withdraws the active snapshot, cancels the registered Trip, and retires only its Portal principal 437ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > cleans registered Trips and an enrolled Portal principal through the real Admin HTTP route 387ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > denies a same-Agency non-creator both cleanup repository paths without changing the fixture 56ms
+ ✓ tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > exports the PostgreSQL Staff Trip access repository 0ms
+
+ Test Files  1 passed (1)
+      Tests  38 passed (38)
+   Start at  12:57:19
+   Duration  229.28s (transform 755ms, setup 0ms, import 2.71s, tests 226.36s, environment 0ms)
+
+{"evidence":"/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-postgresql-1252305","result":"PASS"}

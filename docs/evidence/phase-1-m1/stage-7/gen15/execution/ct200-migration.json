@@ -1,0 +1,62 @@
+{
+  "result": "PASS",
+  "generation": "gen15",
+  "approvedMigrationCommand": [
+    "travelos-migrator-exec",
+    "/opt/travelos/releases/travelos-stage7-gen15-5609bcb4/runtime/node/bin/node",
+    "/opt/travelos/releases/travelos-stage7-gen15-5609bcb4/migrator/run-stage6-migrations.mjs",
+    "up"
+  ],
+  "before": {
+    "sessionUser": "travelos_migrator",
+    "currentUser": "travelos_owner",
+    "migrationCount": 12,
+    "migrationHead": "0012_stage7_portal_trip_access",
+    "migrations": [
+      "0001_foundation_schemas",
+      "0002_runtime_schema_boundaries",
+      "0003_creator_default_privileges",
+      "0004_authentication_realms",
+      "0005_root_agency_staff_authorization",
+      "0006_stage4_authorization_hardening",
+      "0007_stage5_m1_domain_slice",
+      "0008_stage5_cardinality_only",
+      "0009_stage5_revision_and_lock_version_hardening",
+      "0010_stage5_temporal_persistence_parity",
+      "0011_stage6_trip_publication",
+      "0012_stage7_portal_trip_access"
+    ]
+  },
+  "after": {
+    "sessionUser": "travelos_migrator",
+    "currentUser": "travelos_owner",
+    "migrationCount": 13,
+    "migrationHead": "0013_stage7_runtime_acceptance_cleanup",
+    "migrations": [
+      "0001_foundation_schemas",
+      "0002_runtime_schema_boundaries",
+      "0003_creator_default_privileges",
+      "0004_authentication_realms",
+      "0005_root_agency_staff_authorization",
+      "0006_stage4_authorization_hardening",
+      "0007_stage5_m1_domain_slice",
+      "0008_stage5_cardinality_only",
+      "0009_stage5_revision_and_lock_version_hardening",
+      "0010_stage5_temporal_persistence_parity",
+      "0011_stage6_trip_publication",
+      "0012_stage7_portal_trip_access",
+      "0013_stage7_runtime_acceptance_cleanup"
+    ]
+  },
+  "noOpRerun": {
+    "commandExitCode": 0,
+    "ledgerUnchanged": true,
+    "logSha256": "4c827ab3352b4b7715d752839fa95576a9dcb0b76751f9013a2969977fe1a877"
+  },
+  "firstLogSha256": "313a5cfa050d30f7c8692a2856393ed569486254f1256ad19c104ecda6791a60",
+  "operatorUnitInstalled": true,
+  "operatorUnitStarted": false,
+  "previousUnitAndHelperUnchanged": true,
+  "activeReleaseStillGen09": true,
+  "stage8Actions": 0
+}

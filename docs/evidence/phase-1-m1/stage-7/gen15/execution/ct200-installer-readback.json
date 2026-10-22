@@ -1,0 +1,13 @@
+{
+  "unitSha256": "8a6cbd2ae1ce1c70059a5303ff6dbdae50be35c3d243e3dbee43e649c03c8ef8",
+  "oldUnitSha256": "c29eb9ace79c4c57e42a20d2211762d66605101f30f768d67feae2adb60b6d97",
+  "oldHelperSha256": "3bc48b0215e64a4bd03b3478c3fdd3f1cce1a738c35349897a0f9f205bac7fbe",
+  "owner": "root",
+  "mode": "644",
+  "symlink": false,
+  "result": "PASS",
+  "generation": "gen15",
+  "loadedUnitProperties": "LoadState=loaded\nActiveState=inactive\nFragmentPath=/etc/systemd/system/travelos-stage7-runtime-acceptance.service\nUnitFileState=static",
+  "oldUnitAndHelperUnchanged": true,
+  "stage8Actions": 0
+}

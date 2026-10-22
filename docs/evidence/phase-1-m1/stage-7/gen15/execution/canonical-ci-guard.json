@@ -1,0 +1,308 @@
+{
+  "schemaVersion": 1,
+  "state": "ARMED",
+  "stage": "PHASE_1_M1_STAGE_7",
+  "candidateGeneration": "gen15",
+  "candidateId": "travelos-phase-1-m1-stage-7-gen15",
+  "candidateCommit": "5609bcb44edb9baa2d10ff43e7e69c356de6ca35",
+  "artifactSha256": "88e5817721c60395700e36ab2ea30adde1a15d60878e485b6c9d888ae7243273",
+  "deploymentContractSha256": "0257969ec9a26bc7f16df3589857cf861955b4fc4baeee67b715a46c41b69eb6",
+  "candidateStateSha256": "2f11f6bdd85fb52541ca2e63941cac3ce3d5f3e8623f44c8e077ce1e89f11d3f",
+  "candidateState": {
+    "candidate": {
+      "result": "PASS",
+      "candidateGeneration": "gen15",
+      "candidateId": "travelos-phase-1-m1-stage-7-gen15",
+      "candidateCommit": "5609bcb44edb9baa2d10ff43e7e69c356de6ca35",
+      "baselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN15.json",
+      "baselineSha256": "f684a54551e0a119a27022e139f536a5a296f4959ba2b7682e8062db760a9366",
+      "artifactSha256": "88e5817721c60395700e36ab2ea30adde1a15d60878e485b6c9d888ae7243273",
+      "deploymentContractSha256": "0257969ec9a26bc7f16df3589857cf861955b4fc4baeee67b715a46c41b69eb6",
+      "priorEvidenceScope": {
+        "result": "PASS",
+        "candidateCount": 14,
+        "requiredEvidencePaths": [
+          "docs/evidence/phase-1-m1/stage-7/gen04/canonical-ci-execution.json",
+          "docs/evidence/phase-1-m1/stage-7/gen04/canonical-ci.log",
+          "docs/evidence/phase-1-m1/stage-7/gen05/canonical-ci-execution.json",
+          "docs/evidence/phase-1-m1/stage-7/gen05/canonical-ci.log",
+          "docs/evidence/phase-1-m1/stage-7/gen06/canonical-ci-execution.json",
+          "docs/evidence/phase-1-m1/stage-7/gen06/canonical-ci.log",
+          "docs/evidence/phase-1-m1/stage-7/gen07/canonical-ci-execution.json",
+          "docs/evidence/phase-1-m1/stage-7/gen07/canonical-ci.log",
+          "docs/evidence/phase-1-m1/stage-7/gen09/canonical-ci-execution.json",
+          "docs/evidence/phase-1-m1/stage-7/gen09/canonical-ci.log",
+          "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci-execution.json",
+          "docs/evidence/phase-1-m1/stage-7/gen10/canonical-ci.log",
+          "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci-interruption.json",
+          "docs/evidence/phase-1-m1/stage-7/gen11/canonical-ci.log",
+          "docs/evidence/phase-1-m1/stage-7/gen12/canonical-ci-execution.json",
+          "docs/evidence/phase-1-m1/stage-7/gen12/canonical-ci.log",
+          "docs/evidence/phase-1-m1/stage-7/gen14/canonical-ci-execution.json",
+          "docs/evidence/phase-1-m1/stage-7/gen14/canonical-ci.log"
+        ],
+        "missingPaths": [],
+        "freezeEligibleGenerations": [],
+        "violations": [],
+        "candidateGeneration": "gen15",
+        "candidateCommit": "5609bcb44edb9baa2d10ff43e7e69c356de6ca35",
+        "baselinePath": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN15.json",
+        "baselineSha256": "f684a54551e0a119a27022e139f536a5a296f4959ba2b7682e8062db760a9366",
+        "historyPath": "tooling/ci/stage-7/prior-candidate-dispositions.json",
+        "historySha256": "f5a9bb32ff49b7fafb48630548ded51b055d9cebef394b05a6dee55adc6b4247",
+        "missingVerifierPaths": []
+      },
+      "stage8Actions": 0
+    },
+    "snapshot": {
+      "commit": "5609bcb44edb9baa2d10ff43e7e69c356de6ca35",
+      "statusPorcelainBytes": 65,
+      "statusPorcelainSha256": "01df2f2f9ba3bffdcbbdcfa0321961de1c84246eb0183a3261866bb0b2d37f37",
+      "trackedDiffFromHeadBytes": 0,
+      "trackedDiffFromHeadSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "untrackedFiles": [
+        {
+          "path": "docs/reviews/phase-1-m1/STAGE_7_SUCCESSOR_BASELINE_GEN15.json",
+          "bytes": 29530,
+          "sha256": "f684a54551e0a119a27022e139f536a5a296f4959ba2b7682e8062db760a9366"
+        }
+      ],
+      "untrackedFileCount": 1
+    },
+    "toolchain": {
+      "node": "v24.19.0",
+      "corepack": "0.35.0",
+      "pnpm": "11.21.0",
+      "nodeExecutable": "/home/hermes/.local/share/travelos-stage5-toolchain/node_modules/node/bin/node"
+    },
+    "gates": [
+      {
+        "label": "protected-baseline:pre",
+        "script": "protected-baseline:check",
+        "args": []
+      },
+      {
+        "label": "stage5-candidate-coherence:pre",
+        "script": "stage5:candidate-coherence:verify",
+        "args": []
+      },
+      {
+        "label": "stage7-predecessor:pre",
+        "script": "stage7:predecessor:verify",
+        "args": [
+          "--generation=gen15"
+        ]
+      },
+      {
+        "label": "stage7-successor-baseline:pre",
+        "script": "stage7:successor-baseline:verify",
+        "args": [
+          "--generation=gen15"
+        ]
+      },
+      {
+        "label": "stage7-source-scope:pre",
+        "script": "stage7:source-scope:verify",
+        "args": [
+          "--generation=gen15"
+        ]
+      },
+      {
+        "label": "stage6-predecessor:security-scan",
+        "script": "stage7:predecessor:security-scan",
+        "args": [
+          "--generation=gen15"
+        ]
+      },
+      {
+        "label": "verify:pins",
+        "script": "verify:pins",
+        "args": []
+      },
+      {
+        "label": "db:migrations:verify",
+        "script": "db:migrations:verify",
+        "args": []
+      },
+      {
+        "label": "auth:schema:verify",
+        "script": "auth:schema:verify",
+        "args": []
+      },
+      {
+        "label": "test:lifecycle-policy",
+        "script": "test:lifecycle-policy",
+        "args": []
+      },
+      {
+        "label": "format:check",
+        "script": "format:check",
+        "args": []
+      },
+      {
+        "label": "lint",
+        "script": "lint",
+        "args": []
+      },
+      {
+        "label": "build",
+        "script": "build",
+        "args": []
+      },
+      {
+        "label": "typecheck",
+        "script": "typecheck",
+        "args": []
+      },
+      {
+        "label": "architecture:check",
+        "script": "architecture:check",
+        "args": []
+      },
+      {
+        "label": "test:unit",
+        "script": "test:unit",
+        "args": []
+      },
+      {
+        "label": "config:schema:check",
+        "script": "config:schema:check",
+        "args": []
+      },
+      {
+        "label": "stage3:corrections:verify",
+        "script": "stage3:corrections:verify",
+        "args": []
+      },
+      {
+        "label": "test:freeze-inputs",
+        "script": "test:freeze-inputs",
+        "args": []
+      },
+      {
+        "label": "test:security-scanner",
+        "script": "test:security-scanner",
+        "args": []
+      },
+      {
+        "label": "test:stage6-successor-baseline",
+        "script": "test:stage6:successor-baseline",
+        "args": []
+      },
+      {
+        "label": "test:stage6-deployment-contract",
+        "script": "test:stage6:deployment-contract",
+        "args": []
+      },
+      {
+        "label": "test:stage6-migrator-bootstrap",
+        "script": "test:stage6:migrator-bootstrap",
+        "args": []
+      },
+      {
+        "label": "test:stage7:successor-baseline",
+        "script": "test:stage7:successor-baseline",
+        "args": []
+      },
+      {
+        "label": "test:stage7:source-scope",
+        "script": "test:stage7:source-scope",
+        "args": []
+      },
+      {
+        "label": "test:stage7:predecessor-security-scan",
+        "script": "test:stage7:predecessor-security-scan",
+        "args": []
+      },
+      {
+        "label": "test:stage7:canonical-ci",
+        "script": "test:stage7:canonical-ci",
+        "args": []
+      },
+      {
+        "label": "test:stage7:artifact",
+        "script": "test:stage7:artifact",
+        "args": []
+      },
+      {
+        "label": "test:stage7:deployment-contract",
+        "script": "test:stage7:deployment-contract",
+        "args": []
+      },
+      {
+        "label": "test:stage7:migrator-package",
+        "script": "test:stage7:migrator-package",
+        "args": []
+      },
+      {
+        "label": "stage7-deployment-contract",
+        "script": "stage7:deployment-contract:verify",
+        "args": [
+          "--generation=gen15"
+        ]
+      },
+      {
+        "label": "test:stage7:postgres",
+        "script": "test:stage7:postgres",
+        "args": []
+      },
+      {
+        "label": "test:rejected-technologies",
+        "script": "test:rejected-technologies",
+        "args": []
+      },
+      {
+        "label": "verify:rejected-technologies",
+        "script": "verify:rejected-technologies",
+        "args": []
+      },
+      {
+        "label": "evidence:stage4:verify",
+        "script": "evidence:stage4:verify",
+        "args": []
+      },
+      {
+        "label": "security:scan:stage4",
+        "script": "security:scan:stage4",
+        "args": []
+      },
+      {
+        "label": "test:smoke",
+        "script": "test:smoke",
+        "args": []
+      },
+      {
+        "label": "security:scan:bundles",
+        "script": "security:scan:bundles",
+        "args": []
+      },
+      {
+        "label": "stage7-successor-baseline:post",
+        "script": "stage7:successor-baseline:verify",
+        "args": [
+          "--generation=gen15"
+        ]
+      },
+      {
+        "label": "stage7-source-scope:post",
+        "script": "stage7:source-scope:verify",
+        "args": [
+          "--generation=gen15"
+        ]
+      },
+      {
+        "label": "stage5-candidate-coherence:post",
+        "script": "stage5:candidate-coherence:verify",
+        "args": []
+      },
+      {
+        "label": "protected-baseline:post",
+        "script": "protected-baseline:check",
+        "args": []
+      }
+    ]
+  },
+  "ciConsumed": "NO",
+  "invocationCount": 0,
+  "stage8Actions": 0
+}

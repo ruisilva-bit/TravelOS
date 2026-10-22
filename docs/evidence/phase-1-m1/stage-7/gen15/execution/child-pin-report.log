@@ -1,0 +1,47 @@
+ ===
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "toolchain": {
+    "node": "24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0"
+  },
+  "directPins": {
+    "count": 46,
+    "matchStage1": true,
+    "resolvedMatch": true
+  },
+  "workspace": {
+    "projectCount": 16,
+    "externalDeclarationsUseApprovedPins": true
+  },
+  "policies": {
+    "engineStrict": true,
+    "strictPeers": true,
+    "saveExact": true,
+    "minimumReleaseAgeMinutes": 1440,
+    "minimumReleaseAgeExclusions": [],
+    "approvedBuildScripts": [
+      "esbuild"
+    ],
+    "lodashOverride": "4.18.1",
+    "structuralChecks": {
+      "packagesExact": true,
+      "minimumReleaseAgeExact": true,
+      "minimumReleaseAgeExclusionsExact": true,
+      "overridesExact": true,
+      "approvedBuildsExact": true,
+      "npmrcExact": true
+    }
+  },
+  "lockfile": {
+    "sha256": "104d02a20ec3182ae012ff2e8b761f77f10509f49a0ced58d8cf3c7b2727eaaa",
+    "frozenCandidate": true
+  }
+}
+
+[stderr]
+$ node tooling/ci/verify-pins.mjs
+
+

@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "owner": "Alex",
+  "result": "PASS",
+  "classification": "INTERNAL_SYNTHETIC_DEVELOPMENT_EXECUTION_EVIDENCE",
+  "credentialValuesRetained": false,
+  "ciGates": 42,
+  "unitTests": 212,
+  "stage7PostgresqlTests": 38,
+  "ct200AssertionProbes": 25,
+  "executionEvidenceSources": {
+    "artifact-build.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-artifact-build.json",
+      "sourceSha256": "1c11b5056162a41bbe3b3b9dd2a827c9368ec8cd52e6ff97e759a483214f1d94",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "artifact-verify.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-artifact-verify.json",
+      "sourceSha256": "837b1e5293334b8e01edadd473324e95e1268cfa079a027130b5d3ce0bd5de43",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "packaged-rehearsal.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-packaged-rehearsal.json",
+      "sourceSha256": "0f83effc3a8094c9493b45845f761585d97de8d040830a3203eb6d09a64c9b46",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "packaged-rehearsal.log": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-packaged-rehearsal.log",
+      "sourceSha256": "f3396aa0eb09fa460735a951545ca0ccac14f828347bbded6d0b4b9d7385bdb3",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "canonical-ci-guard.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-canonical-ci-guard.json",
+      "sourceSha256": "a744a01a8713d0cabfdaa1016e02afb58936d047612486b87d2b9bc7264d61bd",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "canonical-ci-claim.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-canonical-ci-claim.json",
+      "sourceSha256": "07a58d593e565aa0a8f27f2b1b422ab10a7715a12cb7c28474795385a3223f65",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "final-source-scope.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-final-source-scope.json",
+      "sourceSha256": "4cac4a4ae32cba796ec4d7706712702316518adbf755444797eb1cb5d9faf8b4",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "cleanup.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-cleanup.json",
+      "sourceSha256": "7bda30354ad1e20a01ca9653b196f41d7e962532e5b09f899443fe22d0c76253",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-acceptance-summary.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-acceptance-summary.json",
+      "sourceSha256": "b3e009c3aaa299a5fcfffd431ed50c89e42a232b392b92eb9dba34cc6135abc1",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-activation.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-activation.json",
+      "sourceSha256": "2ca7ab863baf49aad700f516466fad07ea6516a82b9c3210df218d2637fe0e66",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-artifact-verify.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-artifact-verify.json",
+      "sourceSha256": "837b1e5293334b8e01edadd473324e95e1268cfa079a027130b5d3ce0bd5de43",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-backup-permissions.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-backup-permissions.json",
+      "sourceSha256": "2b677b176ed26ff6c8db1df59f432418f508b429a70248172487e5d1ba2ec474",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-final-inventory.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-final-inventory.json",
+      "sourceSha256": "b383e22f3fe976514b0d8f67b82558b019e1830d02d58b71f20ec7c97ab094e2",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-final-poststate.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-final-poststate.json",
+      "sourceSha256": "2d89e283c20703903bc3941a92ec09b6c269f2cc5d60e680ce6e844d16a4181b",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-installer-check.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-installer-check.json",
+      "sourceSha256": "1d11b99390d8d78fed2f76758fcbe8f0ccf90df16c93ce863cd02ae53a92b44c",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-installer-install.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-installer-install.json",
+      "sourceSha256": "b326cdc696fda9663b5ae982a076b6f2761782900c576171350f71fe269e23ca",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-installer-readback.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-installer-readback.json",
+      "sourceSha256": "7d1e5a3140801a585cf3b3c22d8f4eb8a20b4c5ebdbab74cce9f622fe525c007",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-migration.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-migration.json",
+      "sourceSha256": "9c729c07d13396c9e057791726d409b1e0a47b049f22c53ddc816f848b732c77",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-one-shot-preflight.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-one-shot-preflight.json",
+      "sourceSha256": "ab395e00851420cf776f189296ccc45d0a2246c81fd11a6904816e91c068ecca",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-one-shot-systemd.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-one-shot-systemd.json",
+      "sourceSha256": "57e50e99d70e0b90706ff66092bd62a98bddd3a067add554611baea3921d43cb",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-pre-acceptance-inventory.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-pre-acceptance-inventory.json",
+      "sourceSha256": "11d1a9fb312be8b9e2b8a8894c90460e31603049e70739116904f86e9a6db3a9",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-predeploy.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-predeploy.json",
+      "sourceSha256": "a1508b238a191b16dc8efe8c4ad92046b30409e2ba48a702cbb67374dec5a102",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-retention.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-retention.json",
+      "sourceSha256": "531fa2cf49403b76f34bb1696c9537f8a91fad6262b915246ce7a18ccf1de806",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-runtime-acceptance.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-runtime-acceptance.json",
+      "sourceSha256": "d902616b06dc1411f2967657131cac3fe5fa39a268d877495355ee3450091e04",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-staging.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-staging.json",
+      "sourceSha256": "ce4bcaecdc1962516ea642d2678b468b23e52f2b5cb01192deeae1380e00ea62",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-transport.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-transport.json",
+      "sourceSha256": "3a0c6dbb80675b3c14d997559fc3b18e7fab852c66a57ea8412fe166b3291415",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-unit-layout.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-unit-layout.json",
+      "sourceSha256": "41b96eab1fc809fe8dd258337df674b2608e5551e370e53b49c71fcbd2b3c6e6",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-migration-up.log": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-migration-up.log",
+      "sourceSha256": "313a5cfa050d30f7c8692a2856393ed569486254f1256ad19c104ecda6791a60",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-migration-noop.log": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-ct200-migration-noop.log",
+      "sourceSha256": "4c827ab3352b4b7715d752839fa95576a9dcb0b76751f9013a2969977fe1a877",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "ct200-prestate.json": {
+      "sourcePath": "/home/hermes/.hermes/cache/scratch/stage7-gen15-ct200-prestate.json",
+      "sourceSha256": "77f99de871ba8910d610f7125e8619508bcce038b0442948e7afb9835695f997",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "canonical-ci-execution.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/docs/evidence/phase-1-m1/stage-7/gen15/canonical-ci-execution.json",
+      "sourceSha256": "acfc09323c591a6fed16be5b1f807b730918e9e36e30776877c04dae764f987e",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "canonical-ci.log": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/docs/evidence/phase-1-m1/stage-7/gen15/canonical-ci.log",
+      "sourceSha256": "3693417f1bd37269b599dae7af16336e8a0355f2392d1f685d978a35542b3a44",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "operator-predeploy.py": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-predeploy.py",
+      "sourceSha256": "d7626572ef6d9b6321cd7ceba556e15da1a6633a3bcced0f4e73e8f4320d7eb1",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "operator-stage-payload.py": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-stage-payload.py",
+      "sourceSha256": "a83fcc2d762df517af63c032fdd8baa6c069d1d43f3b99dbcedf0a84ac4b88c4",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "operator-install-migrate.py": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-install-migrate.py",
+      "sourceSha256": "cce3a45cf4bf57b899f8539888a1c9be60054c7843559c5d3a9d096801557001",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "operator-activate-accept.py": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-activate-accept.py",
+      "sourceSha256": "0722f5cede71d32941a9c51290dbcfe907e3dce025e973c9386713c8c33bfab8",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "final-inventory.sql": {
+      "sourcePath": "/home/hermes/.hermes/cache/scratch/stage7-gen15-final-inventory.sql",
+      "sourceSha256": "3cbef21fb9c70cbf7a069088bc111bf3f8e7f63109966c5fa4736078c587eb49",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "sensitive-scan.mjs": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-final-scan.mjs",
+      "sourceSha256": "3ad7ececd53fcff8082f719c5a25cc5bbfdc4a34f4888f7b1767042874a2c5b4",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "evidence-producer.py": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-finalize-evidence.py",
+      "sourceSha256": "18ba3c6a0d85734fee8619786def4306b271fc4080c2974c6ddff4d6fb6bedc8",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "release.json": {
+      "sourcePath": "/home/hermes/.hermes/worktrees/travelos-stage7-successor/.hermes/state/stage7-gen15-artifact/release.json",
+      "sourceSha256": "98e3aec2c4e59f2430316f9e82c5d8e65aaac28358ea12d76b93a68c871865cb",
+      "transform": "BYTE_IDENTICAL_COPY"
+    },
+    "child-pin-report.log": {
+      "sourcePath": "docs/evidence/phase-1-m1/stage-7/gen15/canonical-ci.log",
+      "sourceSha256": "3693417f1bd37269b599dae7af16336e8a0355f2392d1f685d978a35542b3a44",
+      "transform": "EXACT_CHILD_GATE_SECTION_WITH_ANSI_COLOR_REMOVED"
+    }
+  },
+  "normalization": "Some operator receipts were parsed from actual stdout and pretty-serialized without dropping assertion fields; runtime-acceptance.json preserves the exact journal MESSAGE plus one newline. No execution assertion was reconstructed from exit status or SQL.",
+  "journalFilter": "Exact systemd invocation; only JSON MESSAGE containing probes; metadata keys MESSAGE,__REALTIME_TIMESTAMP,_SYSTEMD_INVOCATION_ID.",
+  "caddyProbeCorrection": {
+    "firstProbe": "127.0.0.1:80 refused; no Caddy loopback binding",
+    "secondProbe": "LAN host root path returned404 because this Caddy forwards to API, not a SPA",
+    "verifiedTopology": "Existing Caddy192.168.1.33:80 forwards /health/live to APIs; allowed hosts200; unknown host421. APIs independently return404 for unknown Host. No Caddy/listener/firewall change was made.",
+    "hashClaimBoundary": "The activation receipt field named caddyConfigUnchangedSha256 is an observation after activation, matched again in final poststate; it is not a byte-for-byte pre-task Caddy baseline."
+  },
+  "backupPermissions": "Approved backup helper initially emitted mode664. The newly created backup alone was immediately restricted to0600 before release staging; exact SHA and mode were read back. Original receipt and restriction receipt are both preserved. No claim is made about unobserved reads during the initial interval.",
+  "retention": "Only the registered gen15 fixture is retired/cancelled. Immutable snapshots/audit/outbox and unrelated or unregistered historical rows are retained. Pre/post row fingerprints prove unregistered Trip and snapshot bytes unchanged.",
+  "scope": "CT200 DEVELOPMENT only; no production, new credential, listener, public exposure, root SSH/sudoers change, direct auth-table edit, push or Stage8.",
+  "stage8Actions": 0
+}

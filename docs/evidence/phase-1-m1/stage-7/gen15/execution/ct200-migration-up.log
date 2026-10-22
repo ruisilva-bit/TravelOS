@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "runId": "df25e400-ba7e-42b7-8b94-046b7c2dcd58",
+  "target": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "database": "travelos_development",
+    "sessionRole": "travelos_migrator",
+    "effectiveRole": "travelos_owner"
+  },
+  "policy": {
+    "authority": "TravelOS node-pg-migrate 9.0.0 chain",
+    "direction": "up",
+    "downPolicy": "disabled; rollback is compatible artifact rollback, restore, or forward fix",
+    "migrationsSchema": "travelos_meta",
+    "migrationsTable": "schema_migrations",
+    "checkOrder": true,
+    "createMigrationsSchema": true,
+    "createSchema": false,
+    "singleTransaction": true,
+    "advisoryLock": true,
+    "advisoryLockMode": "fail",
+    "advisoryLockValue": 7241865325823964,
+    "dryRun": false,
+    "fake": false,
+    "decamelize": false,
+    "timestamp": false,
+    "useGlob": false
+  },
+  "postgresqlVersionNumber": 180006,
+  "verifiedMigrationCount": 13,
+  "appliedMigrations": [
+    "0013_stage7_runtime_acceptance_cleanup"
+  ],
+  "ledger": [
+    {
+      "name": "0001_foundation_schemas",
+      "runOn": "2026-09-14T13:26:18.726Z"
+    },
+    {
+      "name": "0002_runtime_schema_boundaries",
+      "runOn": "2026-09-14T13:26:18.726Z"
+    },
+    {
+      "name": "0003_creator_default_privileges",
+      "runOn": "2026-09-14T13:26:18.726Z"
+    },
+    {
+      "name": "0004_authentication_realms",
+      "runOn": "2026-09-21T13:28:32.671Z"
+    },
+    {
+      "name": "0005_root_agency_staff_authorization",
+      "runOn": "2026-09-21T13:28:32.671Z"
+    },
+    {
+      "name": "0006_stage4_authorization_hardening",
+      "runOn": "2026-09-22T18:17:22.153Z"
+    },
+    {
+      "name": "0007_stage5_m1_domain_slice",
+      "runOn": "2026-10-12T09:59:37.968Z"
+    },
+    {
+      "name": "0008_stage5_cardinality_only",
+      "runOn": "2026-10-12T09:59:37.968Z"
+    },
+    {
+      "name": "0009_stage5_revision_and_lock_version_hardening",
+      "runOn": "2026-10-12T09:59:37.968Z"
+    },
+    {
+      "name": "0010_stage5_temporal_persistence_parity",
+      "runOn": "2026-10-12T09:59:37.968Z"
+    },
+    {
+      "name": "0011_stage6_trip_publication",
+      "runOn": "2026-10-13T14:45:46.338Z"
+    },
+    {
+      "name": "0012_stage7_portal_trip_access",
+      "runOn": "2026-10-16T11:46:01.172Z"
+    },
+    {
+      "name": "0013_stage7_runtime_acceptance_cleanup",
+      "runOn": "2026-10-22T12:26:26.065Z"
+    }
+  ],
+  "currentVersion": "0013_stage7_runtime_acceptance_cleanup",
+  "durationMs": 392,
+  "diagnostics": [
+    "> Migrating files:",
+    "> - 0013_stage7_runtime_acceptance_cleanup",
+    "### MIGRATION 0013_stage7_runtime_acceptance_cleanup (UP) ###"
+  ]
+}
