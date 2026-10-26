@@ -92,18 +92,82 @@ export const createWorkerRepository = (
   return {
     async ready() {
       const result = await persistence.withConnection((database) =>
-        sql<{ ready: boolean }>`SELECT
-        current_user = 'travelos_worker' AND session_user = 'travelos_worker'
-        AND to_regclass('job_runtime.job') IS NOT NULL
-        AND has_table_privilege(current_user, 'job_runtime.job', 'SELECT')
-        AND has_column_privilege(current_user, 'job_runtime.job', 'state', 'UPDATE')
-        AND has_table_privilege(current_user, 'activity.entry', 'INSERT')
-        AND has_table_privilege(current_user, 'integration.activity_source', 'SELECT')
-        AND NOT EXISTS (SELECT 1 FROM pg_class AS relation JOIN pg_namespace AS namespace ON namespace.oid=relation.relnamespace
-          WHERE ((namespace.nspname='trip_ops' AND relation.relname='trip') OR (namespace.nspname='staff_access' AND relation.relname='staff_user'))
-          AND has_table_privilege(current_user, relation.oid, 'SELECT')) AS ready`.execute(
-          database,
-        ),
+        sql<{ ready: boolean }>`WITH required_schemas(schema_name) AS (
+          VALUES ('job_runtime'), ('integration'), ('activity')
+        ), required_table_privileges(schema_name, relation_name, privilege) AS (
+          VALUES
+            ('job_runtime', 'job', 'SELECT'),
+            ('job_runtime', 'job', 'INSERT'),
+            ('job_runtime', 'attempt', 'SELECT'),
+            ('job_runtime', 'attempt', 'INSERT'),
+            ('integration', 'outbox_delivery', 'SELECT'),
+            ('integration', 'outbox_delivery', 'INSERT'),
+            ('integration', 'activity_source', 'SELECT'),
+            ('integration', 'event_context', 'SELECT'),
+            ('activity', 'entry', 'SELECT'),
+            ('activity', 'entry', 'INSERT')
+        ), required_column_privileges(schema_name, relation_name, column_name, privilege) AS (
+          VALUES
+            ('job_runtime', 'job', 'state', 'UPDATE'),
+            ('job_runtime', 'job', 'attempt', 'UPDATE'),
+            ('job_runtime', 'job', 'version', 'UPDATE'),
+            ('job_runtime', 'job', 'runAt', 'UPDATE'),
+            ('job_runtime', 'job', 'owner', 'UPDATE'),
+            ('job_runtime', 'job', 'leaseUntil', 'UPDATE'),
+            ('job_runtime', 'job', 'deadline', 'UPDATE'),
+            ('job_runtime', 'job', 'errorCode', 'UPDATE'),
+            ('integration', 'outbox_delivery', 'state', 'UPDATE'),
+            ('integration', 'outbox_delivery', 'completedAt', 'UPDATE')
+        ), required_relations AS (
+          SELECT
+            required.schema_name,
+            required.relation_name,
+            required.privilege,
+            relation.oid AS relation_oid
+          FROM required_table_privileges AS required
+          LEFT JOIN pg_namespace AS namespace ON namespace.nspname=required.schema_name
+          LEFT JOIN pg_class AS relation
+            ON relation.relnamespace=namespace.oid AND relation.relname=required.relation_name
+        ), required_columns AS (
+          SELECT
+            required.schema_name,
+            required.relation_name,
+            required.column_name,
+            required.privilege,
+            relation.oid AS relation_oid,
+            attribute.attnum AS attribute_number
+          FROM required_column_privileges AS required
+          LEFT JOIN pg_namespace AS namespace ON namespace.nspname=required.schema_name
+          LEFT JOIN pg_class AS relation
+            ON relation.relnamespace=namespace.oid AND relation.relname=required.relation_name
+          LEFT JOIN pg_attribute AS attribute
+            ON attribute.attrelid=relation.oid AND attribute.attname=required.column_name
+            AND attribute.attnum > 0 AND NOT attribute.attisdropped
+        )
+        SELECT current_user = 'travelos_worker' AND session_user = 'travelos_worker'
+          AND NOT EXISTS (
+            SELECT 1 FROM required_schemas AS required
+            WHERE NOT has_schema_privilege(current_user, required.schema_name, 'USAGE')
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM required_relations AS required
+            WHERE required.relation_oid IS NULL
+              OR NOT has_table_privilege(current_user, required.relation_oid, required.privilege)
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM required_columns AS required
+            WHERE required.relation_oid IS NULL OR required.attribute_number IS NULL
+              OR NOT has_column_privilege(
+                current_user, required.relation_oid, required.attribute_number, required.privilege
+              )
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM pg_class AS relation
+            JOIN pg_namespace AS namespace ON namespace.oid=relation.relnamespace
+            WHERE ((namespace.nspname='trip_ops' AND relation.relname='trip')
+              OR (namespace.nspname='staff_access' AND relation.relname='staff_user'))
+              AND has_table_privilege(current_user, relation.oid, 'SELECT')
+          ) AS ready`.execute(database),
       );
       return result.rows[0]?.ready === true;
     },

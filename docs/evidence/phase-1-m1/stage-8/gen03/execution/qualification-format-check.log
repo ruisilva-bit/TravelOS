@@ -1,0 +1,33 @@
+Checking formatting...
+All matched files use Prettier code style!
+{"schemaVersion":1,"result":"PASS","mode":"--check","filesChecked":557,"protectedBaselineFiles":40,"protectedOverlap":[]}
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "sourceOfTruth": {
+    "path": "docs/reviews/PHASE_0_ACCEPTED_BASELINE.md",
+    "expectedSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+    "actualSha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb",
+    "match": true
+  },
+  "protectedFiles": {
+    "declaredCount": 40,
+    "parsedCount": 40,
+    "checkedCount": 40,
+    "matchingCount": 40,
+    "missing": [],
+    "mismatches": []
+  },
+  "required": {
+    "AGENTS.md": {
+      "expectedSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "actualSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "match": true
+    },
+    "IDEA.md": {
+      "expectedSha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524",
+      "actualSha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524",
+      "match": true
+    }
+  }
+}

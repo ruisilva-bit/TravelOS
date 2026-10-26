@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { readFile, rename, writeFile } from "node:fs/promises";
+import { readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { loadDevelopmentInstanceManifest, readSystemdCredentialText } from "@travelos/config";
 import { createPostgresPersistence, createWorkerRepository } from "@travelos/database";
-import { createStructuredLogger } from "@travelos/observability";
+import { createStructuredLogger, serializeWorkerMetrics } from "@travelos/observability";
 
 import { bootstrapWorkerProcess } from "./worker-process.js";
 
@@ -105,6 +105,19 @@ const main = async (): Promise<void> => {
     );
     await rename(temporary, path.join(directory, "health.json"));
   };
+  const publishMetrics = async (): Promise<void> => {
+    const health = worker.diagnostics();
+    const temporary = path.join(directory, `.metrics-${randomUUID()}.tmp`);
+    try {
+      await writeFile(temporary, serializeWorkerMetrics(health.ready ? health.stats : null), {
+        mode: 0o600,
+        flag: "wx",
+      });
+      await rename(temporary, path.join(directory, "metrics.prom"));
+    } finally {
+      await unlink(temporary).catch(() => undefined);
+    }
+  };
   process.once("SIGINT", stop);
   process.once("SIGTERM", stop);
   try {
@@ -112,6 +125,7 @@ const main = async (): Promise<void> => {
     while (!stopped) {
       await worker.tick().catch(() => undefined);
       await publishHealth();
+      await publishMetrics();
       if (!stopped)
         await new Promise<void>((resolve) => {
           const handle = setTimeout(resolve, 1000);
@@ -125,6 +139,7 @@ const main = async (): Promise<void> => {
   } finally {
     await worker.shutdown();
     await publishHealth();
+    await publishMetrics();
     await persistence.destroy();
     process.removeListener("SIGINT", stop);
     process.removeListener("SIGTERM", stop);

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "result": "FAIL",
+  "postgresVersion": "18.6",
+  "serverVersionNumber": 180006,
+  "bindScope": "127.0.0.1 only",
+  "dataChecksums": true,
+  "globalPackageInstallation": false,
+  "stage8Actions": 0,
+  "testExitCode": 1,
+  "testLogSha256": "534ad91bf913e8667ac7668b9ec67520b1a499f353a4eb1610ecb2d638004958",
+  "commands": [
+    {
+      "command": "node tooling/database/prepare-postgresql-18.mjs",
+      "exitCode": 0,
+      "stdoutSha256": "ad6eb4e5e4d3e51c91cb1d02a1a35953a5e0a406bf8dff8b02a0e4f25c11056f",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "vitest run --config tooling/testing/vitest.stage-7.config.ts --reporter=verbose",
+      "exitCode": 1,
+      "logSha256": "534ad91bf913e8667ac7668b9ec67520b1a499f353a4eb1610ecb2d638004958"
+    }
+  ],
+  "cleanup": {
+    "clusterStartAttempted": true,
+    "clusterStopped": true,
+    "stopExitCode": 0,
+    "disposableRootsAbsent": true
+  },
+  "failure": "Error: Stage 7 PostgreSQL integration qualification failed: \n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  tests/integration/stage-7-postgresql.test.ts > Stage 7 PostgreSQL migration qualification > applies the ordered Stage 7 migration to an empty supported database\nAssertionError: expected '0014_stage8_worker_activity' to be '0013_stage7_runtime_acceptance_cleanup' // Object.is equality\n\nExpected: \"0013_stage7_runtime_acceptance_cleanup\"\nReceived: \"0014_stage8_worker_activity\"\n\n ❯ tests/integration/stage-7-postgresql.test.ts:1375:37\n    1373|     expect(emptyStage6Run.currentVersion).toBe(\"0011_stage6_trip_publi…\n    1374|     expect(emptyStage6Run.verifiedMigrationCount).toBe(11);\n    1375|     expect(emptyRun.currentVersion).toBe(stage7Head);\n       |                                     ^\n    1376|     expect(emptyRun.verifiedMigrationCount).toBe(13);\n    1377|     expect(emptyRun.ledger).toHaveLength(13);\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+}

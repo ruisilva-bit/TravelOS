@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "candidate": "travelos-stage8-gen02-b8c47d7b",
+  "disposition": "STAGE_SPECIFIC_MIGRATION_HEAD_SCOPE_MISMATCH_REQUIRES_REVIEW",
+  "historicalAttempt": {
+    "path": ".hermes/state/stage8-gen02-postdeploy-regressions-20261023T125134Z.summary.json",
+    "result": "FAIL",
+    "stage6": {
+      "result": "FAIL",
+      "exactFailure": "The Stage 5 predecessor migration chain must end at 0010",
+      "source": "tests/integration/stage-6-publication-postgresql.test.ts:202 (invoked at line 309)",
+      "executedTests": 0,
+      "skippedTests": 3,
+      "cause": "The standalone Stage 6 harness asserted its historical Stage 5 chain while running against the Stage 8 source chain; no Stage 6 business assertions ran."
+    },
+    "stage7": {
+      "result": "FAIL",
+      "exactFailure": "Expected 0013_stage7_runtime_acceptance_cleanup; received 0014_stage8_worker_activity",
+      "source": "tests/integration/stage-7-postgresql.test.ts:1375",
+      "passedTestsBeforeStop": 1,
+      "failedTests": 1,
+      "skippedTests": 36,
+      "cause": "The standalone Stage 7 harness asserted its historical 0013 head while running against the Stage 8 migration chain. The dedicated Stage 8 PostgreSQL qualification uses the Stage 8 regression adapter and passed; the independent reviewer must adjudicate this scope mismatch."
+    },
+    "acceptedStage7Predecessor": {
+      "result": "PASS",
+      "predecessor": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+      "checks": [
+        "predecessor-offline-install",
+        "stage7-artifact",
+        "stage7-deployment-contract",
+        "stage7-predecessor-security-scan"
+      ]
+    }
+  },
+  "correctedStage8PostdeployQualification": {
+    "result": "PASS",
+    "testExitCode": 0,
+    "testFiles": 3,
+    "testsPassed": 52,
+    "passedByStage": {
+      "stage6": 3,
+      "stage7": 38,
+      "stage8": 11
+    },
+    "logPath": "execution/postdeploy-postgresql-integration.log",
+    "logSha256": "27fe69a746b864c28503ab36a1af62a9240001c49a50a6df5cb02e9886f0e147"
+  },
+  "action": "Preserve both historical failures and the corrected Stage 8 result for independent adjudication; do not modify Stage 7 or change migrations based only on stage-specific head assertions.",
+  "stage9Actions": 0
+}

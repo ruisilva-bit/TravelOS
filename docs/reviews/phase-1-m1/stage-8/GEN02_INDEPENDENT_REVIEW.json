@@ -1,0 +1,108 @@
+{
+  "reviewer": "Independent reviewer: Hermes subagent; not Alex",
+  "recommendation": "NO-GO",
+  "reviewedCandidate": {
+    "generation": "gen02",
+    "candidateCommit": "f84d60d07ad9747649245a3a17ab0cf1b7080f1f",
+    "freezePath": "docs/evidence/phase-1-m1/stage-8/gen02/candidate-freeze.json",
+    "freezeSha256": "8c63060904811e5d50a2811d4a2d76aa6a25cb71bcee2a5e54973525c4e317b2",
+    "aggregateSha256": "c9babc3e51612886eb276dcd1721cf3c5a9178c706f42c107ec3bb88bf2a4af2"
+  },
+  "manifestVerification": {
+    "declared": 108,
+    "parsed": 108,
+    "unique": 108,
+    "missing": 0,
+    "mismatched": 0,
+    "duplicates": 0,
+    "extraCandidateFiles": 0,
+    "aggregateMatch": true,
+    "aggregateSerialization": "UTF8(path + NUL + decimal(bytes) + NUL + lowercase sha256 + LF), ordered by UTF8 path bytes; terminal LF included",
+    "sourceDeltaRows": 53,
+    "sourceDeltaPathsMatch": true,
+    "stage7PathChanges": 0,
+    "stage9PathChanges": 0
+  },
+  "postFreezeScan": {
+    "path": "docs/evidence/phase-1-m1/stage-8/gen02/final-candidate-scan.json",
+    "sha256": "4b49552769f31fecb8fcb9bdf8d38b7b200936622e111c33c2ab6ef33198538c",
+    "result": "PASS",
+    "filesScanned": 109,
+    "unallowlistedFindings": 0,
+    "allowlistedFindings": 15,
+    "stage9Actions": 0,
+    "coverage": "All 108 frozen entries plus candidate-freeze.json; scan output itself excluded."
+  },
+  "findings": [
+    {
+      "id": "S8-OBS-001",
+      "severity": "HIGH",
+      "type": "Required observability metrics not emitted",
+      "evidence": [
+        {
+          "file": "docs/implementation/M1_STAGE_8_WORKER_ACTIVITY_OBSERVABILITY.md",
+          "sha256": "3b02307d5dd9af429d4a83e141f017130baf13b88e444bb01501b75d7c54dcfd",
+          "lines": "24-26",
+          "detail": "Stage 8 requires fixed low-cardinality metrics and identifies pending/oldest backlog, running, retries, dead letters, unknown outcomes, and expired leases as essential metrics."
+        },
+        {
+          "file": "apps/worker/src/worker-process.ts",
+          "sha256": "56ff23f522b7e7598504ef4bd11335ff288e62f5d42f097f50effa6337134e37",
+          "lines": "57-58",
+          "detail": "Queue statistics are sent to the log callback as a worker_cycle record."
+        },
+        {
+          "file": "packages/observability/src/telemetry.ts",
+          "sha256": "9c36226bd47ae7590ba1d46014336015678f2e29d1d301d23d7991840e561895",
+          "lines": "65-108",
+          "detail": "The implementation serializes allowlisted structured log records; it provides no metrics instrument/export interface."
+        },
+        {
+          "file": "apps/worker/src/main.ts",
+          "sha256": "7ebe450cf3167829f64bc90a47bcafcdbe020981014d6193afa4954f25257daa",
+          "lines": "29-43, 93-106",
+          "detail": "The health command reports only live/ready; worker stats are written to a local health file, not exposed as scrapeable metrics."
+        }
+      ],
+      "scenario": "An operator or monitoring system relying on the documented metrics interface has no emitted queue metrics to scrape or alert on; structured log fields and a local health file do not supply the specified metrics interface.",
+      "consequence": "Backlog age, retries, dead letters, unknown outcomes, and lease expiry may go unobserved, leaving a stated Stage 8 observability acceptance requirement unmet.",
+      "requiredCorrectionOrGate": "Provide and qualify a low-cardinality metrics emission/export path for the required worker metrics, or obtain an explicit approved contract change and update the Stage 8 evidence before reconsidering GO."
+    },
+    {
+      "id": "S8-OBS-002",
+      "severity": "MEDIUM",
+      "type": "Readiness check does not cover required worker privileges",
+      "evidence": [
+        {
+          "file": "packages/database/src/job-runtime/worker-repository.ts",
+          "sha256": "dad9eaaf64752dbc80b2c04c0841d89fb6d3a738321cab6d1b40e0c2bfd2b768",
+          "lines": "93-104",
+          "detail": "ready() checks SELECT on job, UPDATE on only job.state, INSERT on activity.entry, and SELECT on activity_source."
+        },
+        {
+          "file": "packages/database/src/job-runtime/worker-repository.ts",
+          "sha256": "dad9eaaf64752dbc80b2c04c0841d89fb6d3a738321cab6d1b40e0c2bfd2b768",
+          "lines": "65-68, 78-89, 152-154, 229-250",
+          "detail": "Worker operations also insert attempts, update multiple job columns, update outbox_delivery, and update jobs during recovery."
+        }
+      ],
+      "scenario": "If a grant is revoked or narrowed after deployment, ready() may still return true while dispatch, completion, heartbeat, or recovery fails on an unchecked privilege.",
+      "consequence": "The service can advertise readiness despite lacking privileges needed to process work.",
+      "requiredCorrectionOrGate": "Extend readiness qualification to cover every required table/column privilege used by worker operations, and add a privilege-drift regression."
+    }
+  ],
+  "evidenceDisposition": {
+    "historicalRegressionFailure": "Adjudicated as a documented migration-head scope mismatch, not evidence of a Stage 8 regression: execution/regression-diagnosis.json:8-23 records the failed historical-head assertions and skipped tests; lines 36-47 record the corrected successor-adapter qualification passing 52 tests (3 Stage 6, 38 Stage 7, 11 Stage 8). The failure remains preserved and disclosed.",
+    "migrationUpReceipt": "The missing first-invocation stdout is explicitly disclosed in candidate-validation.json:188-193; the mutating migration was not replayed. This limitation remains, but the receipt records exit code and ledger/readback evidence.",
+    "preActivationErratum": "The original receipt’s manual issuer patch and invalid digest are disclosed and preserved; the separate correction records the correct build-receipt hash linkage and corroborates the issuer against fresh TLS-verified PVE evidence. Treat the original receipt’s erroneous hash link as unusable, not as corrected original bytes.",
+    "authorValidation": "candidate-validation.json is author validation only and is not treated as independent approval. Its pending post-freeze scan field is superseded by the separately hash-bound PASS scan.",
+    "scopeAndSecurity": "Reviewed Stage 8 scope, CT200 DEVELOPMENT-only qualification, source delta, governing product/architecture/security docs and accepted ADRs. No Stage 7 source changes, Stage 9 implementation, or public secret/INTERNAL_ONLY leakage finding was established in the reviewed evidence."
+  },
+  "stage9Actions": 0,
+  "readOnlyReview": {
+    "filesCreatedOrModified": [],
+    "runtimeCtDatabaseNetworkActions": 0,
+    "testsRun": 0,
+    "pushOrMerge": false
+  }
+}

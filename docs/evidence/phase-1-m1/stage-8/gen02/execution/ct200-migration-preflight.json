@@ -1,0 +1,126 @@
+{
+  "backupPermissionReceiptSha256": "5e3efe26afa7ca8e7be87f9e596d70752a2664faf9b29cd13f749d80e8d153e3",
+  "backupSha256": "fbf50babadd53cda94810196d9613dbeb20d72cd51f1556e2666d9720dca8c9b",
+  "candidate": {
+    "artifactId": "travelos-stage8-gen02-b8c47d7b",
+    "artifactSha256": "d9c96681f8b4768f342da2c088cf282d1c34e63746d1e789dc016eb040d50d4a",
+    "canonicalCiReceiptSha256": "891ede38a2caa2ac50a523f1e25260e1b925f7fa20c43347f5e0842dff529d8b",
+    "sourceSnapshotSha256": "b8c47d7ba5bfb0ac16f57f95b55346da8560a2bdb22ba0ff63236d6ec681e7cb"
+  },
+  "credentialReceiptSha256": "3f6e77e335674b236d7bb8af97bf876ecb52e32fbdee5672b7e9701449e2e884",
+  "migration": {
+    "file": "0014_stage8_worker_activity.cjs",
+    "manifestSha256": "3244f51c812b7a4a55450362fbd6138f34b8f492403adcba843e21f7494e9d32",
+    "review": "additive DDL; no DROP/DELETE/UPDATE or down migration; unique-index preconditions verified",
+    "sha256": "cde21a83dc078a888d30210217e040fd47a5dc5b38993f98ce8ddf06f4c741c6",
+    "sourceChecksumsEqualBundled": true
+  },
+  "observedAtUtc": "2026-10-23T10:07:20.391005+00:00",
+  "promotionReceiptSha256": "7ef3e86abc1b0ae86c3f0d0204a6bb9b1f5001e94a60672397edeb988a2cfd76",
+  "pveRevalidation": {
+    "apiHttpCodes": [
+      200,
+      200,
+      200,
+      200
+    ],
+    "apiTlsVerifyResults": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "credentialsExposed": false,
+    "network": {
+      "bridge": "vmbr0",
+      "containerAddress": "192.168.1.33/24",
+      "ctIpMode": "dhcp",
+      "developmentNetwork": "192.168.1.0/24",
+      "firewallEnabled": true,
+      "gateway": "192.168.1.1",
+      "nodeBridgeActive": true,
+      "nodeBridgeCidr": "192.168.1.200/24",
+      "sshPveMacCorrelation": true
+    },
+    "result": "PASS",
+    "sshCorrelation": {
+      "currentRelease": "/opt/travelos/releases/travelos-stage7-gen15-5609bcb4",
+      "hostname": "travelos-dev",
+      "serviceStates": {
+        "travelos-admin-api.service": "active",
+        "travelos-portal-api.service": "active",
+        "travelos-worker.service": "active"
+      }
+    },
+    "stage9Actions": 0,
+    "target": {
+      "ctid": 200,
+      "hostname": "travelos-dev",
+      "node": "pxmx2",
+      "state": "running",
+      "type": "lxc"
+    },
+    "tls": {
+      "caCertificateSummary": "sha256 Fingerprint=61:2A:4F:31:A6:37:B6:C5:A2:90:68:55:7E:89:FE:C0:1A:5E:35:C6:37:EC:47:81:48:94:07:7F:28:76:9D:13\nsubject=CN=Proxmox Virtual Environment, OU=2bc2bf90-3162-4d84-a4c3-232950c687d6, O=PVE Cluster Manager CA\nissuer=CN=Proxmox Virtual Environment, OU=2bc2bf90-3162-4d84-a4c3-232950c687d6, O=PVE Cluster Manager CA\nnotBefore=Dec  4 23:05:23 2025 GMT\nnotAfter=Dec  2 23:05:23 2035 GMT\nX509v3 Basic Constraints: critical\n    CA:TRUE",
+      "caSha256": "90d99ec1198d9730bb44fa069b9cfbb7bdb60c9f0ff8783b3f07e6ae5b281efa",
+      "insecureFlagsUsed": false,
+      "leafCertificateSummary": "subject=OU=PVE Cluster Node, O=Proxmox Virtual Environment, CN=pxmx2.localdomain\nissuer=CN=Proxmox Virtual Environment, OU=2bc2bf90-3162-4d84-a4c3-232950c687d6, O=PVE Cluster Manager CA\nsha256 Fingerprint=EF:AD:84:91:AF:15:C5:35:53:6C:AE:35:DC:29:36:C9:40:55:7F:62:46:19:2E:2D:9D:DB:92:FB:0A:B6:8A:01\nnotBefore=Dec  4 23:05:23 2025 GMT\nnotAfter=Dec  4 23:05:23 2027 GMT\nX509v3 Subject Alternative Name: \n    IP Address:127.0.0.1, IP Address:0:0:0:0:0:0:0:1, DNS:localhost, IP Address:192.168.1.200, DNS:pxmx2, DNS:pxmx2.localdomain",
+      "leafValidAtCheck": true,
+      "opensslVerifyReturnCode": 0,
+      "sniHostname": "pxmx2",
+      "tlsVerificationEnabled": true,
+      "verification": "PASS",
+      "verifiedHostname": "pxmx2"
+    }
+  },
+  "receiptType": "TRAVELOS_STAGE8_GEN02_CT200_MIGRATION_PREFLIGHT",
+  "remote": {
+    "activeRelease": "/opt/travelos/releases/travelos-stage7-gen15-5609bcb4",
+    "backupMetadataReadback": "postgres:postgres:600:387154",
+    "migrationPreflight": {
+      "blockingLocks": 0,
+      "currentUser": "travelos_owner",
+      "database": "travelos_development",
+      "grantDuplicateKeys": 0,
+      "lockTimeout": "5s",
+      "migrationCount": 13,
+      "migrationHead": "0013_stage7_runtime_acceptance_cleanup",
+      "migratorRoleConfig": [
+        "search_path=pg_catalog",
+        "lock_timeout=5s",
+        "statement_timeout=5min"
+      ],
+      "newObjectsAbsent": {
+        "activity_source": true,
+        "attempt": true,
+        "captureFunction": true,
+        "entry": true,
+        "event_context": true,
+        "grantScopeIndex": true,
+        "historyFunction": true,
+        "job": true,
+        "outbox_delivery": true,
+        "publicationScopeIndex": true,
+        "validateFunction": true
+      },
+      "publicationDuplicateKeys": 0,
+      "requiredSchemas": {
+        "activity": true,
+        "audit": true,
+        "integration": true,
+        "job_runtime": true,
+        "staff_access": true,
+        "trip_ops": true
+      },
+      "schemaOwnerCheck": true,
+      "serverVersion": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "serverVersionNum": "180006",
+      "sessionUser": "travelos_migrator",
+      "statementTimeout": "5min"
+    },
+    "targetMigrationFileSha256": "cde21a83dc078a888d30210217e040fd47a5dc5b38993f98ce8ddf06f4c741c6",
+    "targetMigrationManifestSha256": "3244f51c812b7a4a55450362fbd6138f34b8f492403adcba843e21f7494e9d32"
+  },
+  "schemaVersion": 1,
+  "stage9Actions": 0
+}

@@ -1,0 +1,103 @@
+{
+  "result": "PASS",
+  "gates": [
+    {
+      "script": "verify:pins",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/verify-pins.log",
+      "sha256": "5e0e555046af57b8aee9574ce4a008669247f05f2de039ea24d1410a3a9db742"
+    },
+    {
+      "script": "format:check",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/format-check.log",
+      "sha256": "cdef34630a80ea954d3984a624a6de0423b8546a94f97cb8fb1dd81f4f1ba23f"
+    },
+    {
+      "script": "lint",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "script": "typecheck",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "script": "architecture:check",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/architecture-check.log",
+      "sha256": "26d9ca39711b59e1f891451d5f284d1e63b65a9e80a56ce1cbbddbe951bd05c2"
+    },
+    {
+      "script": "test:unit",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/test-unit.log",
+      "sha256": "d1792930d1d4fea80a2c111b515c48348e59b270d6019ece0454ef1b94f83fc5"
+    },
+    {
+      "script": "db:migrations:verify",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/db-migrations-verify.log",
+      "sha256": "f56a31f2c58d9a2398a4863fca609a125af33e2dad798ef13963fefde3fc4bb6"
+    },
+    {
+      "script": "auth:schema:verify",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/auth-schema-verify.log",
+      "sha256": "7d5940cbeea1a56293dcc9a6ad996cc9f8469f5e6221f5b0246732c0213592e6"
+    },
+    {
+      "script": "test:stage8:artifact",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-artifact.log",
+      "sha256": "81a460ce28def234908e0a967f313adc65ce4df9cf1881d983e235b240fc1ea5"
+    },
+    {
+      "script": "test:stage8:systemd-contract",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-systemd-contract.log",
+      "sha256": "1796e1654f100a420a26a1469638485131991b38c1fc8e488c095039ec2b8a73"
+    },
+    {
+      "script": "test:stage8:stage7-predecessor",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-stage7-predecessor.log",
+      "sha256": "69ca3efde87b4c8639e9094f25ff241498e52507b9a71ea07af788220171b680"
+    },
+    {
+      "script": "stage8:security:scan",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/stage8-security-scan.log",
+      "sha256": "d1eb57962ff35b02eaa5b1c0f7e16bafb09587581f4185f46f1b1d30016c4870"
+    },
+    {
+      "script": "test:smoke",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/test-smoke.log",
+      "sha256": "d7f23a65274063025498b5804637d8d096247fcadd0b6c5252ac64dd84d967e7"
+    },
+    {
+      "script": "test:stage8:postgres",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-postgres.log",
+      "sha256": "f73536299ca3c556c50302c8c25a7272cbaaee7fdf953d2d2b90796af9e6f542"
+    }
+  ]
+}

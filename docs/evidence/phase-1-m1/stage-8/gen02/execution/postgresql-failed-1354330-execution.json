@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "result": "FAIL",
+  "postgresVersion": "18.6",
+  "serverVersionNumber": 180006,
+  "bindScope": "127.0.0.1 only",
+  "dataChecksums": true,
+  "globalPackageInstallation": false,
+  "stage9Actions": 0,
+  "testExitCode": 1,
+  "testLogSha256": "0fc0b8b09e82c608f510a9edd5c1870203b69015148a42bac1feb8f544995a60",
+  "commands": [
+    {
+      "command": "node tooling/database/prepare-postgresql-18.mjs",
+      "exitCode": 0,
+      "stdoutSha256": "ad6eb4e5e4d3e51c91cb1d02a1a35953a5e0a406bf8dff8b02a0e4f25c11056f",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "vitest run --config tooling/testing/vitest.stage-8.config.ts --reporter=verbose",
+      "exitCode": 1,
+      "logSha256": "0fc0b8b09e82c608f510a9edd5c1870203b69015148a42bac1feb8f544995a60"
+    }
+  ],
+  "cleanup": {
+    "clusterStartAttempted": true,
+    "clusterStopped": true,
+    "stopExitCode": 0,
+    "disposableRootsAbsent": true
+  },
+  "failure": "Error: Stage 8 PostgreSQL integration qualification failed: \n⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  tests/integration/stage-6-publication-postgresql.test.ts [ tests/integration/stage-6-publication-postgresql.test.ts ]\nError: Stage 8 extracted artifact is required\n ❯ packageStage6Migrator tests/integration/stage-6-publication-postgresql.test.ts:172:37\n    170| const packageStage6Migrator = (): string => {\n    171|   const deployDirectory = path.join(workRoot, \"stage6-migrator\");\n    172|   const result = spawnSync(process.execPath, [\"tooling/ci/test-stage6-…\n       |                                     ^\n    173|     cwd: repositoryRoot,\n    174|     encoding: \"utf8\",\n ❯ tests/integration/stage-6-publication-postgresql.test.ts:295:31\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+}

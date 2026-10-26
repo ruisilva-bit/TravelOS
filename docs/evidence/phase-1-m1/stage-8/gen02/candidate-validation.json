@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "candidateGeneration": "gen02",
+  "candidateCommit": "f84d60d07ad9747649245a3a17ab0cf1b7080f1f",
+  "author": "Alex",
+  "result": "PASS_AUTHOR_VALIDATION",
+  "independentReview": "PENDING_REQUIRED",
+  "finalCandidateScan": "PENDING_POST_FREEZE_READ_ONLY_SCAN",
+  "finalFreezeEligible": true,
+  "preFreezeCandidateScan": {
+    "initialResult": "PASS",
+    "scanner": "travelos-sensitive-data-scanner-v1",
+    "initialReportPath": ".hermes/state/stage8-gen02-prefreeze-candidate-scan-explicit-initial.json",
+    "initialReportSha256": "7ad8c1e7f7bab69eacd1797c4f82a9c4024f46cc1f90373d92a9a2bf9c99b551",
+    "initialFilesScanned": 108,
+    "initialFindingCount": 0,
+    "initialAllowlistedFindingCount": 15,
+    "initialScopeAggregateSha256": "ff0a2dfaa0d76d02f46c7d54a8ad158ad38b4cd8522de56f380213a9bbce3832",
+    "scopeNote": "The initial scan includes the evidence index and draft validation. A separate final pre-freeze scan must run after this author validation and its exact scope/hash will be recorded in candidate-freeze.json. The scan explicitly unions all 53 indexed artifacts and 2 index/validation files with the Stage 8 source delta, including 9 Git-ignored .log files omitted by the standard collector."
+  },
+  "sourceDelta": {
+    "base": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+    "rows": 53,
+    "aggregateSha256": "993366ce0f4b9cf550062e5cd2138e3bafd480ab68017a21355ebacc7da1f218"
+  },
+  "predecessor": {
+    "tag": "travelos-phase-1-m1-stage-7-gen15-go",
+    "commit": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+    "freezePath": "docs/evidence/phase-1-m1/stage-7/gen15/candidate-freeze.json",
+    "freezeSha256": "c2ab7e26a077d8647731c5520b3336bad67fe5cbaef9e70c48ffb979dace3ec5",
+    "freezeAggregateSha256": "74011d6d2cbbeed409048e4ad7079fd6deb5931d657ab8f9f5c9b4cd4078a19d",
+    "freezeEntries": 163,
+    "evidenceIndexPath": "docs/evidence/phase-1-m1/stage-7/gen15/execution/EVIDENCE_INDEX.json",
+    "evidenceIndexSha256": "af11fbf1314392ae7dbed9be6c4e5ea7cfc558c143d8ffd7dafb61c1390c1e10",
+    "evidenceIndexAggregateSha256": "c91eb020783c65a5f1af589be8695fe240c05875fea4c386f1d08ebfc15723f3",
+    "evidenceIndexArtifacts": 42
+  },
+  "sourceSnapshot": {
+    "result": "PASS",
+    "sha256": "b8c47d7ba5bfb0ac16f57f95b55346da8560a2bdb22ba0ff63236d6ec681e7cb",
+    "entries": 598,
+    "predecessor": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec"
+  },
+  "artifact": {
+    "artifactId": "travelos-stage8-gen02-b8c47d7b",
+    "artifactSha256": "d9c96681f8b4768f342da2c088cf282d1c34e63746d1e789dc016eb040d50d4a",
+    "archiveBytes": 79017958,
+    "payloadEntries": 25118,
+    "verification": "PASS"
+  },
+  "preflight": {
+    "result": "PASS",
+    "canonicalCiEligible": true,
+    "blockingRequirements": []
+  },
+  "ci": {
+    "result": "PASS",
+    "invocationCount": 1,
+    "completedGateCount": 32,
+    "expectedGateCount": 32,
+    "receiptSha256": "891ede38a2caa2ac50a523f1e25260e1b925f7fa20c43347f5e0842dff529d8b",
+    "logSha256": "3f6558b3be217ae17ee769622ff9cf13230fd72a455466f36cbd8752521ec282"
+  },
+  "evidenceIndex": {
+    "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/EVIDENCE_INDEX.json",
+    "artifactCount": 53,
+    "aggregateSha256": "959c2df552426b4cc91ad986f495ec024f4dbe28d82076b9d28a88c489b6df71"
+  },
+  "preFreezeSourceScan": {
+    "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/source-security-scan.json",
+    "sha256": "5f063b870a110e8fdd87536b2dd8b4eb801dfcb199f5caf3991e6a03e50f6f29",
+    "result": "PASS",
+    "filesScanned": 53,
+    "findingCount": 0,
+    "allowlistedFindingCount": 15,
+    "scopeAggregateSha256": "f179f6107b44aeda92cae4295f5713657bd829ed559a5243e0794d56393b22a2"
+  },
+  "ct200": {
+    "result": "PASS",
+    "environment": "DEVELOPMENT",
+    "node": "pxmx2",
+    "ctid": 200,
+    "hostname": "travelos-dev",
+    "tlsVerified": true,
+    "apiTlsVerifyResults": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "apiHttpCodes": [
+      200,
+      200,
+      200,
+      200
+    ],
+    "currentRelease": "/opt/travelos/releases/travelos-stage8-gen02-b8c47d7b",
+    "activeServices": [
+      "travelos-admin-api.service",
+      "travelos-portal-api.service",
+      "travelos-worker.service"
+    ],
+    "runtimeSmoke": "PASS",
+    "tlsVerificationBypassUsed": false,
+    "credentialValuesReadOrPrinted": false,
+    "normalAcceptance": {
+      "result": "PASS",
+      "invocationId": "7b5a3084124d4480b848ac5397e0537a",
+      "probes": 34,
+      "directMessageSha256": "223b1cf59aeb2d398c25fd20d16bb5fb0152658feb66e851998a9f0c43d68b7b"
+    },
+    "controlledAcceptance": {
+      "result": "PASS",
+      "invocationId": "880da5100aa44782be261a346da6e20f",
+      "probes": 39,
+      "directMessageSha256": "0227c6f50e9a0de07629807a1781c7e99e1f69d5f0a3a91615695fe54a2c9594"
+    }
+  },
+  "legacyReleaseReconciliation": {
+    "result": "PASS",
+    "target": {
+      "node": "pxmx2",
+      "ctid": 200,
+      "hostname": "travelos-dev",
+      "environment": "DEVELOPMENT"
+    },
+    "assessment": "The legacy Stage7 verifier is explicitly bound to the Gen09 baseline and does not read the current-release symlink. Its Gen09 output is not evidence that Gen15/gen02 is active or a Stage7 regression. The approved current-release readback plus TLS-verified PVE identity and systemd health establish gen02 active. No Stage7 code/runtime/data was changed.",
+    "currentRelease": "/opt/travelos/releases/travelos-stage8-gen02-b8c47d7b"
+  },
+  "database": {
+    "migration": {
+      "beforeHead": "0013_stage7_runtime_acceptance_cleanup",
+      "afterHead": "0014_stage8_worker_activity",
+      "afterCount": 14,
+      "noopResult": "PASS",
+      "ledgerUnchanged": true,
+      "objectsAndPrivilegesVerified": true,
+      "migrationUpExitCode": 0,
+      "migrationUpStdoutCaptured": false
+    },
+    "backupRestore": {
+      "result": "PASS",
+      "bytes": 387154,
+      "sha256": "fbf50babadd53cda94810196d9613dbeb20d72cd51f1556e2666d9720dca8c9b",
+      "mode": "0600",
+      "retained": true,
+      "restoreVerified": "PASS",
+      "probeDatabaseDropped": true,
+      "probeDatabaseAbsenceVerified": true
+    },
+    "postdeployPostgreSql": {
+      "result": "PASS",
+      "testExitCode": 0,
+      "files": 3,
+      "testsPassed": 52,
+      "passedByStage": {
+        "stage6": 3,
+        "stage7": 38,
+        "stage8": 11
+      },
+      "integrationLogSha256": "27fe69a746b864c28503ab36a1af62a9240001c49a50a6df5cb02e9886f0e147"
+    },
+    "postAcceptanceInventories": {
+      "normalResult": "PASS",
+      "normalUnresolvedFixtureRuns": 0,
+      "controlledResult": "PASS",
+      "controlledUnresolvedFixtureRuns": 0,
+      "activeGrants": 0,
+      "missingDeliveries": 0,
+      "nonterminalJobs": 0
+    }
+  },
+  "observabilityUnit": {
+    "result": "PASS",
+    "testFilesPassed": 1,
+    "testsPassed": 3,
+    "testsTotal": 3,
+    "logSha256": "42c9e6f8a36a4807e80f4a9d2754938ea7e0e545fe9cbbd612c907ac7c474f2f"
+  },
+  "regressionDisposition": {
+    "summaryPath": "execution/postdeploy-regression-summary.json",
+    "result": "FAIL",
+    "disposition": "STAGE_SPECIFIC_MIGRATION_HEAD_SCOPE_MISMATCH_REQUIRES_REVIEW",
+    "correctedStage8IntegrationTestsPassed": 52,
+    "predecessorVerification": "PASS",
+    "stage7SourceChanges": 0
+  },
+  "evidenceLimitations": [
+    {
+      "id": "EVIDENCE-01",
+      "item": "The one-shot CT200 migration-up receipt records exit code 0 and ledger/readback evidence, but its first invocation stdout was not captured; it was not replayed because the migration was mutating.",
+      "source": "execution/ct200-migration-up.json"
+    },
+    {
+      "id": "EVIDENCE-02",
+      "item": "journalctl -o json raw-byte stability is recorded per mode. Canonicalized records and the exact systemd MESSAGE payload are compared across repeated reads and against the acceptance receipt projection; historical raw journal hash reproduction is not claimed.",
+      "source": "execution/journal-recovery-attestation.json"
+    },
+    {
+      "id": "EVIDENCE-03",
+      "item": "A combined historical Stage 6/7 regression attempt failed on stage-specific migration-head assertions against the Stage 8 chain; both logs and the later Stage 8 52/52 pass are preserved for independent adjudication.",
+      "source": "execution/regression-diagnosis.json"
+    },
+    {
+      "id": "EVIDENCE-04",
+      "item": "The original pre-activation receipt contains a manually patched TLS issuer and an invalid 63-character build-receipt digest. Its original bytes remain preserved; a separate erratum recomputes the correct digest links and correlates the issuer to fresh TLS-verified PVE evidence. Independent review must adjudicate the correction.",
+      "source": "execution/ct200-pre-activation-receipt-correction.json"
+    },
+    {
+      "id": "EVIDENCE-05",
+      "item": "The Stage 8 scanner CLI's Git candidate collector omits Git-ignored .log files. The explicit scan unions the full source delta with every indexed execution artifact, the evidence index, and candidate validation; its final post-validation scope is a required freeze gate.",
+      "source": "candidate-freeze.json preFreezeScan"
+    }
+  ],
+  "scope": "Phase 1 M1 Stage 8, CT200 DEVELOPMENT only. No Stage 7 edits, no Stage 9 implementation, no push or merge. Author validation is not independent GO.",
+  "stage8Actions": 1,
+  "stage9Actions": 0
+}

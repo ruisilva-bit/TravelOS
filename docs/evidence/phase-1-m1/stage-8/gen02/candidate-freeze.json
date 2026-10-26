@@ -1,0 +1,1243 @@
+{
+  "schemaVersion": 1,
+  "candidateGeneration": "gen02",
+  "candidateCommit": "f84d60d07ad9747649245a3a17ab0cf1b7080f1f",
+  "sourceBase": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+  "artifactId": "travelos-stage8-gen02-b8c47d7b",
+  "artifactSha256": "d9c96681f8b4768f342da2c088cf282d1c34e63746d1e789dc016eb040d50d4a",
+  "sourceSnapshotSha256": "b8c47d7ba5bfb0ac16f57f95b55346da8560a2bdb22ba0ff63236d6ec681e7cb",
+  "state": "FROZEN_PENDING_FINAL_SCAN_AND_INDEPENDENT_REVIEW",
+  "declaredCount": 108,
+  "entries": [
+    {
+      "path": "apps/admin-api/package.json",
+      "bytes": 610,
+      "sha256": "70827c9fb31aa67ba9720d2149c844050ae692cfe9bc0923196a1b5df9d4a480"
+    },
+    {
+      "path": "apps/admin-api/src/app.ts",
+      "bytes": 2286,
+      "sha256": "07a1758c20f3607350471a048773c91487347e4d0cb7aac3165881108c703932"
+    },
+    {
+      "path": "apps/admin-api/test/correlation.test.ts",
+      "bytes": 853,
+      "sha256": "37bb4d6bea6f0f29a5eb2831600bae7a10ec2c2699c3c106c5c82aed882b0427"
+    },
+    {
+      "path": "apps/portal-api/package.json",
+      "bytes": 598,
+      "sha256": "ed917d43836b077e93d3327bc243db2113b7272292e042f4c9650154f14374cc"
+    },
+    {
+      "path": "apps/portal-api/src/app.ts",
+      "bytes": 2606,
+      "sha256": "b164d1037888cd8e405fa817e518e6d5a122b3d6128f3ccb81ea5e489e109402"
+    },
+    {
+      "path": "apps/worker/package.json",
+      "bytes": 358,
+      "sha256": "3b047e4fc4df58a3a9db0b339e624ee148ea42ef948fecaf89723fe44857cef2"
+    },
+    {
+      "path": "apps/worker/src/main.ts",
+      "bytes": 4850,
+      "sha256": "7ebe450cf3167829f64bc90a47bcafcdbe020981014d6193afa4954f25257daa"
+    },
+    {
+      "path": "apps/worker/src/worker-process.ts",
+      "bytes": 2995,
+      "sha256": "56ff23f522b7e7598504ef4bd11335ff288e62f5d42f097f50effa6337134e37"
+    },
+    {
+      "path": "apps/worker/test/worker-runtime.test.ts",
+      "bytes": 4417,
+      "sha256": "a85aeb68c638ae9077fd3a530c13421dd60c03ebaf1f1ef10b7c941e15bfe613"
+    },
+    {
+      "path": "deploy/systemd/travelos-stage8-controlled-acceptance.service",
+      "bytes": 1646,
+      "sha256": "e7ca6157d6992aa3323c0e7ee6b8d2d346c5da011c8fa008aea041e52a06ac9c"
+    },
+    {
+      "path": "deploy/systemd/travelos-stage8-runtime-acceptance.service",
+      "bytes": 1540,
+      "sha256": "e2698c85b7ec479d1982d31796efbe25405036c00814a11cd9f32a20df8461e3"
+    },
+    {
+      "path": "deploy/systemd/worker-stage8.conf",
+      "bytes": 218,
+      "sha256": "0e3a8c4bb1cdbbefe94a7a66161cb0c6649c52b7c42c3f33610b65d81d3c905c"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/candidate-validation.json",
+      "bytes": 9322,
+      "sha256": "f93aff5e19f9bc7da926a80935e50ab103e153f0ec22c33d04cb5a84af941c1f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/EVIDENCE_INDEX.json",
+      "bytes": 31765,
+      "sha256": "d1d04414ca9b17a1ca39130c191f5af2b40cc976143e5c531ec666f7432f1bfe"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/artifact-build.json",
+      "bytes": 568,
+      "sha256": "fa3e65eda93aed9ffed1befbf9b1860ba74b2808633418ac791d2784aaec9b71"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/canonical-ci-claim.json",
+      "bytes": 806,
+      "sha256": "d033c3da7a17092b6f5908db3354e67c2ff8c8168af8502fb86fda8ff524b252"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/canonical-ci-receipt.json",
+      "bytes": 14161,
+      "sha256": "891ede38a2caa2ac50a523f1e25260e1b925f7fa20c43347f5e0842dff529d8b"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/canonical-ci.log",
+      "bytes": 384479,
+      "sha256": "3f6558b3be217ae17ee769622ff9cf13230fd72a455466f36cbd8752521ec282"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/controlled-systemd-worker.stdout.json",
+      "bytes": 2070,
+      "sha256": "cd5c777df2f3d222b606909f790ba57aa7b80f24397cfae1097a11e0c9df3ee2"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-activation.json",
+      "bytes": 2703,
+      "sha256": "f0f51aea872eb4e03088949fa8b3917b6ae8a72174ac2c896cbbf69dd06aaab5"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-backup-permissions.json",
+      "bytes": 856,
+      "sha256": "5e3efe26afa7ca8e7be87f9e596d70752a2664faf9b29cd13f749d80e8d153e3"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-backup-restore-probe.json",
+      "bytes": 2659,
+      "sha256": "48b843a37919816b398aaaa3df4bce3e49b27eafe7761fa7a9c440448bd998a8"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-controlled-acceptance-receipt.json",
+      "bytes": 3046,
+      "sha256": "3e2d1c760307038edc4e975ec746e85bfd0dc4ce4a75580a56ab8747600b0b66"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-controlled-acceptance.json",
+      "bytes": 4460,
+      "sha256": "ae215a6779193aae97ac821cd68a8810de955c4ecbec8a7034d57a869edc6901"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-final-pve-revalidation.json",
+      "bytes": 2458,
+      "sha256": "fda720331b3290376403831c52851369cfa7576995ae1621cc5d7ff8e76df7c1"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-final-runtime-smoke.json",
+      "bytes": 1500,
+      "sha256": "6e8de69bbb6781858b62bef74e4be3d9bfc9012c1602071ee3c9c4d341e3dfa8"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-legacy-release-reconciliation.json",
+      "bytes": 1703,
+      "sha256": "976e6cecfb95860c9f55b6f59b9e9116850df5a6c02167c94482016b777eeee3"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-migration-noop.json",
+      "bytes": 6744,
+      "sha256": "1088707473612f2ac53ae53d9db5e7dc42907c001a08107f3c252924bdf8fb4b"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-migration-noop.log",
+      "bytes": 2591,
+      "sha256": "d0994026e943643da1002c1b58405bd76ec08205c8c1f9389078508991cf7950"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-migration-preflight.json",
+      "bytes": 5346,
+      "sha256": "ae643e6cd6cc7af906b98de69008055b91fee4dcf3294296125d58f17c36a342"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-migration-up.json",
+      "bytes": 1857,
+      "sha256": "50365d92743ecb322b3b41b821b9d8e369b1709f9bec36e0025bd09c03332fd1"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-normal-acceptance-receipt.json",
+      "bytes": 2733,
+      "sha256": "70c1328e626476533f47603ece2d4c0195d78d00e0c643b9210630ea7aaa2b89"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-post-controlled-acceptance-inventory.json",
+      "bytes": 2340,
+      "sha256": "d5140e9b2e31784787ed7ba05521c05337acfcddea0a1b52a826213833c6982f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-post-normal-acceptance-inventory.json",
+      "bytes": 2310,
+      "sha256": "066ee89e829ec02cec95ebb89439a5f94f6716290ee306f2d401ffbd78dc7d56"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-pre-activation-receipt-correction.json",
+      "bytes": 3078,
+      "sha256": "61a631ae906dd245e8bad47af8d899bb45a8596f2f1854c053af9ba00068734c"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-pre-activation.json",
+      "bytes": 12004,
+      "sha256": "e588b50ea7747f36f30ea1c87d8ab11888fab7eb2b932780d1a84b8450aaebd1"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-runtime-acceptance.json",
+      "bytes": 3633,
+      "sha256": "d113826f2105869453798b00ea7c9aa94357b707259c7eae8422ccbe7a4bd80b"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-runtime-install.json",
+      "bytes": 2514,
+      "sha256": "bba2ef796ab871568ebbdaf94e252a8dc40d608d88212316a2d42b580153c7d6"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/final-artifact-verification.json",
+      "bytes": 1210,
+      "sha256": "580ea0ef7bc5be7ab5afa32f49af3e87c46b678b6cc5f2e60f8e2dfeb7ca09b6"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/independent-provenance-verification.json",
+      "bytes": 3307,
+      "sha256": "9b3a234f9c8d351e4983a021fdb9baa65bbb0f624e4a3b285734471cf173e114"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/journal-recovery-attestation.json",
+      "bytes": 3490,
+      "sha256": "ce701b8d80d38aa63201e48e5c91e99944afa14d43fea7a51241cdf4aa2d3093"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/normal-systemd-worker.stdout.json",
+      "bytes": 1772,
+      "sha256": "9006a58a7f8de39aeb1a8d0456a8bb3662c17091e9f90e1debb94a2fcc0daf67"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/observability-unit.json",
+      "bytes": 1166,
+      "sha256": "1196d2b26117357c8af5593b08c159463ab27d6f4fb66b0b012641b6713ffe82"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/observability-unit.log",
+      "bytes": 685,
+      "sha256": "42c9e6f8a36a4807e80f4a9d2754938ea7e0e545fe9cbbd612c907ac7c474f2f"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-postgresql-execution.json",
+      "bytes": 1013,
+      "sha256": "759f07ba69700a21b417dd4d834a29b1d0ea44ace14d62349d6d7d7db13ba058"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-postgresql-integration.log",
+      "bytes": 16183,
+      "sha256": "27fe69a746b864c28503ab36a1af62a9240001c49a50a6df5cb02e9886f0e147"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-postgresql-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-postgresql-summary.json",
+      "bytes": 1015,
+      "sha256": "ab76000e3eaede4a9af7bfa6cc193824236638f7c8e5d3e788b9b3b935bcd760"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-predecessor-runner.stdout.log",
+      "bytes": 5689,
+      "sha256": "000ef939bcd6fa5827edf9e9260d4848cbba0826e6aa7bcf1aa74dfe58841911"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-regression-summary.json",
+      "bytes": 3118,
+      "sha256": "cf6809caaf3985ed247626c6a177040c3a7877556565b0ef77f9577ed4e9df66"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-stage6-execution.json",
+      "bytes": 1860,
+      "sha256": "66fa97aea340edb4703daa7a9237d3532f055a0c4ce90d0f1baf6879f0c411e0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-stage6-integration.log",
+      "bytes": 1638,
+      "sha256": "c6b59aad63d1d21fb9a140a014bd26e4addbbad1c4202bec07e53f8ba577aca7"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-stage7-execution.json",
+      "bytes": 2067,
+      "sha256": "88dc795a58433ad3fa59a7e3531c2339d24c883389d58dd5432c2e991946034b"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-stage7-integration.log",
+      "bytes": 7557,
+      "sha256": "534ad91bf913e8667ac7668b9ec67520b1a499f353a4eb1610ecb2d638004958"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-corrected-1375064-execution.json",
+      "bytes": 1013,
+      "sha256": "851149abc2c5d7755a9eaf9beb6f5d51c903b6206a1ad3085e24be673c7bf7dc"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-corrected-1375064-integration.log",
+      "bytes": 16182,
+      "sha256": "0d2b773af57e8e0b900682f39b0578daaed62df3334984ee7fbfc5711a87aad3"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-corrected-1375064-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-failed-1354330-execution.json",
+      "bytes": 1890,
+      "sha256": "94f083af350dd87e38d4f061bb86c1dd629cb281619f9774284ed356e6121cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-failed-1354330-integration.log",
+      "bytes": 12624,
+      "sha256": "0fc0b8b09e82c608f510a9edd5c1870203b69015148a42bac1feb8f544995a60"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-failed-1354330-package-provenance.json",
+      "bytes": 2177,
+      "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/preflight.json",
+      "bytes": 14331,
+      "sha256": "527be6bb12713d0b0c4c19e02758d4bc15390d37bca97053306d97964c984e35"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/pve-ct200-identity.json",
+      "bytes": 9087,
+      "sha256": "f3cc825c7a8d2a2342fa1ae6156c7826e39d67c788463f20c7c3250824e866e5"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/regression-diagnosis.json",
+      "bytes": 2258,
+      "sha256": "aada69fde7e9487861be4552fe553fd26f39e02c81d1dd0d413c45877e3f8ec0"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/source-commit-provenance.json",
+      "bytes": 675,
+      "sha256": "c68eeb135ec596e7b0dfba6faf7f773cad0c05cf9f5bd1af168246e04868a24c"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/source-security-scan.json",
+      "bytes": 11626,
+      "sha256": "5f063b870a110e8fdd87536b2dd8b4eb801dfcb199f5caf3991e6a03e50f6f29"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/source-snapshot.json",
+      "bytes": 108733,
+      "sha256": "b8c47d7ba5bfb0ac16f57f95b55346da8560a2bdb22ba0ff63236d6ec681e7cb"
+    },
+    {
+      "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/stage7-baseline-verification.json",
+      "bytes": 1017,
+      "sha256": "4d637bc05361b78a5150e4b55b5ab7c2d08f9aa2b0f4b0b87d8f15f7dcaa947b"
+    },
+    {
+      "path": "docs/implementation/M1_STAGE_8_WORKER_ACTIVITY_OBSERVABILITY.md",
+      "bytes": 6873,
+      "sha256": "3b02307d5dd9af429d4a83e141f017130baf13b88e444bb01501b75d7c54dcfd"
+    },
+    {
+      "path": "docs/superpowers/plans/stage-8-worker-activity-observability.md",
+      "bytes": 7546,
+      "sha256": "baa85adc12dab14dd4902b4cb4e530c267d36a5f91ed83819e821e349d6ab57b"
+    },
+    {
+      "path": "migrations/0014_stage8_worker_activity.cjs",
+      "bytes": 12138,
+      "sha256": "cde21a83dc078a888d30210217e040fd47a5dc5b38993f98ce8ddf06f4c741c6"
+    },
+    {
+      "path": "migrations/checksums.json",
+      "bytes": 2169,
+      "sha256": "3244f51c812b7a4a55450362fbd6138f34b8f492403adcba843e21f7494e9d32"
+    },
+    {
+      "path": "package.json",
+      "bytes": 13163,
+      "sha256": "20deeb1653f8269bd17f2f81f40b38949ccbc874bb9289601112daa6a798cbe8"
+    },
+    {
+      "path": "packages/backend-core/src/index.ts",
+      "bytes": 7370,
+      "sha256": "3279a55fc8d2c8b0c6826287f4f46289e51875da7322ea59e35ff3d4af0eb34c"
+    },
+    {
+      "path": "packages/backend-core/src/modules/job-runtime/worker.ts",
+      "bytes": 2884,
+      "sha256": "36d974da9eff84b1323247f8893cd5c7d32d6b9d866c1ed11c17bbf66b77ab21"
+    },
+    {
+      "path": "packages/backend-core/test/job-runtime/worker.test.ts",
+      "bytes": 1320,
+      "sha256": "357efe878bde4afdef76fb524d86ea01cabce648e978ed35c1233e06ff8b09fe"
+    },
+    {
+      "path": "packages/database/package.json",
+      "bytes": 484,
+      "sha256": "570be70cf80afa26b489d90c2e5940a4c63a2d7e13b02cf57ae93a66b1806c9f"
+    },
+    {
+      "path": "packages/database/src/customer-presentation/staff-publication-repository.ts",
+      "bytes": 31246,
+      "sha256": "82e4380afa0bb6a5a73957ed0033317a7b08fe5eca828e1b90a86da575f7f73a"
+    },
+    {
+      "path": "packages/database/src/index.ts",
+      "bytes": 1487,
+      "sha256": "fe2ee2c2350573f5eadc2252435f99cd78dbc811aa99cb91827830b30aeb4ed9"
+    },
+    {
+      "path": "packages/database/src/job-runtime/event-context.ts",
+      "bytes": 545,
+      "sha256": "8058ef38dc419d50f19ea4fb6fc0512aef39bc23324c3180c819329457961203"
+    },
+    {
+      "path": "packages/database/src/job-runtime/worker-repository.ts",
+      "bytes": 13738,
+      "sha256": "dad9eaaf64752dbc80b2c04c0841d89fb6d3a738321cab6d1b40e0c2bfd2b768"
+    },
+    {
+      "path": "packages/database/src/portal-access/staff-trip-access-repository.ts",
+      "bytes": 28368,
+      "sha256": "7c4dabc4bf5a8286b763532acaa9834743f65d95a60503327916420e911ba9d6"
+    },
+    {
+      "path": "packages/observability/src/index.ts",
+      "bytes": 192,
+      "sha256": "3c3173ce9e1fb05daff9c52a47e1459a29a50c191412c7684b549adaffe7fa18"
+    },
+    {
+      "path": "packages/observability/src/telemetry.ts",
+      "bytes": 4410,
+      "sha256": "9c36226bd47ae7590ba1d46014336015678f2e29d1d301d23d7991840e561895"
+    },
+    {
+      "path": "packages/observability/test/telemetry.test.ts",
+      "bytes": 3030,
+      "sha256": "2edbe8b964465df41759b6ccc0a8b594460a75f5f16ab5f6ee5aa479dca0f1a6"
+    },
+    {
+      "path": "packages/observability/tsconfig.json",
+      "bytes": 193,
+      "sha256": "326a5f60475a157177d61e94b1886d0f6c1653a4ea144f43c430d5b7ad93337f"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 211391,
+      "sha256": "29471abf27784753c4ed618877157208e36f035c28734c14389f9309541c6a7d"
+    },
+    {
+      "path": "tests/integration/stage-8-postgresql.test.ts",
+      "bytes": 24198,
+      "sha256": "6476e6506726ab630781f5aaa47a5a7fb83da8d0edb41f7c09310db1f25094ff"
+    },
+    {
+      "path": "tooling/architecture/package-boundary-policy.mjs",
+      "bytes": 17822,
+      "sha256": "804acb4f8975b4885ac5d2118bbbceb33f3cdfb0390731825f85b3f33f0136ad"
+    },
+    {
+      "path": "tooling/ci/stage-8/artifact-integrity.mjs",
+      "bytes": 4940,
+      "sha256": "cc9cb844a1a8c9cbaa7b2e94aa4dfbf04a8894c875295443fc89f2b9ce616564"
+    },
+    {
+      "path": "tooling/ci/stage-8/build-artifact.mjs",
+      "bytes": 6456,
+      "sha256": "27f1656a9ab5353f5c95381727ade5c7fa34136a1537f276b8073b6450c54173"
+    },
+    {
+      "path": "tooling/ci/stage-8/controlled-worker.mjs",
+      "bytes": 8685,
+      "sha256": "6f319c48bf45364d8f970f13851bc84aa2d8269f174b5520d151995143026038"
+    },
+    {
+      "path": "tooling/ci/stage-8/install-runtime.mjs",
+      "bytes": 3888,
+      "sha256": "c9ee58a26cecdf39744982fae8e6474c50b45ddb87acb14ec8c937d353121c1d"
+    },
+    {
+      "path": "tooling/ci/stage-8/predecessor-regression.mjs",
+      "bytes": 5764,
+      "sha256": "4509dcb4fd502e443bff9b19bf0d37e08e3371293dbb273ceb9cfdb17d20146d"
+    },
+    {
+      "path": "tooling/ci/stage-8/regression-adapter.mjs",
+      "bytes": 3320,
+      "sha256": "66b98751ba80360382c7a5cc79b409e3f877ca6a0e966d52849a0c1044497f50"
+    },
+    {
+      "path": "tooling/ci/stage-8/rehearse-acceptance.mjs",
+      "bytes": 8289,
+      "sha256": "43096781b07ca38dcef24eff73208376e773921d9d1a3d9c1d256f1b76883501"
+    },
+    {
+      "path": "tooling/ci/stage-8/run-canonical-ci.mjs",
+      "bytes": 27663,
+      "sha256": "b2f2cc067d1db084a5109dc374a9d381bce5db3a6328a2a4ce0a7e3fdd5e5313"
+    },
+    {
+      "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+      "bytes": 13135,
+      "sha256": "d8fe4413e02c48e4c2d8db519c3515b35badc14874f585bda640cb3de59f43e9"
+    },
+    {
+      "path": "tooling/ci/stage-8/source-security-scan.mjs",
+      "bytes": 7801,
+      "sha256": "dc4bd77c376c1c826cab0c44fd3d29f2ae7b2a77ce1da0a8151dc14baac1798e"
+    },
+    {
+      "path": "tooling/ci/stage-8/source-snapshot.mjs",
+      "bytes": 1887,
+      "sha256": "e2363ccca43640be5d5ea3a6a1898209c49a0b06a5051dcb03aa667ca587f786"
+    },
+    {
+      "path": "tooling/ci/stage-8/test-artifact.mjs",
+      "bytes": 4154,
+      "sha256": "5d289c9a45a72703710d4c6548d7b84ec3d34484febc9505346cf0e1b0126bef"
+    },
+    {
+      "path": "tooling/ci/stage-8/test-canonical-ci.mjs",
+      "bytes": 10566,
+      "sha256": "fdf9bebe599a3c17007432a19532c699894531df98188adc7e2f2ad9f5a1724a"
+    },
+    {
+      "path": "tooling/ci/stage-8/test-predecessor-regression.mjs",
+      "bytes": 4707,
+      "sha256": "d0d2b57021a93b0f8daa89ae3a2e1b9fd60c09882a2d447aaec46c9e916b0799"
+    },
+    {
+      "path": "tooling/ci/stage-8/test-source-security-scan.mjs",
+      "bytes": 1797,
+      "sha256": "50aa63a3f736f94985d048574f6dbd4be40045207717ab1d8b5d665ce293db91"
+    },
+    {
+      "path": "tooling/ci/stage-8/test-systemd-contract.mjs",
+      "bytes": 3308,
+      "sha256": "59b45209e2bf89d58d34644077ff8c91a1ebec6d908a9ef0c465a539e1cba988"
+    },
+    {
+      "path": "tooling/database/run-stage-8-disposable.mjs",
+      "bytes": 10051,
+      "sha256": "0b6f5f9390951541135b6fbb2e0f4128b3c3d2b0faabacfed5389413272f01cc"
+    },
+    {
+      "path": "tooling/testing/vitest.config.ts",
+      "bytes": 1240,
+      "sha256": "7a5fa5d537aff4f7ce1230df8ea4ea58ed104d6eb514ce9eb41aa3b2626bf947"
+    },
+    {
+      "path": "tooling/testing/vitest.stage-8.config.ts",
+      "bytes": 2256,
+      "sha256": "63ee00b4326e06133bf00368249990cc0acc01c473fa9650ad0be0ac53a2065c"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "bytes": 1824,
+      "sha256": "25b49753332241c4fd94b263f66d464581e8017aaddd430951f8be63cc175fb7"
+    }
+  ],
+  "aggregateSerialization": "UTF8(path + NUL + decimal(bytes) + NUL + lowercase sha256 + LF), ordered by UTF8 path bytes; terminal LF included",
+  "aggregateSha256": "c9babc3e51612886eb276dcd1721cf3c5a9178c706f42c107ec3bb88bf2a4af2",
+  "twoReadOnlyCollectionsIdentical": true,
+  "selfExcludedPath": "docs/evidence/phase-1-m1/stage-8/gen02/candidate-freeze.json",
+  "excludedDerivedOutputs": [
+    "docs/evidence/phase-1-m1/stage-8/gen02/final-candidate-scan.json",
+    "docs/reviews/phase-1-m1/stage-8/GEN02_INDEPENDENT_REVIEW.json",
+    "docs/reviews/phase-1-m1/stage-8/GEN02_ADJUDICATION.json",
+    "docs/reviews/phase-1-m1/stage-8/GEN02_CLOSURE.md",
+    "docs/reviews/phase-1-m1/stage-8/GEN02_FINAL_HANDOFF.md"
+  ],
+  "predecessor": {
+    "tag": "travelos-phase-1-m1-stage-7-gen15-go",
+    "commit": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+    "verifiedTagObjectType": "tag"
+  },
+  "sourceDelta": {
+    "base": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+    "rows": 53,
+    "aggregateSha256": "993366ce0f4b9cf550062e5cd2138e3bafd480ab68017a21355ebacc7da1f218",
+    "stage7PathChanges": 0,
+    "stage9PathChanges": 0
+  },
+  "evidenceIndex": {
+    "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/EVIDENCE_INDEX.json",
+    "sha256": "d1d04414ca9b17a1ca39130c191f5af2b40cc976143e5c531ec666f7432f1bfe",
+    "artifactCount": 53,
+    "aggregateSha256": "959c2df552426b4cc91ad986f495ec024f4dbe28d82076b9d28a88c489b6df71"
+  },
+  "candidateValidation": {
+    "path": "docs/evidence/phase-1-m1/stage-8/gen02/candidate-validation.json",
+    "sha256": "f93aff5e19f9bc7da926a80935e50ab103e153f0ec22c33d04cb5a84af941c1f",
+    "result": "PASS_AUTHOR_VALIDATION",
+    "finalFreezeEligible": true
+  },
+  "preFreezeScan": {
+    "reportPath": ".hermes/state/stage8-gen02-prefreeze-candidate-scan-final.json",
+    "reportBytes": 23805,
+    "reportSha256": "3959ab364271f43dc241b33aa8337ed7a338e26c07f23e2ef76d13d37d587b28",
+    "result": "PASS",
+    "scanner": "travelos-sensitive-data-scanner-v1",
+    "filesScanned": 108,
+    "findingCount": 0,
+    "allowlistedFindingCount": 15,
+    "scopeAggregateSha256": "bc1ee046757f4c02af4a6a7395f02e8c7713390d3d40bedac666b6dab488d0f2",
+    "exactCandidatePathSet": true,
+    "explicitlyIncludedIgnoredEvidenceLogCount": 9,
+    "embeddedReport": {
+      "schemaVersion": 1,
+      "scanner": "travelos-sensitive-data-scanner-v1",
+      "result": "PASS",
+      "filesScanned": 108,
+      "scopeSerialization": "newline-terminated records: relative-path<TAB>bytes<TAB>sha256, sorted by relative path",
+      "scopeAggregateSha256": "bc1ee046757f4c02af4a6a7395f02e8c7713390d3d40bedac666b6dab488d0f2",
+      "files": [
+        {
+          "path": "apps/admin-api/package.json",
+          "bytes": 610,
+          "sha256": "70827c9fb31aa67ba9720d2149c844050ae692cfe9bc0923196a1b5df9d4a480"
+        },
+        {
+          "path": "apps/admin-api/src/app.ts",
+          "bytes": 2286,
+          "sha256": "07a1758c20f3607350471a048773c91487347e4d0cb7aac3165881108c703932"
+        },
+        {
+          "path": "apps/admin-api/test/correlation.test.ts",
+          "bytes": 853,
+          "sha256": "37bb4d6bea6f0f29a5eb2831600bae7a10ec2c2699c3c106c5c82aed882b0427"
+        },
+        {
+          "path": "apps/portal-api/package.json",
+          "bytes": 598,
+          "sha256": "ed917d43836b077e93d3327bc243db2113b7272292e042f4c9650154f14374cc"
+        },
+        {
+          "path": "apps/portal-api/src/app.ts",
+          "bytes": 2606,
+          "sha256": "b164d1037888cd8e405fa817e518e6d5a122b3d6128f3ccb81ea5e489e109402"
+        },
+        {
+          "path": "apps/worker/package.json",
+          "bytes": 358,
+          "sha256": "3b047e4fc4df58a3a9db0b339e624ee148ea42ef948fecaf89723fe44857cef2"
+        },
+        {
+          "path": "apps/worker/src/main.ts",
+          "bytes": 4850,
+          "sha256": "7ebe450cf3167829f64bc90a47bcafcdbe020981014d6193afa4954f25257daa"
+        },
+        {
+          "path": "apps/worker/src/worker-process.ts",
+          "bytes": 2995,
+          "sha256": "56ff23f522b7e7598504ef4bd11335ff288e62f5d42f097f50effa6337134e37"
+        },
+        {
+          "path": "apps/worker/test/worker-runtime.test.ts",
+          "bytes": 4417,
+          "sha256": "a85aeb68c638ae9077fd3a530c13421dd60c03ebaf1f1ef10b7c941e15bfe613"
+        },
+        {
+          "path": "deploy/systemd/travelos-stage8-controlled-acceptance.service",
+          "bytes": 1646,
+          "sha256": "e7ca6157d6992aa3323c0e7ee6b8d2d346c5da011c8fa008aea041e52a06ac9c"
+        },
+        {
+          "path": "deploy/systemd/travelos-stage8-runtime-acceptance.service",
+          "bytes": 1540,
+          "sha256": "e2698c85b7ec479d1982d31796efbe25405036c00814a11cd9f32a20df8461e3"
+        },
+        {
+          "path": "deploy/systemd/worker-stage8.conf",
+          "bytes": 218,
+          "sha256": "0e3a8c4bb1cdbbefe94a7a66161cb0c6649c52b7c42c3f33610b65d81d3c905c"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/candidate-validation.json",
+          "bytes": 9322,
+          "sha256": "f93aff5e19f9bc7da926a80935e50ab103e153f0ec22c33d04cb5a84af941c1f"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/artifact-build.json",
+          "bytes": 568,
+          "sha256": "fa3e65eda93aed9ffed1befbf9b1860ba74b2808633418ac791d2784aaec9b71"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/canonical-ci-claim.json",
+          "bytes": 806,
+          "sha256": "d033c3da7a17092b6f5908db3354e67c2ff8c8168af8502fb86fda8ff524b252"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/canonical-ci-receipt.json",
+          "bytes": 14161,
+          "sha256": "891ede38a2caa2ac50a523f1e25260e1b925f7fa20c43347f5e0842dff529d8b"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/canonical-ci.log",
+          "bytes": 384479,
+          "sha256": "3f6558b3be217ae17ee769622ff9cf13230fd72a455466f36cbd8752521ec282"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/controlled-systemd-worker.stdout.json",
+          "bytes": 2070,
+          "sha256": "cd5c777df2f3d222b606909f790ba57aa7b80f24397cfae1097a11e0c9df3ee2"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-activation.json",
+          "bytes": 2703,
+          "sha256": "f0f51aea872eb4e03088949fa8b3917b6ae8a72174ac2c896cbbf69dd06aaab5"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-backup-permissions.json",
+          "bytes": 856,
+          "sha256": "5e3efe26afa7ca8e7be87f9e596d70752a2664faf9b29cd13f749d80e8d153e3"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-backup-restore-probe.json",
+          "bytes": 2659,
+          "sha256": "48b843a37919816b398aaaa3df4bce3e49b27eafe7761fa7a9c440448bd998a8"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-controlled-acceptance-receipt.json",
+          "bytes": 3046,
+          "sha256": "3e2d1c760307038edc4e975ec746e85bfd0dc4ce4a75580a56ab8747600b0b66"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-controlled-acceptance.json",
+          "bytes": 4460,
+          "sha256": "ae215a6779193aae97ac821cd68a8810de955c4ecbec8a7034d57a869edc6901"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-final-pve-revalidation.json",
+          "bytes": 2458,
+          "sha256": "fda720331b3290376403831c52851369cfa7576995ae1621cc5d7ff8e76df7c1"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-final-runtime-smoke.json",
+          "bytes": 1500,
+          "sha256": "6e8de69bbb6781858b62bef74e4be3d9bfc9012c1602071ee3c9c4d341e3dfa8"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-legacy-release-reconciliation.json",
+          "bytes": 1703,
+          "sha256": "976e6cecfb95860c9f55b6f59b9e9116850df5a6c02167c94482016b777eeee3"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-migration-noop.json",
+          "bytes": 6744,
+          "sha256": "1088707473612f2ac53ae53d9db5e7dc42907c001a08107f3c252924bdf8fb4b"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-migration-noop.log",
+          "bytes": 2591,
+          "sha256": "d0994026e943643da1002c1b58405bd76ec08205c8c1f9389078508991cf7950"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-migration-preflight.json",
+          "bytes": 5346,
+          "sha256": "ae643e6cd6cc7af906b98de69008055b91fee4dcf3294296125d58f17c36a342"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-migration-up.json",
+          "bytes": 1857,
+          "sha256": "50365d92743ecb322b3b41b821b9d8e369b1709f9bec36e0025bd09c03332fd1"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-normal-acceptance-receipt.json",
+          "bytes": 2733,
+          "sha256": "70c1328e626476533f47603ece2d4c0195d78d00e0c643b9210630ea7aaa2b89"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-post-controlled-acceptance-inventory.json",
+          "bytes": 2340,
+          "sha256": "d5140e9b2e31784787ed7ba05521c05337acfcddea0a1b52a826213833c6982f"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-post-normal-acceptance-inventory.json",
+          "bytes": 2310,
+          "sha256": "066ee89e829ec02cec95ebb89439a5f94f6716290ee306f2d401ffbd78dc7d56"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-pre-activation-receipt-correction.json",
+          "bytes": 3078,
+          "sha256": "61a631ae906dd245e8bad47af8d899bb45a8596f2f1854c053af9ba00068734c"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-pre-activation.json",
+          "bytes": 12004,
+          "sha256": "e588b50ea7747f36f30ea1c87d8ab11888fab7eb2b932780d1a84b8450aaebd1"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-runtime-acceptance.json",
+          "bytes": 3633,
+          "sha256": "d113826f2105869453798b00ea7c9aa94357b707259c7eae8422ccbe7a4bd80b"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/ct200-runtime-install.json",
+          "bytes": 2514,
+          "sha256": "bba2ef796ab871568ebbdaf94e252a8dc40d608d88212316a2d42b580153c7d6"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/EVIDENCE_INDEX.json",
+          "bytes": 31765,
+          "sha256": "d1d04414ca9b17a1ca39130c191f5af2b40cc976143e5c531ec666f7432f1bfe"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/final-artifact-verification.json",
+          "bytes": 1210,
+          "sha256": "580ea0ef7bc5be7ab5afa32f49af3e87c46b678b6cc5f2e60f8e2dfeb7ca09b6"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/independent-provenance-verification.json",
+          "bytes": 3307,
+          "sha256": "9b3a234f9c8d351e4983a021fdb9baa65bbb0f624e4a3b285734471cf173e114"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/journal-recovery-attestation.json",
+          "bytes": 3490,
+          "sha256": "ce701b8d80d38aa63201e48e5c91e99944afa14d43fea7a51241cdf4aa2d3093"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/normal-systemd-worker.stdout.json",
+          "bytes": 1772,
+          "sha256": "9006a58a7f8de39aeb1a8d0456a8bb3662c17091e9f90e1debb94a2fcc0daf67"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/observability-unit.json",
+          "bytes": 1166,
+          "sha256": "1196d2b26117357c8af5593b08c159463ab27d6f4fb66b0b012641b6713ffe82"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/observability-unit.log",
+          "bytes": 685,
+          "sha256": "42c9e6f8a36a4807e80f4a9d2754938ea7e0e545fe9cbbd612c907ac7c474f2f"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-postgresql-execution.json",
+          "bytes": 1013,
+          "sha256": "759f07ba69700a21b417dd4d834a29b1d0ea44ace14d62349d6d7d7db13ba058"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-postgresql-integration.log",
+          "bytes": 16183,
+          "sha256": "27fe69a746b864c28503ab36a1af62a9240001c49a50a6df5cb02e9886f0e147"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-postgresql-package-provenance.json",
+          "bytes": 2177,
+          "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-postgresql-summary.json",
+          "bytes": 1015,
+          "sha256": "ab76000e3eaede4a9af7bfa6cc193824236638f7c8e5d3e788b9b3b935bcd760"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-predecessor-runner.stdout.log",
+          "bytes": 5689,
+          "sha256": "000ef939bcd6fa5827edf9e9260d4848cbba0826e6aa7bcf1aa74dfe58841911"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-regression-summary.json",
+          "bytes": 3118,
+          "sha256": "cf6809caaf3985ed247626c6a177040c3a7877556565b0ef77f9577ed4e9df66"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-stage6-execution.json",
+          "bytes": 1860,
+          "sha256": "66fa97aea340edb4703daa7a9237d3532f055a0c4ce90d0f1baf6879f0c411e0"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-stage6-integration.log",
+          "bytes": 1638,
+          "sha256": "c6b59aad63d1d21fb9a140a014bd26e4addbbad1c4202bec07e53f8ba577aca7"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-stage7-execution.json",
+          "bytes": 2067,
+          "sha256": "88dc795a58433ad3fa59a7e3531c2339d24c883389d58dd5432c2e991946034b"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postdeploy-stage7-integration.log",
+          "bytes": 7557,
+          "sha256": "534ad91bf913e8667ac7668b9ec67520b1a499f353a4eb1610ecb2d638004958"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-corrected-1375064-execution.json",
+          "bytes": 1013,
+          "sha256": "851149abc2c5d7755a9eaf9beb6f5d51c903b6206a1ad3085e24be673c7bf7dc"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-corrected-1375064-integration.log",
+          "bytes": 16182,
+          "sha256": "0d2b773af57e8e0b900682f39b0578daaed62df3334984ee7fbfc5711a87aad3"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-corrected-1375064-package-provenance.json",
+          "bytes": 2177,
+          "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-failed-1354330-execution.json",
+          "bytes": 1890,
+          "sha256": "94f083af350dd87e38d4f061bb86c1dd629cb281619f9774284ed356e6121cf0"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-failed-1354330-integration.log",
+          "bytes": 12624,
+          "sha256": "0fc0b8b09e82c608f510a9edd5c1870203b69015148a42bac1feb8f544995a60"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/postgresql-failed-1354330-package-provenance.json",
+          "bytes": 2177,
+          "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/preflight.json",
+          "bytes": 14331,
+          "sha256": "527be6bb12713d0b0c4c19e02758d4bc15390d37bca97053306d97964c984e35"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/pve-ct200-identity.json",
+          "bytes": 9087,
+          "sha256": "f3cc825c7a8d2a2342fa1ae6156c7826e39d67c788463f20c7c3250824e866e5"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/regression-diagnosis.json",
+          "bytes": 2258,
+          "sha256": "aada69fde7e9487861be4552fe553fd26f39e02c81d1dd0d413c45877e3f8ec0"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/source-commit-provenance.json",
+          "bytes": 675,
+          "sha256": "c68eeb135ec596e7b0dfba6faf7f773cad0c05cf9f5bd1af168246e04868a24c"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/source-security-scan.json",
+          "bytes": 11626,
+          "sha256": "5f063b870a110e8fdd87536b2dd8b4eb801dfcb199f5caf3991e6a03e50f6f29"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/source-snapshot.json",
+          "bytes": 108733,
+          "sha256": "b8c47d7ba5bfb0ac16f57f95b55346da8560a2bdb22ba0ff63236d6ec681e7cb"
+        },
+        {
+          "path": "docs/evidence/phase-1-m1/stage-8/gen02/execution/stage7-baseline-verification.json",
+          "bytes": 1017,
+          "sha256": "4d637bc05361b78a5150e4b55b5ab7c2d08f9aa2b0f4b0b87d8f15f7dcaa947b"
+        },
+        {
+          "path": "docs/implementation/M1_STAGE_8_WORKER_ACTIVITY_OBSERVABILITY.md",
+          "bytes": 6873,
+          "sha256": "3b02307d5dd9af429d4a83e141f017130baf13b88e444bb01501b75d7c54dcfd"
+        },
+        {
+          "path": "docs/superpowers/plans/stage-8-worker-activity-observability.md",
+          "bytes": 7546,
+          "sha256": "baa85adc12dab14dd4902b4cb4e530c267d36a5f91ed83819e821e349d6ab57b"
+        },
+        {
+          "path": "migrations/0014_stage8_worker_activity.cjs",
+          "bytes": 12138,
+          "sha256": "cde21a83dc078a888d30210217e040fd47a5dc5b38993f98ce8ddf06f4c741c6"
+        },
+        {
+          "path": "migrations/checksums.json",
+          "bytes": 2169,
+          "sha256": "3244f51c812b7a4a55450362fbd6138f34b8f492403adcba843e21f7494e9d32"
+        },
+        {
+          "path": "package.json",
+          "bytes": 13163,
+          "sha256": "20deeb1653f8269bd17f2f81f40b38949ccbc874bb9289601112daa6a798cbe8"
+        },
+        {
+          "path": "packages/backend-core/src/index.ts",
+          "bytes": 7370,
+          "sha256": "3279a55fc8d2c8b0c6826287f4f46289e51875da7322ea59e35ff3d4af0eb34c"
+        },
+        {
+          "path": "packages/backend-core/src/modules/job-runtime/worker.ts",
+          "bytes": 2884,
+          "sha256": "36d974da9eff84b1323247f8893cd5c7d32d6b9d866c1ed11c17bbf66b77ab21"
+        },
+        {
+          "path": "packages/backend-core/test/job-runtime/worker.test.ts",
+          "bytes": 1320,
+          "sha256": "357efe878bde4afdef76fb524d86ea01cabce648e978ed35c1233e06ff8b09fe"
+        },
+        {
+          "path": "packages/database/package.json",
+          "bytes": 484,
+          "sha256": "570be70cf80afa26b489d90c2e5940a4c63a2d7e13b02cf57ae93a66b1806c9f"
+        },
+        {
+          "path": "packages/database/src/customer-presentation/staff-publication-repository.ts",
+          "bytes": 31246,
+          "sha256": "82e4380afa0bb6a5a73957ed0033317a7b08fe5eca828e1b90a86da575f7f73a"
+        },
+        {
+          "path": "packages/database/src/index.ts",
+          "bytes": 1487,
+          "sha256": "fe2ee2c2350573f5eadc2252435f99cd78dbc811aa99cb91827830b30aeb4ed9"
+        },
+        {
+          "path": "packages/database/src/job-runtime/event-context.ts",
+          "bytes": 545,
+          "sha256": "8058ef38dc419d50f19ea4fb6fc0512aef39bc23324c3180c819329457961203"
+        },
+        {
+          "path": "packages/database/src/job-runtime/worker-repository.ts",
+          "bytes": 13738,
+          "sha256": "dad9eaaf64752dbc80b2c04c0841d89fb6d3a738321cab6d1b40e0c2bfd2b768"
+        },
+        {
+          "path": "packages/database/src/portal-access/staff-trip-access-repository.ts",
+          "bytes": 28368,
+          "sha256": "7c4dabc4bf5a8286b763532acaa9834743f65d95a60503327916420e911ba9d6"
+        },
+        {
+          "path": "packages/observability/src/index.ts",
+          "bytes": 192,
+          "sha256": "3c3173ce9e1fb05daff9c52a47e1459a29a50c191412c7684b549adaffe7fa18"
+        },
+        {
+          "path": "packages/observability/src/telemetry.ts",
+          "bytes": 4410,
+          "sha256": "9c36226bd47ae7590ba1d46014336015678f2e29d1d301d23d7991840e561895"
+        },
+        {
+          "path": "packages/observability/test/telemetry.test.ts",
+          "bytes": 3030,
+          "sha256": "2edbe8b964465df41759b6ccc0a8b594460a75f5f16ab5f6ee5aa479dca0f1a6"
+        },
+        {
+          "path": "packages/observability/tsconfig.json",
+          "bytes": 193,
+          "sha256": "326a5f60475a157177d61e94b1886d0f6c1653a4ea144f43c430d5b7ad93337f"
+        },
+        {
+          "path": "pnpm-lock.yaml",
+          "bytes": 211391,
+          "sha256": "29471abf27784753c4ed618877157208e36f035c28734c14389f9309541c6a7d"
+        },
+        {
+          "path": "tests/integration/stage-8-postgresql.test.ts",
+          "bytes": 24198,
+          "sha256": "6476e6506726ab630781f5aaa47a5a7fb83da8d0edb41f7c09310db1f25094ff"
+        },
+        {
+          "path": "tooling/architecture/package-boundary-policy.mjs",
+          "bytes": 17822,
+          "sha256": "804acb4f8975b4885ac5d2118bbbceb33f3cdfb0390731825f85b3f33f0136ad"
+        },
+        {
+          "path": "tooling/ci/stage-8/artifact-integrity.mjs",
+          "bytes": 4940,
+          "sha256": "cc9cb844a1a8c9cbaa7b2e94aa4dfbf04a8894c875295443fc89f2b9ce616564"
+        },
+        {
+          "path": "tooling/ci/stage-8/build-artifact.mjs",
+          "bytes": 6456,
+          "sha256": "27f1656a9ab5353f5c95381727ade5c7fa34136a1537f276b8073b6450c54173"
+        },
+        {
+          "path": "tooling/ci/stage-8/controlled-worker.mjs",
+          "bytes": 8685,
+          "sha256": "6f319c48bf45364d8f970f13851bc84aa2d8269f174b5520d151995143026038"
+        },
+        {
+          "path": "tooling/ci/stage-8/install-runtime.mjs",
+          "bytes": 3888,
+          "sha256": "c9ee58a26cecdf39744982fae8e6474c50b45ddb87acb14ec8c937d353121c1d"
+        },
+        {
+          "path": "tooling/ci/stage-8/predecessor-regression.mjs",
+          "bytes": 5764,
+          "sha256": "4509dcb4fd502e443bff9b19bf0d37e08e3371293dbb273ceb9cfdb17d20146d"
+        },
+        {
+          "path": "tooling/ci/stage-8/regression-adapter.mjs",
+          "bytes": 3320,
+          "sha256": "66b98751ba80360382c7a5cc79b409e3f877ca6a0e966d52849a0c1044497f50"
+        },
+        {
+          "path": "tooling/ci/stage-8/rehearse-acceptance.mjs",
+          "bytes": 8289,
+          "sha256": "43096781b07ca38dcef24eff73208376e773921d9d1a3d9c1d256f1b76883501"
+        },
+        {
+          "path": "tooling/ci/stage-8/run-canonical-ci.mjs",
+          "bytes": 27663,
+          "sha256": "b2f2cc067d1db084a5109dc374a9d381bce5db3a6328a2a4ce0a7e3fdd5e5313"
+        },
+        {
+          "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+          "bytes": 13135,
+          "sha256": "d8fe4413e02c48e4c2d8db519c3515b35badc14874f585bda640cb3de59f43e9"
+        },
+        {
+          "path": "tooling/ci/stage-8/source-security-scan.mjs",
+          "bytes": 7801,
+          "sha256": "dc4bd77c376c1c826cab0c44fd3d29f2ae7b2a77ce1da0a8151dc14baac1798e"
+        },
+        {
+          "path": "tooling/ci/stage-8/source-snapshot.mjs",
+          "bytes": 1887,
+          "sha256": "e2363ccca43640be5d5ea3a6a1898209c49a0b06a5051dcb03aa667ca587f786"
+        },
+        {
+          "path": "tooling/ci/stage-8/test-artifact.mjs",
+          "bytes": 4154,
+          "sha256": "5d289c9a45a72703710d4c6548d7b84ec3d34484febc9505346cf0e1b0126bef"
+        },
+        {
+          "path": "tooling/ci/stage-8/test-canonical-ci.mjs",
+          "bytes": 10566,
+          "sha256": "fdf9bebe599a3c17007432a19532c699894531df98188adc7e2f2ad9f5a1724a"
+        },
+        {
+          "path": "tooling/ci/stage-8/test-predecessor-regression.mjs",
+          "bytes": 4707,
+          "sha256": "d0d2b57021a93b0f8daa89ae3a2e1b9fd60c09882a2d447aaec46c9e916b0799"
+        },
+        {
+          "path": "tooling/ci/stage-8/test-source-security-scan.mjs",
+          "bytes": 1797,
+          "sha256": "50aa63a3f736f94985d048574f6dbd4be40045207717ab1d8b5d665ce293db91"
+        },
+        {
+          "path": "tooling/ci/stage-8/test-systemd-contract.mjs",
+          "bytes": 3308,
+          "sha256": "59b45209e2bf89d58d34644077ff8c91a1ebec6d908a9ef0c465a539e1cba988"
+        },
+        {
+          "path": "tooling/database/run-stage-8-disposable.mjs",
+          "bytes": 10051,
+          "sha256": "0b6f5f9390951541135b6fbb2e0f4128b3c3d2b0faabacfed5389413272f01cc"
+        },
+        {
+          "path": "tooling/testing/vitest.config.ts",
+          "bytes": 1240,
+          "sha256": "7a5fa5d537aff4f7ce1230df8ea4ea58ed104d6eb514ce9eb41aa3b2626bf947"
+        },
+        {
+          "path": "tooling/testing/vitest.stage-8.config.ts",
+          "bytes": 2256,
+          "sha256": "63ee00b4326e06133bf00368249990cc0acc01c473fa9650ad0be0ac53a2065c"
+        },
+        {
+          "path": "tsconfig.base.json",
+          "bytes": 1824,
+          "sha256": "25b49753332241c4fd94b263f66d464581e8017aaddd430951f8be63cc175fb7"
+        }
+      ],
+      "findingCount": 0,
+      "allowlistedFindingCount": 15,
+      "reviewedAllowlist": [
+        {
+          "path": "apps/admin-api/test/correlation.test.ts",
+          "rule": "email-address",
+          "line": 17
+        },
+        {
+          "path": "apps/worker/src/main.ts",
+          "rule": "high-entropy-secret-assignment",
+          "line": 71
+        },
+        {
+          "path": "apps/worker/src/main.ts",
+          "rule": "secret-assignment",
+          "line": 71
+        },
+        {
+          "path": "packages/observability/test/telemetry.test.ts",
+          "rule": "email-address",
+          "line": 29
+        },
+        {
+          "path": "packages/observability/test/telemetry.test.ts",
+          "rule": "secret-assignment",
+          "line": 59
+        },
+        {
+          "path": "packages/observability/test/telemetry.test.ts",
+          "rule": "email-address",
+          "line": 60
+        },
+        {
+          "path": "packages/observability/test/telemetry.test.ts",
+          "rule": "email-address",
+          "line": 73
+        },
+        {
+          "path": "tests/integration/stage-8-postgresql.test.ts",
+          "rule": "email-address",
+          "line": 161
+        },
+        {
+          "path": "tests/integration/stage-8-postgresql.test.ts",
+          "rule": "email-address",
+          "line": 555
+        },
+        {
+          "path": "tooling/ci/stage-8/controlled-worker.mjs",
+          "rule": "high-entropy-secret-assignment",
+          "line": 210
+        },
+        {
+          "path": "tooling/ci/stage-8/controlled-worker.mjs",
+          "rule": "secret-assignment",
+          "line": 210
+        },
+        {
+          "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+          "rule": "high-entropy-secret-assignment",
+          "line": 93
+        },
+        {
+          "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+          "rule": "secret-assignment",
+          "line": 93
+        },
+        {
+          "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+          "rule": "high-entropy-secret-assignment",
+          "line": 115
+        },
+        {
+          "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+          "rule": "secret-assignment",
+          "line": 115
+        }
+      ],
+      "findings": [],
+      "stage9Actions": 0,
+      "scanProcedure": {
+        "collectorFiles": 99,
+        "explicitBundlePaths": 55,
+        "unionFiles": 108,
+        "reason": "Final post-validation pre-freeze scan: exact source delta plus the full indexed bundle and final validation, explicitly including Git-ignored .log outputs omitted by the standard collector."
+      }
+    }
+  },
+  "finalCandidateScan": "PENDING_POST_FREEZE_READ_ONLY_SCAN",
+  "independentReview": "PENDING_REQUIRED",
+  "sourceScope": "Phase 1 M1 Stage 8; CT200 DEVELOPMENT only. No Stage 7 source edits, no Stage 9 implementation, no push or merge.",
+  "stage8Actions": 1,
+  "stage9Actions": 0
+}

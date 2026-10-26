@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "receiptType": "TRAVELOS_STAGE8_GEN02_LEGACY_RELEASE_RECONCILIATION",
+  "recordedAtUtc": "2026-10-23T13:08:32.555042+00:00",
+  "result": "PASS",
+  "target": {
+    "node": "pxmx2",
+    "ctid": 200,
+    "hostname": "travelos-dev",
+    "environment": "DEVELOPMENT"
+  },
+  "legacyStage7Check": {
+    "command": "travelos-stage7-operatorctl check",
+    "exitCode": 0,
+    "reportedRelease": "gen09",
+    "unitValidation": "PASS",
+    "encryptedCredentials": "5/5 PASS",
+    "secretValuesExposed": false,
+    "launcher": "/usr/local/bin/travelos-stage7-operatorctl",
+    "launcherLine": "exec /usr/bin/sudo -n /usr/local/libexec/travelos-stage7-operatorctl \"$@\"",
+    "helperPath": "/usr/local/libexec/travelos-stage7-operatorctl",
+    "helperSha256": "3bc48b0215e64a4bd03b3478c3fdd3f1cce1a738c35349897a0f9f205bac7fbe",
+    "helperOwner": "root",
+    "helperMode": "0755",
+    "hardcodedReleaseLine": "RELEASE=/opt/travelos/releases/travelos-stage7-gen09-0cf07d04",
+    "reportedLabelLine": "echo \"release=gen09\"",
+    "baselineGuardLine": "die \"Gen09 must be active before acceptance\""
+  },
+  "authoritativeCurrentReleaseReadback": {
+    "command": "travelos-agentctl current-release",
+    "exitCode": 0,
+    "release": "/opt/travelos/releases/travelos-stage8-gen02-b8c47d7b"
+  },
+  "assessment": "The legacy Stage7 verifier is explicitly bound to the Gen09 baseline and does not read the current-release symlink. Its Gen09 output is not evidence that Gen15/gen02 is active or a Stage7 regression. The approved current-release readback plus TLS-verified PVE identity and systemd health establish gen02 active. No Stage7 code/runtime/data was changed.",
+  "stage9Actions": 0
+}

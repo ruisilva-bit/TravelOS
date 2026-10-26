@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "receiptType": "TRAVELOS_STAGE8_GEN02_CT200_POST_NORMAL_ACCEPTANCE_INVENTORY",
+  "candidate": {
+    "artifactId": "travelos-stage8-gen02-b8c47d7b",
+    "artifactSha256": "d9c96681f8b4768f342da2c088cf282d1c34e63746d1e789dc016eb040d50d4a",
+    "sourceSnapshotSha256": "b8c47d7ba5bfb0ac16f57f95b55346da8560a2bdb22ba0ff63236d6ec681e7cb"
+  },
+  "observedAtUtc": "2026-10-23T10:47:38.564719+00:00",
+  "result": "PASS",
+  "database": {
+    "name": "travelos_development",
+    "sessionUser": "travelos_migrator",
+    "currentUser": "travelos_owner",
+    "migrationCount": 14,
+    "migrationHead": "0014_stage8_worker_activity",
+    "tripCount": 7,
+    "snapshotCount": 8,
+    "activePointerCount": 2,
+    "activeGrantCount": 0,
+    "fixtureRuns": 2,
+    "unresolvedFixtureRuns": 0,
+    "registeredTrips": 4,
+    "retainedFixtureAuditEvents": 14,
+    "activitySourceCount": 12,
+    "activitySourceByEventType": {
+      "TRIP_ACCESS_GRANT_ISSUED": 2,
+      "TRIP_ACCESS_GRANT_REVOKED": 2,
+      "TRIP_PUBLICATION_PUBLISHED": 8
+    },
+    "deliveryCount": 12,
+    "missingDeliveries": 0,
+    "jobCount": 12,
+    "jobStates": {"SUCCEEDED": 12},
+    "nonterminalJobs": 0,
+    "attemptCount": 12,
+    "activityEntryCount": 12,
+    "eventContextCount": 4,
+    "workerPrivileges": {
+      "jobSelect": true,
+      "jobInsert": true,
+      "jobDelete": false,
+      "activitySelect": true,
+      "activityInsert": true,
+      "activityUpdate": false,
+      "activityDelete": false
+    },
+    "portalCanSelectStage8": {
+      "job": false,
+      "activity": false,
+      "eventContext": false
+    }
+  },
+  "comparisonToPreAcceptance": {
+    "preAcceptanceReceipt": ".hermes/state/stage8-gen02-ct200-pre-acceptance-inventory.json",
+    "newFixtureRun": 1,
+    "newRegisteredFixtureTrips": 2,
+    "newRetainedFixtureAuditEvents": 7,
+    "tripRowsWithoutFixtureRegistrationHashUnchanged": true,
+    "snapshotRowsWithoutFixtureRegistrationHashUnchanged": true,
+    "cleanupSemantics": "Fixture cleanup revokes grants, withdraws publications, cancels the registered trips, retires the fixture portal principal, and retains immutable snapshots/audit evidence; the acceptance probe reported runtime-acceptance-fixture-cleaned and the persisted run count has zero unresolved runs."
+  },
+  "stage9Actions": 0
+}

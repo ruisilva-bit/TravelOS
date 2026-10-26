@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "receiptType": "TRAVELOS_STAGE8_GEN02_CT200_BACKUP_PERMISSION_READBACK",
+  "observedAtUtc": "2026-10-23T09:49:37Z",
+  "candidate": "gen02",
+  "backup": {
+    "path": "/var/tmp/travelos-stage8-pre-migration.gen02-20261023T094808Z_ff9305",
+    "owner": "postgres:postgres",
+    "numericOwner": "102:106",
+    "initialMode": "0660",
+    "finalMode": "0600",
+    "bytes": 387154,
+    "sha256": "fbf50babadd53cda94810196d9613dbeb20d72cd51f1556e2666d9720dca8c9b",
+    "helperReadback": "PASS",
+    "shaRecheckedAfterRestore": true,
+    "contentReadBeforeRestriction": false,
+    "retained": true
+  },
+  "restoreProbeDatabase": "travelos_stage8_restore_gen02_20261023t094808z_ff9305",
+  "restoreProbeAbsent": true,
+  "sourceBackupReceiptSha256": "48b843a37919816b398aaaa3df4bce3e49b27eafe7761fa7a9c440448bd998a8",
+  "stage9Actions": 0
+}

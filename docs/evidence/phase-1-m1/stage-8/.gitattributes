@@ -1,0 +1,10 @@
+# Preserve exact reviewed execution bytes; no repository-wide whitespace relaxation.
+gen02/execution/observability-unit.log whitespace=-blank-at-eof
+gen02/execution/postdeploy-postgresql-integration.log whitespace=-blank-at-eof
+gen02/execution/postdeploy-stage6-integration.log whitespace=-blank-at-eof
+gen02/execution/postdeploy-stage7-integration.log whitespace=-blank-at-eof
+gen02/execution/postgresql-corrected-1375064-integration.log whitespace=-blank-at-eof
+gen02/execution/postgresql-failed-1354330-integration.log whitespace=-blank-at-eof
+gen03/execution/backup-restore.stdout.log whitespace=-blank-at-eol
+gen03/execution/postgresql-integration-tests.log whitespace=-blank-at-eof
+gen03/execution/qualification-test-unit.log whitespace=-blank-at-eof

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "branch": "phase-1/stage-8",
+  "candidateCommit": "f84d60d07ad9747649245a3a17ab0cf1b7080f1f",
+  "parent": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+  "sourceDeltaBase": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+  "sourceDeltaCount": 53,
+  "sourceDeltaAggregateSha256": "993366ce0f4b9cf550062e5cd2138e3bafd480ab68017a21355ebacc7da1f218",
+  "stage7PathChanges": 0,
+  "stage9PathChanges": 0,
+  "sourceSnapshot": {
+    "sha256": "b8c47d7ba5bfb0ac16f57f95b55346da8560a2bdb22ba0ff63236d6ec681e7cb",
+    "entries": 598,
+    "predecessor": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec"
+  },
+  "stage8Actions": 1,
+  "stage9Actions": 0
+}

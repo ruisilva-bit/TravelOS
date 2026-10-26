@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "retrievedAtUtc": "2026-10-26T11:21:45.220Z",
+  "targetIdentity": {
+    "pveIdentityReceipt": ".hermes/state/stage8-pve-ct200-verification.json",
+    "node": "pxmx2",
+    "ctid": 200,
+    "hostname": "travelos-dev",
+    "environment": "DEVELOPMENT"
+  },
+  "transport": {
+    "sshAlias": "travelos-dev",
+    "strictHostKeyChecking": true,
+    "tlsVerificationBypassUsed": false
+  },
+  "records": [
+    {
+      "mode": "normal",
+      "unit": "travelos-stage8-runtime-acceptance.service",
+      "invocationId": "7b5a3084124d4480b848ac5397e0537a",
+      "command": "sudo -n /usr/bin/journalctl _SYSTEMD_INVOCATION_ID=7b5a3084124d4480b848ac5397e0537a --no-pager -o json",
+      "rawReads": [
+        {
+          "bytes": 4509,
+          "sha256": "aee13db8766e02dba6b872bd30b310a4acef2117be3ea1b9bee1e7aa83c7b64d"
+        },
+        {
+          "bytes": 4509,
+          "sha256": "60eda6717e457f4672f17c2cadb36f1569370354f5d301190992b327564d5d9a"
+        }
+      ],
+      "rawBytesStable": false,
+      "normalizedRecords": {
+        "bytes": 4509,
+        "sha256": "f392e4d8c9bc35fff3648010bea04e46889c9949d19a095a5909b44313f2e01f",
+        "stableAcrossReads": true
+      },
+      "reportMessagesFound": 1,
+      "messageBytesWithoutTerminalLf": 1771,
+      "messageSha256WithoutTerminalLf": "223b1cf59aeb2d398c25fd20d16bb5fb0152658feb66e851998a9f0c43d68b7b",
+      "evidenceBytesWithTerminalLf": 1772,
+      "evidenceSha256": "9006a58a7f8de39aeb1a8d0456a8bb3662c17091e9f90e1debb94a2fcc0daf67",
+      "matchesSavedRecoveryBytes": true,
+      "matchesReceiptReportProjection": true,
+      "receiptRecordedJournalBytes": 4509,
+      "receiptRecordedJournalSha256": "204538c6c06aaee97f8ed18df9c5f23368cfd7083a4e3d00f77ace5a0db3e1d4",
+      "stage9Actions": 0
+    },
+    {
+      "mode": "controlled",
+      "unit": "travelos-stage8-controlled-acceptance.service",
+      "invocationId": "880da5100aa44782be261a346da6e20f",
+      "command": "sudo -n /usr/bin/journalctl _SYSTEMD_INVOCATION_ID=880da5100aa44782be261a346da6e20f --no-pager -o json",
+      "rawReads": [
+        {
+          "bytes": 4850,
+          "sha256": "201364690e06980c613b07080dd1e01894e818cfa1c08f06d9915015c1ec94cd"
+        },
+        {
+          "bytes": 4850,
+          "sha256": "f34602903abd6af9fe22f4a18dda8e1c62968e6ce77e0e1d6318790f86beeb4b"
+        }
+      ],
+      "rawBytesStable": false,
+      "normalizedRecords": {
+        "bytes": 4850,
+        "sha256": "22c19e3f9873f64a98aed736a54d789117aa69e7881d6284ee1326dfc76fa742",
+        "stableAcrossReads": true
+      },
+      "reportMessagesFound": 1,
+      "messageBytesWithoutTerminalLf": 2069,
+      "messageSha256WithoutTerminalLf": "0227c6f50e9a0de07629807a1781c7e99e1f69d5f0a3a91615695fe54a2c9594",
+      "evidenceBytesWithTerminalLf": 2070,
+      "evidenceSha256": "cd5c777df2f3d222b606909f790ba57aa7b80f24397cfae1097a11e0c9df3ee2",
+      "matchesSavedRecoveryBytes": true,
+      "matchesReceiptReportProjection": true,
+      "receiptRecordedJournalBytes": 4850,
+      "receiptRecordedJournalSha256": "e7c79bc942cf430cbe8ac89aece9eeed9235bca46e8097b87622db164528ee08",
+      "stage9Actions": 0
+    }
+  ],
+  "note": "Raw journalctl JSON serialization stability is recorded per mode. Canonicalized records and the exact runner MESSAGE payload are compared across reads and against the persisted assertion projection; no claim is made about reproducing a historical raw journal byte hash.",
+  "stage9Actions": 0
+}

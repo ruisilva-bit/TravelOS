@@ -1,6 +1,6 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { copyFile, mkdir, readFile, writeFile, symlink } from "node:fs/promises";
+import { copyFile, mkdir, readFile, readdir, stat, writeFile, symlink } from "node:fs/promises";
 import path from "node:path";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -93,6 +93,129 @@ const activityCount = async (messageId: string): Promise<number> =>
       [messageId],
     )
   ).rows[0].count as number;
+
+const workerRequiredPrivileges = [
+  {
+    capability: "SELECT integration.event_context",
+    revoke: "REVOKE SELECT ON integration.event_context FROM travelos_worker_runtime",
+    grant: "GRANT SELECT ON integration.event_context TO travelos_worker_runtime",
+  },
+  {
+    capability: "USAGE job_runtime",
+    revoke: "REVOKE USAGE ON SCHEMA job_runtime FROM travelos_worker_runtime",
+    grant: "GRANT USAGE ON SCHEMA job_runtime TO travelos_worker_runtime",
+  },
+  {
+    capability: "USAGE integration",
+    revoke: "REVOKE USAGE ON SCHEMA integration FROM travelos_worker_runtime",
+    grant: "GRANT USAGE ON SCHEMA integration TO travelos_worker_runtime",
+  },
+  {
+    capability: "USAGE activity",
+    revoke: "REVOKE USAGE ON SCHEMA activity FROM travelos_worker_runtime",
+    grant: "GRANT USAGE ON SCHEMA activity TO travelos_worker_runtime",
+  },
+  {
+    capability: "SELECT job_runtime.job",
+    revoke: "REVOKE SELECT ON job_runtime.job FROM travelos_worker_runtime",
+    grant: "GRANT SELECT ON job_runtime.job TO travelos_worker_runtime",
+  },
+  {
+    capability: "INSERT job_runtime.job",
+    revoke: "REVOKE INSERT ON job_runtime.job FROM travelos_worker_runtime",
+    grant: "GRANT INSERT ON job_runtime.job TO travelos_worker_runtime",
+  },
+  ...[
+    "state",
+    "attempt",
+    "version",
+    '"runAt"',
+    '"owner"',
+    '"leaseUntil"',
+    '"deadline"',
+    '"errorCode"',
+  ].map((column) => ({
+    capability: `UPDATE job_runtime.job.${column}`,
+    revoke: `REVOKE UPDATE (${column}) ON job_runtime.job FROM travelos_worker_runtime`,
+    grant: `GRANT UPDATE (${column}) ON job_runtime.job TO travelos_worker_runtime`,
+  })),
+  {
+    capability: "SELECT job_runtime.attempt",
+    revoke: "REVOKE SELECT ON job_runtime.attempt FROM travelos_worker_runtime",
+    grant: "GRANT SELECT ON job_runtime.attempt TO travelos_worker_runtime",
+  },
+  {
+    capability: "INSERT job_runtime.attempt",
+    revoke: "REVOKE INSERT ON job_runtime.attempt FROM travelos_worker_runtime",
+    grant: "GRANT INSERT ON job_runtime.attempt TO travelos_worker_runtime",
+  },
+  {
+    capability: "SELECT integration.outbox_delivery",
+    revoke: "REVOKE SELECT ON integration.outbox_delivery FROM travelos_worker_runtime",
+    grant: "GRANT SELECT ON integration.outbox_delivery TO travelos_worker_runtime",
+  },
+  {
+    capability: "INSERT integration.outbox_delivery",
+    revoke: "REVOKE INSERT ON integration.outbox_delivery FROM travelos_worker_runtime",
+    grant: "GRANT INSERT ON integration.outbox_delivery TO travelos_worker_runtime",
+  },
+  {
+    capability: "UPDATE integration.outbox_delivery.state",
+    revoke: "REVOKE UPDATE (state) ON integration.outbox_delivery FROM travelos_worker_runtime",
+    grant: "GRANT UPDATE (state) ON integration.outbox_delivery TO travelos_worker_runtime",
+  },
+  {
+    capability: "UPDATE integration.outbox_delivery.completedAt",
+    revoke:
+      'REVOKE UPDATE ("completedAt") ON integration.outbox_delivery FROM travelos_worker_runtime',
+    grant: 'GRANT UPDATE ("completedAt") ON integration.outbox_delivery TO travelos_worker_runtime',
+  },
+  {
+    capability: "SELECT integration.activity_source",
+    revoke: "REVOKE SELECT ON integration.activity_source FROM travelos_worker_runtime",
+    grant: "GRANT SELECT ON integration.activity_source TO travelos_worker_runtime",
+  },
+  {
+    capability: "SELECT activity.entry",
+    revoke: "REVOKE SELECT ON activity.entry FROM travelos_worker_runtime",
+    grant: "GRANT SELECT ON activity.entry TO travelos_worker_runtime",
+  },
+  {
+    capability: "INSERT activity.entry",
+    revoke: "REVOKE INSERT ON activity.entry FROM travelos_worker_runtime",
+    grant: "GRANT INSERT ON activity.entry TO travelos_worker_runtime",
+  },
+] as const;
+
+const workerMetricNames = [
+  "travelos_worker_stats_available",
+  "travelos_worker_jobs_pending",
+  "travelos_worker_jobs_oldest_pending_seconds",
+  "travelos_worker_jobs_running",
+  "travelos_worker_jobs_retries",
+  "travelos_worker_jobs_dead_letters",
+  "travelos_worker_jobs_unknown_outcomes",
+  "travelos_worker_jobs_expired_leases",
+];
+const readPrivateWorkerMetrics = async (runtime: string): Promise<Record<string, number>> => {
+  const metricsPath = path.join(runtime, "metrics.prom");
+  const contents = await readFile(metricsPath, "utf8").catch(() => null);
+  expect(contents).toBeTypeOf("string");
+  const body = contents as string;
+  const samples = body
+    .split("\n")
+    .filter((line) => line !== "" && !line.startsWith("#"))
+    .map((line) => line.split(" "));
+  expect(samples.map(([name]) => name)).toEqual(workerMetricNames);
+  expect(body).toContain("travelos_worker_stats_available 1\n");
+  expect(body).toMatch(/\n$/u);
+  expect(body).not.toMatch(/[{}]/u);
+  expect(body).not.toMatch(/agency|trip|customer|principal/iu);
+  for (const [, value] of samples) expect(Number.isSafeInteger(Number(value))).toBe(true);
+  expect((await stat(metricsPath)).mode & 0o777).toBe(0o600);
+  expect((await readdir(runtime)).filter((name) => name.startsWith(".metrics-"))).toEqual([]);
+  return Object.fromEntries(samples.map(([name, value]) => [name, Number(value)]));
+};
 
 beforeAll(async () => {
   const bootstrap = spawnSync(
@@ -203,6 +326,19 @@ describe("Stage 8 pinned PostgreSQL durable worker", () => {
       (await owner.query("SELECT to_regclass('job_runtime.job')::text AS name")).rows[0].name,
     ).toBe("job_runtime.job");
   });
+
+  it.each(workerRequiredPrivileges)(
+    "reports not-ready when $capability is missing",
+    async ({ revoke, grant }) => {
+      await owner.query(revoke);
+      try {
+        expect(await worker().ready()).toBe(false);
+      } finally {
+        await owner.query(grant);
+      }
+      expect(await worker().ready()).toBe(true);
+    },
+  );
 
   it("requires a real same-Agency source for every delivery", async () => {
     await expect(
@@ -479,6 +615,9 @@ describe("Stage 8 pinned PostgreSQL durable worker", () => {
         ?.state;
     try {
       const first = await start("worker1");
+      const initialMetrics = await readPrivateWorkerMetrics(first.runtime);
+      const initialRetries = initialMetrics.travelos_worker_jobs_retries;
+      if (initialRetries === undefined) throw new Error("Worker retry metric is missing");
       const id = await sourceMessage();
       await waitFor(async () => (await state(id)) === "SUCCEEDED");
       expect(await activityCount(id)).toBe(1);
@@ -494,6 +633,14 @@ describe("Stage 8 pinned PostgreSQL durable worker", () => {
       );
       const retryId = await sourceMessage();
       await waitFor(async () => (await state(retryId)) === "RETRY");
+      await waitFor(async () => {
+        const contents = await readFile(path.join(first.runtime, "metrics.prom"), "utf8").catch(
+          () => "",
+        );
+        return contents.includes(`travelos_worker_jobs_retries ${initialRetries + 1}\n`);
+      });
+      const retriedMetrics = await readPrivateWorkerMetrics(first.runtime);
+      expect(retriedMetrics.travelos_worker_jobs_retries).toBe(initialRetries + 1);
       await owner.query(
         "DROP TRIGGER rehearsal_failure ON activity.entry; DROP FUNCTION activity.rehearsal_failure()",
       );
@@ -516,6 +663,7 @@ describe("Stage 8 pinned PostgreSQL durable worker", () => {
       await stop(interrupted.child, "SIGKILL");
       await owner.query("COMMIT");
       const restarted = await start("worker3");
+      await readPrivateWorkerMetrics(restarted.runtime);
       await waitFor(async () => (await state(crashId)) === "SUCCEEDED");
       expect(await activityCount(crashId)).toBe(1);
       const companion = await start("worker4");

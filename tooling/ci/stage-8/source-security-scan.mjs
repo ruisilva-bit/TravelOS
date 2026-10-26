@@ -21,8 +21,8 @@ export const STAGE8_REVIEWED_SENSITIVE_FINDINGS = Object.freeze(
     { path: "packages/observability/test/telemetry.test.ts", rule: "secret-assignment", line: 59 },
     { path: "packages/observability/test/telemetry.test.ts", rule: "email-address", line: 60 },
     { path: "packages/observability/test/telemetry.test.ts", rule: "email-address", line: 73 },
-    { path: "tests/integration/stage-8-postgresql.test.ts", rule: "email-address", line: 161 },
-    { path: "tests/integration/stage-8-postgresql.test.ts", rule: "email-address", line: 555 },
+    { path: "tests/integration/stage-8-postgresql.test.ts", rule: "email-address", line: 284 },
+    { path: "tests/integration/stage-8-postgresql.test.ts", rule: "email-address", line: 703 },
     {
       path: "tooling/ci/stage-8/controlled-worker.mjs",
       rule: "high-entropy-secret-assignment",

@@ -23,7 +23,7 @@ Activity is an eventual internal product projection with curated event codes/tex
 
 ## Observability and access
 
-Correlation IDs and valid W3C trace context are propagated from HTTP to durable event context and worker outcome. Structured logs construct an allowlist; raw errors, URLs/query strings, headers, cookies, payloads, names and emails are excluded. Metrics use fixed low-cardinality names, never principal/customer/Trip IDs. Worker liveness reflects process-loop health; readiness verifies DB identity/schema/privileges independently of backlog. Essential metrics: pending/oldest backlog, running, retries, dead letters, unknown outcomes and expired leases. Diagnostics remain private/operator-only without new public exposure.
+Correlation IDs and valid W3C trace context are propagated from HTTP to durable event context and worker outcome. Structured logs construct an allowlist; raw errors, URLs/query strings, headers, cookies, payloads, names and emails are excluded. Metrics use fixed low-cardinality names, never principal/customer/Trip IDs. Worker liveness reflects process-loop health; readiness verifies DB identity/schema/privileges independently of backlog. Essential metrics: pending/oldest backlog, running, retries, dead letters, unknown outcomes and expired leases. The worker atomically refreshes Prometheus text exposition at `${RUNTIME_DIRECTORY}/metrics.prom` with mode `0600` inside the existing mode-`0700` systemd runtime directory. This is a private, operator-only scrape surface; it adds no network listener or public exposure.
 
 ## Data extension / retention
 

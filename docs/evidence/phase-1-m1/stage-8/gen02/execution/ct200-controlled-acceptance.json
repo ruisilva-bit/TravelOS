@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "receiptType": "TRAVELOS_STAGE8_GEN02_CT200_CONTROLLED_ACCEPTANCE",
+  "candidate": {
+    "artifactId": "travelos-stage8-gen02-b8c47d7b",
+    "artifactSha256": "d9c96681f8b4768f342da2c088cf282d1c34e63746d1e789dc016eb040d50d4a",
+    "sourceSnapshotSha256": "b8c47d7ba5bfb0ac16f57f95b55346da8560a2bdb22ba0ff63236d6ec681e7cb"
+  },
+  "target": {
+    "ssh": "travelos-dev",
+    "node": "pxmx2",
+    "ctid": 200,
+    "hostname": "travelos-dev",
+    "environment": "DEVELOPMENT"
+  },
+  "acceptance": {
+    "result": "PASS",
+    "mode": "CONTROLLED_FAILURES_AND_PROCESS_RESTART",
+    "startedAtUtc": "2026-10-23T10:52:31.376850+00:00",
+    "execMainStartTimestamp": "Fri 2026-10-23 10:52:41 UTC",
+    "unit": "travelos-stage8-controlled-acceptance.service",
+    "invocationId": "880da5100aa44782be261a346da6e20f",
+    "oneShotInvocationCount": 1,
+    "observedRunning": true,
+    "unitStateAfterRun": {
+      "activeState": "inactive",
+      "subState": "dead",
+      "result": "success",
+      "execMainStatus": 0,
+      "mainPid": 0,
+      "controlPid": 0,
+      "unitFileState": "static"
+    },
+    "systemdCredentialDirectoryAbsent": true,
+    "artifactPreflight": {
+      "result": "PASS",
+      "artifactId": "travelos-stage8-gen02-b8c47d7b",
+      "sourceSnapshotSha256": "b8c47d7ba5bfb0ac16f57f95b55346da8560a2bdb22ba0ff63236d6ec681e7cb",
+      "entries": 25118,
+      "files": 23676,
+      "migrationHead": "0014_stage8_worker_activity",
+      "stage9Actions": 0
+    },
+    "stage8ProbeCount": 15,
+    "stage8Probes": [
+      "worker-credential-role-and-privileges",
+      "preview-no-outbox-writes",
+      "controlled-transient-failure-backoff-then-success",
+      "legitimate-outbox-activity-audit-linkage-and-correlation",
+      "publish-replay-no-duplicate-outbox-or-activity",
+      "controlled-persistent-failure-five-attempts-dead-letter",
+      "legitimate-outbox-activity-audit-linkage-and-correlation",
+      "preview-no-outbox-writes",
+      "controlled-ambiguous-outcome-quarantined-no-replay",
+      "legitimate-outbox-activity-audit-linkage-and-correlation",
+      "publish-replay-no-duplicate-outbox-or-activity",
+      "killed-claim-recovered-by-restarted-artifact-worker",
+      "legitimate-outbox-activity-audit-linkage-and-correlation",
+      "quarantined-jobs-not-replayed-by-concurrent-artifact-workers",
+      "portal-denies-activity-audit-jobs-context-and-workspace"
+    ],
+    "stage6Stage7RegressionProbeCount": 24,
+    "stage6Stage7RegressionProbes": [
+      "staff-realm-authenticated-with-recent-mfa",
+      "staff-session-context-http-200",
+      "staff-session-context-agency-id-string",
+      "staff-session-context-principal-id-string",
+      "staff-session-context-mfa-number",
+      "staff-session-scope-confirmed",
+      "synthetic-business-data-created-through-admin-api",
+      "local-operator-portal-enrollment-verified",
+      "unauthenticated-portal-trip-denied",
+      "portal-realm-authenticated",
+      "portal-default-deny-before-grant",
+      "immutable-publication-created-through-admin-api",
+      "explicit-trip-access-grant-issued-through-admin-api",
+      "cross-trip-access-denied",
+      "authorized-portal-read-uses-allowlisted-snapshot",
+      "portal-snapshot-unchanged-after-workspace-edit",
+      "publication-v2-visible-v1-immutable",
+      "portal-access-grant-revocation-http-200",
+      "portal-access-grant-revocation-revoked-at-string",
+      "portal-trip-read-after-revocation-http-401",
+      "grant-revocation-invalidates-existing-portal-session",
+      "runtime-acceptance-fixture-cleaned",
+      "portal-session-revoked-after-sign-out",
+      "staff-session-revoked-after-sign-out"
+    ],
+    "probeCount": 39,
+    "reportCount": 1,
+    "journal": {
+      "entryCount": 2,
+      "bytes": 4850,
+      "sha256": "e7c79bc942cf430cbe8ac89aece9eeed9235bca46e8097b87622db164528ee08",
+      "rawJournalPersisted": false
+    },
+    "secretsExposed": false,
+    "stage9Actions": 0
+  },
+  "expectedUnitConflictAndRestoration": {
+    "unitConflictStopsWorkerDuringControlledProbe": true,
+    "restorationHelper": "travelos-agentctl restart-runtime",
+    "restorationResult": "PASS",
+    "activeReleaseAfterRestore": "/opt/travelos/releases/travelos-stage8-gen02-b8c47d7b",
+    "serviceStatesAfterRestore": {
+      "travelos-admin-api.service": "active",
+      "travelos-portal-api.service": "active",
+      "travelos-worker.service": "active"
+    }
+  },
+  "stage9Actions": 0
+}

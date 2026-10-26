@@ -1,0 +1,27 @@
+{
+  "result": "PASS",
+  "stage": "PHASE_1_M1_STAGE_8",
+  "candidate": "gen03",
+  "predecessor": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+  "sourceSnapshotSha256": "3d6c977d5db3af2865e2b57f21776c57b42586118eb04e2e0d4d8579d7ca2796",
+  "artifactSha256": "224747dff536535f94c49a55ab1ef1719fa7a5ccd6c44606d3c5ee8faaff98fb",
+  "artifactId": "travelos-stage8-gen03-3d6c977d",
+  "preflightSha256": "93ddfd69e8463da57bbaa8b2b24f45b92eeb96958fb5d47946d1d9e59e0c3e47",
+  "buildReceiptSha256": "7027124ceaeb64192c006e7d311f507de3702fd473a1404e8ae00b8c5fc43bd7",
+  "migrationHead": "0014_stage8_worker_activity",
+  "toolchain": {
+    "node": "v24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0",
+    "nodeExecutable": "/home/hermes/.local/share/travelos-stage5-toolchain/node_modules/node/bin/node"
+  },
+  "artifactRoot": ".hermes/state/stage8-gen03-artifact",
+  "archivePath": ".hermes/state/stage8-gen03-artifact.tar.gz",
+  "extractedRoot": ".hermes/state/stage8-gen03-extracted",
+  "preflightPath": ".hermes/state/stage8-gen03-preflight.json",
+  "archiveComparison": {
+    "result": "PASS",
+    "metadataDifferenceCount": 31806
+  },
+  "stage9Actions": 0
+}

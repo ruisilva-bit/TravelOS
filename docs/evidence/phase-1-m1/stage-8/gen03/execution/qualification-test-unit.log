@@ -1,0 +1,49 @@
+
+ RUN  v4.1.10 /home/hermes/.hermes/worktrees/travelos-stage8
+
+{"timestamp":"2026-10-26T13:16:22.302Z","level":"info","service":"portal-api","correlationId":"131d0f35-f5ae-4471-ad62-1def56cdf10c","traceparent":null,"action":"http_request","durationMs":8,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:22.334Z","level":"info","service":"portal-api","correlationId":"469f168c-9d9f-4381-bf25-e5f74750420b","traceparent":null,"action":"http_request","durationMs":15,"statusCode":400}
+{"timestamp":"2026-10-26T13:16:22.358Z","level":"info","service":"portal-api","correlationId":"6dfb1a2f-1f17-42f5-a17f-55130ee46997","traceparent":null,"action":"http_request","durationMs":1,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:22.434Z","level":"info","service":"portal-api","correlationId":"4637bb9e-f84c-44ae-bb68-b0b6a5331ce8","traceparent":null,"action":"http_request","durationMs":37,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:22.545Z","level":"info","service":"admin-api","correlationId":"9e97b3da-6a01-46fc-9077-ab630eed1b3c","traceparent":null,"action":"http_request","durationMs":8,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:22.556Z","level":"info","service":"admin-api","correlationId":"5d6201dc-1d8f-4a6f-89b6-3319bfed62fe","traceparent":null,"action":"http_request","durationMs":1,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:22.561Z","level":"info","service":"admin-api","correlationId":"196783cd-380f-444b-bf22-8af84f99ccb3","traceparent":null,"action":"http_request","durationMs":2,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:22.592Z","level":"info","service":"admin-api","correlationId":"7154bca4-5d37-4ff4-8279-13e93d4fca78","traceparent":null,"action":"http_request","durationMs":14,"statusCode":400}
+{"timestamp":"2026-10-26T13:16:22.631Z","level":"info","service":"admin-api","correlationId":"d5e950b7-5d0f-436d-b05a-4f763e6a29ce","traceparent":null,"action":"http_request","durationMs":6,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:22.698Z","level":"info","service":"admin-api","correlationId":"390cefa9-d8de-4d99-9554-a09fcd569c0d","traceparent":null,"action":"http_request","durationMs":65,"statusCode":401}
+{"timestamp":"2026-10-26T13:16:22.711Z","level":"info","service":"admin-api","correlationId":"17c76f40-0e9a-4dca-97d0-de9e3008a928","traceparent":null,"action":"http_request","durationMs":8,"statusCode":400}
+{"timestamp":"2026-10-26T13:16:22.737Z","level":"info","service":"admin-api","correlationId":"8312c29d-2797-4491-916d-554d36563017","traceparent":null,"action":"http_request","durationMs":1,"statusCode":403}
+{"timestamp":"2026-10-26T13:16:22.742Z","level":"info","service":"admin-api","correlationId":"b84de2f7-82f3-43fe-a535-7788e58f2599","traceparent":null,"action":"http_request","durationMs":0,"statusCode":403}
+{"timestamp":"2026-10-26T13:16:22.745Z","level":"info","service":"admin-api","correlationId":"53479b87-ec8e-4ff2-9fd8-d38afb01dd37","traceparent":null,"action":"http_request","durationMs":0,"statusCode":403}
+{"timestamp":"2026-10-26T13:16:22.748Z","level":"info","service":"admin-api","correlationId":"f1c75a44-af46-464b-b691-e22382b1b09e","traceparent":null,"action":"http_request","durationMs":0,"statusCode":403}
+{"timestamp":"2026-10-26T13:16:22.750Z","level":"info","service":"admin-api","correlationId":"22c826a5-26e3-47fa-9ded-aa65c4e26d5a","traceparent":null,"action":"http_request","durationMs":0,"statusCode":403}
+{"timestamp":"2026-10-26T13:16:22.752Z","level":"info","service":"admin-api","correlationId":"963d9d6e-96e8-455b-91d8-71324251aa7b","traceparent":null,"action":"http_request","durationMs":0,"statusCode":403}
+{"timestamp":"2026-10-26T13:16:22.768Z","level":"info","service":"admin-api","correlationId":"274bab9d-da11-47d1-9298-55c57348e1d7","traceparent":null,"action":"http_request","durationMs":10,"statusCode":201}
+{"timestamp":"2026-10-26T13:16:22.777Z","level":"info","service":"admin-api","correlationId":"a7f593c1-262d-4836-9022-87b380f0e086","traceparent":null,"action":"http_request","durationMs":52,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:22.784Z","level":"info","service":"admin-api","correlationId":"b1827bfe-05c8-4177-862a-0fa2eeed401a","traceparent":null,"action":"http_request","durationMs":2,"statusCode":401}
+{"timestamp":"2026-10-26T13:16:22.791Z","level":"info","service":"admin-api","correlationId":"e125880b-ea13-4b4c-a85c-be2907aa4011","traceparent":null,"action":"http_request","durationMs":1,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:22.794Z","level":"info","service":"admin-api","correlationId":"efb69e1a-ae00-4443-952f-44f974bb374e","traceparent":null,"action":"http_request","durationMs":1,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:22.798Z","level":"info","service":"admin-api","correlationId":"9bfcbca7-ad44-4b36-a45d-9220d202448e","traceparent":null,"action":"http_request","durationMs":1,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:22.802Z","level":"info","service":"admin-api","correlationId":"66b92b15-c147-4f3a-9372-8c9474e072fb","traceparent":null,"action":"http_request","durationMs":1,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:22.804Z","level":"info","service":"admin-api","correlationId":"11007713-296b-4431-86d7-e4d63913c103","traceparent":null,"action":"http_request","durationMs":8,"statusCode":500}
+{"timestamp":"2026-10-26T13:16:22.805Z","level":"info","service":"admin-api","correlationId":"01c608b3-55ab-46c1-a7e1-b2ec523608f5","traceparent":null,"action":"http_request","durationMs":1,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:22.808Z","level":"info","service":"admin-api","correlationId":"b8d245fa-df49-4bd7-8c36-5dfe89938325","traceparent":null,"action":"http_request","durationMs":1,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:22.810Z","level":"info","service":"admin-api","correlationId":"996ba18c-9996-4d54-a9f5-38a909181cb4","traceparent":null,"action":"http_request","durationMs":1,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:24.710Z","level":"info","service":"admin-api","correlationId":"01900000-0000-7000-8000-000000000001","traceparent":null,"action":"http_request","durationMs":8,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:24.718Z","level":"info","service":"admin-api","correlationId":"6552a209-7a2f-438e-ba22-d151ba045b36","traceparent":null,"action":"http_request","durationMs":1,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:26.746Z","level":"info","service":"portal-api","correlationId":"c84b5db5-667b-4d3f-b48b-11931b647ad0","traceparent":null,"action":"http_request","durationMs":8,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:28.272Z","level":"info","service":"portal-api","correlationId":"95d0c184-5a1e-45b8-8a12-c05770147500","traceparent":null,"action":"http_request","durationMs":32,"statusCode":401}
+{"timestamp":"2026-10-26T13:16:28.306Z","level":"info","service":"portal-api","correlationId":"08b17cc6-888b-445f-8a62-9e506380475a","traceparent":null,"action":"http_request","durationMs":8,"statusCode":200}
+{"timestamp":"2026-10-26T13:16:28.318Z","level":"info","service":"portal-api","correlationId":"1e7883c4-1b9b-406e-aeb8-807da2fefba3","traceparent":null,"action":"http_request","durationMs":1,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:28.322Z","level":"info","service":"portal-api","correlationId":"f17c864d-e80c-4e14-b86c-e061d793b2fc","traceparent":null,"action":"http_request","durationMs":1,"statusCode":404}
+{"timestamp":"2026-10-26T13:16:28.330Z","level":"info","service":"portal-api","correlationId":"e29f4b2e-b3c4-462a-8211-62c37b70a56b","traceparent":null,"action":"http_request","durationMs":1,"statusCode":403}
+{"timestamp":"2026-10-26T13:16:28.340Z","level":"info","service":"portal-api","correlationId":"7a3ec5ac-613e-4e39-a19d-4b190e64ab51","traceparent":null,"action":"http_request","durationMs":1,"statusCode":400}
+{"timestamp":"2026-10-26T13:16:28.345Z","level":"info","service":"portal-api","correlationId":"626b571e-49e1-4b77-8491-21b319a62e42","traceparent":null,"action":"http_request","durationMs":3,"statusCode":500}
+{"timestamp":"2026-10-26T13:16:28.355Z","level":"info","service":"portal-api","correlationId":"bdf002bd-cc1f-46d5-b7c7-51d88b98b962","traceparent":null,"action":"http_request","durationMs":1,"statusCode":500}
+{"timestamp":"2026-10-26T13:16:28.595Z","level":"info","service":"admin-api","correlationId":"da40308b-019a-42d6-a5b7-a5c7939fd340","traceparent":null,"action":"http_request","durationMs":5,"statusCode":200}
+
+ Test Files  46 passed (46)
+      Tests  230 passed (230)
+   Start at  13:16:15
+   Duration  22.21s (transform 3.53s, setup 0ms, import 43.46s, tests 4.64s, environment 3.32s)
+

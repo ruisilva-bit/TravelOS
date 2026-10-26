@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "canonicalCiEligible": true,
+  "blockingRequirements": [],
+  "stage": "PHASE_1_M1_STAGE_8",
+  "candidate": "gen03",
+  "predecessor": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+  "sourceSnapshotSha256": "3d6c977d5db3af2865e2b57f21776c57b42586118eb04e2e0d4d8579d7ca2796",
+  "artifactSha256": "224747dff536535f94c49a55ab1ef1719fa7a5ccd6c44606d3c5ee8faaff98fb",
+  "artifactId": "travelos-stage8-gen03-3d6c977d",
+  "buildReceiptSha256": "7027124ceaeb64192c006e7d311f507de3702fd473a1404e8ae00b8c5fc43bd7",
+  "migrationHead": "0014_stage8_worker_activity",
+  "toolchain": {
+    "node": "v24.19.0",
+    "corepack": "0.35.0",
+    "pnpm": "11.21.0",
+    "nodeExecutable": "/home/hermes/.local/share/travelos-stage5-toolchain/node_modules/node/bin/node"
+  },
+  "checks": {
+    "functionality": {
+      "result": "PASS",
+      "scope": "Current extracted gen03: 75/75 Stage6/7/8 real PostgreSQL tests; authenticated normal and controlled rehearsals.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-postgres.log",
+          "sha256": "f73536299ca3c556c50302c8c25a7272cbaaee7fdf953d2d2b90796af9e6f542"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-unit.log",
+          "sha256": "d1792930d1d4fea80a2c111b515c48348e59b270d6019ece0454ef1b94f83fc5"
+        }
+      ]
+    },
+    "adversarial": {
+      "result": "PASS",
+      "scope": "Current metrics file mode/freshness, 23 privilege-drift cases, lease loss/restart/retry/dead-letter/quarantine and isolated realm regressions.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-postgres.log",
+          "sha256": "f73536299ca3c556c50302c8c25a7272cbaaee7fdf953d2d2b90796af9e6f542"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-artifact.log",
+          "sha256": "81a460ce28def234908e0a967f313adc65ce4df9cf1881d983e235b240fc1ea5"
+        }
+      ]
+    },
+    "postgresql": {
+      "result": "PASS",
+      "scope": "PostgreSQL 18.6 disposable qualification PASS; cluster stopped and roots removed by repository harness.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-postgresql-1851428/execution.json",
+          "sha256": "636af4ccdeabf5103fb8f6e0885a948101894822a6141d58b084ea340dd5905e"
+        },
+        {
+          "path": ".hermes/state/stage8-postgresql-1851428/postgresql-package-provenance.json",
+          "sha256": "e1a3c22cd25dd8ce9c2a109ccdff6fafacc6ef8eee968b2dcdc02f9511850cf0"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-postgres.log",
+          "sha256": "f73536299ca3c556c50302c8c25a7272cbaaee7fdf953d2d2b90796af9e6f542"
+        }
+      ]
+    },
+    "packaging": {
+      "result": "PASS",
+      "scope": "Builder and clean archive extraction plus packaged verifier and packaged installer CHECK passed.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-gen03-artifact-build.json",
+          "sha256": "7027124ceaeb64192c006e7d311f507de3702fd473a1404e8ae00b8c5fc43bd7"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-extracted-verify-final.json",
+          "sha256": "3a0fdb029d2bff8a7561dbe772f62717bd5f3651081e14eb042fa5fa75f80dea"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-installer-check.json",
+          "sha256": "2ed47f42f2b320a23eef0635631c75ff1bb485af753f0530f6a6d42a64300b22"
+        }
+      ]
+    },
+    "dependenciesAndPaths": {
+      "result": "PASS",
+      "scope": "Actual packaged Node executes worker through current-release symlink and the normal/controlled runners; no source runtime substitution.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-postgres.log",
+          "sha256": "f73536299ca3c556c50302c8c25a7272cbaaee7fdf953d2d2b90796af9e6f542"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-artifact.log",
+          "sha256": "81a460ce28def234908e0a967f313adc65ce4df9cf1881d983e235b240fc1ea5"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/architecture-check.log",
+          "sha256": "26d9ca39711b59e1f891451d5f284d1e63b65a9e80a56ce1cbbddbe951bd05c2"
+        }
+      ]
+    },
+    "systemd": {
+      "result": "PASS",
+      "scope": "Current systemd contract tests and installer CHECK PASS. Root-fixture syntax evidence reused only for byte-identical versioned units verified against gen02 freeze; extracted symlink ExecStart paths exercised in current rehearsal.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-systemd-contract.log",
+          "sha256": "1796e1654f100a420a26a1469638485131991b38c1fc8e488c095039ec2b8a73"
+        },
+        {
+          "path": ".hermes/state/stage8-gen02-preflight/systemd-root-verify.log",
+          "sha256": "4a391792bafb62e0aaabd423571d032ec32c4db12ccd628c3b1b2b960fa8e031"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-installer-check.json",
+          "sha256": "2ed47f42f2b320a23eef0635631c75ff1bb485af753f0530f6a6d42a64300b22"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-postgres.log",
+          "sha256": "f73536299ca3c556c50302c8c25a7272cbaaee7fdf953d2d2b90796af9e6f542"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-ct200-preci.stdout.log",
+          "sha256": "f4ef0a658876cad4033c33456fabe37623dafc765e8b0325a0fd0580cf8ec3dd"
+        }
+      ]
+    },
+    "credentialAndPermissions": {
+      "result": "PASS",
+      "scope": "Fresh TLS-verified CT200 identity, approved encrypted-reference metadata, live Worker systemd contract and TCP migrator session/SET ROLE; exact application roles qualified on real disposable PostgreSQL. No new credential creation.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-gen03-pve-preci-attempt02.json",
+          "sha256": "d77c699f2277b34fe8fc7204a604b09924f004f56b40d4216fb136e256088b9e"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-ct200-preci.stdout.log",
+          "sha256": "f4ef0a658876cad4033c33456fabe37623dafc765e8b0325a0fd0580cf8ec3dd"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-ct200-migrator-preci-corrected.stdout.log",
+          "sha256": "3c34f4376022463f3e7ea09c40d60d54c091a6b5f06ef22e89309b864a4a72b3"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-postgres.log",
+          "sha256": "f73536299ca3c556c50302c8c25a7272cbaaee7fdf953d2d2b90796af9e6f542"
+        }
+      ]
+    },
+    "runtimeRehearsal": {
+      "result": "PASS",
+      "scope": "Current extracted artifact normal 34 probes and controlled 39 probes, restart/concurrent workers, private metrics, credential negative controls and cleanup.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-postgres.log",
+          "sha256": "f73536299ca3c556c50302c8c25a7272cbaaee7fdf953d2d2b90796af9e6f542"
+        }
+      ]
+    },
+    "securityScanner": {
+      "result": "PASS",
+      "scope": "Stage8 current source/candidate scan, exact reviewed synthetic fixture exceptions only, zero unallowlisted findings.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/stage8-security-scan.log",
+          "sha256": "d1eb57962ff35b02eaa5b1c0f7e16bafb09587581f4185f46f1b1d30016c4870"
+        }
+      ],
+      "findingCount": 0,
+      "unallowlistedFindingCount": 0,
+      "filesScanned": 105
+    },
+    "inventoryProvenance": {
+      "result": "PASS",
+      "scope": "Exact archive bytes, full file/symlink inventory, pinned toolchain, source snapshot and immutable Stage7 predecessor regressions.",
+      "evidence": [
+        {
+          "path": ".hermes/state/stage8-gen03-artifact-build.json",
+          "sha256": "7027124ceaeb64192c006e7d311f507de3702fd473a1404e8ae00b8c5fc43bd7"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-extracted-verify-final.json",
+          "sha256": "3a0fdb029d2bff8a7561dbe772f62717bd5f3651081e14eb042fa5fa75f80dea"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/verify-pins.log",
+          "sha256": "5e0e555046af57b8aee9574ce4a008669247f05f2de039ea24d1410a3a9db742"
+        },
+        {
+          "path": ".hermes/state/stage8-gen03-local-qualification-final/test-stage8-stage7-predecessor.log",
+          "sha256": "69ca3efde87b4c8639e9094f25ff241498e52507b9a71ea07af788220171b680"
+        }
+      ]
+    }
+  },
+  "previousCandidate": {
+    "id": "gen02",
+    "independentRecommendation": "NO-GO",
+    "openFindings": [
+      "S8-OBS-001",
+      "S8-OBS-002"
+    ],
+    "correctionsImplementedPendingIndependentClosure": true,
+    "doNotReplay": true
+  },
+  "stage9Actions": 0
+}

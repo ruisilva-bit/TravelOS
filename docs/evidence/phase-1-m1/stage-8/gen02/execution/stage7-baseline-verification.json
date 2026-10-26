@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "predecessorTag": "travelos-phase-1-m1-stage-7-gen15-go",
+  "tagObjectSha256": "4d271f25764fca8f1c013af20283aa73494c7690",
+  "targetCommit": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+  "stage8Parent": "a57789b6662f0e0c0da5948c20eef6eb1e6bf4ec",
+  "parentEqualsAcceptedTarget": true,
+  "candidateFreeze": {
+    "path": "docs/evidence/phase-1-m1/stage-7/gen15/candidate-freeze.json",
+    "sha256": "c2ab7e26a077d8647731c5520b3336bad67fe5cbaef9e70c48ffb979dace3ec5",
+    "entries": 163,
+    "aggregateSha256": "74011d6d2cbbeed409048e4ad7079fd6deb5931d657ab8f9f5c9b4cd4078a19d",
+    "matched": true
+  },
+  "evidenceIndex": {
+    "path": "docs/evidence/phase-1-m1/stage-7/gen15/execution/EVIDENCE_INDEX.json",
+    "sha256": "af11fbf1314392ae7dbed9be6c4e5ea7cfc558c143d8ffd7dafb61c1390c1e10",
+    "artifacts": 42,
+    "aggregateSha256": "c91eb020783c65a5f1af589be8695fe240c05875fea4c386f1d08ebfc15723f3",
+    "matched": true
+  },
+  "stage8Actions": 1,
+  "stage9Actions": 0
+}

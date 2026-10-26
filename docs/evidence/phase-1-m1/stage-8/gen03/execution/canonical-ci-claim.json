@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "state": "CONSUMED",
+  "stage": "PHASE_1_M1_STAGE_8",
+  "candidate": "gen03",
+  "candidateStateSha256": "4064866669d67d50a68892f198a014b898bf6aac55247f65641dda9103608458",
+  "sourceSnapshotSha256": "3d6c977d5db3af2865e2b57f21776c57b42586118eb04e2e0d4d8579d7ca2796",
+  "artifactSha256": "224747dff536535f94c49a55ab1ef1719fa7a5ccd6c44606d3c5ee8faaff98fb",
+  "invocationCount": 1,
+  "startedAtUtc": "2026-10-26T13:26:42.061Z",
+  "stage9Actions": 0,
+  "result": "PASS",
+  "completedAtUtc": "2026-10-26T13:33:09.930Z",
+  "failedGate": null,
+  "receiptPath": ".hermes/state/stage8-gen03-canonical-ci-receipt.json",
+  "receiptSha256": "77f443d96738f2b6b48177431299c1c50b10a1997422c702119db6137a8198a3",
+  "logSha256": "6016e71c0298da7ada608612494ac445df23dc32b2f6428547d329e3f81c2060"
+}

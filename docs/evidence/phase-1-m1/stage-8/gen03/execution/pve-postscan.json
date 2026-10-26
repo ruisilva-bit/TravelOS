@@ -1,0 +1,18 @@
+{
+  "result": "PASS",
+  "observedAtUtc": "2026-10-26T13:43:36.799692+00:00",
+  "target": {
+    "node": "pxmx2",
+    "ctid": 200,
+    "hostname": "travelos-dev",
+    "type": "lxc",
+    "status": "running",
+    "net0": "name=eth0,bridge=vmbr0,firewall=1,hwaddr=BC:24:11:E9:85:A9,ip=dhcp,type=veth"
+  },
+  "sshMacCorrelation": true,
+  "tlsPeerAndHostnameVerified": true,
+  "tlsBypassUsed": false,
+  "credentialValuesExposed": false,
+  "ticketPersisted": false,
+  "stage9Actions": 0
+}
