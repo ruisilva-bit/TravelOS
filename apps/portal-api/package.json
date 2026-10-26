@@ -13,6 +13,7 @@
     "@travelos/auth-adapters": "workspace:*",
     "@travelos/config": "workspace:*",
     "@travelos/contracts": "workspace:*",
+    "@travelos/observability": "workspace:*",
     "@travelos/portal-safe-core": "workspace:*",
     "kysely": "0.29.5",
     "reflect-metadata": "0.2.2",

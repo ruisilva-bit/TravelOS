@@ -11,6 +11,7 @@
       "@travelos/contracts/admin": ["./packages/contracts/src/admin/index.ts"],
       "@travelos/contracts/portal": ["./packages/contracts/src/portal/index.ts"],
       "@travelos/config": ["./packages/config/src/index.ts"],
+      "@travelos/observability": ["./packages/observability/src/index.ts"],
       "@travelos/database": ["./packages/database/src/index.ts"],
       "@travelos/design-system": ["./packages/design-system/src/index.ts"],
       "@travelos/portal-safe-core/portal-access": [

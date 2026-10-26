@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@travelos/backend-core": "workspace:*",
+    "@travelos/observability": "workspace:*",
     "kysely": "0.29.5",
     "pg": "8.23.0"
   }

@@ -177,6 +177,9 @@ importers:
       '@travelos/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@travelos/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
@@ -226,6 +229,9 @@ importers:
       '@travelos/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@travelos/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@travelos/portal-safe-core':
         specifier: workspace:*
         version: link:../../packages/portal-safe-core
@@ -263,9 +269,18 @@ importers:
 
   apps/worker:
     dependencies:
+      '@travelos/backend-core':
+        specifier: workspace:*
+        version: link:../../packages/backend-core
       '@travelos/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@travelos/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@travelos/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
 
   packages/auth-adapters:
     dependencies:
@@ -301,6 +316,9 @@ importers:
       '@travelos/backend-core':
         specifier: workspace:*
         version: link:../backend-core
+      '@travelos/observability':
+        specifier: workspace:*
+        version: link:../observability
       kysely:
         specifier: 0.29.5
         version: 0.29.5

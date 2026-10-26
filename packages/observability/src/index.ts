@@ -1,2 +1,8 @@
-// Stage 2 boundary marker only. Runtime observability adapters are introduced later.
-export {};
+export {
+  createCorrelationContext,
+  currentCorrelationContext,
+  runWithCorrelation,
+  createStructuredLogger,
+  createRequestTelemetry,
+  type CorrelationContext,
+} from "./telemetry.js";

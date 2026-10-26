@@ -53,6 +53,10 @@
     {
       "file": "0013_stage7_runtime_acceptance_cleanup.cjs",
       "sha256": "f8d45edb3625a79882c8b8569b45ce2c449168b8ef02fb1f97bfea6f6bcbd3ec"
+    },
+    {
+      "file": "0014_stage8_worker_activity.cjs",
+      "sha256": "cde21a83dc078a888d30210217e040fd47a5dc5b38993f98ce8ddf06f4c741c6"
     }
   ]
 }

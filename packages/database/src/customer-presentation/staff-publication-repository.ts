@@ -27,6 +27,7 @@ import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
 import { readStaffAuthorizationSnapshot } from "../staff-access/staff-access-repository.js";
 import { assertStaffAuthorizationInTransaction } from "../trip-operations/m1-operational-slice-repository.js";
 import { createUuidV7 } from "../uuidv7.js";
+import { bindEventCorrelation } from "../job-runtime/event-context.js";
 import { publicationReaders } from "./publication-source-repository.js";
 
 const containsControlCharacter = (value: string): boolean => {
@@ -469,6 +470,7 @@ export const createPostgresM1StaffTripPublicationRepository = (
         const eventId = createUuidV7();
         const auditId = createUuidV7();
         const outboxId = createUuidV7();
+        await bindEventCorrelation(database);
         const publishedAt = (
           await sql<{ readonly publishedAt: Date }>`
             SELECT clock_timestamp() AS "publishedAt"

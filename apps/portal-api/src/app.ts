@@ -1,6 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters/portal";
+import { createRequestTelemetry } from "@travelos/observability";
 import type { CurrentPublishedPortalTripSnapshotReader } from "@travelos/portal-safe-core/customer-presentation";
 
 import { PortalApiModule } from "./app.module.js";
@@ -48,6 +49,7 @@ export const createPortalApi = async (
     bodyParser: false,
   });
   application.use(createPortalHostValidationMiddleware(options.expectedHost));
+  application.use(createRequestTelemetry("portal-api"));
   application.useBodyParser("json");
   if (options.auth !== undefined) {
     registerPortalAuthBridge(application, options.auth);

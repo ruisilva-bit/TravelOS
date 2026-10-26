@@ -21,6 +21,7 @@ import { sql, type Kysely, type Transaction as KyselyTransaction } from "kysely"
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
 import { assertStaffAuthorizationInTransaction } from "../trip-operations/m1-operational-slice-repository.js";
 import { createUuidV7 } from "../uuidv7.js";
+import { bindEventCorrelation } from "../job-runtime/event-context.js";
 
 type DatabaseShape = Record<string, never>;
 type Database = Kysely<DatabaseShape>;
@@ -295,6 +296,7 @@ const appendEvent = async (
   actorStaffPrincipalId: string | null,
 ): Promise<void> => {
   const eventId = createUuidV7();
+  await bindEventCorrelation(database);
   await sql`
     INSERT INTO "audit"."trip_access_grant_event"
       ("eventId", "grantId", "agencyId", "portalPrincipalId", "tripId", "eventType", "actorStaffPrincipalId")

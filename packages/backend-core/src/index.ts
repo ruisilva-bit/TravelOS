@@ -1,4 +1,15 @@
 export {
+  WorkerExecutionError,
+  processWorkerClaim,
+  workerFailureCode,
+  workerRetryDelayMs,
+  type WorkerClaim,
+  type WorkerErrorCode,
+  type WorkerRepository,
+  type WorkerStats,
+  type WorkerOutcome,
+} from "./modules/job-runtime/worker.js";
+export {
   NestedTransactionNotSupportedError,
   TRANSACTION_NESTING_POLICY,
   type TransactionContext,

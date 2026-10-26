@@ -1,3 +1,4 @@
+export { createWorkerRepository } from "./job-runtime/worker-repository.js";
 export {
   createPostgresPersistence,
   type PostgresConnectionSettings,

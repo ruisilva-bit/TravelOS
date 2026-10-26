@@ -111,6 +111,7 @@ export const architecturePolicy = {
       packageName: "@travelos/worker",
       root: "apps/worker",
       layer: "worker-composition-root",
+      builtins: ["node:crypto", "node:fs/promises", "node:path"],
       workspace: [
         "@travelos/backend-core",
         "@travelos/config",
@@ -159,7 +160,7 @@ export const architecturePolicy = {
       packageName: "@travelos/database",
       root: "packages/database",
       layer: "database-adapter",
-      workspace: ["@travelos/backend-core"],
+      workspace: ["@travelos/backend-core", "@travelos/observability"],
       external: ["kysely", "pg"],
       builtins: ["node:async_hooks", "node:crypto"],
       exports: ["."],
@@ -188,7 +189,7 @@ export const architecturePolicy = {
       layer: "observability-adapter",
       workspace: [],
       external: ["nestjs-pino", "pino", "pino-http"],
-      builtins: [],
+      builtins: ["node:async_hooks", "node:crypto"],
       exports: ["."],
     }),
     unit({

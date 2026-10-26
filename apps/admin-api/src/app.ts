@@ -1,6 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters";
+import { createRequestTelemetry } from "@travelos/observability";
 
 import { AdminApiModule } from "./app.module.js";
 import { registerAdminAuthBridge, type AdminAuthBridgeOptions } from "./auth-bridge.js";
@@ -50,6 +51,7 @@ export const createAdminApi = async (
   });
   application.use(createAdminCacheControlMiddleware());
   application.use(createAdminHostValidationMiddleware(options.expectedHost));
+  application.use(createRequestTelemetry("admin-api"));
   application.use(
     createAdminOriginValidationMiddleware(options.auth?.policy.canonicalOrigin ?? null),
   );

@@ -21,6 +21,10 @@ export default defineConfig({
       },
       { find: "@travelos/config", replacement: source("packages/config/src/index.ts") },
       {
+        find: "@travelos/observability",
+        replacement: source("packages/observability/src/index.ts"),
+      },
+      {
         find: "@travelos/design-system",
         replacement: source("packages/design-system/src/index.ts"),
       },
