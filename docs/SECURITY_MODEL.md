@@ -62,6 +62,7 @@ Every new field declares classification, owner, Portal eligibility, retention an
 | IDOR/cross-Agency lookup | Agency-scoped repositories/composite FKs; generic errors | IDs, metadata, counts, timing, downloads |
 | Same-trip document leakage | independent DocumentGrant evaluated per request; protected downloads always traverse Portal API | grant/no-grant/revocation and previously issued URL tests |
 | Credential theft | TLS, HttpOnly host-only cookies, MFA, CSP, secret storage, rate limiting | cookie/header/no-JS auth tests |
+| Staff invitation replay or privilege escalation | Agency-scoped `staff.invite` plus recent MFA; single-use 60-minute token stored only as a SHA-256 digest; fixed role template; atomic enrollment/audit; no public signup | replay, expiry, revoke/reissue, concurrency, exact-role, rollback and pre-MFA denial tests |
 | CSRF | SameSite cookies, Origin/Host checks, framework CSRF tokens where required | cross-origin state-change denial |
 | Stored/reflected XSS | React escaping, sanitize rich text, restrictive CSP, no arbitrary HTML | payload suite and CSP tests |
 | Malicious upload | limits, streaming, type detection, quarantine, malware provider, immutable object key | EICAR/polyglot/archive-bomb tests |
@@ -88,6 +89,9 @@ Mandatory controls before production:
 - generic enrolment/reset responses; per-IP and per-identity throttles with bounded lockouts;
 - password reset/session refresh rotate tokens and prevent replay;
 - session IDs and reset/invitation/recovery tokens are hashed or stored according to library threat guidance; raw one-time tokens never logged;
+- Staff invitation tokens contain 32 cryptographically random bytes, are single-use, expire after 60 minutes, and are persisted only as a lowercase SHA-256 digest. The issuer-approved target email is bound to the invitation but is not independent proof of mailbox ownership; no email-delivery provider is implied;
+- invitation issue, list, reissue and revoke require a live Agency-scoped `staff.invite` permission and recent MFA no older than five minutes. Acceptance is available only through the invitation flow, uses POST-body credentials, and atomically enrolls the Staff identity, membership, fixed role assignment, invitation consumption and audit event;
+- invitation enrollment does not issue a session or usable Admin context. The invited Staff Principal must enable and verify TOTP before Staff authorization context or Admin business data is available. Public Staff signup remains disabled;
 - credential/MFA changes revoke other sessions and create Audit Events;
 - staff/Portal cookies use unique names, `Secure`, `HttpOnly`, appropriate `SameSite`, no parent-domain scope;
 - custom Portal domains receive isolated host cookies; Admin cookies never span them;

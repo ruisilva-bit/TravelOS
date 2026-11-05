@@ -51,6 +51,7 @@ const dependencyUniverse = await discoverProductionDependencyUniverse({
 });
 const expectedNonTypeScriptAssetDependencies = [
   "apps/admin-web/src/main.tsx\0@travelos/design-system/styles.css",
+  "apps/admin-web/src/staff-invitations-view.tsx\0./staff-invitations.css",
   "apps/portal-web/src/main.tsx\0@travelos/design-system/styles.css",
 ];
 const actualNonTypeScriptAssetDependencies = dependencyUniverse.nonTypeScriptAssetDependencies

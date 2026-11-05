@@ -2,8 +2,13 @@ import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { PortalAuthRealm, AuthSurfacePolicy } from "@travelos/auth-adapters/portal";
-import type { PortalTripSnapshotV1 } from "@travelos/contracts/portal";
 import type {
+  PortalAuthorizedTripListV1Response,
+  PortalTripSnapshotV1,
+} from "@travelos/contracts/portal";
+import type {
+  CurrentAuthorizedPortalTripListQuery,
+  CurrentAuthorizedPortalTripListReader,
   CurrentPublishedPortalTripSnapshotQuery,
   CurrentPublishedPortalTripSnapshotReader,
 } from "@travelos/portal-safe-core/customer-presentation";
@@ -31,6 +36,13 @@ const snapshot: PortalTripSnapshotV1 = {
   trip: { title: "Synthetic trip", startDate: "2027-04-01", endDate: "2027-04-04" },
   items: [],
 };
+const authorizedTripPage: PortalAuthorizedTripListV1Response = {
+  items: [
+    { tripId, publicationState: "PUBLISHED", snapshot },
+    { tripId: "00000000-0000-7000-8000-000000000073", publicationState: "NO_PUBLICATION" },
+  ],
+  nextCursor: null,
+};
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -56,11 +68,13 @@ const makePortalRealm = (events: string[] = []): PortalAuthRealm =>
 const apiOptions = (
   realm: PortalAuthRealm,
   reader: CurrentPublishedPortalTripSnapshotReader,
+  listReader?: CurrentAuthorizedPortalTripListReader,
 ): CreatePortalApiOptions =>
   ({
     expectedHost,
     auth: { realm, policy },
     tripSnapshotReader: reader,
+    ...(listReader === undefined ? {} : { tripListReader: listReader }),
   }) as unknown as CreatePortalApiOptions;
 
 const withPortalApi = async <T>(
@@ -83,6 +97,11 @@ const withPortalApi = async <T>(
 const requestTrip = (baseUrl: string, id = tripId, headers: Record<string, string> = {}) =>
   request(baseUrl)
     .get(`/api/portal/trips/${id}`)
+    .set({ Host: expectedHost, ...headers });
+
+const requestTripList = (baseUrl: string, query = "", headers: Record<string, string> = {}) =>
+  request(baseUrl)
+    .get(`/api/portal/trips${query}`)
     .set({ Host: expectedHost, ...headers });
 
 const readerReturning = (
@@ -234,6 +253,116 @@ describe("Portal current Trip HTTP read", () => {
       expect(response.headers["cache-control"]).toBe("no-store, private");
     });
 
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it("lists current authorized snapshots and no-publication markers with no-store", async () => {
+    const events: string[] = [];
+    let receivedQuery: CurrentAuthorizedPortalTripListQuery | undefined;
+    const listReader: CurrentAuthorizedPortalTripListReader = {
+      async listCurrentAuthorizedTrips(query) {
+        events.push("reader");
+        receivedQuery = query;
+        return authorizedTripPage;
+      },
+    };
+
+    await withPortalApi(
+      apiOptions(makePortalRealm(events), readerReturning(snapshot), listReader),
+      async (baseUrl) => {
+        const response = await requestTripList(baseUrl, "?limit=10", {
+          cookie: "travelos-dev-portal-session=portal-session",
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.headers["cache-control"]).toBe("no-store, private");
+        expect(response.body).toEqual(authorizedTripPage);
+      },
+    );
+
+    expect(events).toEqual(["session", "reader"]);
+    expect(receivedQuery).toEqual({
+      agencyId,
+      portalPrincipalId: "portal-principal-synthetic",
+      portalSessionId: "portal-session-synthetic",
+      authorizationEpoch: 4n,
+      limit: 10,
+      cursor: null,
+    });
+  });
+
+  it("rejects a Staff cookie before querying the authorized trip list", async () => {
+    const events: string[] = [];
+    const listReader: CurrentAuthorizedPortalTripListReader = {
+      listCurrentAuthorizedTrips: vi.fn(async () => authorizedTripPage),
+    };
+
+    await withPortalApi(
+      apiOptions(makePortalRealm(events), readerReturning(snapshot), listReader),
+      async (baseUrl) => {
+        const response = await requestTripList(baseUrl, "", {
+          cookie: "travelos-dev-staff-session=staff-session",
+        });
+
+        expect(response.status).toBe(401);
+        expect(response.text).toBe("");
+        expect(response.headers["cache-control"]).toBe("no-store, private");
+      },
+    );
+
+    expect(events).toEqual(["session"]);
+    expect(listReader.listCurrentAuthorizedTrips).not.toHaveBeenCalled();
+  });
+
+  it("rejects duplicate, unknown and out-of-range pagination before identity resolution", async () => {
+    const events: string[] = [];
+    const listReader: CurrentAuthorizedPortalTripListReader = {
+      listCurrentAuthorizedTrips: vi.fn(async () => authorizedTripPage),
+    };
+
+    await withPortalApi(
+      apiOptions(makePortalRealm(events), readerReturning(snapshot), listReader),
+      async (baseUrl) => {
+        for (const query of ["?limit=1&limit=2", "?unknown=1", "?limit=51", "?limit=0"]) {
+          const response = await requestTripList(baseUrl, query, {
+            cookie: "travelos-dev-portal-session=portal-session",
+          });
+          expect(response.status).toBe(400);
+          expect(response.text).toBe("");
+          expect(response.headers["cache-control"]).toBe("no-store, private");
+        }
+      },
+    );
+
+    expect(events).toEqual([]);
+    expect(listReader.listCurrentAuthorizedTrips).not.toHaveBeenCalled();
+  });
+
+  it("does not disclose list-reader diagnostics", async () => {
+    const sensitiveDiagnostic = "INTERNAL_ONLY-authorized-list-database-detail";
+    const events: string[] = [];
+    const listReader: CurrentAuthorizedPortalTripListReader = {
+      async listCurrentAuthorizedTrips() {
+        events.push("reader");
+        throw new Error(sensitiveDiagnostic);
+      },
+    };
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await withPortalApi(
+      apiOptions(makePortalRealm(events), readerReturning(snapshot), listReader),
+      async (baseUrl) => {
+        const response = await requestTripList(baseUrl, "", {
+          cookie: "travelos-dev-portal-session=portal-session",
+        });
+
+        expect(response.status).toBe(500);
+        expect(response.text).not.toContain(sensitiveDiagnostic);
+        expect(response.headers["cache-control"]).toBe("no-store, private");
+      },
+    );
+
+    expect(events).toEqual(["session", "reader"]);
     expect(log).not.toHaveBeenCalled();
   });
 });

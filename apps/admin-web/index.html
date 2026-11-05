@@ -1,13 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-PT">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>TravelOS — Development Foundation</title>
+    <meta name="theme-color" content="#f9fbfc" />
+    <title>TravelOS — Operações de viagem</title>
   </head>
   <body>
-    <div id="admin-root"></div>
+    <div id="admin-root">
+      <main class="auth-page">
+        <section class="auth-card" aria-labelledby="static-auth-title">
+          <a class="auth-card__brand" href="/">TravelOS <span>Staff</span></a>
+          <h1 id="static-auth-title">Entrar na equipa</h1>
+          <p class="auth-card__intro">Aceda ao espaço de operações da sua agência.</p>
+          <form
+            method="post"
+            action="/api/auth/staff/sign-in/email"
+            aria-labelledby="static-auth-title"
+          >
+            <div class="field">
+              <label for="static-staff-email">Email profissional</label>
+              <input
+                id="static-staff-email"
+                name="email"
+                type="email"
+                autocomplete="username"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="static-staff-password">Palavra-passe</label>
+              <input
+                id="static-staff-password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <button class="button button--primary" type="submit">Entrar</button>
+          </form>
+          <noscript><p>Ative JavaScript para concluir a autenticação com segurança.</p></noscript>
+        </section>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

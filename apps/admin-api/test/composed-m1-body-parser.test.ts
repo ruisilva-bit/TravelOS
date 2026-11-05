@@ -13,10 +13,12 @@ import {
   type M1TripSlice,
   type StaffAuthorizationSnapshot,
   type StaffPermissionId,
+  type StaffInvitationOperations,
 } from "@travelos/backend-core";
 
 import { createAdminApi } from "../src/app.js";
 import { createAdminStaffSessionResolver } from "../src/m1-session-resolver.js";
+import { createStaffInvitationRateLimiter } from "../src/staff-invitation-rate-limit.js";
 
 const agencyId = "00000000-0000-7000-8000-000000000001";
 const syntheticEmail = ["synthetic", "example.test"].join(String.fromCharCode(64));
@@ -187,6 +189,9 @@ const startAuthorizedAdminApi = async (failCreate = false) => {
   const createM1TripSlice = vi.fn().mockResolvedValue(authorizedTripSlice);
   if (failCreate) createM1TripSlice.mockRejectedValue(new Error("synthetic application failure"));
   const repository: M1OperationalSliceRepository = {
+    createTripWorkspace: vi
+      .fn()
+      .mockRejectedValue(new Error("Unexpected minimal workspace creation in body-parser test")),
     createM1TripSlice,
     getM1TripSlice: vi.fn().mockResolvedValue(authorizedTripSlice),
     updateAccommodation: vi.fn().mockResolvedValue(authorizedTripSlice),
@@ -219,6 +224,9 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
       getServerSession: vi.fn().mockResolvedValue(null),
     } as unknown as AuthRealm;
     const m1Repository: M1OperationalSliceRepository = {
+      createTripWorkspace: vi
+        .fn()
+        .mockRejectedValue(new Error("Unexpected minimal workspace creation in body-parser test")),
       createM1TripSlice: vi.fn(),
       getM1TripSlice: vi.fn(),
       updateAccommodation: vi.fn(),
@@ -365,6 +373,93 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
       expect(response.status).toBe(500);
       expect(response.headers["cache-control"]).toBe("private, no-store");
       expect(repository.createM1TripSlice).toHaveBeenCalledOnce();
+    } finally {
+      await application.close();
+    }
+  });
+
+  it("mounts invitation acceptance behind composed Host/Origin checks and parses strict JSON", async () => {
+    const accept = vi.fn(async () => ({ accepted: true as const }));
+    const staffInvitationOperations: StaffInvitationOperations = {
+      list: vi.fn(async () => ({ items: [], nextCursor: null })),
+      issue: vi.fn(async () => {
+        throw new Error("Unexpected invitation issue in body-parser test");
+      }),
+      reissue: vi.fn(async () => {
+        throw new Error("Unexpected invitation reissue in body-parser test");
+      }),
+      revoke: vi.fn(async () => {
+        throw new Error("Unexpected invitation revoke in body-parser test");
+      }),
+      accept,
+    };
+    const getServerSession = vi.fn(async () => null);
+    const realm: AuthRealm = {
+      kind: "STAFF",
+      basePath: STAFF_AUTH_BASE_PATH,
+      cookieName: "travelos-dev-staff-session",
+      secureTransportRequired: false,
+      async handle() {
+        return new Response("staff-auth", { status: 200 });
+      },
+      getServerSession,
+    };
+    const application = await createAdminApi({
+      expectedHost,
+      auth: {
+        realm,
+        policy,
+        staffAccessRepository: { getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue(null) },
+        staffInvitationOperations,
+        staffInvitationRateLimiter: createStaffInvitationRateLimiter(),
+      },
+    });
+    const body = {
+      token: "c".repeat(43),
+      name: "QA Staff",
+      password: "synthetic-test-value-not-a-credential",
+    };
+    try {
+      const server = application.getHttpServer();
+      const wrongHost = await request(server)
+        .post("/api/staff/invitations/accept")
+        .set("Host", "attacker.example.test")
+        .set("Origin", canonicalOrigin)
+        .set("Content-Type", "application/json")
+        .send("{");
+      expect(wrongHost.status).toBe(404);
+      expect(wrongHost.text).toBe("");
+      expect(wrongHost.headers["cache-control"]).toBe("private, no-store");
+
+      const wrongOrigin = await request(server)
+        .post("/api/staff/invitations/accept")
+        .set("Host", expectedHost)
+        .set("Origin", "https://attacker.example.test")
+        .set("Content-Type", "application/json")
+        .send("{");
+      expect(wrongOrigin.status).toBe(403);
+      expect(wrongOrigin.text).toBe("");
+      expect(wrongOrigin.headers["cache-control"]).toBe("private, no-store");
+
+      const accepted = await request(server)
+        .post("/api/staff/invitations/accept")
+        .set("Host", expectedHost)
+        .set("Origin", canonicalOrigin)
+        .set("X-Forwarded-For", "198.51.100.71")
+        .send(body);
+      expect(accepted.status).toBe(204);
+      expect(accepted.text).toBe("");
+      expect(accepted.headers["cache-control"]).toBe("private, no-store");
+      expect(accept).toHaveBeenCalledWith(body);
+      expect(getServerSession).not.toHaveBeenCalled();
+
+      const extraAgency = await request(server)
+        .post("/api/staff/invitations/accept")
+        .set("Host", expectedHost)
+        .set("Origin", canonicalOrigin)
+        .send({ ...body, agencyId });
+      expect(extraAgency.status).toBe(400);
+      expect(accept).toHaveBeenCalledOnce();
     } finally {
       await application.close();
     }

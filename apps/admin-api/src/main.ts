@@ -1,9 +1,15 @@
 import "reflect-metadata";
 
-import { createStaffAuthRealm } from "@travelos/auth-adapters";
+import {
+  createStaffAuthRealm,
+  createStaffInvitationEnrollmentService,
+  createStaffInvitationToken,
+  digestStaffInvitationToken,
+} from "@travelos/auth-adapters";
 import {
   createM1RuntimeAcceptanceFixtureOperations,
   createM1StaffTripAccessOperations,
+  createStaffInvitationOperations,
 } from "@travelos/backend-core";
 import {
   loadDevelopmentInstanceManifest,
@@ -14,14 +20,18 @@ import {
   createPostgresM1StaffTripAccessRepository,
   createPostgresM1StaffTripPublicationOperations,
   createPostgresM1StaffTripOperations,
+  createPostgresM1StaffTripWorkspaceOperations,
+  createPostgresM1StaffTripWorkspaceWriteOperations,
   createPostgresRuntimeAcceptanceFixtureCleanupRepository,
   createPostgresPersistence,
   createStaffAccessRepository,
+  createPostgresStaffInvitationRepository,
 } from "@travelos/database";
 import { AdminTripPublicationPreviewV1Schema } from "@travelos/contracts/admin";
 
 import { createAdminApi, type CreateAdminApiOptions } from "./app.js";
 import { createAdminStaffSessionResolver } from "./m1-session-resolver.js";
+import { createStaffInvitationRateLimiter } from "./staff-invitation-rate-limit.js";
 
 const readRequiredArgument = (name: string): string => {
   const prefix = `${name}=`;
@@ -77,6 +87,14 @@ const createAdminAuthOptions = async (
     const staffAccessRepository = createStaffAccessRepository(persistence);
     const sessionResolver = createAdminStaffSessionResolver(realm, policy);
     const m1Operations = createPostgresM1StaffTripOperations(persistence, sessionResolver);
+    const m1WorkspaceOperations = createPostgresM1StaffTripWorkspaceOperations(
+      persistence,
+      sessionResolver,
+    );
+    const m1WorkspaceWriteOperations = createPostgresM1StaffTripWorkspaceWriteOperations(
+      persistence,
+      sessionResolver,
+    );
     const m1TripAccessOperations = createM1StaffTripAccessOperations({
       repository: createPostgresM1StaffTripAccessRepository(persistence),
       authorizationRepository: staffAccessRepository,
@@ -89,6 +107,28 @@ const createAdminAuthOptions = async (
         validate: (value) => void AdminTripPublicationPreviewV1Schema.shape.projection.parse(value),
       },
     );
+    const staffInvitationOperations = createStaffInvitationOperations({
+      repository: createPostgresStaffInvitationRepository(persistence),
+      authorizationRepository: staffAccessRepository,
+      sessionResolver,
+      tokenFactory: {
+        create: createStaffInvitationToken,
+        digest: digestStaffInvitationToken,
+      },
+      identityEnrollment: {
+        enroll: (context, input) =>
+          persistence.withTransactionContext(context, async (database) =>
+            createStaffInvitationEnrollmentService({
+              database,
+              canonicalOrigin: policy.canonicalOrigin,
+              realmKeyMaterial,
+              environment: manifest.environment,
+            }).enroll(input),
+          ),
+      },
+      nowEpochMs: Date.now,
+    });
+    const staffInvitationRateLimiter = createStaffInvitationRateLimiter();
     const runtimeAcceptanceFixtureOperations =
       manifest.environment === "DEVELOPMENT"
         ? createM1RuntimeAcceptanceFixtureOperations({
@@ -108,8 +148,12 @@ const createAdminAuthOptions = async (
           environment: manifest.environment,
           staffAccessRepository,
           m1Operations,
+          m1WorkspaceOperations,
+          m1WorkspaceWriteOperations,
           m1TripAccessOperations,
           m1PublicationOperations,
+          staffInvitationOperations,
+          staffInvitationRateLimiter,
           ...(runtimeAcceptanceFixtureOperations === undefined
             ? {}
             : {

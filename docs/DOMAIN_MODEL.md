@@ -33,6 +33,7 @@ TravelOS models the commercial and operational continuity of agency travel while
 | Publication | Immutable versioned customer projection made active explicitly |
 | Portal Principal | Customer-realm login that has only explicit Portal grants |
 | Document Grant | Explicit permission for one Portal Principal to access a document/version in scope |
+| Staff Invitation | Agency-scoped, single-use authorization to enrol a Staff Principal with one fixed lower-privilege role |
 | Activity Entry | Human-readable operational history item |
 | Audit Event | Append-only security/accountability evidence |
 | Domain Event | Immutable domain fact meaningful inside a bounded context |
@@ -116,6 +117,8 @@ Solid arrows mean stable identifiers/contracts, not shared ORM objects. Dotted p
 - **StaffPrincipal** is a credential/session identity.
 - **StaffMembership** connects it to the single Agency and can be suspended independently.
 - **Role** holds references to a code-owned Permission registry; assignments carry scope.
+- Staff enrolment is invitation-only. A valid invitation is bound to the issuer-approved target email and the fixed `trip-operations-v1` template; acceptance creates the Staff identity, active membership, Agency-scoped role assignment, invitation consumption and audit event in one transaction.
+- The invitation is single-use and expires after 60 minutes. The approved email binding is not an independent mailbox-verification claim. Enrolment issues no session; the invited Staff Principal receives no usable Admin context until TOTP MFA is enabled and verified.
 - The last active Owner cannot remove/suspend themself or eliminate all Owners.
 
 ### CRM

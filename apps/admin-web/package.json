@@ -7,7 +7,9 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@travelos/contracts": "workspace:*",
     "@travelos/design-system": "workspace:*",
+    "better-auth": "1.6.27",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },

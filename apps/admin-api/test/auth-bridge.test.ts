@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { STAFF_AUTH_BASE_PATH, type AuthRealm } from "@travelos/auth-adapters";
+import { STAFF_INVITATION_RECENT_MFA_MAXIMUM_AGE_MS } from "@travelos/backend-core";
 
 import { registerAdminAuthBridge } from "../src/auth-bridge.js";
 
@@ -43,7 +44,10 @@ const policy = {
   expectedHost: "admin.travelos.test",
 };
 
-const staffRealm = (overrides: Partial<AuthRealm> = {}): AuthRealm => ({
+const staffRealm = (
+  overrides: Partial<AuthRealm> = {},
+  recentMfaVerifiedAtEpochMs = Date.now() - 1_000,
+): AuthRealm => ({
   kind: "STAFF",
   basePath: "/api/auth/staff",
   cookieName: "travelos-dev-staff-session",
@@ -59,7 +63,7 @@ const staffRealm = (overrides: Partial<AuthRealm> = {}): AuthRealm => ({
       expiresAtEpochMs: Date.now() + 60_000,
       agencyId: "00000000-0000-7000-8000-000000000001",
       authorizationEpoch: 7n,
-      recentMfaVerifiedAtEpochMs: Date.now() - 1_000,
+      recentMfaVerifiedAtEpochMs,
     };
   },
   ...overrides,
@@ -140,6 +144,7 @@ describe("Admin Staff auth bridge", () => {
         agencyId: "00000000-0000-7000-8000-000000000001",
         authorizationEpoch: "7",
         recentMfaVerifiedAtEpochMs: expect.any(Number),
+        canInviteStaff: false,
       },
     });
     expect(options.staffAccessRepository.getStaffAuthorizationSnapshot).toHaveBeenCalledWith(
@@ -157,6 +162,30 @@ describe("Admin Staff auth bridge", () => {
       status: 403,
       headers: { "cache-control": "private, no-store" },
     });
+  });
+
+  it("derives the invitation UI hint from live Agency permission and recent MFA", async () => {
+    const permittedExpress = new FakeExpress();
+    registerAdminAuthBridge(
+      { getHttpAdapter: () => ({ getInstance: () => permittedExpress }) },
+      bridgeOptions(7n, true),
+    );
+    const permitted = await invoke(
+      permittedExpress.routes.get("/api/staff/session-context")!,
+      sessionContextRequest(),
+    );
+    expect(permitted.body).toMatchObject({ canInviteStaff: true });
+
+    const staleMfaExpress = new FakeExpress();
+    registerAdminAuthBridge(
+      { getHttpAdapter: () => ({ getInstance: () => staleMfaExpress }) },
+      bridgeOptions(7n, true, STAFF_INVITATION_RECENT_MFA_MAXIMUM_AGE_MS + 1),
+    );
+    const staleMfa = await invoke(
+      staleMfaExpress.routes.get("/api/staff/session-context")!,
+      sessionContextRequest(),
+    );
+    expect(staleMfa.body).toMatchObject({ canInviteStaff: false });
   });
 
   it("marks every auth-surface rejection and session denial as private and non-storable", async () => {
@@ -243,7 +272,7 @@ describe("Admin Staff auth bridge", () => {
   });
 });
 
-function bridgeOptions(epoch = 7n) {
+function bridgeOptions(epoch = 7n, invitationPermission = false, recentMfaAgeMs = 1_000) {
   const getStaffAuthorizationSnapshot = vi.fn(
     async (staffPrincipalId: string, requestedAgencyId: string) => ({
       staffPrincipalId,
@@ -259,11 +288,23 @@ function bridgeOptions(epoch = 7n) {
           accessLevel: "ALL" as const,
           active: true,
         },
+        ...(invitationPermission
+          ? [
+              {
+                agencyId: requestedAgencyId,
+                permissionId: "staff.invite" as const,
+                scopeKind: "AGENCY" as const,
+                organizationUnitId: null,
+                accessLevel: "ALL" as const,
+                active: true,
+              },
+            ]
+          : []),
       ],
     }),
   );
   return {
-    realm: staffRealm(),
+    realm: staffRealm({}, Date.now() - recentMfaAgeMs),
     policy,
     staffAccessRepository: { getStaffAuthorizationSnapshot },
   };

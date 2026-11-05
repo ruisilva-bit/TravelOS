@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "phase": "functional-journeys-complete",
+  "artifactId": "travelos-stage9-gen11-d6610462",
+  "sourceSnapshotSha256": "d661046212cc291122ae126953bdedf93fcac15b3a4928bf5f9b25b0354488e9",
+  "marker": "stage9-final-f089acaa-f319-4b32-9f2a-93e473fbef9d",
+  "actor": "Alex — dedicated synthetic invitation-created Trip Operations Staff, never Owner for business QA",
+  "environment": "CT200 DEVELOPMENT through actual Caddy/Admin/Portal APIs",
+  "startedAt": "2026-11-05T13:25:36.912Z",
+  "completedAt": "2026-11-05T13:26:14.613Z",
+  "resources": {
+    "invitationId": "01a1abe2-f2bc-7b82-a14d-3c6ee90862d4",
+    "authorizedPortalPrincipalId": "dIXBWnmi4dmh01fLKaqljWvDC33DCySp",
+    "ungrantedPortalPrincipalId": "XAHWz84LwMua9Xkn32U0wqO6ORAjrVq2",
+    "staffPrincipalId": "700AazNfnNpy1uUDYu5bl6KkVdgIT6Du",
+    "agencyId": "01a12fce-10c0-7e4e-a4d5-d91cb40b07fc",
+    "readOnlyExistingDenialTripId": "01a12fce-1877-78d4-9d2e-04fcafdc669e",
+    "createdTripId": "01a1abe3-31c8-7e8e-91af-fdd292c0a604",
+    "grantIds": [
+      "01a1abe3-3252-7fca-a102-27c786218c2c"
+    ],
+    "screenshotCount": 12,
+    "axeScanCount": 20,
+    "createdFlightId": "01a1abe3-3756-7a15-aaaa-6a5944b08681",
+    "createdAccommodationId": "01a1abe3-3c11-7f73-bb83-af4d0bd82cd4",
+    "workspaceRevisions": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ]
+  },
+  "probes": [
+    "synthetic-staff-created-through-real-invitation-ui",
+    "admin-context-denied-before-mfa-http-401",
+    "native-mfa-enrollment-and-owner-capability-denial",
+    "full-live-admin-create-edit-preview-publish-v1-v2-portal-immutable-denial"
+  ],
+  "cleanup": {
+    "ownerSessionRevoked": true,
+    "ownedBrowserContextsClosed": true,
+    "issuedGrantsRevoked": true,
+    "retention": "Synthetic identities, Trip/Customer/Traveller/items, immutable publication/audit/outbox records retained under the unique marker; no invented hard-delete endpoint or SQL deletion.",
+    "verified": true
+  },
+  "browser": {
+    "result": "PASS",
+    "actualOrigins": [
+      "http://admin.travelos.test",
+      "http://portal.travelos.test"
+    ],
+    "transport": "real CT200 Caddy, no mocked API or local replica",
+    "resolution": "Chromium-process-only exact host maps to 192.168.1.33",
+    "runnerScopeCorrection": "The reused helper hardcodes an isolated-loopback scope label. Its unchanged raw output is preserved; this wrapper records and asserts the actual installed-target origins and process-only resolver. It is not disposable-target evidence.",
+    "rawHelperReport": {
+      "path": "browser/browser-acceptance.json",
+      "bytes": 5136,
+      "sha256": "220c6c73adeb9b914d42d0cd3ba11b344a9fd40be2f4417ca0096e9c9f040015"
+    },
+    "viewports": [
+      1280,
+      768,
+      390,
+      320
+    ],
+    "journeys": [
+      "Staff password login and TOTP MFA",
+      "Admin overview, Trip creation and editing with Customer and primary Traveller, Flight and Accommodation creation/edit, and direct Trip detail reload",
+      "Admin publication preview, immutable v1/v2 publication history, and stale workspace isolation",
+      "Staff edits Trip, Flight, and Accommodation through Admin; Portal v1 remains immutable and v2 appears only after republish",
+      "Portal ungranted list denial and direct-detail HTTP 404",
+      "Independent Staff and Portal cookies, logout, and browser-storage checks",
+      "Mobile navigation open, aria-expanded, Escape close, focus restoration, and link navigation"
+    ],
+    "accessibility": {
+      "scans": 20,
+      "violations": 0
+    },
+    "network": {
+      "consoleErrors": 0,
+      "expectedHttpResourceErrors": 6,
+      "clientErrors": [
+        "GET /api/portal/session-context 401",
+        "GET /api/portal/session-context 401",
+        "GET /api/portal/session-context 401",
+        "GET /api/portal/trips/01a12fce-1877-78d4-9d2e-04fcafdc669e 404",
+        "GET /api/staff/session-context 401",
+        "GET /api/staff/session-context 401"
+      ],
+      "pageErrors": 0,
+      "failedRequests": [
+        "GET /api/portal/session-context net::ERR_ABORTED",
+        "GET /api/portal/trips/01a12fce-1877-78d4-9d2e-04fcafdc669e net::ERR_ABORTED",
+        "GET /api/staff/session-context net::ERR_ABORTED"
+      ],
+      "serverErrors": [],
+      "staticHttpErrors": [],
+      "externalOriginCount": 0,
+      "sensitiveQueryObserved": false,
+      "adminApiPaths": [
+        "GET /api/admin/trips",
+        "GET /api/admin/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604/publication-preview",
+        "GET /api/admin/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604/publications",
+        "GET /api/admin/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604/workspace",
+        "GET /api/staff/session-context",
+        "PATCH /api/admin/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604/workspace",
+        "PATCH /api/admin/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604/workspace/accommodations/01a1abe3-3c11-7f73-bb83-af4d0bd82cd4",
+        "PATCH /api/admin/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604/workspace/flights/01a1abe3-3756-7a15-aaaa-6a5944b08681",
+        "POST /api/admin/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604/publications",
+        "POST /api/admin/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604/workspace/accommodations",
+        "POST /api/admin/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604/workspace/flights",
+        "POST /api/admin/trips/workspace",
+        "POST /api/auth/staff/sign-in/email",
+        "POST /api/auth/staff/sign-out",
+        "POST /api/auth/staff/two-factor/verify-totp"
+      ],
+      "portalApiPaths": [
+        "GET /api/portal/session-context",
+        "GET /api/portal/trips",
+        "GET /api/portal/trips/01a12fce-1877-78d4-9d2e-04fcafdc669e",
+        "GET /api/portal/trips/01a1abe3-31c8-7e8e-91af-fdd292c0a604",
+        "POST /api/auth/portal/sign-in/email",
+        "POST /api/auth/portal/sign-out"
+      ]
+    },
+    "isolation": {
+      "staffCookieHttpOnly": true,
+      "portalCookieHttpOnly": true,
+      "crossRealmCookieLeak": false,
+      "portalWorkspaceFallback": false,
+      "portalV1IncludesFlight": true,
+      "portalV1UnchangedAfterAccommodationEdit": true,
+      "portalV1UnchangedAfterWorkspaceEdits": true,
+      "portalV2IncludesFlight": true,
+      "portalV2IncludesRevisedTripAndFlight": true,
+      "portalV2VisibleAfterRepublish": true,
+      "ungrantedTripListEmpty": true,
+      "ungrantedTripSnapshotStatus": 404
+    },
+    "screenshots": [
+      "screenshots/admin-overview-desktop-1280.png",
+      "screenshots/admin-trip-create-form-desktop-1280.png",
+      "screenshots/admin-flight-create-form-desktop-1280.png",
+      "screenshots/admin-publication-v1-preview-desktop-1280.png",
+      "screenshots/admin-trip-detail-desktop-1280.png",
+      "screenshots/admin-trip-list-mobile-390.png",
+      "screenshots/portal-trip-list-desktop-1280.png",
+      "screenshots/admin-trip-edit-form-desktop-1280.png",
+      "screenshots/admin-flight-edit-form-desktop-1280.png",
+      "screenshots/portal-trip-detail-v1-after-workspace-edit-desktop-1280.png",
+      "screenshots/portal-trip-detail-v2-desktop-1280.png",
+      "screenshots/portal-trip-list-mobile-390.png"
+    ]
+  },
+  "execution": {
+    "wrapperSha256": "1c031a03f2ff582ed6da748eaff0c700906c188fa998837e2305d32582336edc",
+    "operatorSha256": "a39f34f372d9fd94a4025a6739884b4e97d82627a2f4d43bad5884c8ad4fe194",
+    "qaBrowserLaunches": 2,
+    "canonicalCiInvoked": false
+  },
+  "stage10Actions": 0
+}

@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "stage": "PHASE_1_M1_STAGE_9",
+  "candidate": "gen11",
+  "predecessor": "a5cac93bbaa0214456739f7b571795ca8080bfb6",
+  "phase0": {
+    "path": "docs/reviews/PHASE_0_ACCEPTED_BASELINE.md",
+    "sha256": "bcec4e4cd4b2c4b85263c09c64a5452db306fcf68414947231b35d300f59b1fb"
+  },
+  "originalVerifier": {
+    "path": "tooling/ci/verify-protected-baseline.mjs",
+    "sha256": "c6ba5ebb1ea9657d52a198b297805267df13b9eae44c1c2fe84e6ce9921fd36e"
+  },
+  "approvedDeltaPaths": [
+    "docs/DATA_MODEL.md",
+    "docs/DOMAIN_MODEL.md",
+    "docs/PERMISSIONS.md",
+    "docs/PRODUCT_BLUEPRINT.md",
+    "docs/SECURITY_MODEL.md"
+  ],
+  "design": {
+    "path": "docs/superpowers/specs/2026-11-02-stage9-staff-invitation-design.md",
+    "bytes": 12227,
+    "sha256": "ac63ff20260c66f17c658f7e1bd52d59b8ad1563ebe2d2ccdbfe74b93b7d7d39"
+  },
+  "plan": {
+    "path": "docs/superpowers/plans/2026-11-02-stage9-staff-invitation-implementation-plan.md",
+    "bytes": 35447,
+    "sha256": "36848575440d47a16bd0488af600a81b4e417e2a8939b22c79511c8aa12e6f03"
+  },
+  "serialization": "SHA-256 of UTF-8 two-space JSON payload excluding aggregateSha256, final LF",
+  "protectedFiles": [
+    {
+      "path": ".hermes/phase0-sources.json",
+      "predecessorSha256": "6e097d8bc5dcaf49a216907b1a486a42cdf8d568bc13570e93712647122d610f",
+      "bytes": 2494,
+      "sha256": "6e097d8bc5dcaf49a216907b1a486a42cdf8d568bc13570e93712647122d610f"
+    },
+    {
+      "path": "AGENTS.md",
+      "predecessorSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "bytes": 11014,
+      "sha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340"
+    },
+    {
+      "path": "docs/adr/ADR-001-modular-monolith.md",
+      "predecessorSha256": "d97f3583b944f72baa9d7cd5cf8af029a722003d67102fe08e426cacf08206f4",
+      "bytes": 1733,
+      "sha256": "d97f3583b944f72baa9d7cd5cf8af029a722003d67102fe08e426cacf08206f4"
+    },
+    {
+      "path": "docs/adr/ADR-002-dedicated-single-tenant-deployment.md",
+      "predecessorSha256": "8eb647415c7e098f040eb77c11c5517ebfeefe41d6cf864565f5fadf2b56038f",
+      "bytes": 1773,
+      "sha256": "8eb647415c7e098f040eb77c11c5517ebfeefe41d6cf864565f5fadf2b56038f"
+    },
+    {
+      "path": "docs/adr/ADR-003-independent-database-per-instance.md",
+      "predecessorSha256": "b93d2f91fbe51f7ce59692d9fec25c47d0c0d74cc4bed32f19574e1da53db19d",
+      "bytes": 1569,
+      "sha256": "b93d2f91fbe51f7ce59692d9fec25c47d0c0d74cc4bed32f19574e1da53db19d"
+    },
+    {
+      "path": "docs/adr/ADR-004-immutable-publishing-snapshots.md",
+      "predecessorSha256": "f4e3d1d272148e99873cfab0058b8126c104d724ab894fafa56488fabd9b8ef4",
+      "bytes": 2605,
+      "sha256": "f4e3d1d272148e99873cfab0058b8126c104d724ab894fafa56488fabd9b8ef4"
+    },
+    {
+      "path": "docs/adr/ADR-005-structured-itinerary-model.md",
+      "predecessorSha256": "ccef302ec616315b6f6ce2ae9e574acb0e18a3e56542e0286065f32ccfd060b5",
+      "bytes": 1834,
+      "sha256": "ccef302ec616315b6f6ce2ae9e574acb0e18a3e56542e0286065f32ccfd060b5"
+    },
+    {
+      "path": "docs/adr/ADR-006-provider-based-integration-architecture.md",
+      "predecessorSha256": "1f276f9568fbdd054a0f8819352c13195932ebdc2a91d265ac24dd99da49c775",
+      "bytes": 2082,
+      "sha256": "1f276f9568fbdd054a0f8819352c13195932ebdc2a91d265ac24dd99da49c775"
+    },
+    {
+      "path": "docs/adr/ADR-007-separate-staff-and-portal-identity-realms.md",
+      "predecessorSha256": "5ad4ddd4fcd832854fac3ff117212ce8788e323dda5fe0f79deaf5946047ac2f",
+      "bytes": 1673,
+      "sha256": "5ad4ddd4fcd832854fac3ff117212ce8788e323dda5fe0f79deaf5946047ac2f"
+    },
+    {
+      "path": "docs/adr/ADR-008-rbac-with-explicit-resource-scopes.md",
+      "predecessorSha256": "451db1e893346802160db8dc52e0f12ac6e7993d3e1137f840efe7d3d6721e14",
+      "bytes": 1661,
+      "sha256": "451db1e893346802160db8dc52e0f12ac6e7993d3e1137f840efe7d3d6721e14"
+    },
+    {
+      "path": "docs/adr/ADR-009-transactional-outbox-and-postgresql-jobs.md",
+      "predecessorSha256": "08960ecbc796c637f09aa410100a0b33d6002089c2b84d598dbc00ae5f752388",
+      "bytes": 2874,
+      "sha256": "08960ecbc796c637f09aa410100a0b33d6002089c2b84d598dbc00ae5f752388"
+    },
+    {
+      "path": "docs/adr/ADR-010-exact-money-and-currency-representation.md",
+      "predecessorSha256": "5a52e10ddf151b7df12c440ead18fe2c1dadc5db02f1d3890284b3b30e713feb",
+      "bytes": 1846,
+      "sha256": "5a52e10ddf151b7df12c440ead18fe2c1dadc5db02f1d3890284b3b30e713feb"
+    },
+    {
+      "path": "docs/adr/ADR-011-document-storage-and-explicit-access-grants.md",
+      "predecessorSha256": "9beb7c8862067e842eded1ee1ff0bdb008c4391d0d5c9a2e141d7ba6172abca6",
+      "bytes": 3404,
+      "sha256": "9beb7c8862067e842eded1ee1ff0bdb008c4391d0d5c9a2e141d7ba6172abca6"
+    },
+    {
+      "path": "docs/adr/ADR-012-persistence-boundary-and-fleet-safe-migrations.md",
+      "predecessorSha256": "298dc1625a2d054490250db047131411a9e2ad34acac020ee521017dd72d93e7",
+      "bytes": 2356,
+      "sha256": "298dc1625a2d054490250db047131411a9e2ad34acac020ee521017dd72d93e7"
+    },
+    {
+      "path": "docs/adr/ADR-013-monorepo-web-runtime-and-build-orchestration.md",
+      "predecessorSha256": "d98881a785973d0f89da8c0ec372899932c310bf0acdad34d61e7fcb6538ce69",
+      "bytes": 1821,
+      "sha256": "d98881a785973d0f89da8c0ec372899932c310bf0acdad34d61e7fcb6538ce69"
+    },
+    {
+      "path": "docs/adr/ADR-014-durable-privacy-erasure-across-backups.md",
+      "predecessorSha256": "b0effe71de4f52570245d9e789ef018912a00d2bf1ba09aa16110fb75e3175c7",
+      "bytes": 5063,
+      "sha256": "b0effe71de4f52570245d9e789ef018912a00d2bf1ba09aa16110fb75e3175c7"
+    },
+    {
+      "path": "docs/adr/README.md",
+      "predecessorSha256": "c2ee6d59b7e8bd2a153381a8f9a8bbac2a0f07d8ead680a6b6ed5d8814f901da",
+      "bytes": 2248,
+      "sha256": "c2ee6d59b7e8bd2a153381a8f9a8bbac2a0f07d8ead680a6b6ed5d8814f901da"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "predecessorSha256": "5a6293b167ed591c3e1f7bf4a7bf8ca99ace838ec038dd6f97b7f44fbd1e6ec3",
+      "bytes": 22908,
+      "sha256": "5a6293b167ed591c3e1f7bf4a7bf8ca99ace838ec038dd6f97b7f44fbd1e6ec3"
+    },
+    {
+      "path": "docs/DATA_MODEL.md",
+      "predecessorSha256": "f919e688ad9b42d804333d3d8e1355fe070176a704e73f523fc83bb6d82949b3",
+      "bytes": 23882,
+      "sha256": "9f46b7edf242420bd5ab229b6a9b6229b451014ffd244e6afb35dbd40d4ae9eb"
+    },
+    {
+      "path": "docs/DEPLOYMENT_MODEL.md",
+      "predecessorSha256": "de6c2ed3890558b7802c041b40677c8d2147f3221d5de812884724c4e5e108ee",
+      "bytes": 15279,
+      "sha256": "de6c2ed3890558b7802c041b40677c8d2147f3221d5de812884724c4e5e108ee"
+    },
+    {
+      "path": "docs/DESIGN_SYSTEM.md",
+      "predecessorSha256": "9dfb3ac7e92ae4253e17d32d47ba8b68a728c2fd2a99fc76f52c0c9f7f9bddac",
+      "bytes": 9801,
+      "sha256": "9dfb3ac7e92ae4253e17d32d47ba8b68a728c2fd2a99fc76f52c0c9f7f9bddac"
+    },
+    {
+      "path": "docs/DOMAIN_MODEL.md",
+      "predecessorSha256": "4979ddb6dd8e937f548164572b6972afc12fe0c740ca08d233d8e6523808455d",
+      "bytes": 16873,
+      "sha256": "d6783437b44a9ba4dd056143b08daeb64df4ed2c7718a691d3c1b2963de2ef54"
+    },
+    {
+      "path": "docs/PERMISSIONS.md",
+      "predecessorSha256": "ad036b8647f4482bc5e59bff09e5adbf653a4d3ed3994a20cd5b201d104ea1d9",
+      "bytes": 11413,
+      "sha256": "05835691eb3d6c7f465fe30807d95b94d90f3b5c1b08578f5cc1cec5614e9ef5"
+    },
+    {
+      "path": "docs/PRODUCT_BLUEPRINT.md",
+      "predecessorSha256": "c46e9e980da83e3c5d0c5816431195b8bf0b33a9a8e403533d28ec5ae8d37ecf",
+      "bytes": 16010,
+      "sha256": "e7758291d53f0d5c0ec629664d83cbc062147d64a35cb64b6784939cf0b8e294"
+    },
+    {
+      "path": "docs/PUBLISHING_MODEL.md",
+      "predecessorSha256": "def308a38f423be7902308ba665fe97ac5d585715c056f880e02adc6493aa5e4",
+      "bytes": 12228,
+      "sha256": "def308a38f423be7902308ba665fe97ac5d585715c056f880e02adc6493aa5e4"
+    },
+    {
+      "path": "docs/README.md",
+      "predecessorSha256": "fcdb512c3f5d669e54a56871eff60c7bf3101ce39996af77105e8ff516bd636b",
+      "bytes": 3049,
+      "sha256": "fcdb512c3f5d669e54a56871eff60c7bf3101ce39996af77105e8ff516bd636b"
+    },
+    {
+      "path": "docs/reviews/AGENTS_CANDIDATE.md",
+      "predecessorSha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340",
+      "bytes": 11014,
+      "sha256": "224d6f1da3c389b97002fadc9b9ee1c60f14c8c3d20df6334f91e0a34df6a340"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_ARCHITECTURE_REVIEW.md",
+      "predecessorSha256": "32ee880861bad548feca777c8be813cb30ff21752daa90587686ca00f17936cd",
+      "bytes": 8233,
+      "sha256": "32ee880861bad548feca777c8be813cb30ff21752daa90587686ca00f17936cd"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_CANDIDATE_FREEZE.md",
+      "predecessorSha256": "06bf41b770f830d6a110422f21c8fb23ef54b30884e91d3c474b370c7638d3e4",
+      "bytes": 3057,
+      "sha256": "06bf41b770f830d6a110422f21c8fb23ef54b30884e91d3c474b370c7638d3e4"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_CORRECTED_CANDIDATE_FREEZE.md",
+      "predecessorSha256": "d30c414d057bc33bc72cde30a91454ef1f651ca0a10a7e9cfa19b4d18a2fcc8a",
+      "bytes": 4879,
+      "sha256": "d30c414d057bc33bc72cde30a91454ef1f651ca0a10a7e9cfa19b4d18a2fcc8a"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_FINAL_GATE.md",
+      "predecessorSha256": "0a2f3277f55c1fc2bb27ec832f9becb4086fcce658d3d0cb7e5c505d6a3ec595",
+      "bytes": 5203,
+      "sha256": "0a2f3277f55c1fc2bb27ec832f9becb4086fcce658d3d0cb7e5c505d6a3ec595"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_PO_ADJUSTMENT_CORRECTIONS.md",
+      "predecessorSha256": "4056f3c4278ca7765d5c5046e0ce66952575f17a7d69b225e7d4f283dd97ae6f",
+      "bytes": 6989,
+      "sha256": "4056f3c4278ca7765d5c5046e0ce66952575f17a7d69b225e7d4f283dd97ae6f"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_POST_PO_CANDIDATE_FREEZE.md",
+      "predecessorSha256": "590e6dcdebcf325fe3a677e140b74b18f4fe06eb14adedeb686da4b48cf60040",
+      "bytes": 7161,
+      "sha256": "590e6dcdebcf325fe3a677e140b74b18f4fe06eb14adedeb686da4b48cf60040"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_POST_PO_CLOSURE_REVIEW.md",
+      "predecessorSha256": "e02c2adea3bc8cd9aa47f95acaecaf18ae37efa18c8376c2fd3227c983bd271d",
+      "bytes": 4889,
+      "sha256": "e02c2adea3bc8cd9aa47f95acaecaf18ae37efa18c8376c2fd3227c983bd271d"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_POST_PO_VALIDATION.md",
+      "predecessorSha256": "9fab118f0ea77eff6bebae80fa61b193ff2c54f34b312e35758e1814ebfdf6b0",
+      "bytes": 2937,
+      "sha256": "9fab118f0ea77eff6bebae80fa61b193ff2c54f34b312e35758e1814ebfdf6b0"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_PRE_PO_CLOSURE_REVIEW.md",
+      "predecessorSha256": "668292f89cece7083cfdabf06e967a6cc380d1c48995da7c164be75f91c805c9",
+      "bytes": 3700,
+      "sha256": "668292f89cece7083cfdabf06e967a6cc380d1c48995da7c164be75f91c805c9"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_PRODUCT_OWNER_DECISIONS.md",
+      "predecessorSha256": "762a214f3b3ac57412b2806887954db7bc323b2c3a0ff969cd2eaf0bb6f39e3f",
+      "bytes": 3374,
+      "sha256": "762a214f3b3ac57412b2806887954db7bc323b2c3a0ff969cd2eaf0bb6f39e3f"
+    },
+    {
+      "path": "docs/reviews/PHASE_0_REVIEW_CORRECTIONS.md",
+      "predecessorSha256": "d72abdbe7c36c2ba8295ae13e5cc3077036ae55949b110081566dfab7ffe866b",
+      "bytes": 7187,
+      "sha256": "d72abdbe7c36c2ba8295ae13e5cc3077036ae55949b110081566dfab7ffe866b"
+    },
+    {
+      "path": "docs/SECURITY_MODEL.md",
+      "predecessorSha256": "5a719485642383988e1611c0f3c8a25d2a0550435025ae0c2e4a2412d0bf1ea1",
+      "bytes": 20079,
+      "sha256": "2b379a4766ad59bb5578b21f3279e7cfd2f6b03fa6922b20c394a16b5a53f8d4"
+    },
+    {
+      "path": "IDEA.md",
+      "predecessorSha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524",
+      "bytes": 10628,
+      "sha256": "2c7be6b7154835a1301118670a33f2c8b9d9f8a0f178b9565515ab2484a2f524"
+    }
+  ],
+  "stage10Actions": 0,
+  "aggregateSha256": "887f1a26bbc12fdaea7e89231d56992a4fc1815ac068b2730e298b7a283b56c5"
+}

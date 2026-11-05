@@ -59,7 +59,7 @@ Initial groups include:
 - `staff.view`, `staff.invite`, `staff.manage_roles`, `staff.suspend`;
 - `customer.view`, `customer.edit`, `traveller.view_sensitive`, `traveller.edit`;
 - `sales.view`, `sales.edit`, `quote.version.create`, `sale.record`;
-- `trip.view`, `trip.edit`, `trip.preview`, `trip.publish`, `trip.withdraw_publication`;
+- `trip.view`, `trip.edit`, `trip.preview`, `trip.publish`, `trip.withdraw_publication`, `trip.access.manage`;
 - `reservation.view`, `reservation.edit`;
 - `finance.view_prices`, `finance.view_costs`, `finance.view_margins`, `finance.manage_payments`;
 - `document.view_metadata`, `document.upload`, `document.download_private`, `document.manage`, `document.grant_portal`;
@@ -72,6 +72,12 @@ Initial groups include:
 Owner, Admin, Manager, Sales, Quotation, Customer Service, Finance and Read Only are templates. On Agency bootstrap they become Agency-owned Roles that may be renamed/adjusted except reserved safety constraints. Role name has no semantic meaning in code.
 
 Owner is reserved and protected. At least one active Staff Principal must retain Owner. Owner does not bypass document access/audit invisibly; broad permissions remain explicit.
+
+### Stage 9 fixed invitation role
+
+Stage 9 provides one code-owned Agency role template, `trip-operations-v1`, for invited staff who need the workspace, preview/publish and explicit Portal Trip-grant workflows. Its exact Agency-scoped permission set is `agency.view`, `customer.edit`, `traveller.edit`, `trip.view`, `trip.edit`, `trip.preview`, `trip.publish` and `trip.access.manage`. It excludes `staff.invite`, `staff.view`, `staff.manage_roles`, `staff.suspend`, `agency.manage_settings`, finance permissions, reservation permissions, `trip.withdraw_publication` and `runtime_acceptance.fixture.manage`. Invitation requests cannot select another role or submit permission IDs.
+
+Issuing, listing, reissuing or revoking a Staff invitation requires `staff.invite` at Agency scope and recent MFA no older than five minutes. The server derives the Agency and actor from the Staff session. Each state-changing transition is audited; issuance/reissue returns the raw token once, while persistence and later list responses contain only its digest/safe metadata. Acceptance creates the fixed assignment atomically and gives no Admin authorization context until TOTP is enabled and verified. There is no public Staff signup.
 
 ### Scope
 
@@ -128,6 +134,7 @@ A traveller may receive only their own passport/policy while another trip partic
 | Publish Trip | `trip.publish`, expected revision/hash, recent MFA, publishable state |
 | Withdraw publication | dedicated permission, recent MFA, reason, Audit Event |
 | Assign staff role | `staff.manage_roles`, recent MFA, cannot remove last Owner |
+| Issue, list, reissue or revoke Staff invitation | `staff.invite`, Agency scope, recent MFA ≤ 5 minutes; server-derived Agency/actor; audited state changes |
 | Download private document | explicit staff permission and resource scope, or active Portal DocumentGrant |
 | Grant document to Portal | `document.grant_portal`, available/clean version, grant cannot exceed issuer policy |
 | Manage payments | `finance.manage_payments`, scope and immutable correction rules |

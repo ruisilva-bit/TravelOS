@@ -189,9 +189,15 @@ importers:
 
   apps/admin-web:
     dependencies:
+      '@travelos/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@travelos/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      better-auth:
+        specifier: 1.6.27
+        version: 1.6.27(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
       react:
         specifier: 19.2.8
         version: 19.2.8
@@ -247,9 +253,15 @@ importers:
 
   apps/portal-web:
     dependencies:
+      '@travelos/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@travelos/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      better-auth:
+        specifier: 1.6.27
+        version: 1.6.27(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
       react:
         specifier: 19.2.8
         version: 19.2.8

@@ -44,7 +44,7 @@ const result =
   repository.unexplainedCompilerDependencyReferenceCount === 0 &&
   repository.unsupportedDependencyConstructCount === 0 &&
   repository.unresolvedNormalizedDependencyCount === 0 &&
-  repository.nonTypeScriptAssetDependencyCount === 2 &&
+  repository.nonTypeScriptAssetDependencyCount === 3 &&
   fixtures.result === "PASS" &&
   fixtures.unexpectedCompilerParserOrResolutionFailures === 0 &&
   unexplainedCompilerReferenceProbe.result === "FAIL" &&

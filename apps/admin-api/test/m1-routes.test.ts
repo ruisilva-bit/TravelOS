@@ -4,10 +4,14 @@ import {
   asOpaqueId,
   createMoney,
   createM1StaffTripOperations,
+  createM1StaffTripWorkspaceOperations,
   createScheduledLocalDateTime,
   M1OptimisticConflictError,
   M1TransactionConflictError,
+  M1TripNotFoundError,
+  type M1StaffTripWorkspaceWriteOperations,
   type M1TripSlice,
+  type M1TripWorkspace,
   type M1OperationalSliceRepository,
   type StaffAuthorizationSnapshot,
   type StaffPermissionId,
@@ -235,6 +239,12 @@ const requestBody = () => ({
   },
 });
 
+const workspaceCreateBody = () => ({
+  customer: { displayName: "Silva Travel" },
+  primaryTraveller: { givenName: "Rui", familyName: "Silva" },
+  trip: { title: "Lisboa a Porto", startDate: "2026-09-25", endDate: "2026-09-28" },
+});
+
 const snapshot: StaffAuthorizationSnapshot = {
   staffPrincipalId: "staff-1",
   agencyId,
@@ -277,33 +287,63 @@ const makeHarness = (
     }),
   };
   const repository = {
+    createTripWorkspace: vi.fn().mockResolvedValue(slice.trip),
     createM1TripSlice: vi.fn().mockResolvedValue(slice),
     getM1TripSlice: vi.fn().mockResolvedValue(slice),
     updateAccommodation: vi.fn().mockResolvedValue(slice),
     updateInternalSupplierNote: vi.fn().mockResolvedValue(slice),
     cancelTrip: vi.fn().mockResolvedValue(slice),
   };
+  const authorizationRepository = {
+    getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue({
+      ...snapshot,
+      agencyId: sessionAgencyId,
+      assignments: permissionIds.map((permissionId) => ({
+        agencyId: sessionAgencyId,
+        permissionId,
+        scopeKind: "AGENCY",
+        organizationUnitId: null,
+        accessLevel: "ALL",
+        active: true,
+      })),
+    }),
+  };
   const m1Operations = createM1StaffTripOperations({
     repository: repository as unknown as M1OperationalSliceRepository,
-    authorizationRepository: {
-      getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue({
-        ...snapshot,
-        agencyId: sessionAgencyId,
-        assignments: permissionIds.map((permissionId) => ({
-          agencyId: sessionAgencyId,
-          permissionId,
-          scopeKind: "AGENCY",
-          organizationUnitId: null,
-          accessLevel: "ALL",
-          active: true,
-        })),
-      }),
+    authorizationRepository,
+    sessionResolver,
+  });
+  const rawWorkspace = Object.assign(
+    { trip: slice.trip, flights: slice.flights, accommodations: slice.accommodations },
+    {
+      person: slice.person,
+      customer: slice.customer,
+      reservations: slice.reservations,
+      supplierCosts: slice.supplierCosts,
+      INTERNAL_ONLY: "not-for-portal-or-workspace",
     },
+  ) as unknown as M1TripWorkspace;
+  const workspaceRepository = {
+    listTrips: vi.fn().mockResolvedValue({ items: [slice.trip], nextCursor: null }),
+    readTripWorkspace: vi.fn().mockResolvedValue(rawWorkspace),
+  };
+  const workspaceWriteOperations = {
+    createFlight: vi.fn().mockResolvedValue(rawWorkspace),
+    updateFlight: vi.fn().mockResolvedValue(rawWorkspace),
+    createAccommodation: vi.fn().mockResolvedValue(rawWorkspace),
+    updateAccommodation: vi.fn().mockResolvedValue(rawWorkspace),
+    updateTrip: vi.fn().mockResolvedValue(rawWorkspace),
+  } as unknown as M1StaffTripWorkspaceWriteOperations;
+  const m1WorkspaceOperations = createM1StaffTripWorkspaceOperations({
+    repository: workspaceRepository,
+    authorizationRepository,
     sessionResolver,
   });
   registerAdminM1Routes(application, {
     policy,
     m1Operations,
+    m1WorkspaceOperations,
+    m1WorkspaceWriteOperations: workspaceWriteOperations,
   });
   const invoke = async (
     key: string,
@@ -314,17 +354,21 @@ const makeHarness = (
       origin: "https://admin.example.test",
       cookie: "session=opaque",
     },
+    query: Readonly<Record<string, string | readonly string[] | undefined>> = {},
   ) => {
     const handler = handlers.get(key);
     if (handler === undefined) throw new Error(`Missing handler ${key}`);
     const response = {
       statusCode: 200,
       body: undefined as unknown,
+      headers: new Map<string, string | readonly string[]>(),
       status(code: number) {
         this.statusCode = code;
         return this;
       },
-      setHeader() {},
+      setHeader(name: string, value: string | readonly string[]) {
+        this.headers.set(name.toLowerCase(), value);
+      },
       end() {},
       json(value: unknown) {
         this.body = value;
@@ -339,6 +383,7 @@ const makeHarness = (
         headers,
         body,
         params,
+        query,
       },
       response,
       (error: unknown) => {
@@ -349,7 +394,14 @@ const makeHarness = (
     if (nextError !== undefined) throw nextError;
     return response;
   };
-  return { handlers, invoke, repository, sessionResolver };
+  return {
+    handlers,
+    invoke,
+    repository,
+    sessionResolver,
+    workspaceRepository,
+    workspaceWriteOperations,
+  };
 };
 
 describe("Admin Stage 5 routes", () => {
@@ -588,5 +640,422 @@ describe("Admin Stage 5 routes", () => {
     expect(response.body).toEqual({ error: "transaction_conflict" });
     expect(JSON.stringify(response.body)).not.toContain("40P01");
     expect(JSON.stringify(response.body)).not.toContain("deadlock");
+  });
+});
+
+describe("Admin Trip workspace V1 routes", () => {
+  it("creates_a_minimal_workspace_with_session_scope_and_empty_itinerary", async () => {
+    const harness = makeHarness(agencyId, [
+      "customer.edit",
+      "traveller.edit",
+      "trip.edit",
+      "trip.view",
+    ]);
+    const route = "POST /api/admin/trips/workspace";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const response = await harness.invoke(route, workspaceCreateBody());
+
+    expect(response.statusCode).toBe(201);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(harness.repository.createTripWorkspace).toHaveBeenCalledWith(
+      {
+        customer: { displayName: "Silva Travel" },
+        primaryTraveller: { givenName: "Rui", familyName: "Silva" },
+        trip: { title: "Lisboa a Porto", startDate: "2026-09-25", endDate: "2026-09-28" },
+      },
+      expect.objectContaining({
+        session: expect.objectContaining({ agencyId }),
+        requiredPermissionIds: expect.arrayContaining([
+          "customer.edit",
+          "traveller.edit",
+          "trip.edit",
+          "trip.view",
+        ]),
+      }),
+    );
+    expect(response.body).toEqual({
+      trip: {
+        id: tripId,
+        agencyId: agency,
+        title: "API trip",
+        startDate: "2026-09-25",
+        endDate: "2026-09-28",
+        state: "DRAFT",
+        workspaceRevision: "1",
+        lockVersion: "9007199254740993",
+      },
+      flights: [],
+      accommodations: [],
+    });
+    expect(JSON.stringify(response.body)).not.toContain("Silva Travel");
+    expect(JSON.stringify(response.body)).not.toContain("Rui");
+  });
+
+  it("rejects_client_supplied_scope_and_itinerary_fields_before_authentication", async () => {
+    const harness = makeHarness();
+    const route = "POST /api/admin/trips/workspace";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    for (const extra of [{ agencyId }, { reservation: { supplierName: "Supplier" } }]) {
+      const response = await harness.invoke(route, { ...workspaceCreateBody(), ...extra });
+      expect(response.statusCode).toBe(400);
+    }
+    expect(harness.sessionResolver.resolveStaffSession).not.toHaveBeenCalled();
+    expect(harness.repository.createTripWorkspace).not.toHaveBeenCalled();
+  });
+
+  it("lists_trips_with_strict_cursor_query_and_no_store", async () => {
+    const harness = makeHarness(agencyId, ["trip.view"]);
+    const route = "GET /api/admin/trips";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const response = await harness.invoke(route, undefined, {}, undefined, {
+      limit: "17",
+      cursor: flightId,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(harness.workspaceRepository.listTrips).toHaveBeenCalledWith(
+      agency,
+      17,
+      flightId,
+      expect.objectContaining({
+        session: expect.objectContaining({ agencyId: agency }),
+        requiredPermissionIds: ["trip.view"],
+      }),
+    );
+    expect(response.body).toEqual({
+      items: [
+        {
+          id: tripId,
+          agencyId: agency,
+          title: "API trip",
+          startDate: "2026-09-25",
+          endDate: "2026-09-28",
+          state: "DRAFT",
+          workspaceRevision: "1",
+          lockVersion: "9007199254740993",
+        },
+      ],
+      nextCursor: null,
+    });
+  });
+
+  it("reads_only_the_workspace_allowlist", async () => {
+    const harness = makeHarness(agencyId, ["trip.view"]);
+    const route = "GET /api/admin/trips/:tripId/workspace";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const response = await harness.invoke(route, undefined, { tripId });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(harness.workspaceRepository.readTripWorkspace).toHaveBeenCalledWith(
+      agency,
+      tripId,
+      expect.objectContaining({
+        session: expect.objectContaining({ agencyId: agency }),
+        requiredPermissionIds: ["trip.view"],
+      }),
+    );
+    const body = response.body as {
+      readonly trip: Record<string, unknown>;
+      readonly flights: readonly Record<string, unknown>[];
+      readonly accommodations: readonly Record<string, unknown>[];
+    };
+    expect(Object.keys(body).toSorted()).toEqual(["accommodations", "flights", "trip"]);
+    expect(Object.keys(body.trip).toSorted()).toEqual([
+      "agencyId",
+      "endDate",
+      "id",
+      "lockVersion",
+      "startDate",
+      "state",
+      "title",
+      "workspaceRevision",
+    ]);
+    expect(Object.keys(body.flights[0] ?? {}).toSorted()).toEqual([
+      "agencyId",
+      "arrival",
+      "arrivalAirport",
+      "baggage",
+      "cabin",
+      "carrier",
+      "customerBookingReference",
+      "departure",
+      "departureAirport",
+      "description",
+      "family",
+      "flightNumber",
+      "id",
+      "lockVersion",
+      "seat",
+      "sortOrder",
+      "state",
+      "terminal",
+      "title",
+      "tripId",
+    ]);
+    expect(Object.keys(body.accommodations[0] ?? {}).toSorted()).toEqual([
+      "agencyId",
+      "boardType",
+      "checkIn",
+      "checkOut",
+      "customerBookingReference",
+      "description",
+      "family",
+      "id",
+      "lockVersion",
+      "propertyName",
+      "roomDescription",
+      "sortOrder",
+      "state",
+      "title",
+      "tripId",
+    ]);
+    expect(JSON.stringify(response.body)).not.toContain("not-for-portal-or-workspace");
+    expect(JSON.stringify(response.body)).not.toContain("supplierCosts");
+    expect(JSON.stringify(response.body)).not.toContain(syntheticEmail);
+  });
+
+  it("returns_404_for_another_agency_trip", async () => {
+    const harness = makeHarness(agencyId, ["trip.view"]);
+    harness.workspaceRepository.readTripWorkspace.mockResolvedValue(null);
+    const route = "GET /api/admin/trips/:tripId/workspace";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const response = await harness.invoke(route, undefined, { tripId });
+
+    expect(response.statusCode).toBe(404);
+    expect(harness.workspaceRepository.readTripWorkspace).toHaveBeenCalledOnce();
+    expect(response.body).toBeUndefined();
+  });
+
+  it("rejects_unknown_or_out_of_range_list_queries", async () => {
+    const invalidQueries: readonly Readonly<
+      Record<string, string | readonly string[] | undefined>
+    >[] = [
+      { limit: "0" },
+      { limit: "51" },
+      { limit: "not-a-number" },
+      { unexpected: "value" },
+      { cursor: [flightId, accommodationId] },
+      { cursor: "malformed" },
+    ];
+
+    for (const query of invalidQueries) {
+      const harness = makeHarness(agencyId, ["trip.view"]);
+      const route = "GET /api/admin/trips";
+      expect(harness.handlers.has(route)).toBe(true);
+      if (!harness.handlers.has(route)) return;
+
+      const response = await harness.invoke(route, undefined, {}, undefined, query);
+
+      expect(response.statusCode).toBe(400);
+      expect(harness.workspaceRepository.listTrips).not.toHaveBeenCalled();
+    }
+  });
+});
+
+describe("Admin Trip workspace write V1 routes", () => {
+  it("creates_a_flight_using_the_trip_path_and_expected_workspace_revision", async () => {
+    const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
+    const route = "POST /api/admin/trips/:tripId/workspace/flights";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const flight = requestBody().flight;
+    const response = await harness.invoke(
+      route,
+      { expectedWorkspaceRevision: "7", flight },
+      { tripId },
+    );
+
+    expect(response.statusCode).toBe(201);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(harness.workspaceWriteOperations.createFlight).toHaveBeenCalledWith(
+      "session=opaque",
+      tripId,
+      { expectedWorkspaceRevision: 7n, flight },
+    );
+    expect(response.body).toMatchObject({ trip: { id: tripId }, flights: [{ id: flightId }] });
+  });
+
+  it("updates_a_flight_using_both_optimistic_versions_and_path_scope", async () => {
+    const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
+    const route = "PATCH /api/admin/trips/:tripId/workspace/flights/:itemId";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const flight = requestBody().flight;
+    const response = await harness.invoke(
+      route,
+      { expectedWorkspaceRevision: "8", expectedLockVersion: "9", flight },
+      { tripId, itemId: flightId },
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(harness.workspaceWriteOperations.updateFlight).toHaveBeenCalledWith(
+      "session=opaque",
+      tripId,
+      flightId,
+      { expectedWorkspaceRevision: 8n, expectedLockVersion: 9n, flight },
+    );
+  });
+
+  it("creates_an_accommodation_using_the_trip_path_and_expected_workspace_revision", async () => {
+    const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
+    const route = "POST /api/admin/trips/:tripId/workspace/accommodations";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const accommodation = requestBody().accommodation;
+    const response = await harness.invoke(
+      route,
+      { expectedWorkspaceRevision: "10", accommodation },
+      { tripId },
+    );
+
+    expect(response.statusCode).toBe(201);
+    expect(harness.workspaceWriteOperations.createAccommodation).toHaveBeenCalledWith(
+      "session=opaque",
+      tripId,
+      { expectedWorkspaceRevision: 10n, accommodation },
+    );
+  });
+
+  it("updates_an_accommodation_using_both_optimistic_versions_and_path_scope", async () => {
+    const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
+    const route = "PATCH /api/admin/trips/:tripId/workspace/accommodations/:itemId";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const accommodation = requestBody().accommodation;
+    const response = await harness.invoke(
+      route,
+      { expectedWorkspaceRevision: "11", expectedLockVersion: "12", accommodation },
+      { tripId, itemId: accommodationId },
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(harness.workspaceWriteOperations.updateAccommodation).toHaveBeenCalledWith(
+      "session=opaque",
+      tripId,
+      accommodationId,
+      { expectedWorkspaceRevision: 11n, expectedLockVersion: 12n, accommodation },
+    );
+  });
+
+  it("updates_trip_details_using_both_optimistic_versions", async () => {
+    const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
+    const route = "PATCH /api/admin/trips/:tripId/workspace";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const trip = { title: "Lisboa e Porto", startDate: "2026-09-25", endDate: "2026-09-28" };
+    const response = await harness.invoke(
+      route,
+      { expectedWorkspaceRevision: "13", expectedLockVersion: "14", trip },
+      { tripId },
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(harness.workspaceWriteOperations.updateTrip).toHaveBeenCalledWith(
+      "session=opaque",
+      tripId,
+      { expectedWorkspaceRevision: 13n, expectedLockVersion: 14n, trip },
+    );
+  });
+
+  it("rejects_unknown_fields_before_resolving_the_staff_session", async () => {
+    const harness = makeHarness();
+    const route = "POST /api/admin/trips/:tripId/workspace/flights";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const response = await harness.invoke(
+      route,
+      { expectedWorkspaceRevision: "7", flight: requestBody().flight, agencyId },
+      { tripId },
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(harness.sessionResolver.resolveStaffSession).not.toHaveBeenCalled();
+    expect(harness.workspaceWriteOperations.createFlight).not.toHaveBeenCalled();
+  });
+
+  it("rejects_mutations_without_the_canonical_origin_before_calling_operations", async () => {
+    const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
+    const route = "PATCH /api/admin/trips/:tripId/workspace";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const response = await harness.invoke(
+      route,
+      {
+        expectedWorkspaceRevision: "13",
+        expectedLockVersion: "14",
+        trip: { title: "Lisboa e Porto", startDate: "2026-09-25", endDate: "2026-09-28" },
+      },
+      { tripId },
+      {
+        host: "admin.example.test",
+        origin: "https://attacker.example.test",
+        cookie: "session=opaque",
+      },
+    );
+
+    expect(response.statusCode).toBe(403);
+    expect(harness.sessionResolver.resolveStaffSession).not.toHaveBeenCalled();
+    expect(harness.workspaceWriteOperations.updateTrip).not.toHaveBeenCalled();
+  });
+
+  it("maps_a_stale_workspace_write_to_the_typed_conflict_response", async () => {
+    const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
+    vi.mocked(harness.workspaceWriteOperations.updateTrip).mockRejectedValue(
+      new M1OptimisticConflictError(),
+    );
+    const route = "PATCH /api/admin/trips/:tripId/workspace";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const response = await harness.invoke(
+      route,
+      {
+        expectedWorkspaceRevision: "13",
+        expectedLockVersion: "14",
+        trip: { title: "Lisboa e Porto", startDate: "2026-09-25", endDate: "2026-09-28" },
+      },
+      { tripId },
+    );
+
+    expect(response.statusCode).toBe(409);
+    expect(response.body).toEqual({ error: "optimistic_conflict" });
+  });
+
+  it("conceals_cross_trip_item_updates_as_not_found", async () => {
+    const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
+    vi.mocked(harness.workspaceWriteOperations.updateFlight).mockRejectedValue(
+      new M1TripNotFoundError(),
+    );
+    const route = "PATCH /api/admin/trips/:tripId/workspace/flights/:itemId";
+    expect(harness.handlers.has(route)).toBe(true);
+    if (!harness.handlers.has(route)) return;
+
+    const response = await harness.invoke(
+      route,
+      { expectedWorkspaceRevision: "8", expectedLockVersion: "9", flight: requestBody().flight },
+      { tripId, itemId: flightId },
+    );
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body).toBeUndefined();
   });
 });

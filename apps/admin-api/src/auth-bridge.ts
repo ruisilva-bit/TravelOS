@@ -6,10 +6,16 @@ import {
   type AuthRealm,
   type AuthSurfacePolicy,
 } from "@travelos/auth-adapters";
-import { authorizeStaffRequest } from "@travelos/backend-core";
+import {
+  authorizeStaffRequest,
+  STAFF_INVITATION_RECENT_MFA_MAXIMUM_AGE_MS,
+} from "@travelos/backend-core";
 import type { M1StaffTripOperations } from "@travelos/backend-core";
+import type { M1StaffTripWorkspaceOperations } from "@travelos/backend-core";
+import type { M1StaffTripWorkspaceWriteOperations } from "@travelos/backend-core";
 import type { M1StaffTripAccessOperations } from "@travelos/backend-core";
 import type { M1StaffTripPublicationOperations } from "@travelos/backend-core";
+import type { StaffInvitationOperations } from "@travelos/backend-core";
 import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
 import type { StaffAccessRepository } from "@travelos/database";
 
@@ -18,6 +24,8 @@ import {
   registerAdminM1Routes,
   type AdminRuntimeAcceptanceFixtureRouteOperations,
 } from "./m1-routes.js";
+import { registerAdminStaffInvitationRoutes } from "./staff-invitation-routes.js";
+import type { StaffInvitationRateLimiter } from "./staff-invitation-rate-limit.js";
 
 interface IncomingHttpRequest {
   readonly method: string;
@@ -58,9 +66,13 @@ export interface AdminAuthBridgeOptions {
   readonly environment?: "DEVELOPMENT" | "PRODUCTION";
   readonly staffAccessRepository: Pick<StaffAccessRepository, "getStaffAuthorizationSnapshot">;
   readonly m1Operations?: M1StaffTripOperations;
+  readonly m1WorkspaceOperations?: M1StaffTripWorkspaceOperations;
+  readonly m1WorkspaceWriteOperations?: M1StaffTripWorkspaceWriteOperations;
   readonly m1TripAccessOperations?: M1StaffTripAccessOperations;
   readonly m1PublicationOperations?: M1StaffTripPublicationOperations;
   readonly m1RuntimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
+  readonly staffInvitationOperations?: StaffInvitationOperations;
+  readonly staffInvitationRateLimiter?: StaffInvitationRateLimiter;
 }
 
 type SetCookieHeaders = Headers & { readonly getSetCookie?: () => string[] };
@@ -205,6 +217,7 @@ const staffSessionContextHandler =
           proof.staffPrincipalId,
           proof.agencyId,
         );
+        const nowEpochMs = Date.now();
         const decision = authorizeStaffRequest({
           session: proof,
           snapshot,
@@ -214,19 +227,32 @@ const staffSessionContextHandler =
             organizationUnitAncestorIds: [],
             requiredAccessLevel: "ALL",
           },
-          nowEpochMs: Date.now(),
+          nowEpochMs,
           recentMfaMaximumAgeMs: null,
         });
         if (decision.result === "DENY") {
           response.status(decision.reason === "UNAUTHENTICATED" ? 401 : 403).end();
           return;
         }
+        const invitationDecision = authorizeStaffRequest({
+          session: proof,
+          snapshot,
+          permissionId: "staff.invite",
+          target: {
+            agencyId: proof.agencyId,
+            organizationUnitAncestorIds: [],
+            requiredAccessLevel: "ALL",
+          },
+          nowEpochMs,
+          recentMfaMaximumAgeMs: STAFF_INVITATION_RECENT_MFA_MAXIMUM_AGE_MS,
+        });
         response.json(
           AdminStaffSessionContextSchema.parse({
             principalId: proof.staffPrincipalId,
             agencyId: proof.agencyId,
             authorizationEpoch: proof.authorizationEpoch.toString(),
             recentMfaVerifiedAtEpochMs: proof.recentMfaVerifiedAtEpochMs,
+            canInviteStaff: invitationDecision.result === "ALLOW",
           }),
         );
       })
@@ -249,10 +275,28 @@ export const registerAdminAuthBridge = (
   const http = application.getHttpAdapter().getInstance() as ExpressLikeApplication;
   http.use(bridgeHandler(options));
   http.get("/api/staff/session-context", staffSessionContextHandler(options));
+  if (options.staffInvitationOperations !== undefined) {
+    if (options.staffInvitationRateLimiter === undefined) {
+      throw new Error("Admin Staff invitation routes require an acceptance rate limiter");
+    }
+    registerAdminStaffInvitationRoutes(http, {
+      policy: options.policy,
+      operations: options.staffInvitationOperations,
+      rateLimiter: options.staffInvitationRateLimiter,
+    });
+  } else if (options.staffInvitationRateLimiter !== undefined) {
+    throw new Error("Admin Staff invitation rate limiter requires invitation operations");
+  }
   if (options.m1Operations !== undefined) {
     registerAdminM1Routes(http, {
       policy: options.policy,
       m1Operations: options.m1Operations,
+      ...(options.m1WorkspaceOperations === undefined
+        ? {}
+        : { m1WorkspaceOperations: options.m1WorkspaceOperations }),
+      ...(options.m1WorkspaceWriteOperations === undefined
+        ? {}
+        : { m1WorkspaceWriteOperations: options.m1WorkspaceWriteOperations }),
       ...(options.m1TripAccessOperations === undefined
         ? {}
         : { m1TripAccessOperations: options.m1TripAccessOperations }),

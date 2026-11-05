@@ -50,7 +50,7 @@ export const architecturePolicy = {
         "@travelos/design-system",
         "@travelos/design-system/*",
       ],
-      external: ["react", "react-dom"],
+      external: ["better-auth", "react", "react-dom"],
       development: ["@tailwindcss/vite", "@vitejs/plugin-react", "vite"],
     }),
     unit({
@@ -62,7 +62,7 @@ export const architecturePolicy = {
         "@travelos/design-system",
         "@travelos/design-system/*",
       ],
-      external: ["react", "react-dom"],
+      external: ["better-auth", "react", "react-dom"],
       development: ["@tailwindcss/vite", "@vitejs/plugin-react", "vite"],
     }),
     unit({

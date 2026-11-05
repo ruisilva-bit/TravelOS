@@ -34,6 +34,7 @@ A customer sees only information that the agency explicitly released to them, in
 8. **Dedicated by default, organization-aware inside.** Isolation at deployment/database level does not excuse missing organization scope in the model.
 9. **Operational truth and customer presentation are different models.** Portal contracts are constructed allowlists.
 10. **Automation and providers live at the edges.** Vendors do not dictate core language.
+11. **Staff enrolment is invitation-only.** A lower-privilege Staff account is created through an audited, single-use invitation; public Staff signup and implicit Portal access are forbidden.
 
 ## 3. Actors and identities
 
@@ -185,6 +186,8 @@ Identifiers `INV-*` are authoritative and referenced by architecture/tests.
 | INV-FLT-01 | All instances use the same versioned code and migration chain; customer code/schema forks are forbidden. |
 | INV-DEL-01 | An approved privacy deletion removes protected payload access from the active service and retains only lawful evidence; retained encrypted backups may still contain an older copy until scheduled expiry, and the system never claims otherwise. |
 | INV-HOST-01 | A request host selects only an exact manifest-declared surface, never an Agency; unknown/crafted hosts fail closed before branding/auth/data lookup. |
+| INV-ID-02 | Staff enrolment is invitation-only; an invitation is single-use, bound to the issuer-approved target email, expires after 60 minutes, and atomically creates Staff access plus its audit evidence. Public Staff signup is forbidden. |
+| INV-ID-03 | An invited Staff principal receives no usable Admin authorization context until TOTP MFA is enabled and verified; Staff and Portal identities remain separate. |
 
 ## 9. Retention assumptions
 

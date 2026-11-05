@@ -166,6 +166,7 @@ const portalSessionContextFor = async (
 
 type InternalRealmConfiguration = AuthRealmConfiguration & {
   readonly allowOperatorEnrollment?: boolean;
+  readonly allowStaffInvitationEnrollment?: boolean;
   readonly transactionManagedExternally?: boolean;
 };
 
@@ -175,13 +176,16 @@ const createRealm = (
   kind: AuthenticationRealm,
   configuration: InternalRealmConfiguration,
   verificationTokenConsumer?: VerificationTokenConsumer,
-): AuthRealm => {
+) => {
   assertRealmConfiguration(configuration);
   const basePath = kind === "STAFF" ? STAFF_AUTH_BASE_PATH : PORTAL_AUTH_BASE_PATH;
   const cookieName = cookieNameFor(kind, configuration.environment);
   const productionCookie = configuration.environment === "PRODUCTION";
   const schema = kind === "STAFF" ? "staff_access" : "portal_access";
   const tablePrefix = kind === "STAFF" ? "staff" : "portal";
+  const allowPrivateEnrollment =
+    configuration.allowOperatorEnrollment === true ||
+    configuration.allowStaffInvitationEnrollment === true;
   const realmDatabase = configuration.database.withSchema(schema);
   const auth = betterAuth({
     appName: kind === "STAFF" ? "TravelOS Staff" : "TravelOS Portal",
@@ -195,15 +199,18 @@ const createRealm = (
     trustedOrigins: [configuration.canonicalOrigin],
     emailAndPassword: {
       enabled: true,
-      disableSignUp: configuration.allowOperatorEnrollment !== true,
+      disableSignUp: !allowPrivateEnrollment,
       requireEmailVerification: true,
-      ...(configuration.allowOperatorEnrollment === true ? { autoSignIn: false } : {}),
+      ...(allowPrivateEnrollment ? { autoSignIn: false } : {}),
     },
     ...(verificationTokenConsumer === undefined
       ? {}
       : {
           emailVerification: {
             sendOnSignUp: true,
+            ...(configuration.allowStaffInvitationEnrollment === true
+              ? { autoSignInAfterVerification: false }
+              : {}),
             sendVerificationEmail: async ({ user, token }) => {
               verificationTokenConsumer(user.email, token);
             },
@@ -315,7 +322,7 @@ const createRealm = (
     );
   };
 
-  return {
+  const realm: AuthRealm = {
     kind,
     basePath,
     cookieName,
@@ -354,15 +361,17 @@ const createRealm = (
       };
     },
   };
+  return { auth, realm };
 };
 
 export const createStaffAuthRealm = (configuration: AuthRealmConfiguration): AuthRealm =>
-  createRealm("STAFF", { ...configuration, allowOperatorEnrollment: false });
+  createRealm("STAFF", { ...configuration, allowOperatorEnrollment: false }).realm;
 
 export const createPortalAuthRealm = (
   configuration: PortalAuthRealmConfiguration,
 ): PortalAuthRealm =>
-  createRealm("PORTAL", { ...configuration, allowOperatorEnrollment: false }) as PortalAuthRealm;
+  createRealm("PORTAL", { ...configuration, allowOperatorEnrollment: false })
+    .realm as PortalAuthRealm;
 
 const assertDevelopmentOperatorEnrollment = (configuration: AuthRealmConfiguration): void => {
   if (configuration.environment !== "DEVELOPMENT") {
@@ -409,7 +418,7 @@ export const createLocalOperatorPortalEnrollmentService = (
       }
       return configuration.database.transaction().execute(async (database) => {
         const verificationToken: { value: string | undefined } = { value: undefined };
-        const realm = createRealm(
+        const { realm } = createRealm(
           "PORTAL",
           {
             ...configuration,
@@ -493,6 +502,82 @@ export const createLocalOperatorPortalEnrollmentService = (
   };
 };
 
+export interface StaffInvitationEnrollmentInput {
+  readonly email: string;
+  readonly name: string;
+  readonly password: string;
+}
+
+export interface StaffInvitationEnrollmentResult {
+  readonly staffPrincipalId: string;
+}
+
+export interface StaffInvitationEnrollmentService {
+  enroll(input: StaffInvitationEnrollmentInput): Promise<StaffInvitationEnrollmentResult>;
+}
+
+/**
+ * Enrolls one invitation-approved Staff identity through Better Auth's internal API only.
+ * The caller must construct this service with the active invitation transaction's database.
+ */
+export const createStaffInvitationEnrollmentService = (
+  configuration: AuthRealmConfiguration,
+): StaffInvitationEnrollmentService => ({
+  async enroll(input) {
+    const email = input.email.trim().toLowerCase();
+    const verificationToken: { value: string | undefined } = { value: undefined };
+    const { auth } = createRealm(
+      "STAFF",
+      {
+        ...configuration,
+        allowStaffInvitationEnrollment: true,
+        transactionManagedExternally: true,
+      },
+      (verificationEmail, token) => {
+        if (
+          verificationEmail.trim().toLowerCase() !== email ||
+          verificationToken.value !== undefined
+        ) {
+          throw new Error("Staff invitation verification evidence is invalid");
+        }
+        verificationToken.value = token;
+      },
+    );
+
+    try {
+      const signup = await auth.api.signUpEmail({
+        body: { email, name: input.name, password: input.password },
+        headers: new Headers({ origin: configuration.canonicalOrigin }),
+      });
+      const token = verificationToken.value;
+      verificationToken.value = undefined;
+      if (signup.token !== null) {
+        throw new Error("Staff invitation enrollment unexpectedly created a session");
+      }
+      if (
+        signup.user.id.length === 0 ||
+        signup.user.email !== email ||
+        token === undefined ||
+        token.length === 0
+      ) {
+        throw new Error("Staff invitation enrollment returned incomplete Better Auth evidence");
+      }
+
+      const verified = await auth.api.verifyEmail({
+        query: { token },
+        headers: new Headers({ origin: configuration.canonicalOrigin }),
+      });
+      if (verified === undefined || verified.status !== true) {
+        throw new Error("Staff invitation identity verification did not complete");
+      }
+
+      return { staffPrincipalId: signup.user.id };
+    } finally {
+      verificationToken.value = undefined;
+    }
+  },
+});
+
 /**
  * This factory is intentionally for the local operator command only. It must never be passed to
  * an HTTP bridge because it temporarily permits account creation to enroll a verified invitation.
@@ -501,5 +586,5 @@ export const createLocalOperatorStaffEnrollmentRealm = (
   configuration: AuthRealmConfiguration,
 ): AuthRealm => {
   assertDevelopmentOperatorEnrollment(configuration);
-  return createRealm("STAFF", { ...configuration, allowOperatorEnrollment: true });
+  return createRealm("STAFF", { ...configuration, allowOperatorEnrollment: true }).realm;
 };

@@ -1,0 +1,11 @@
+✔ accepts only exact approved DEVELOPMENT origin and synthetic run identity (3.148549ms)
+✔ public output removes unknown fields and refuses nested secret payloads (6.466699ms)
+✔ operator credentials remain references and test identities never use the human recipient (0.517361ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 123.008991

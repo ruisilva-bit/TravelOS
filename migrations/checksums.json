@@ -57,6 +57,14 @@
     {
       "file": "0014_stage8_worker_activity.cjs",
       "sha256": "cde21a83dc078a888d30210217e040fd47a5dc5b38993f98ce8ddf06f4c741c6"
+    },
+    {
+      "file": "0015_stage9_trip_workspace_writes.cjs",
+      "sha256": "21e5a124e986406b689b2b38496be1502511990bdbad5ce4bc27b1c009e8b3c9"
+    },
+    {
+      "file": "0016_stage9_staff_invitations.cjs",
+      "sha256": "a1734cef25a350d22de35b1a967282375c46b894c434601d781f925e33eb6070"
     }
   ]
 }

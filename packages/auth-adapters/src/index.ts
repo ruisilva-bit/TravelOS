@@ -14,9 +14,15 @@ export {
   type OneTimeOperatorToken,
 } from "./operator-token.js";
 export {
+  createStaffInvitationToken,
+  digestStaffInvitationToken,
+  type StaffInvitationToken,
+} from "./staff-invitation-token.js";
+export {
   createLocalOperatorStaffEnrollmentRealm,
   createPortalAuthRealm,
   createStaffAuthRealm,
+  createStaffInvitationEnrollmentService,
   PORTAL_AUTH_BASE_PATH,
   STAFF_AUTH_BASE_PATH,
   type AuthenticationRealm,
@@ -24,6 +30,9 @@ export {
   type AuthRealmConfiguration,
   type RealmEnvironment,
   type RealmSession,
+  type StaffInvitationEnrollmentInput,
+  type StaffInvitationEnrollmentResult,
+  type StaffInvitationEnrollmentService,
 } from "./realm.js";
 export {
   createAuthRealmPostgresDatabase,

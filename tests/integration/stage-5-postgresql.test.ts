@@ -894,6 +894,11 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     if (before === null) throw new Error("The authorized Trip is unavailable before revocation");
     const currentAccommodation = primaryAccommodation(before);
     const revokingRepository: Parameters<typeof createM1StaffTripOperations>[0]["repository"] = {
+      async createTripWorkspace() {
+        throw new Error(
+          "Unexpected minimal Trip workspace creation in the Stage 5 authorization test",
+        );
+      },
       createM1TripSlice: repository.createM1TripSlice,
       getM1TripSlice: repository.getM1TripSlice,
       updateAccommodation: async (input, authorization) => {

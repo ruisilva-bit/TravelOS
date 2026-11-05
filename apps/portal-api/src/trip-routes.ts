@@ -1,11 +1,17 @@
-import { PortalTripSnapshotV1Schema } from "@travelos/contracts/portal";
+import {
+  PortalAuthorizedTripListV1QuerySchema,
+  PortalAuthorizedTripListV1ResponseSchema,
+  PortalTripSnapshotV1Schema,
+} from "@travelos/contracts/portal";
 import {
   hostHeaderMatchesExpectedHost,
   type AuthSurfacePolicy,
   type PortalAuthRealm,
 } from "@travelos/auth-adapters/portal";
 import {
+  listAuthorizedPortalTrips,
   readCurrentPortalTripSnapshot,
+  type CurrentAuthorizedPortalTripListReader,
   type CurrentPublishedPortalTripSnapshotReader,
 } from "@travelos/portal-safe-core/customer-presentation";
 
@@ -40,11 +46,13 @@ interface NestHttpApplication {
 export interface PortalTripRouteOptions {
   readonly realm: PortalAuthRealm;
   readonly policy: AuthSurfacePolicy;
-  readonly reader: CurrentPublishedPortalTripSnapshotReader;
+  readonly reader?: CurrentPublishedPortalTripSnapshotReader;
+  readonly listReader?: CurrentAuthorizedPortalTripListReader;
 }
 
 const TRIP_ID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu;
 const CURRENT_TRIP_ROUTE = "/api/portal/trips/:tripId";
+const AUTHORIZED_TRIP_LIST_ROUTE = "/api/portal/trips";
 const CACHE_CONTROL = "no-store, private";
 
 const singleHeader = (
@@ -80,7 +88,9 @@ const writeEmpty = (response: OutgoingHttpResponse, statusCode: number): void =>
 };
 
 const tripHandler =
-  (options: PortalTripRouteOptions): HttpHandler =>
+  (
+    options: PortalTripRouteOptions & { readonly reader: CurrentPublishedPortalTripSnapshotReader },
+  ): HttpHandler =>
   (request, response) => {
     response.setHeader("cache-control", CACHE_CONTROL);
 
@@ -141,6 +151,88 @@ const tripHandler =
       });
   };
 
+const tripListQueryFor = (target: URL): Record<string, string> | null => {
+  const query = Object.create(null) as Record<string, string>;
+  const keys = new Set<string>();
+  for (const [key, value] of target.searchParams) {
+    if (keys.has(key)) return null;
+    keys.add(key);
+    query[key] = value;
+  }
+  return query;
+};
+
+const tripListHandler =
+  (options: PortalTripRouteOptions): HttpHandler =>
+  (request, response) => {
+    response.setHeader("cache-control", CACHE_CONTROL);
+
+    const target = requestUrlFor(request, options.policy);
+    if (
+      target === null ||
+      !hostHeaderMatchesExpectedHost(
+        singleHeader(request.headers, "host"),
+        options.policy.expectedHost,
+      )
+    ) {
+      writeEmpty(response, 404);
+      return;
+    }
+
+    if (
+      request.headers.authorization !== undefined ||
+      request.headers["x-forwarded-host"] !== undefined
+    ) {
+      writeEmpty(response, 403);
+      return;
+    }
+
+    if (target.hash !== "") {
+      writeEmpty(response, 400);
+      return;
+    }
+
+    const rawQuery = tripListQueryFor(target);
+    const parsedQuery =
+      rawQuery === null ? null : PortalAuthorizedTripListV1QuerySchema.safeParse(rawQuery);
+    if (parsedQuery === null || !parsedQuery.success) {
+      writeEmpty(response, 400);
+      return;
+    }
+
+    const listReader = options.listReader;
+    if (listReader === undefined) {
+      writeEmpty(response, 404);
+      return;
+    }
+
+    void options.realm
+      .getServerSession(new Request(target, { headers: cookieHeadersFor(request.headers) }))
+      .then(async (session) => {
+        if (session === null) {
+          writeEmpty(response, 401);
+          return;
+        }
+
+        const page = await listAuthorizedPortalTrips({
+          session,
+          nowEpochMs: Date.now(),
+          limit: parsedQuery.data.limit,
+          cursor: parsedQuery.data.cursor,
+          reader: listReader,
+        });
+        if (page === null) {
+          writeEmpty(response, 401);
+          return;
+        }
+
+        response.status(200).json(PortalAuthorizedTripListV1ResponseSchema.parse(page));
+      })
+      .catch(() => {
+        response.status(500).json({ error: "internal_error" });
+      });
+  };
+
 /** Registers the single current immutable-snapshot read route; it has no workspace fallback. */
 export const registerPortalTripRoutes = (
   application: NestHttpApplication,
@@ -149,6 +241,14 @@ export const registerPortalTripRoutes = (
   if (options.realm.kind !== "PORTAL") {
     throw new Error("Portal Trip routes require the Portal realm");
   }
+  if (options.reader === undefined && options.listReader === undefined) {
+    throw new Error("Portal Trip routes require at least one scoped snapshot reader");
+  }
   const http = application.getHttpAdapter().getInstance() as ExpressLikeApplication;
-  http.get(CURRENT_TRIP_ROUTE, tripHandler(options));
+  if (options.listReader !== undefined) {
+    http.get(AUTHORIZED_TRIP_LIST_ROUTE, tripListHandler(options));
+  }
+  if (options.reader !== undefined) {
+    http.get(CURRENT_TRIP_ROUTE, tripHandler({ ...options, reader: options.reader }));
+  }
 };

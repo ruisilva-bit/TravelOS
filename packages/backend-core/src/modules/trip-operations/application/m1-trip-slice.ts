@@ -37,6 +37,40 @@ export interface CreateM1TripSliceInput {
   readonly supplierCost: SupplierCostDraft;
 }
 
+export interface CreateM1TripWorkspaceInput {
+  readonly customer: CustomerDraft;
+  readonly primaryTraveller: Pick<PersonDraft, "givenName" | "familyName">;
+  readonly trip: Pick<Trip, "title" | "startDate" | "endDate">;
+}
+
+export interface CreateM1TripWorkspaceFlightInput {
+  readonly expectedWorkspaceRevision: bigint;
+  readonly flight: FlightDraft;
+}
+
+export interface UpdateM1TripWorkspaceFlightInput {
+  readonly expectedWorkspaceRevision: bigint;
+  readonly expectedLockVersion: bigint;
+  readonly flight: FlightDraft;
+}
+
+export interface CreateM1TripWorkspaceAccommodationInput {
+  readonly expectedWorkspaceRevision: bigint;
+  readonly accommodation: AccommodationDraft;
+}
+
+export interface UpdateM1TripWorkspaceAccommodationInput {
+  readonly expectedWorkspaceRevision: bigint;
+  readonly expectedLockVersion: bigint;
+  readonly accommodation: AccommodationDraft;
+}
+
+export interface UpdateM1TripWorkspaceTripInput {
+  readonly expectedWorkspaceRevision: bigint;
+  readonly expectedLockVersion: bigint;
+  readonly trip: CreateM1TripWorkspaceInput["trip"];
+}
+
 export interface UpdateAccommodationInput {
   readonly agencyId: OpaqueId;
   readonly tripId: OpaqueId;
@@ -284,6 +318,17 @@ const parseTrip = (value: unknown): CreateM1TripSliceInput["trip"] => {
   };
 };
 
+const parseTripWorkspace = (value: unknown): CreateM1TripWorkspaceInput["trip"] => {
+  const record = exactRecord(value, ["endDate", "startDate", "title"], "Trip");
+  const trip = parseTrip({
+    title: record.title,
+    startDate: record.startDate,
+    endDate: record.endDate,
+    state: "DRAFT",
+  });
+  return { title: trip.title, startDate: trip.startDate, endDate: trip.endDate };
+};
+
 const parseFlight = (value: unknown): FlightDraft => {
   const record = exactRecord(
     value,
@@ -381,6 +426,20 @@ const parseAccommodation = (value: unknown): AccommodationDraft => {
   };
 };
 
+const validateFlightSchedule = (flight: FlightDraft): FlightDraft => {
+  if (Date.parse(flight.departure.instant) >= Date.parse(flight.arrival.instant)) {
+    throw new Error("Flight departure instant must be before arrival instant");
+  }
+  return flight;
+};
+
+const validateAccommodationSchedule = (accommodation: AccommodationDraft): AccommodationDraft => {
+  if (Date.parse(accommodation.checkIn.instant) >= Date.parse(accommodation.checkOut.instant)) {
+    throw new Error("Accommodation check-in must be before check-out");
+  }
+  return accommodation;
+};
+
 const parseReservation = (value: unknown): ReservationDraft => {
   const record = exactRecord(
     value,
@@ -419,6 +478,10 @@ const parseReservation = (value: unknown): ReservationDraft => {
 };
 
 export interface M1OperationalSliceRepository {
+  createTripWorkspace(
+    input: CreateM1TripWorkspaceInput,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<Trip>;
   createM1TripSlice(
     input: CreateM1TripSliceInput,
     authorization: StaffAuthorizationOperationProof,
@@ -446,6 +509,144 @@ export interface M1OperationalSliceRepository {
     authorization: StaffAuthorizationOperationProof,
   ): Promise<M1TripSlice>;
 }
+
+export const validateCreateM1TripWorkspaceInput = (input: unknown): CreateM1TripWorkspaceInput =>
+  runInputValidation(() => {
+    const record = exactRecord(
+      input,
+      ["customer", "primaryTraveller", "trip"],
+      "Trip workspace creation",
+    );
+    const primaryTraveller = exactRecord(
+      record.primaryTraveller,
+      ["familyName", "givenName"],
+      "Primary traveller",
+    );
+    return {
+      customer: parseCustomer(record.customer),
+      primaryTraveller: {
+        givenName: requiredString(primaryTraveller, "givenName", "Traveller given name", {
+          min: 1,
+          max: 200,
+        }),
+        familyName: requiredString(primaryTraveller, "familyName", "Traveller family name", {
+          min: 1,
+          max: 200,
+        }),
+      },
+      trip: parseTripWorkspace(record.trip),
+    } satisfies CreateM1TripWorkspaceInput;
+  });
+
+export const validateCreateM1TripWorkspaceFlightInput = (
+  input: unknown,
+): CreateM1TripWorkspaceFlightInput =>
+  runInputValidation(() => {
+    const record = exactRecord(
+      input,
+      ["expectedWorkspaceRevision", "flight"],
+      "Trip workspace Flight creation",
+    );
+    return {
+      expectedWorkspaceRevision: requiredLockVersion(
+        record,
+        "expectedWorkspaceRevision",
+        "Expected Trip workspace revision",
+      ),
+      flight: validateFlightSchedule(parseFlight(record.flight)),
+    } satisfies CreateM1TripWorkspaceFlightInput;
+  });
+
+export const validateUpdateM1TripWorkspaceFlightInput = (
+  input: unknown,
+): UpdateM1TripWorkspaceFlightInput =>
+  runInputValidation(() => {
+    const record = exactRecord(
+      input,
+      ["expectedLockVersion", "expectedWorkspaceRevision", "flight"],
+      "Trip workspace Flight update",
+    );
+    return {
+      expectedWorkspaceRevision: requiredLockVersion(
+        record,
+        "expectedWorkspaceRevision",
+        "Expected Trip workspace revision",
+      ),
+      expectedLockVersion: requiredLockVersion(
+        record,
+        "expectedLockVersion",
+        "Expected Flight lock version",
+      ),
+      flight: validateFlightSchedule(parseFlight(record.flight)),
+    } satisfies UpdateM1TripWorkspaceFlightInput;
+  });
+
+export const validateCreateM1TripWorkspaceAccommodationInput = (
+  input: unknown,
+): CreateM1TripWorkspaceAccommodationInput =>
+  runInputValidation(() => {
+    const record = exactRecord(
+      input,
+      ["accommodation", "expectedWorkspaceRevision"],
+      "Trip workspace Accommodation creation",
+    );
+    return {
+      expectedWorkspaceRevision: requiredLockVersion(
+        record,
+        "expectedWorkspaceRevision",
+        "Expected Trip workspace revision",
+      ),
+      accommodation: validateAccommodationSchedule(parseAccommodation(record.accommodation)),
+    } satisfies CreateM1TripWorkspaceAccommodationInput;
+  });
+
+export const validateUpdateM1TripWorkspaceAccommodationInput = (
+  input: unknown,
+): UpdateM1TripWorkspaceAccommodationInput =>
+  runInputValidation(() => {
+    const record = exactRecord(
+      input,
+      ["accommodation", "expectedLockVersion", "expectedWorkspaceRevision"],
+      "Trip workspace Accommodation update",
+    );
+    return {
+      expectedWorkspaceRevision: requiredLockVersion(
+        record,
+        "expectedWorkspaceRevision",
+        "Expected Trip workspace revision",
+      ),
+      expectedLockVersion: requiredLockVersion(
+        record,
+        "expectedLockVersion",
+        "Expected Accommodation lock version",
+      ),
+      accommodation: validateAccommodationSchedule(parseAccommodation(record.accommodation)),
+    } satisfies UpdateM1TripWorkspaceAccommodationInput;
+  });
+
+export const validateUpdateM1TripWorkspaceTripInput = (
+  input: unknown,
+): UpdateM1TripWorkspaceTripInput =>
+  runInputValidation(() => {
+    const record = exactRecord(
+      input,
+      ["expectedLockVersion", "expectedWorkspaceRevision", "trip"],
+      "Trip workspace Trip update",
+    );
+    return {
+      expectedWorkspaceRevision: requiredLockVersion(
+        record,
+        "expectedWorkspaceRevision",
+        "Expected Trip workspace revision",
+      ),
+      expectedLockVersion: requiredLockVersion(
+        record,
+        "expectedLockVersion",
+        "Expected Trip lock version",
+      ),
+      trip: parseTripWorkspace(record.trip),
+    } satisfies UpdateM1TripWorkspaceTripInput;
+  });
 
 export const validateCreateM1TripSliceInput = (
   input: CreateM1TripSliceInput,
@@ -481,8 +682,8 @@ export const validateCreateM1TripSliceInput = (
     }
     const travellerRole = "PRIMARY_TRAVELLER" as const;
     const trip = parseTrip(record.trip);
-    const flight = parseFlight(record.flight);
-    const accommodation = parseAccommodation(record.accommodation);
+    const flight = validateFlightSchedule(parseFlight(record.flight));
+    const accommodation = validateAccommodationSchedule(parseAccommodation(record.accommodation));
     const reservation = parseReservation(record.reservation);
     const supplierCostRecord = exactRecord(
       record.supplierCost,
@@ -501,12 +702,6 @@ export const validateCreateM1TripSliceInput = (
         },
       ),
     });
-    if (Date.parse(flight.departure.instant) >= Date.parse(flight.arrival.instant)) {
-      throw new Error("Flight departure instant must be before arrival instant");
-    }
-    if (Date.parse(accommodation.checkIn.instant) >= Date.parse(accommodation.checkOut.instant)) {
-      throw new Error("Accommodation check-in must be before check-out");
-    }
     return {
       agencyId,
       person,

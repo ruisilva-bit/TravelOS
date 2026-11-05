@@ -1,0 +1,286 @@
+import {
+  AdminPublishTripV1RequestSchema,
+  AdminTripPublicationHistoryV1ResponseSchema,
+  AdminTripPublicationPreviewV1Schema,
+  AdminTripPublicationV1ResponseSchema,
+  AdminOpaqueIdSchema,
+  AdminStaffSessionContextSchema,
+  AdminTripWorkspaceAccommodationCreateV1RequestSchema,
+  AdminTripWorkspaceAccommodationUpdateV1RequestSchema,
+  AdminTripWorkspaceCreateV1RequestSchema,
+  AdminTripWorkspaceFlightCreateV1RequestSchema,
+  AdminTripWorkspaceFlightUpdateV1RequestSchema,
+  AdminTripWorkspaceListV1QuerySchema,
+  AdminTripWorkspaceListV1ResponseSchema,
+  AdminTripWorkspaceTripUpdateV1RequestSchema,
+  AdminTripWorkspaceV1ResponseSchema,
+  type AdminPublishTripV1Request,
+  type AdminStaffSessionContext,
+  type AdminTripPublicationHistoryV1Response,
+  type AdminTripPublicationPreviewV1,
+  type AdminTripPublicationV1Response,
+  type AdminTripWorkspaceAccommodationCreateV1Request,
+  type AdminTripWorkspaceAccommodationUpdateV1Request,
+  type AdminTripWorkspaceCreateV1Request,
+  type AdminTripWorkspaceFlightCreateV1Request,
+  type AdminTripWorkspaceFlightUpdateV1Request,
+  type AdminTripWorkspaceListV1Response,
+  type AdminTripWorkspaceTripUpdateV1Request,
+  type AdminTripWorkspaceV1Response,
+} from "@travelos/contracts/admin";
+
+export type AdminApiErrorCode =
+  | "AUTHENTICATION_REQUIRED"
+  | "ACCESS_DENIED"
+  | "NOT_FOUND"
+  | "CONFLICT"
+  | "UNAVAILABLE"
+  | "NETWORK_FAILURE"
+  | "INVALID_RESPONSE"
+  | "INVALID_REQUEST";
+
+const messages: Record<AdminApiErrorCode, string> = {
+  AUTHENTICATION_REQUIRED: "A sessão de equipa terminou. Inicie sessão novamente.",
+  ACCESS_DENIED: "Acesso não autorizado.",
+  NOT_FOUND: "A viagem não está disponível.",
+  CONFLICT: "Os dados foram alterados. Atualize a página antes de continuar.",
+  UNAVAILABLE: "O serviço está temporariamente indisponível.",
+  NETWORK_FAILURE: "Não foi possível contactar o serviço.",
+  INVALID_RESPONSE: "Não foi possível validar os dados recebidos.",
+  INVALID_REQUEST: "O pedido não é válido.",
+};
+
+export class AdminApiError extends Error {
+  readonly code: AdminApiErrorCode;
+  readonly status: number | null;
+
+  constructor(code: AdminApiErrorCode, status: number | null = null) {
+    super(messages[code]);
+    this.name = "AdminApiError";
+    this.code = code;
+    this.status = status;
+  }
+}
+
+const errorCodeForStatus = (status: number): AdminApiErrorCode => {
+  if (status === 401) return "AUTHENTICATION_REQUIRED";
+  if (status === 403) return "ACCESS_DENIED";
+  if (status === 404) return "NOT_FOUND";
+  if (status === 409) return "CONFLICT";
+  return status >= 500 ? "UNAVAILABLE" : "INVALID_RESPONSE";
+};
+
+const getJson = async <T>(
+  path: string,
+  schema: { safeParse: (value: unknown) => { success: true; data: T } | { success: false } },
+): Promise<T> => {
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { accept: "application/json" },
+    });
+  } catch {
+    throw new AdminApiError("NETWORK_FAILURE");
+  }
+
+  if (!response.ok) throw new AdminApiError(errorCodeForStatus(response.status), response.status);
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new AdminApiError("INVALID_RESPONSE", response.status);
+  }
+
+  const parsed = schema.safeParse(payload);
+  if (!parsed.success) throw new AdminApiError("INVALID_RESPONSE", response.status);
+  return parsed.data;
+};
+
+type SafeParseSchema<T> = {
+  safeParse: (value: unknown) => { success: true; data: T } | { success: false };
+};
+
+const sendJson = async <TRequest, TResponse>(
+  path: string,
+  method: "POST" | "PATCH",
+  input: unknown,
+  requestSchema: SafeParseSchema<TRequest>,
+  responseSchema: SafeParseSchema<TResponse>,
+): Promise<TResponse> => {
+  const request = requestSchema.safeParse(input);
+  if (!request.success) throw new AdminApiError("INVALID_REQUEST");
+
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method,
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify(request.data),
+    });
+  } catch {
+    throw new AdminApiError("NETWORK_FAILURE");
+  }
+
+  if (!response.ok) throw new AdminApiError(errorCodeForStatus(response.status), response.status);
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new AdminApiError("INVALID_RESPONSE", response.status);
+  }
+
+  const parsed = responseSchema.safeParse(payload);
+  if (!parsed.success) throw new AdminApiError("INVALID_RESPONSE", response.status);
+  return parsed.data;
+};
+
+const tripResourcePath = (tripId: string, resource: string): string => {
+  const parsedId = AdminOpaqueIdSchema.safeParse(tripId);
+  if (!parsedId.success) throw new AdminApiError("INVALID_REQUEST");
+  return `/api/admin/trips/${encodeURIComponent(parsedId.data)}/${resource}`;
+};
+
+export const getAdminSessionContext = (): Promise<AdminStaffSessionContext> =>
+  getJson("/api/staff/session-context", AdminStaffSessionContextSchema);
+
+export const listAdminTrips = (input: {
+  readonly limit: number;
+  readonly cursor: string | null;
+}): Promise<AdminTripWorkspaceListV1Response> => {
+  const parsed = AdminTripWorkspaceListV1QuerySchema.safeParse({
+    limit: String(input.limit),
+    cursor: input.cursor,
+  });
+  if (!parsed.success) return Promise.reject(new AdminApiError("INVALID_REQUEST"));
+
+  const query = new URLSearchParams({ limit: String(parsed.data.limit) });
+  if (parsed.data.cursor !== null) query.set("cursor", parsed.data.cursor);
+  return getJson(`/api/admin/trips?${query.toString()}`, AdminTripWorkspaceListV1ResponseSchema);
+};
+
+export const getAdminTripWorkspace = (tripId: string): Promise<AdminTripWorkspaceV1Response> => {
+  const parsedId = AdminOpaqueIdSchema.safeParse(tripId);
+  if (!parsedId.success) return Promise.reject(new AdminApiError("INVALID_REQUEST"));
+  return getJson(
+    `/api/admin/trips/${encodeURIComponent(parsedId.data)}/workspace`,
+    AdminTripWorkspaceV1ResponseSchema,
+  );
+};
+
+export const createAdminTripWorkspace = (
+  input: AdminTripWorkspaceCreateV1Request,
+): Promise<AdminTripWorkspaceV1Response> =>
+  sendJson(
+    "/api/admin/trips/workspace",
+    "POST",
+    input,
+    AdminTripWorkspaceCreateV1RequestSchema,
+    AdminTripWorkspaceV1ResponseSchema,
+  );
+
+export const updateAdminTripWorkspace = (
+  tripId: string,
+  input: AdminTripWorkspaceTripUpdateV1Request,
+): Promise<AdminTripWorkspaceV1Response> =>
+  sendJson(
+    tripResourcePath(tripId, "workspace"),
+    "PATCH",
+    input,
+    AdminTripWorkspaceTripUpdateV1RequestSchema,
+    AdminTripWorkspaceV1ResponseSchema,
+  );
+
+export const createAdminFlight = (
+  tripId: string,
+  input: AdminTripWorkspaceFlightCreateV1Request,
+): Promise<AdminTripWorkspaceV1Response> =>
+  sendJson(
+    tripResourcePath(tripId, "workspace/flights"),
+    "POST",
+    input,
+    AdminTripWorkspaceFlightCreateV1RequestSchema,
+    AdminTripWorkspaceV1ResponseSchema,
+  );
+
+export const updateAdminFlight = (
+  tripId: string,
+  flightId: string,
+  input: AdminTripWorkspaceFlightUpdateV1Request,
+): Promise<AdminTripWorkspaceV1Response> => {
+  const parsedFlightId = AdminOpaqueIdSchema.safeParse(flightId);
+  if (!parsedFlightId.success) return Promise.reject(new AdminApiError("INVALID_REQUEST"));
+  return sendJson(
+    tripResourcePath(tripId, `workspace/flights/${encodeURIComponent(parsedFlightId.data)}`),
+    "PATCH",
+    input,
+    AdminTripWorkspaceFlightUpdateV1RequestSchema,
+    AdminTripWorkspaceV1ResponseSchema,
+  );
+};
+
+export const createAdminAccommodation = (
+  tripId: string,
+  input: AdminTripWorkspaceAccommodationCreateV1Request,
+): Promise<AdminTripWorkspaceV1Response> =>
+  sendJson(
+    tripResourcePath(tripId, "workspace/accommodations"),
+    "POST",
+    input,
+    AdminTripWorkspaceAccommodationCreateV1RequestSchema,
+    AdminTripWorkspaceV1ResponseSchema,
+  );
+
+export const updateAdminAccommodation = (
+  tripId: string,
+  accommodationId: string,
+  input: AdminTripWorkspaceAccommodationUpdateV1Request,
+): Promise<AdminTripWorkspaceV1Response> => {
+  const parsedAccommodationId = AdminOpaqueIdSchema.safeParse(accommodationId);
+  if (!parsedAccommodationId.success) return Promise.reject(new AdminApiError("INVALID_REQUEST"));
+  return sendJson(
+    tripResourcePath(
+      tripId,
+      `workspace/accommodations/${encodeURIComponent(parsedAccommodationId.data)}`,
+    ),
+    "PATCH",
+    input,
+    AdminTripWorkspaceAccommodationUpdateV1RequestSchema,
+    AdminTripWorkspaceV1ResponseSchema,
+  );
+};
+
+export const getAdminPublicationPreview = (
+  tripId: string,
+): Promise<AdminTripPublicationPreviewV1> =>
+  getJson(tripResourcePath(tripId, "publication-preview"), AdminTripPublicationPreviewV1Schema);
+
+export const publishAdminTrip = (
+  tripId: string,
+  input: AdminPublishTripV1Request,
+): Promise<AdminTripPublicationV1Response> =>
+  sendJson(
+    tripResourcePath(tripId, "publications"),
+    "POST",
+    input,
+    AdminPublishTripV1RequestSchema,
+    AdminTripPublicationV1ResponseSchema,
+  );
+
+export const listAdminTripPublications = (
+  tripId: string,
+  before: string | null,
+): Promise<AdminTripPublicationHistoryV1Response> => {
+  if (before !== null && !/^[1-9][0-9]*$/u.test(before)) {
+    return Promise.reject(new AdminApiError("INVALID_REQUEST"));
+  }
+  const path = tripResourcePath(tripId, "publications");
+  const query = before === null ? "" : `?${new URLSearchParams({ before }).toString()}`;
+  return getJson(`${path}${query}`, AdminTripPublicationHistoryV1ResponseSchema);
+};

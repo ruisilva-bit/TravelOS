@@ -6,13 +6,15 @@ import {
 } from "../../../staff-access/authorization.js";
 import type { StaffPermissionId } from "../../../staff-access/permission-registry.js";
 import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
-import type { M1TripSlice } from "../domain/m1-slice.js";
+import type { M1TripSlice, Trip } from "../domain/m1-slice.js";
 import {
   validateCancelM1TripInput,
+  validateCreateM1TripWorkspaceInput,
   validateCreateM1TripSliceInput,
   validateUpdateM1AccommodationInput,
   validateUpdateM1InternalSupplierNoteInput,
   type CancelM1TripInput,
+  type CreateM1TripWorkspaceInput,
   type CreateM1TripSliceInput,
   type M1OperationalSliceRepository,
   type UpdateAccommodationInput,
@@ -32,6 +34,7 @@ export interface M1StaffAuthorizationRepository {
 }
 
 export interface M1StaffTripOperations {
+  createTripWorkspace(cookieHeader: unknown, input: CreateM1TripWorkspaceInput): Promise<Trip>;
   createTripSlice(cookieHeader: unknown, input: CreateM1TripSliceInput): Promise<M1TripSlice>;
   createRuntimeAcceptanceFixtureTrip(
     cookieHeader: unknown,
@@ -99,6 +102,13 @@ const M1_CREATE_PERMISSIONS = Object.freeze([
   "finance.manage_costs",
 ] as const satisfies readonly StaffPermissionId[]);
 
+const M1_TRIP_WORKSPACE_CREATE_PERMISSIONS = Object.freeze([
+  "customer.edit",
+  "traveller.edit",
+  "trip.edit",
+  "trip.view",
+] as const satisfies readonly StaffPermissionId[]);
+
 const M1_RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS = Object.freeze([
   ...M1_CREATE_PERMISSIONS,
   "runtime_acceptance.fixture.manage",
@@ -122,6 +132,7 @@ const M1_CANCEL_PERMISSIONS = Object.freeze([
 /** Fixed policy per operation; persistence adapters enforce it independently of caller input. */
 export const M1_OPERATION_PERMISSION_REQUIREMENTS = Object.freeze({
   CREATE: M1_CREATE_PERMISSIONS,
+  WORKSPACE_CREATE: M1_TRIP_WORKSPACE_CREATE_PERMISSIONS,
   FIXTURE_CREATE: M1_RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS,
   READ: M1_COMPOSITE_READ_PERMISSIONS,
   ACCOMMODATION_EDIT: M1_ACCOMMODATION_EDIT_PERMISSIONS,
@@ -242,6 +253,17 @@ export const createM1StaffTripOperations = (
   dependencies: M1StaffTripOperationsDependencies,
 ): M1StaffTripOperations => {
   const operations: M1StaffTripOperations = {
+    async createTripWorkspace(cookieHeader, input) {
+      const normalizedInput = validateCreateM1TripWorkspaceInput(input);
+      const authorization = await authorizeM1Operation(
+        dependencies,
+        cookieHeader,
+        null,
+        M1_TRIP_WORKSPACE_CREATE_PERMISSIONS,
+      );
+      return dependencies.repository.createTripWorkspace(normalizedInput, authorization);
+    },
+
     async createTripSlice(cookieHeader, input) {
       const normalizedInput = validateCreateM1TripSliceInput(input);
       const authorization = await authorizeM1Operation(

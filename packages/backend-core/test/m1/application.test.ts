@@ -26,6 +26,10 @@ const rejectUnexpectedFixtureTripCreation = async (): Promise<never> => {
   throw new Error("Unexpected fixture Trip creation in unit test");
 };
 
+const rejectUnexpectedTripWorkspaceCreation = async (): Promise<never> => {
+  throw new Error("Unexpected minimal Trip workspace creation in unit test");
+};
+
 const agencyId = "00000000-0000-7000-8000-000000000001" as CreateM1TripSliceInput["agencyId"];
 
 const m1PermissionIds = [
@@ -232,6 +236,7 @@ describe("Stage 5 M1 application invariants", () => {
   it("rejects unknown fields and contract-invalid values before the repository boundary", async () => {
     const calls = { create: 0, updateAccommodation: 0, updateInternalNote: 0 };
     const repository = {
+      createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
       async createM1TripSlice(value: CreateM1TripSliceInput) {
         calls.create += 1;
         return { value } as never;
@@ -346,6 +351,7 @@ describe("Stage 5 M1 application invariants", () => {
   it("rejects malformed create, read and update inputs before every repository call", async () => {
     const calls = { create: 0, read: 0, updateAccommodation: 0, updateInternalNote: 0 };
     const repository: M1OperationalSliceRepository = {
+      createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
       async createM1TripSlice() {
         calls.create += 1;
         return undefined as never;
@@ -677,6 +683,7 @@ describe("Stage 5 M1 application invariants", () => {
 
   it("keeps application persistence behind the repository port", async () => {
     const repository = {
+      createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
       async createM1TripSlice(value: CreateM1TripSliceInput) {
         return { value } as never;
       },
@@ -700,6 +707,7 @@ describe("Stage 5 M1 application invariants", () => {
   it("passes reconstructed JSON Money to the repository port", async () => {
     const captured: { value: CreateM1TripSliceInput | null } = { value: null };
     const repository = {
+      createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
       async createM1TripSlice(value: CreateM1TripSliceInput) {
         captured.value = value;
         return { value } as never;
@@ -770,6 +778,7 @@ describe("Stage 5 M1 application invariants", () => {
     };
     const calls: string[] = [];
     const repository: M1OperationalSliceRepository = {
+      createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
       async createM1TripSlice(value) {
         calls.push("workspace:create");
         return { value } as never;
@@ -842,6 +851,7 @@ describe("Stage 5 M1 application invariants", () => {
     };
     const workspaceCalls: string[] = [];
     const repository: M1OperationalSliceRepository = {
+      createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
       async createM1TripSlice() {
         workspaceCalls.push("create");
         return undefined as never;
@@ -948,5 +958,148 @@ describe("Stage 5 M1 application invariants", () => {
       }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(workspaceCalls).toEqual([]);
+  });
+
+  it("creates_a_minimal_trip_workspace_using_only_the_authenticated_staff_scope", async () => {
+    const nowEpochMs = 1_700_000_000_000;
+    const request = {
+      customer: { displayName: "Costa Norte Viagens" },
+      primaryTraveller: { givenName: "Ana", familyName: "Matos" },
+      trip: { title: "Lisboa a Porto", startDate: "2026-10-26", endDate: "2026-10-30" },
+    };
+    const requiredPermissions = [
+      "customer.edit",
+      "traveller.edit",
+      "trip.edit",
+      "trip.view",
+    ] as const satisfies readonly StaffPermissionId[];
+    const session: StaffSessionAuthorizationProof = {
+      sessionId: "session-create-workspace",
+      staffPrincipalId: "staff-principal-create-workspace",
+      agencyId,
+      authorizationEpoch: 3n,
+      expiresAtEpochMs: nowEpochMs + 60_000,
+      recentMfaVerifiedAtEpochMs: null,
+    };
+    const snapshot: StaffAuthorizationSnapshot = {
+      staffPrincipalId: session.staffPrincipalId,
+      agencyId,
+      membershipState: "ACTIVE",
+      authorizationEpoch: session.authorizationEpoch,
+      assignments: requiredPermissions.map((permissionId) => ({
+        agencyId,
+        permissionId,
+        scopeKind: "AGENCY",
+        organizationUnitId: null,
+        accessLevel: "ALL",
+        active: true,
+      })),
+    };
+    const createdTrip = {
+      id: "00000000-0000-7000-8000-000000000101",
+      agencyId,
+      title: "Lisboa a Porto",
+      startDate: "2026-10-26",
+      endDate: "2026-10-30",
+      state: "DRAFT",
+      workspaceRevision: 1n,
+      lockVersion: 0n,
+    };
+    const calls: string[] = [];
+    const repository = {
+      async createTripWorkspace(value: unknown, authorization: StaffAuthorizationOperationProof) {
+        calls.push("repository:create");
+        expect(value).toEqual(request);
+        expect(authorization.session).toEqual(session);
+        expect(authorization.requiredPermissionIds).toEqual(requiredPermissions);
+        return createdTrip;
+      },
+    };
+    const operations = createM1StaffTripOperations({
+      repository: repository as unknown as M1OperationalSliceRepository,
+      authorizationRepository: {
+        async getStaffAuthorizationSnapshot() {
+          calls.push("authorization:snapshot");
+          return snapshot;
+        },
+      },
+      sessionResolver: {
+        async resolveStaffSession(cookieHeader) {
+          calls.push(`session:${cookieHeader}`);
+          return session;
+        },
+      },
+      nowEpochMs: () => nowEpochMs,
+    });
+    const candidate = (operations as unknown as Record<string, unknown>).createTripWorkspace;
+
+    expect(candidate).toBeTypeOf("function");
+    if (typeof candidate !== "function") return;
+    const result = await (
+      candidate as (cookieHeader: unknown, value: unknown) => Promise<unknown>
+    ).call(operations, "staff-session-cookie=opaque", request);
+
+    expect(result).toEqual(createdTrip);
+    expect(calls).toEqual([
+      "session:staff-session-cookie=opaque",
+      "authorization:snapshot",
+      "repository:create",
+    ]);
+  });
+
+  it("rejects_forged_agency_fields_and_missing_create_permissions_before_persistence", async () => {
+    const request = {
+      customer: { displayName: "Costa Norte Viagens" },
+      primaryTraveller: { givenName: "Ana", familyName: "Matos" },
+      trip: { title: "Lisboa a Porto", startDate: "2026-10-26", endDate: "2026-10-30" },
+    };
+    const nowEpochMs = 1_700_000_000_000;
+    const session: StaffSessionAuthorizationProof = {
+      sessionId: "session-create-denied",
+      staffPrincipalId: "staff-principal-create-denied",
+      agencyId,
+      authorizationEpoch: 3n,
+      expiresAtEpochMs: nowEpochMs + 60_000,
+      recentMfaVerifiedAtEpochMs: null,
+    };
+    let repositoryCalls = 0;
+    const repository = {
+      async createTripWorkspace() {
+        repositoryCalls += 1;
+        return undefined;
+      },
+    };
+    const operations = createM1StaffTripOperations({
+      repository: repository as unknown as M1OperationalSliceRepository,
+      authorizationRepository: {
+        async getStaffAuthorizationSnapshot() {
+          return {
+            staffPrincipalId: session.staffPrincipalId,
+            agencyId,
+            membershipState: "ACTIVE",
+            authorizationEpoch: session.authorizationEpoch,
+            assignments: [],
+          } satisfies StaffAuthorizationSnapshot;
+        },
+      },
+      sessionResolver: {
+        async resolveStaffSession() {
+          return session;
+        },
+      },
+      nowEpochMs: () => nowEpochMs,
+    });
+    const candidate = (operations as unknown as Record<string, unknown>).createTripWorkspace;
+
+    expect(candidate).toBeTypeOf("function");
+    if (typeof candidate !== "function") return;
+    const create = candidate as (cookieHeader: unknown, value: unknown) => Promise<unknown>;
+    await expect(
+      create.call(operations, "staff-session-cookie=opaque", { ...request, agencyId }),
+    ).rejects.toBeInstanceOf(M1InputValidationError);
+    await expect(
+      create.call(operations, "staff-session-cookie=opaque", request),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(repositoryCalls).toBe(0);
   });
 });

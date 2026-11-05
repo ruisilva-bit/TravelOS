@@ -10,6 +10,7 @@ export { AdminLockVersionSchema, AdminPostgresBigintSchema } from "./lock-versio
 export * from "./customers/index.js";
 export * from "./itinerary/index.js";
 export * from "./reservations/index.js";
+export * from "./staff/index.js";
 export * from "./trips/index.js";
 export {
   ADMIN_RUNTIME_ACCEPTANCE_FIXTURE_RUN_HEADER,

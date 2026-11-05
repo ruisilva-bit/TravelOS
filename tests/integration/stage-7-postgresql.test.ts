@@ -13,8 +13,10 @@ import type { AuthSurfacePolicy, PortalAuthRealm } from "@travelos/auth-adapters
 import { createAdminApi } from "../../apps/admin-api/src/app.js";
 import { createAdminStaffSessionResolver } from "../../apps/admin-api/src/m1-session-resolver.js";
 import { createPortalApi } from "../../apps/portal-api/src/app.js";
+import * as portalTripReadRepositoryModule from "../../apps/portal-api/src/trip-read-repository.js";
 import * as databaseModule from "../../packages/database/src/index.js";
 import { createStaffAccessRepository } from "../../packages/database/src/index.js";
+import { createPostgresM1StaffTripWorkspaceRepository } from "../../packages/database/src/trip-operations/m1-staff-trip-workspace-repository.js";
 import { createLocalOperatorPortalEnrollmentService } from "../../packages/auth-adapters/src/realm.js";
 import {
   createOneTimeOperatorToken,
@@ -28,6 +30,7 @@ import {
   bootstrapRootAgency,
   createM1RuntimeAcceptanceFixtureOperations,
   createM1StaffTripAccessOperations,
+  createM1StaffTripWorkspaceOperations,
   createMoney,
   createScheduledLocalDateTime,
   authorizeM1Operation,
@@ -37,6 +40,7 @@ import {
   M1OptimisticConflictError,
   M1StaffAuthorizationError,
   M1TransactionConflictError,
+  M1TripNotFoundError,
   M1UnsupportedTripStateError,
   type IssueTripAccessGrantCommand,
   type M1StaffTripAccessRepository,
@@ -44,13 +48,21 @@ import {
   type RevokeTripAccessGrantCommand,
   type StaffAuthorizationOperationProof,
   type CreateM1TripSliceInput,
+  type M1StaffTripWorkspaceWriteOperations,
 } from "@travelos/backend-core";
+import { AdminTripPublicationPreviewV1Schema } from "../../packages/contracts/src/admin/index.js";
 import {
   createPostgresPersistence,
   type PostgresPersistence,
 } from "../../packages/database/src/postgres/postgres-persistence.js";
 import { createPostgresPortalTripSnapshotReader } from "../../apps/portal-api/src/trip-read-repository.js";
 import { PortalTripSnapshotV1Schema } from "../../packages/contracts/src/portal/index.js";
+import type { CurrentAuthorizedPortalTripListReader } from "@travelos/portal-safe-core/customer-presentation";
+import {
+  resolveStage9BrowserWebRoot,
+  runStage9BrowserJourney,
+  startBuiltBrowserHost,
+} from "./helpers/stage9-browser-acceptance.js";
 
 import {
   runMigrationChain,
@@ -550,7 +562,7 @@ const insertFixtureTrip = async (client: Client, agencyId: string, tripId: strin
      INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
      SELECT $3::uuid, fixture_trip."agencyId", fixture_trip."id", $4::uuid, 'PRIMARY_TRAVELLER'
        FROM fixture_trip`,
-    [tripId, agencyId, randomUUID(), primaryPersonId],
+    [tripId, agencyId, databaseModule.createUuidV7(), primaryPersonId],
   );
 
 const insertFixtureRun = async (client: Client, agencyId: string, fixtureRunId: string) =>
@@ -1400,7 +1412,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
 
   it("fixtureRunAndFirstTripAssociationAreAtomic", async () => {
     const fixtureRunId = randomUUID();
-    const tripId = randomUUID();
+    const tripId = databaseModule.createUuidV7();
     await withOwnerLogin(priorDatabaseName, async (client) => {
       await client.query("BEGIN");
       try {
@@ -1766,7 +1778,11 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
 
   it("fixtureRunRejectsCrossAgencyAndExcessResources", async () => {
     const fixtureRunId = randomUUID();
-    const tripIds = [randomUUID(), randomUUID(), randomUUID()];
+    const tripIds = [
+      databaseModule.createUuidV7(),
+      databaseModule.createUuidV7(),
+      databaseModule.createUuidV7(),
+    ];
     await withOwnerLogin(priorDatabaseName, async (client) => {
       await insertFixtureRun(client, priorAgencyId, fixtureRunId);
       for (const tripId of tripIds) await insertFixtureTrip(client, priorAgencyId, tripId);
@@ -2035,7 +2051,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
   it("associates only an OPEN fixture with an active verified synthetic Portal Principal", async () => {
     const fixtureRunId = randomUUID();
     const noTripsFixtureRunId = randomUUID();
-    const tripId = randomUUID();
+    const tripId = databaseModule.createUuidV7();
     const verifiedPrincipalId = `stage7-fixture-${randomUUID()}`;
     const unverifiedPrincipalId = `stage7-fixture-${randomUUID()}`;
     const nonSyntheticPrincipalId = `stage7-fixture-${randomUUID()}`;
@@ -3930,5 +3946,1410 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
 
   it("exports the PostgreSQL Staff Trip access repository", () => {
     expect("createPostgresM1StaffTripAccessRepository" in databaseModule).toBe(true);
+  });
+
+  it("creates_an_authorized_minimal_trip_workspace_with_an_empty_itinerary", async () => {
+    const { cookie, resolver } = await createFixtureTripTestHarness();
+    if (tripAccessPersistence === null) {
+      throw new Error("Stage 7 Staff persistence fixture was not initialized");
+    }
+    const operations = databaseModule.createPostgresM1StaffTripOperations(
+      tripAccessPersistence,
+      resolver,
+    );
+    const marker = randomUUID();
+    const requestBody = {
+      customer: { displayName: `Stage 9 synthetic customer ${marker}` },
+      primaryTraveller: { givenName: "Stage9", familyName: `Synthetic-${marker}` },
+      trip: {
+        title: `Stage 9 synthetic trip ${marker}`,
+        startDate: "2026-12-01",
+        endDate: "2026-12-05",
+      },
+    };
+
+    const trip = await operations.createTripWorkspace(cookie, requestBody);
+
+    expect(trip).toMatchObject({
+      agencyId: asOpaqueId(priorAgencyId),
+      title: requestBody.trip.title,
+      startDate: requestBody.trip.startDate,
+      endDate: requestBody.trip.endDate,
+      state: "DRAFT",
+      workspaceRevision: 1n,
+      lockVersion: 0n,
+    });
+    const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query(
+        `SELECT trip."agencyId"::text AS "agencyId", trip."title", trip."state",
+                trip."workspaceRevision"::text AS "workspaceRevision",
+                trip."lockVersion"::text AS "lockVersion", customer."displayName",
+                person."givenName", person."familyName", customer_person."role" AS "customerPersonRole",
+                customer_person."isPrimary" AS "customerPersonPrimary", traveller."role" AS "travellerRole",
+                (SELECT count(*)::text FROM "trip_ops"."itinerary_item" AS item
+                  WHERE item."agencyId" = trip."agencyId" AND item."tripId" = trip."id") AS "itemCount",
+                (SELECT count(*)::text FROM "trip_ops"."reservation" AS reservation
+                  WHERE reservation."agencyId" = trip."agencyId" AND reservation."tripId" = trip."id") AS "reservationCount",
+                (SELECT count(*)::text FROM "finance"."supplier_cost_line" AS cost
+                  WHERE cost."agencyId" = trip."agencyId" AND cost."tripId" = trip."id") AS "supplierCostCount"
+           FROM "trip_ops"."trip" AS trip
+           JOIN "trip_ops"."trip_traveller" AS traveller
+             ON traveller."agencyId" = trip."agencyId" AND traveller."tripId" = trip."id"
+            AND traveller."role" = 'PRIMARY_TRAVELLER'
+           JOIN "crm"."person" AS person
+             ON person."agencyId" = traveller."agencyId" AND person."id" = traveller."personId"
+           JOIN "crm"."customer_person" AS customer_person
+             ON customer_person."agencyId" = person."agencyId" AND customer_person."personId" = person."id"
+            AND customer_person."isPrimary" = true
+           JOIN "crm"."customer" AS customer
+             ON customer."agencyId" = customer_person."agencyId" AND customer."id" = customer_person."customerId"
+          WHERE trip."id" = $1::uuid`,
+        [trip.id],
+      ),
+    );
+    expect(persisted.rows).toEqual([
+      {
+        agencyId: priorAgencyId,
+        title: requestBody.trip.title,
+        state: "DRAFT",
+        workspaceRevision: "1",
+        lockVersion: "0",
+        displayName: requestBody.customer.displayName,
+        givenName: "Stage9",
+        familyName: requestBody.primaryTraveller.familyName,
+        customerPersonRole: "PRIMARY_CONTACT",
+        customerPersonPrimary: true,
+        travellerRole: "PRIMARY_TRAVELLER",
+        itemCount: "0",
+        reservationCount: "0",
+        supplierCostCount: "0",
+      },
+    ]);
+  });
+
+  it("persists Flight, Accommodation and Trip edits with workspace revision and item lock CAS", async () => {
+    const { cookie, resolver } = await createFixtureTripTestHarness();
+    if (tripAccessPersistence === null) {
+      throw new Error("Stage 7 Staff persistence fixture was not initialized");
+    }
+    const createWriteOperations = Reflect.get(
+      databaseModule,
+      "createPostgresM1StaffTripWorkspaceWriteOperations",
+    );
+    expect(typeof createWriteOperations).toBe("function");
+    if (typeof createWriteOperations !== "function") {
+      throw new Error("PostgreSQL Staff workspace write operations are not exported");
+    }
+    const writeOperations = Reflect.apply(createWriteOperations, undefined, [
+      tripAccessPersistence,
+      resolver,
+    ]) as M1StaffTripWorkspaceWriteOperations;
+    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
+      tripAccessPersistence,
+      resolver,
+    );
+    const marker = randomUUID();
+    const trip = await tripOperations.createTripWorkspace(cookie, {
+      customer: { displayName: `Stage 9 CAS customer ${marker}` },
+      primaryTraveller: { givenName: "Stage9", familyName: `CAS-${marker}` },
+      trip: {
+        title: `Stage 9 CAS trip ${marker}`,
+        startDate: "2027-10-12",
+        endDate: "2027-10-15",
+      },
+    });
+    const drafts = stage7TripInput(`Stage 9 CAS draft ${marker}`);
+
+    const withFlight = await writeOperations.createFlight(cookie, trip.id, {
+      expectedWorkspaceRevision: 1n,
+      flight: drafts.flight,
+    });
+    expect(withFlight).toMatchObject({
+      trip: { id: trip.id, workspaceRevision: 2n, lockVersion: 0n },
+      flights: [
+        {
+          title: drafts.flight.title,
+          flightNumber: drafts.flight.flightNumber,
+          state: "DRAFT",
+          sortOrder: 1,
+          lockVersion: 0n,
+        },
+      ],
+      accommodations: [],
+    });
+    const withAccommodation = await writeOperations.createAccommodation(cookie, trip.id, {
+      expectedWorkspaceRevision: 2n,
+      accommodation: drafts.accommodation,
+    });
+    expect(withAccommodation).toMatchObject({
+      trip: { id: trip.id, workspaceRevision: 3n, lockVersion: 0n },
+      accommodations: [
+        {
+          title: drafts.accommodation.title,
+          propertyName: drafts.accommodation.propertyName,
+          state: "DRAFT",
+          sortOrder: 2,
+          lockVersion: 0n,
+        },
+      ],
+    });
+    const flight = withAccommodation.flights[0];
+    const accommodation = withAccommodation.accommodations[0];
+    expect(flight).toBeDefined();
+    expect(accommodation).toBeDefined();
+    if (!flight || !accommodation) throw new Error("Created itinerary items were not returned");
+
+    const editedFlight = {
+      ...drafts.flight,
+      title: "Updated outbound flight",
+      description: "Updated synthetic flight details",
+      flightNumber: "EA101",
+    };
+    const withEditedFlight = await writeOperations.updateFlight(cookie, trip.id, flight.id, {
+      expectedWorkspaceRevision: 3n,
+      expectedLockVersion: 0n,
+      flight: editedFlight,
+    });
+    expect(withEditedFlight).toMatchObject({
+      trip: { workspaceRevision: 4n, lockVersion: 0n },
+      flights: [
+        { id: flight.id, title: "Updated outbound flight", flightNumber: "EA101", lockVersion: 1n },
+      ],
+    });
+
+    const editedAccommodation = {
+      ...drafts.accommodation,
+      title: "Updated hotel stay",
+      description: "Updated synthetic accommodation details",
+      propertyName: "Updated Example Hotel",
+    };
+    const withEditedAccommodation = await writeOperations.updateAccommodation(
+      cookie,
+      trip.id,
+      accommodation.id,
+      {
+        expectedWorkspaceRevision: 4n,
+        expectedLockVersion: 0n,
+        accommodation: editedAccommodation,
+      },
+    );
+    expect(withEditedAccommodation).toMatchObject({
+      trip: { workspaceRevision: 5n, lockVersion: 0n },
+      accommodations: [
+        {
+          id: accommodation.id,
+          title: "Updated hotel stay",
+          propertyName: "Updated Example Hotel",
+          lockVersion: 1n,
+        },
+      ],
+    });
+
+    const withEditedTrip = await writeOperations.updateTrip(cookie, trip.id, {
+      expectedWorkspaceRevision: 5n,
+      expectedLockVersion: 0n,
+      trip: {
+        title: "Updated Stage 9 CAS trip",
+        startDate: "2027-10-12",
+        endDate: "2027-10-16",
+      },
+    });
+    expect(withEditedTrip.trip).toMatchObject({
+      title: "Updated Stage 9 CAS trip",
+      startDate: "2027-10-12",
+      endDate: "2027-10-16",
+      workspaceRevision: 6n,
+      lockVersion: 1n,
+    });
+
+    await expect(
+      writeOperations.updateAccommodation(cookie, trip.id, accommodation.id, {
+        expectedWorkspaceRevision: 5n,
+        expectedLockVersion: 1n,
+        accommodation: drafts.accommodation,
+      }),
+    ).rejects.toBeInstanceOf(M1OptimisticConflictError);
+    await expect(
+      writeOperations.updateAccommodation(cookie, trip.id, accommodation.id, {
+        expectedWorkspaceRevision: 6n,
+        expectedLockVersion: 0n,
+        accommodation: drafts.accommodation,
+      }),
+    ).rejects.toBeInstanceOf(M1OptimisticConflictError);
+
+    const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query(
+        `SELECT trip."title" AS "tripTitle", trip."workspaceRevision"::text AS "workspaceRevision",
+                trip."lockVersion"::text AS "tripLockVersion", flight."sortOrder" AS "flightOrder",
+                flight."customerTitle" AS "flightTitle", flight."lockVersion"::text AS "flightLockVersion",
+                flight_detail."flightNumber", accommodation."sortOrder" AS "accommodationOrder",
+                accommodation."customerTitle" AS "accommodationTitle",
+                accommodation."lockVersion"::text AS "accommodationLockVersion",
+                accommodation_detail."propertyName"
+           FROM "trip_ops"."trip" AS trip
+           JOIN "trip_ops"."itinerary_item" AS flight
+             ON flight."agencyId" = trip."agencyId" AND flight."tripId" = trip."id"
+            AND flight."family" = 'FLIGHT'
+           JOIN "trip_ops"."flight_item_detail" AS flight_detail
+             ON flight_detail."agencyId" = flight."agencyId" AND flight_detail."tripId" = flight."tripId"
+            AND flight_detail."itemId" = flight."id"
+           JOIN "trip_ops"."itinerary_item" AS accommodation
+             ON accommodation."agencyId" = trip."agencyId" AND accommodation."tripId" = trip."id"
+            AND accommodation."family" = 'ACCOMMODATION'
+           JOIN "trip_ops"."accommodation_item_detail" AS accommodation_detail
+             ON accommodation_detail."agencyId" = accommodation."agencyId"
+            AND accommodation_detail."tripId" = accommodation."tripId"
+            AND accommodation_detail."itemId" = accommodation."id"
+          WHERE trip."id" = $1::uuid`,
+        [trip.id],
+      ),
+    );
+    expect(persisted.rows).toEqual([
+      {
+        tripTitle: "Updated Stage 9 CAS trip",
+        workspaceRevision: "6",
+        tripLockVersion: "1",
+        flightOrder: 1,
+        flightTitle: "Updated outbound flight",
+        flightLockVersion: "1",
+        flightNumber: "EA101",
+        accommodationOrder: 2,
+        accommodationTitle: "Updated hotel stay",
+        accommodationLockVersion: "1",
+        propertyName: "Updated Example Hotel",
+      },
+    ]);
+  });
+
+  it("does not update an itinerary item through a different Trip scope", async () => {
+    const { cookie, resolver } = await createFixtureTripTestHarness();
+    if (tripAccessPersistence === null) {
+      throw new Error("Stage 7 Staff persistence fixture was not initialized");
+    }
+    const createWriteOperations = Reflect.get(
+      databaseModule,
+      "createPostgresM1StaffTripWorkspaceWriteOperations",
+    );
+    expect(typeof createWriteOperations).toBe("function");
+    if (typeof createWriteOperations !== "function") {
+      throw new Error("PostgreSQL Staff workspace write operations are not exported");
+    }
+    const writeOperations = Reflect.apply(createWriteOperations, undefined, [
+      tripAccessPersistence,
+      resolver,
+    ]) as M1StaffTripWorkspaceWriteOperations;
+    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
+      tripAccessPersistence,
+      resolver,
+    );
+    const marker = randomUUID();
+    const sourceTrip = await tripOperations.createTripWorkspace(cookie, {
+      customer: { displayName: `Stage 9 scope source ${marker}` },
+      primaryTraveller: { givenName: "Stage9", familyName: `ScopeSource-${marker}` },
+      trip: {
+        title: `Stage 9 scope source ${marker}`,
+        startDate: "2027-10-12",
+        endDate: "2027-10-15",
+      },
+    });
+    const targetTrip = await tripOperations.createTripWorkspace(cookie, {
+      customer: { displayName: `Stage 9 scope target ${marker}` },
+      primaryTraveller: { givenName: "Stage9", familyName: `ScopeTarget-${marker}` },
+      trip: {
+        title: `Stage 9 scope target ${marker}`,
+        startDate: "2027-10-12",
+        endDate: "2027-10-15",
+      },
+    });
+    const drafts = stage7TripInput(`Stage 9 scope draft ${marker}`);
+    const sourceWorkspace = await writeOperations.createFlight(cookie, sourceTrip.id, {
+      expectedWorkspaceRevision: 1n,
+      flight: drafts.flight,
+    });
+    const flight = sourceWorkspace.flights[0];
+    expect(flight).toBeDefined();
+    if (!flight) throw new Error("Created source Flight was not returned");
+
+    await expect(
+      writeOperations.updateFlight(cookie, targetTrip.id, flight.id, {
+        expectedWorkspaceRevision: 1n,
+        expectedLockVersion: 0n,
+        flight: { ...drafts.flight, title: "Cross-Trip update must be rejected" },
+      }),
+    ).rejects.toBeInstanceOf(M1TripNotFoundError);
+
+    const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query(
+        `SELECT trip."id"::text AS "tripId",
+                trip."workspaceRevision"::text AS "workspaceRevision",
+                item."customerTitle" AS "flightTitle",
+                item."lockVersion"::text AS "flightLockVersion"
+           FROM "trip_ops"."trip" AS trip
+           LEFT JOIN "trip_ops"."itinerary_item" AS item
+             ON item."agencyId" = trip."agencyId" AND item."tripId" = trip."id"
+            AND item."family" = 'FLIGHT'
+          WHERE trip."id" = ANY($1::uuid[])
+          ORDER BY trip."id"::text`,
+        [[sourceTrip.id, targetTrip.id]],
+      ),
+    );
+    const sourceRow = persisted.rows.find((row) => row["tripId"] === sourceTrip.id);
+    const targetRow = persisted.rows.find((row) => row["tripId"] === targetTrip.id);
+    expect(sourceRow).toMatchObject({
+      workspaceRevision: "2",
+      flightTitle: drafts.flight.title,
+      flightLockVersion: "0",
+    });
+    expect(targetRow).toMatchObject({
+      workspaceRevision: "1",
+      flightTitle: null,
+      flightLockVersion: null,
+    });
+  });
+
+  it("rolls back a Flight itinerary row when detail insertion fails", async () => {
+    const { cookie, resolver } = await createFixtureTripTestHarness();
+    if (tripAccessPersistence === null) {
+      throw new Error("Stage 7 Staff persistence fixture was not initialized");
+    }
+    const createWriteOperations = Reflect.get(
+      databaseModule,
+      "createPostgresM1StaffTripWorkspaceWriteOperations",
+    );
+    expect(typeof createWriteOperations).toBe("function");
+    if (typeof createWriteOperations !== "function") {
+      throw new Error("PostgreSQL Staff workspace write operations are not exported");
+    }
+    const writeOperations = Reflect.apply(createWriteOperations, undefined, [
+      tripAccessPersistence,
+      resolver,
+    ]) as M1StaffTripWorkspaceWriteOperations;
+    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
+      tripAccessPersistence,
+      resolver,
+    );
+    const marker = randomUUID();
+    const trip = await tripOperations.createTripWorkspace(cookie, {
+      customer: { displayName: `Stage 9 atomic Flight customer ${marker}` },
+      primaryTraveller: { givenName: "Stage9", familyName: `AtomicFlight-${marker}` },
+      trip: {
+        title: `Stage 9 atomic Flight ${marker}`,
+        startDate: "2027-10-12",
+        endDate: "2027-10-15",
+      },
+    });
+    const drafts = stage7TripInput(`Stage 9 atomic Flight draft ${marker}`);
+    await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query(`
+        CREATE OR REPLACE FUNCTION "trip_ops"."stage9_test_reject_flight_detail_insert"()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $stage9_failure$
+        BEGIN
+          IF NEW."flightNumber" = 'EA999' THEN
+            RAISE EXCEPTION 'Stage 9 test injected Flight detail failure'
+              USING ERRCODE = 'P0001';
+          END IF;
+          RETURN NEW;
+        END
+        $stage9_failure$;
+        CREATE TRIGGER "stage9_test_reject_flight_detail_insert"
+          BEFORE INSERT ON "trip_ops"."flight_item_detail"
+          FOR EACH ROW EXECUTE FUNCTION "trip_ops"."stage9_test_reject_flight_detail_insert"();
+      `),
+    );
+    try {
+      await expect(
+        writeOperations.createFlight(cookie, trip.id, {
+          expectedWorkspaceRevision: 1n,
+          flight: { ...drafts.flight, flightNumber: "EA999" },
+        }),
+      ).rejects.toThrow("Stage 9 test injected Flight detail failure");
+    } finally {
+      await withOwnerLogin(priorDatabaseName, (client) =>
+        client.query(`
+          DROP TRIGGER IF EXISTS "stage9_test_reject_flight_detail_insert"
+            ON "trip_ops"."flight_item_detail";
+          DROP FUNCTION IF EXISTS "trip_ops"."stage9_test_reject_flight_detail_insert"();
+        `),
+      );
+    }
+    const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query(
+        `SELECT trip."workspaceRevision"::text AS "workspaceRevision",
+                (SELECT count(*)::text
+                   FROM "trip_ops"."itinerary_item" AS item
+                  WHERE item."agencyId" = trip."agencyId" AND item."tripId" = trip."id") AS "itemCount",
+                (SELECT count(*)::text
+                   FROM "trip_ops"."flight_item_detail" AS detail
+                  WHERE detail."agencyId" = trip."agencyId" AND detail."tripId" = trip."id") AS "flightDetailCount"
+           FROM "trip_ops"."trip" AS trip
+          WHERE trip."id" = $1::uuid`,
+        [trip.id],
+      ),
+    );
+    expect(persisted.rows).toEqual([
+      { workspaceRevision: "1", itemCount: "0", flightDetailCount: "0" },
+    ]);
+  });
+
+  it("rolls_back_customer_person_and_trip_when_primary_traveller_creation_fails", async () => {
+    const { cookie, resolver } = await createFixtureTripTestHarness();
+    if (tripAccessPersistence === null) {
+      throw new Error("Stage 7 Staff persistence fixture was not initialized");
+    }
+    const operations = databaseModule.createPostgresM1StaffTripOperations(
+      tripAccessPersistence,
+      resolver,
+    );
+    const marker = randomUUID();
+    const requestBody = {
+      customer: { displayName: `Stage 9 rollback customer ${marker}` },
+      primaryTraveller: { givenName: "Stage9", familyName: `Rollback-${marker}` },
+      trip: {
+        title: `Stage 9 atomic rollback ${marker}`,
+        startDate: "2026-12-01",
+        endDate: "2026-12-05",
+      },
+    };
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query(`
+        CREATE OR REPLACE FUNCTION "trip_ops"."stage9_test_reject_primary_traveller"()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $stage9_failure$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM "trip_ops"."trip" AS trip
+             WHERE trip."id" = NEW."tripId"
+               AND trip."title" LIKE 'Stage 9 atomic rollback %'
+          ) THEN
+            RAISE EXCEPTION 'Stage 9 test injected primary traveller failure'
+              USING ERRCODE = 'P0001';
+          END IF;
+          RETURN NEW;
+        END
+        $stage9_failure$;
+        CREATE TRIGGER "stage9_test_reject_primary_traveller"
+          BEFORE INSERT ON "trip_ops"."trip_traveller"
+          FOR EACH ROW EXECUTE FUNCTION "trip_ops"."stage9_test_reject_primary_traveller"();
+      `);
+    });
+    try {
+      await expect(operations.createTripWorkspace(cookie, requestBody)).rejects.toThrow(
+        "Stage 9 test injected primary traveller failure",
+      );
+    } finally {
+      await withOwnerLogin(priorDatabaseName, async (client) => {
+        await client.query(`
+          DROP TRIGGER IF EXISTS "stage9_test_reject_primary_traveller"
+            ON "trip_ops"."trip_traveller";
+          DROP FUNCTION IF EXISTS "trip_ops"."stage9_test_reject_primary_traveller"();
+        `);
+      });
+    }
+    const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query(
+        `SELECT
+           (SELECT count(*)::text FROM "crm"."person" WHERE "familyName" = $1) AS "personCount",
+           (SELECT count(*)::text FROM "crm"."customer" WHERE "displayName" = $2) AS "customerCount",
+           (SELECT count(*)::text FROM "trip_ops"."trip" WHERE "title" = $3) AS "tripCount"`,
+        [
+          requestBody.primaryTraveller.familyName,
+          requestBody.customer.displayName,
+          requestBody.trip.title,
+        ],
+      ),
+    );
+    expect(persisted.rows).toEqual([{ personCount: "0", customerCount: "0", tripCount: "0" }]);
+  });
+
+  it("workspace_list_and_detail_recheck_trip_view_and_agency_without_customer_or_cost_reads", async () => {
+    const { cookie, sessionId, resolver } = await createFixtureTripTestHarness();
+    const agencyId = asOpaqueId(priorAgencyId);
+    const tripId = databaseModule.createUuidV7();
+    const tripTravellerId = databaseModule.createUuidV7();
+    const flightId = databaseModule.createUuidV7();
+    const accommodationId = databaseModule.createUuidV7();
+    const roleName = `stage9_workspace_${randomUUID().replaceAll("-", "")}`;
+    if (!/^stage9_workspace_[0-9a-f]{32}$/u.test(roleName)) {
+      throw new Error("Stage 9 restricted workspace role name is invalid");
+    }
+    const quotedRole = `"${roleName}"`;
+    let restrictedPersistence: PostgresPersistence<Record<string, never>> | null = null;
+    let roleCreated = false;
+
+    const createRestrictedRole = async (): Promise<void> => {
+      const client = new Client({
+        host,
+        port,
+        database: priorDatabaseName,
+        user: "postgres",
+        ssl: false,
+      });
+      await client.connect();
+      try {
+        await client.query(
+          `CREATE ROLE ${quotedRole} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOREPLICATION NOBYPASSRLS`,
+        );
+        roleCreated = true;
+        await client.query(`GRANT CONNECT ON DATABASE "${priorDatabaseName}" TO ${quotedRole}`);
+        await client.query(
+          `GRANT USAGE ON SCHEMA "staff_access", "trip_ops", "crm", "finance" TO ${quotedRole}`,
+        );
+        await client.query(
+          `GRANT SELECT ON TABLE
+             "staff_access"."staff_session",
+             "staff_access"."staff_session_context",
+             "staff_access"."staff_membership",
+             "staff_access"."role_assignment",
+             "staff_access"."role_permission",
+             "trip_ops"."trip",
+             "trip_ops"."itinerary_item",
+             "trip_ops"."flight_item_detail",
+             "trip_ops"."accommodation_item_detail"
+           TO ${quotedRole}`,
+        );
+        await client.query(
+          `GRANT UPDATE ON TABLE
+             "staff_access"."staff_session",
+             "staff_access"."staff_session_context",
+             "staff_access"."staff_membership"
+           TO ${quotedRole}`,
+        );
+      } finally {
+        await client.end();
+      }
+    };
+
+    try {
+      await withOwnerLogin(priorDatabaseName, async (client) => {
+        await client.query("BEGIN");
+        try {
+          await client.query(
+            `INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
+             VALUES ($1::uuid, $2::uuid, 'Stage 9 restricted workspace Trip', '2026-12-01', '2026-12-02', 'DRAFT')`,
+            [tripId, priorAgencyId],
+          );
+          await client.query(
+            `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'PRIMARY_TRAVELLER')`,
+            [tripTravellerId, priorAgencyId, tripId, primaryPersonId],
+          );
+          await client.query(
+            `INSERT INTO "trip_ops"."itinerary_item"
+               ("id", "agencyId", "tripId", "family", "state", "sortOrder", "customerTitle", "customerDescription")
+             VALUES
+               ($1::uuid, $2::uuid, $3::uuid, 'FLIGHT', 'CONFIRMED', 1, 'Synthetic flight', 'Synthetic flight details'),
+               ($4::uuid, $2::uuid, $3::uuid, 'ACCOMMODATION', 'CONFIRMED', 2, 'Synthetic stay', 'Synthetic accommodation details')`,
+            [flightId, priorAgencyId, tripId, accommodationId],
+          );
+          await client.query(
+            `INSERT INTO "trip_ops"."flight_item_detail"
+               ("agencyId", "tripId", "itemId", "carrier", "flightNumber", "departureAirport", "arrivalAirport",
+                "departureDate", "departureTime", "departureTimezone", "departureInstant",
+                "arrivalDate", "arrivalTime", "arrivalTimezone", "arrivalInstant")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, 'Synthetic Air', 'SA101', 'LIS', 'OPO',
+                     '2026-12-01', '10:00:00', 'Europe/Lisbon', '2026-12-01T10:00:00.000Z',
+                     '2026-12-01', '12:00:00', 'Europe/Lisbon', '2026-12-01T12:00:00.000Z')`,
+            [priorAgencyId, tripId, flightId],
+          );
+          await client.query(
+            `INSERT INTO "trip_ops"."accommodation_item_detail"
+               ("agencyId", "tripId", "itemId", "propertyName",
+                "checkInDate", "checkInTime", "checkInTimezone", "checkInInstant",
+                "checkOutDate", "checkOutTime", "checkOutTimezone", "checkOutInstant")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, 'Synthetic Hotel',
+                     '2026-12-01', '15:00:00', 'Europe/Lisbon', '2026-12-01T15:00:00.000Z',
+                     '2026-12-02', '10:00:00', 'Europe/Lisbon', '2026-12-02T10:00:00.000Z')`,
+            [priorAgencyId, tripId, accommodationId],
+          );
+          await client.query("COMMIT");
+        } catch (error) {
+          await client.query("ROLLBACK").catch(() => undefined);
+          throw error;
+        }
+      });
+      await createRestrictedRole();
+      restrictedPersistence = createPostgresPersistence<Record<string, never>>({
+        host,
+        port,
+        database: priorDatabaseName,
+        user: roleName,
+        tls: { mode: "DISABLED_LOOPBACK_ONLY" },
+        applicationName: "travelos-stage9-workspace-least-privilege-test",
+        maxConnections: 2,
+      });
+
+      const access = createStaffAccessRepository(restrictedPersistence);
+      const snapshot = await access.getStaffAuthorizationSnapshot(staffPrincipalId, priorAgencyId);
+      expect(snapshot).not.toBeNull();
+      if (snapshot === null) return;
+      const nowEpochMs = Date.now();
+      const authorization: StaffAuthorizationOperationProof = {
+        session: {
+          sessionId,
+          staffPrincipalId,
+          agencyId,
+          authorizationEpoch: snapshot.authorizationEpoch,
+          expiresAtEpochMs: nowEpochMs + 60 * 60 * 1_000,
+          recentMfaVerifiedAtEpochMs: nowEpochMs,
+        },
+        requiredPermissionIds: ["trip.view"],
+        nowEpochMs,
+      };
+      const repository = createPostgresM1StaffTripWorkspaceRepository(restrictedPersistence);
+      const page = await repository.listTrips(agencyId, 50, null, authorization);
+      expect(page.items.some((trip) => trip.id === tripId)).toBe(true);
+      expect(page.items.every((trip) => trip.agencyId === agencyId)).toBe(true);
+      const workspace = await repository.readTripWorkspace(
+        agencyId,
+        asOpaqueId(tripId),
+        authorization,
+      );
+      expect(workspace).toMatchObject({
+        trip: { id: tripId, agencyId, title: "Stage 9 restricted workspace Trip" },
+        flights: [{ id: flightId, flightNumber: "SA101" }],
+        accommodations: [{ id: accommodationId, propertyName: "Synthetic Hotel" }],
+      });
+      expect(
+        await repository.readTripWorkspace(agencyId, databaseModule.createUuidV7(), authorization),
+      ).toBeNull();
+      await expect(
+        repository.readTripWorkspace(databaseModule.createUuidV7(), tripId, authorization),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        repository.readTripWorkspace(agencyId, asOpaqueId(tripId), {
+          ...authorization,
+          requiredPermissionIds: ["trip.access.manage"],
+        }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+      const privilegeClient = new Client({
+        host,
+        port,
+        database: priorDatabaseName,
+        user: roleName,
+        ssl: false,
+      });
+      await privilegeClient.connect();
+      try {
+        const privileges = await privilegeClient.query<{
+          readonly customer: boolean;
+          readonly person: boolean;
+          readonly customerPerson: boolean;
+          readonly traveller: boolean;
+          readonly reservation: boolean;
+          readonly cost: boolean;
+        }>(
+          `SELECT has_table_privilege(current_user, 'crm.customer', 'SELECT') AS customer,
+                  has_table_privilege(current_user, 'crm.person', 'SELECT') AS person,
+                  has_table_privilege(current_user, 'crm.customer_person', 'SELECT') AS "customerPerson",
+                  has_table_privilege(current_user, 'trip_ops.trip_traveller', 'SELECT') AS traveller,
+                  has_table_privilege(current_user, 'trip_ops.reservation', 'SELECT') AS reservation,
+                  has_table_privilege(current_user, 'finance.supplier_cost_line', 'SELECT') AS cost`,
+        );
+        expect(privileges.rows).toEqual([
+          {
+            customer: false,
+            person: false,
+            customerPerson: false,
+            traveller: false,
+            reservation: false,
+            cost: false,
+          },
+        ]);
+      } finally {
+        await privilegeClient.end();
+      }
+
+      const serializedWorkspace =
+        JSON.stringify(workspace, (_key, value) =>
+          typeof value === "bigint" ? value.toString() : value,
+        ) ?? "";
+      expect(serializedWorkspace).not.toContain("INTERNAL_ONLY");
+      expect(serializedWorkspace).not.toContain("supplierCosts");
+      const piiBearingTrip = await repository.readTripWorkspace(
+        agencyId,
+        asOpaqueId(primaryTripId),
+        authorization,
+      );
+      expect(piiBearingTrip).not.toBeNull();
+      const serializedPiiBearingTrip =
+        JSON.stringify(piiBearingTrip, (_key, value) =>
+          typeof value === "bigint" ? value.toString() : value,
+        ) ?? "";
+      expect(serializedPiiBearingTrip).not.toContain("Stage 7 Synthetic Customer");
+      expect(serializedPiiBearingTrip).not.toContain('"familyName":"Traveller"');
+
+      const appOperations = createM1StaffTripWorkspaceOperations({
+        repository,
+        authorizationRepository: access,
+        sessionResolver: resolver,
+      });
+      expect((await appOperations.readTripWorkspace(cookie, asOpaqueId(tripId)))?.trip.id).toBe(
+        tripId,
+      );
+    } finally {
+      await restrictedPersistence?.destroy();
+      await withOwnerLogin(priorDatabaseName, async (client) => {
+        await client.query("BEGIN");
+        try {
+          await client.query(
+            `DELETE FROM "trip_ops"."itinerary_item" WHERE "agencyId" = $1::uuid AND "tripId" = $2::uuid`,
+            [priorAgencyId, tripId],
+          );
+          await client.query(
+            `DELETE FROM "trip_ops"."trip_traveller" WHERE "agencyId" = $1::uuid AND "tripId" = $2::uuid`,
+            [priorAgencyId, tripId],
+          );
+          await client.query(
+            `DELETE FROM "trip_ops"."trip" WHERE "agencyId" = $1::uuid AND "id" = $2::uuid`,
+            [priorAgencyId, tripId],
+          );
+          await client.query("COMMIT");
+        } catch (error) {
+          await client.query("ROLLBACK").catch(() => undefined);
+          throw error;
+        }
+      });
+      if (roleCreated) {
+        const client = new Client({
+          host,
+          port,
+          database: priorDatabaseName,
+          user: "postgres",
+          ssl: false,
+        });
+        await client.connect();
+        try {
+          await client.query(`DROP OWNED BY ${quotedRole}`);
+          await client.query(`DROP ROLE ${quotedRole}`);
+        } finally {
+          await client.end();
+        }
+      }
+    }
+  });
+
+  it("lists only active grant-authorized snapshots through the least-privilege Portal role", async () => {
+    const persistence = portalAuthPersistence;
+    if (persistence === null) {
+      throw new Error("Stage 7 Portal persistence fixture was not initialized");
+    }
+
+    const factory = (portalTripReadRepositoryModule as unknown as Record<string, unknown>)[
+      "createPostgresPortalAuthorizedTripListReader"
+    ];
+    expect(
+      factory,
+      "PostgreSQL authorized Portal trip-list reader factory must be exported",
+    ).toBeTypeOf("function");
+    if (typeof factory !== "function") return;
+
+    const portalPrincipalId = `stage9-list-principal-${randomUUID()}`;
+    const portalSessionId = `stage9-list-session-${randomUUID()}`;
+    const portalSessionToken = randomUUID();
+    const publishedTripId = databaseModule.createUuidV7();
+    const noPublicationTripId = databaseModule.createUuidV7();
+    const revokedTripId = databaseModule.createUuidV7();
+    const expiredTripId = databaseModule.createUuidV7();
+    const ungrantedTripId = databaseModule.createUuidV7();
+    const publishedGrantId = databaseModule.createUuidV7();
+    const noPublicationGrantId = databaseModule.createUuidV7();
+    const revokedGrantId = databaseModule.createUuidV7();
+    const expiredGrantId = databaseModule.createUuidV7();
+    const publicationId = databaseModule.createUuidV7();
+
+    await withOwnerLogin(priorDatabaseName, async (client) => {
+      await client.query("BEGIN");
+      try {
+        await client.query(
+          `INSERT INTO "portal_access"."portal_user" ("id", "name", "email", "emailVerified")
+           VALUES ($1, 'Stage 9 Synthetic Portal Principal', $2, true)`,
+          [portalPrincipalId, `stage9-list-${randomUUID()}@example.test`],
+        );
+        await client.query(
+          `INSERT INTO "portal_access"."portal_session" ("id", "expiresAt", "token", "updatedAt", "userId")
+           VALUES ($1, clock_timestamp() + interval '1 day', $2, clock_timestamp(), $3)`,
+          [portalSessionId, portalSessionToken, portalPrincipalId],
+        );
+        for (const tripId of [
+          publishedTripId,
+          noPublicationTripId,
+          revokedTripId,
+          expiredTripId,
+          ungrantedTripId,
+        ]) {
+          await insertFixtureTrip(client, priorAgencyId, tripId);
+        }
+
+        const projectionHash = createHash("sha256")
+          .update(stage7SnapshotPayload, "utf8")
+          .digest("hex");
+        await client.query(
+          `INSERT INTO "trip_ops"."publication_version"
+             ("publicationId", "agencyId", "tripId", "version", "workspaceRevision",
+              "schemaVersion", "projectionHash", "publisherStaffPrincipalId", "assuranceVerifiedAt")
+           VALUES ($1::uuid, $2::uuid, $3::uuid, 1, 0, 1, $4, $5, statement_timestamp())`,
+          [publicationId, priorAgencyId, publishedTripId, projectionHash, staffPrincipalId],
+        );
+        await client.query(
+          `INSERT INTO "trip_ops"."publication_snapshot"
+             ("publicationId", "agencyId", "tripId", "canonicalPayload")
+           VALUES ($1::uuid, $2::uuid, $3::uuid, $4)`,
+          [publicationId, priorAgencyId, publishedTripId, stage7SnapshotPayload],
+        );
+        await client.query(
+          `INSERT INTO "trip_ops"."publication_pointer"
+             ("agencyId", "tripId", "activePublicationId", "activeVersion")
+           VALUES ($1::uuid, $2::uuid, $3::uuid, 1)`,
+          [priorAgencyId, publishedTripId, publicationId],
+        );
+        await client.query(
+          `INSERT INTO "portal_access"."trip_access_grant"
+             ("grantId", "agencyId", "portalPrincipalId", "tripId", "capabilities",
+              "issuedByStaffPrincipalId", "issuedAt", "expiresAt", "relationshipLabel", "grantState",
+              "revokedByStaffPrincipalId", "revokedAt", "expiredAt")
+           VALUES
+             ($1::uuid, $5::uuid, $6, $7::uuid, ARRAY['trip.view_current']::text[], $8,
+              statement_timestamp(), statement_timestamp() + interval '1 day', 'Stage 9 published', 'ACTIVE', NULL, NULL, NULL),
+             ($2::uuid, $5::uuid, $6, $9::uuid, ARRAY['trip.view_current']::text[], $8,
+              statement_timestamp(), statement_timestamp() + interval '1 day', 'Stage 9 unpublished', 'ACTIVE', NULL, NULL, NULL),
+             ($3::uuid, $5::uuid, $6, $10::uuid, ARRAY['trip.view_current']::text[], $8,
+              statement_timestamp(), statement_timestamp() + interval '1 day', 'Stage 9 revoked', 'REVOKED', $8, statement_timestamp(), NULL),
+             ($4::uuid, $5::uuid, $6, $11::uuid, ARRAY['trip.view_current']::text[], $8,
+              statement_timestamp() - interval '2 days', statement_timestamp() - interval '1 day',
+              'Stage 9 expired', 'EXPIRED', NULL, NULL, statement_timestamp())`,
+          [
+            publishedGrantId,
+            noPublicationGrantId,
+            revokedGrantId,
+            expiredGrantId,
+            priorAgencyId,
+            portalPrincipalId,
+            publishedTripId,
+            staffPrincipalId,
+            noPublicationTripId,
+            revokedTripId,
+            expiredTripId,
+          ],
+        );
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => undefined);
+        throw error;
+      }
+    });
+
+    const reader = await persistence.withConnection(async (connection) =>
+      (factory as (database: unknown) => CurrentAuthorizedPortalTripListReader)(connection),
+    );
+    const sessionContext = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query<{ readonly authorizationEpoch: string }>(
+        `SELECT "authorizationEpoch"::text AS "authorizationEpoch"
+           FROM "portal_access"."portal_session_context"
+          WHERE "sessionId" = $1 AND "portalPrincipalId" = $2`,
+        [portalSessionId, portalPrincipalId],
+      ),
+    );
+    expect(sessionContext.rows).toHaveLength(1);
+    const authorizationEpoch = BigInt(sessionContext.rows[0]?.authorizationEpoch ?? "0");
+
+    const expectedItems = [
+      {
+        tripId: publishedTripId,
+        publicationState: "PUBLISHED" as const,
+        snapshot: JSON.parse(stage7SnapshotPayload) as unknown,
+      },
+      { tripId: noPublicationTripId, publicationState: "NO_PUBLICATION" as const },
+    ].sort((left, right) => left.tripId.localeCompare(right.tripId));
+    const listPath = "/api/portal/trips";
+    const cookie = await signedSessionCookie(portalRealm, portalSessionToken);
+    const application = await createPortalApi({
+      expectedHost: portalHttpPolicy.expectedHost,
+      auth: { realm: portalRealm as PortalAuthRealm, policy: portalHttpPolicy },
+      tripListReader: reader,
+    });
+    await application.listen(0, "127.0.0.1");
+    const address = application.getHttpServer().address();
+    if (address === null || typeof address === "string") {
+      await application.close();
+      throw new Error("Stage 9 Portal list fixture did not bind a TCP address");
+    }
+    try {
+      const baseUrl = `http://127.0.0.1:${address.port}`;
+      const listPage = (query = "") =>
+        request(baseUrl).get(`${listPath}${query}`).set({
+          Host: portalHttpPolicy.expectedHost,
+          Cookie: cookie,
+        });
+      const firstPage = await listPage("?limit=1");
+      expect(firstPage.status).toBe(200);
+      expect(firstPage.headers["cache-control"]).toBe("no-store, private");
+      expect(firstPage.body).toEqual({
+        items: [expectedItems[0]],
+        nextCursor: expectedItems[0]?.tripId,
+      });
+
+      const secondPage = await listPage(`?limit=1&cursor=${expectedItems[0]?.tripId}`);
+      expect(secondPage.status).toBe(200);
+      expect(secondPage.body).toEqual({ items: [expectedItems[1]], nextCursor: null });
+
+      const allAuthorized = await listPage("?limit=10");
+      expect(allAuthorized.status).toBe(200);
+      expect(allAuthorized.body).toEqual({ items: expectedItems, nextCursor: null });
+      const serialized = JSON.stringify(allAuthorized.body);
+      expect(serialized).not.toContain(revokedTripId);
+      expect(serialized).not.toContain(expiredTripId);
+      expect(serialized).not.toContain(ungrantedTripId);
+      expect(serialized).not.toContain("Stage 9 Synthetic Portal Principal");
+
+      const staleEpochPage = await reader.listCurrentAuthorizedTrips({
+        agencyId: priorAgencyId,
+        portalPrincipalId,
+        portalSessionId,
+        authorizationEpoch: authorizationEpoch + 1n,
+        limit: 10,
+        cursor: null,
+      });
+      expect(staleEpochPage).toEqual({ items: [], nextCursor: null });
+    } finally {
+      await application.close();
+    }
+
+    const portalPrivileges = await withOwnerLogin(priorDatabaseName, (client) =>
+      client.query<{
+        readonly workspaceTrip: boolean;
+        readonly workspaceItems: boolean;
+        readonly workspaceTripTitle: boolean;
+        readonly workspaceItemTitle: boolean;
+        readonly publicationPointer: boolean;
+        readonly publicationVersion: boolean;
+        readonly publicationSnapshot: boolean;
+      }>(
+        `SELECT has_table_privilege('travelos_portal_api', 'trip_ops.trip', 'SELECT') AS "workspaceTrip",
+                has_table_privilege('travelos_portal_api', 'trip_ops.itinerary_item', 'SELECT') AS "workspaceItems",
+                has_column_privilege('travelos_portal_api', 'trip_ops.trip', 'title', 'SELECT') AS "workspaceTripTitle",
+                has_column_privilege('travelos_portal_api', 'trip_ops.itinerary_item', 'customerTitle', 'SELECT') AS "workspaceItemTitle",
+                has_column_privilege('travelos_portal_api', 'trip_ops.publication_pointer', 'activePublicationId', 'SELECT') AS "publicationPointer",
+                has_column_privilege('travelos_portal_api', 'trip_ops.publication_version', 'schemaVersion', 'SELECT') AS "publicationVersion",
+                has_column_privilege('travelos_portal_api', 'trip_ops.publication_snapshot', 'canonicalPayload', 'SELECT') AS "publicationSnapshot"`,
+      ),
+    );
+    expect(portalPrivileges.rows).toEqual([
+      {
+        workspaceTrip: false,
+        workspaceItems: false,
+        workspaceTripTitle: false,
+        workspaceItemTitle: false,
+        publicationPointer: true,
+        publicationVersion: true,
+        publicationSnapshot: true,
+      },
+    ]);
+  });
+
+  describe("Stage 9 production-browser acceptance", () => {
+    const browserIt = process.env["TRAVELOS_STAGE9_BROWSER_ACCEPTANCE"] === "1" ? it : it.skip;
+
+    browserIt(
+      "exercises the built Admin and Portal journeys against isolated real APIs",
+      async () => {
+        const adminPersistence = tripAccessPersistence;
+        const portalPersistence = portalAuthPersistence;
+        expect(adminPersistence).not.toBeNull();
+        expect(portalPersistence).not.toBeNull();
+        const stage9ArtifactRoot = process.env["TRAVELOS_STAGE9_ARTIFACT_ROOT"];
+        const stage9Candidate = process.env["TRAVELOS_STAGE9_CANDIDATE"];
+        if (stage9ArtifactRoot === undefined || stage9Candidate === undefined) {
+          throw new Error("Stage 9 browser acceptance requires an extracted candidate artifact");
+        }
+        expect(path.isAbsolute(stage9ArtifactRoot)).toBe(true);
+        const artifactRelease = JSON.parse(
+          await readFile(path.join(stage9ArtifactRoot, "release.json"), "utf8"),
+        ) as {
+          readonly stage?: unknown;
+          readonly candidate?: unknown;
+          readonly artifactId?: unknown;
+          readonly source?: { readonly snapshotSha256?: unknown };
+          readonly stage10Actions?: unknown;
+        };
+        expect(artifactRelease.stage).toBe("PHASE_1_M1_STAGE_9");
+        expect(artifactRelease.candidate).toBe(stage9Candidate);
+        expect(artifactRelease.artifactId).toBe(
+          `travelos-stage9-${stage9Candidate}-${String(artifactRelease.source?.snapshotSha256).slice(0, 8)}`,
+        );
+        expect(artifactRelease.source?.snapshotSha256).toMatch(/^[a-f0-9]{64}$/u);
+        expect(artifactRelease.stage10Actions).toBe(0);
+
+        const adminHost = await startBuiltBrowserHost({
+          root: resolveStage9BrowserWebRoot({
+            surface: "admin",
+            repositoryRoot,
+            artifactRoot: stage9ArtifactRoot,
+          }),
+          hostname: "admin.travelos.test",
+        });
+        let portalHost: Awaited<ReturnType<typeof startBuiltBrowserHost>> | null = null;
+        let adminApplication: Awaited<ReturnType<typeof createAdminApi>> | null = null;
+        let portalApplication: Awaited<ReturnType<typeof createPortalApi>> | null = null;
+        try {
+          portalHost = await startBuiltBrowserHost({
+            root: resolveStage9BrowserWebRoot({
+              surface: "portal",
+              repositoryRoot,
+              artifactRoot: stage9ArtifactRoot,
+            }),
+            hostname: "portal.travelos.test",
+          });
+          const adminDatabase = await adminPersistence!.withConnection(
+            async (connection) => connection,
+          );
+          const portalDatabase = await portalPersistence!.withConnection(
+            async (connection) => connection,
+          );
+          const staffPolicy: AuthSurfacePolicy = {
+            canonicalOrigin: adminHost.origin,
+            expectedHost: adminHost.expectedHost,
+          };
+          const portalPolicy: AuthSurfacePolicy = {
+            canonicalOrigin: portalHost.origin,
+            expectedHost: portalHost.expectedHost,
+          };
+          const browserStaffRealm = createStaffAuthRealm({
+            database: adminDatabase,
+            canonicalOrigin: adminHost.origin,
+            realmKeyMaterial: stage7RealmKey,
+            environment: "DEVELOPMENT",
+          });
+          const staffEnrollmentRealm = createLocalOperatorStaffEnrollmentRealm({
+            database: adminDatabase,
+            canonicalOrigin: adminHost.origin,
+            realmKeyMaterial: stage7RealmKey,
+            environment: "DEVELOPMENT",
+          });
+          const browserPortalRealm = createPortalAuthRealm({
+            database: portalDatabase,
+            canonicalOrigin: portalHost.origin,
+            realmKeyMaterial: stage7RealmKey,
+            environment: "DEVELOPMENT",
+          });
+          const portalEnrollment = createLocalOperatorPortalEnrollmentService({
+            database: portalDatabase,
+            canonicalOrigin: portalHost.origin,
+            realmKeyMaterial: stage7RealmKey,
+            environment: "DEVELOPMENT",
+          });
+
+          const staffEmail = `stage9-browser-staff-${randomUUID()}@example.test`;
+          const staffPassword = randomBytes(32).toString("base64url");
+          const staffSignup = await staffEnrollmentRealm.handle(
+            new Request(`${adminHost.origin}/api/auth/staff/sign-up/email`, {
+              method: "POST",
+              headers: { origin: adminHost.origin, "content-type": "application/json" },
+              body: JSON.stringify({
+                email: staffEmail,
+                name: "Stage 9 Synthetic Staff Reader",
+                password: staffPassword,
+              }),
+            }),
+          );
+          expect(staffSignup.status).toBe(200);
+          const staffAccessRepository = createStaffAccessRepository(adminPersistence!);
+          const browserStaffPrincipalId =
+            await staffAccessRepository.findStaffPrincipalIdByEmail(staffEmail);
+          expect(browserStaffPrincipalId).not.toBeNull();
+
+          const browserMembershipId = randomUUID();
+          const browserRoleId = randomUUID();
+          await withOwnerLogin(priorDatabaseName, async (client) => {
+            const verifiedStaff = await client.query(
+              `UPDATE "staff_access"."staff_user"
+                  SET "emailVerified" = true,
+                      "updatedAt" = CURRENT_TIMESTAMP
+                WHERE "id" = $1
+                RETURNING "id"`,
+              [browserStaffPrincipalId!],
+            );
+            expect(verifiedStaff.rowCount).toBe(1);
+            await client.query(
+              `INSERT INTO "staff_access"."staff_membership"
+                 ("id", "agencyId", "staffPrincipalId", "state")
+               VALUES ($1::uuid, $2::uuid, $3, 'ACTIVE')`,
+              [browserMembershipId, priorAgencyId, browserStaffPrincipalId!],
+            );
+            await client.query(
+              `INSERT INTO "staff_access"."role" ("id", "agencyId", "displayName")
+               VALUES ($1::uuid, $2::uuid, 'Stage 9 Browser Trip Workflow')`,
+              [browserRoleId, priorAgencyId],
+            );
+            await client.query(
+              `INSERT INTO "staff_access"."role_permission"
+                 ("roleId", "permissionId", "scopeKind", "accessLevel")
+               VALUES ($1::uuid, 'agency.view', 'AGENCY', 'ALL'),
+                      ($1::uuid, 'trip.view', 'AGENCY', 'ALL'),
+                      ($1::uuid, 'trip.edit', 'AGENCY', 'ALL'),
+                      ($1::uuid, 'trip.preview', 'AGENCY', 'ALL'),
+                      ($1::uuid, 'trip.publish', 'AGENCY', 'ALL'),
+                      ($1::uuid, 'customer.edit', 'AGENCY', 'ALL'),
+                      ($1::uuid, 'traveller.edit', 'AGENCY', 'ALL')`,
+              [browserRoleId],
+            );
+            await client.query(
+              `INSERT INTO "staff_access"."role_assignment"
+                 ("id", "agencyId", "membershipId", "roleId", "scopeKind", "organizationUnitId", "active")
+               VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'AGENCY', NULL, true)`,
+              [randomUUID(), priorAgencyId, browserMembershipId, browserRoleId],
+            );
+          });
+
+          const callStaffRealm = (endpoint: string, body: object, cookie?: string) =>
+            browserStaffRealm.handle(
+              new Request(`${adminHost.origin}/api/auth/staff/${endpoint}`, {
+                method: "POST",
+                headers: {
+                  origin: adminHost.origin,
+                  "content-type": "application/json",
+                  ...(cookie === undefined ? {} : { cookie }),
+                },
+                body: JSON.stringify(body),
+              }),
+            );
+          const setupSignIn = await callStaffRealm("sign-in/email", {
+            email: staffEmail,
+            password: staffPassword,
+          });
+          expect(setupSignIn.status).toBe(200);
+          const setupCookie = setupSignIn.headers
+            .getSetCookie()
+            .map((row) => row.split(";", 1)[0])
+            .join("; ");
+          const enabledTotp = await callStaffRealm(
+            "two-factor/enable",
+            { password: staffPassword },
+            setupCookie,
+          );
+          expect(enabledTotp.status).toBe(200);
+          const totpUri = ((await enabledTotp.json()) as { readonly totpURI: string }).totpURI;
+          const totpSeed = new URL(totpUri).searchParams.get("secret");
+          expect(totpSeed).toMatch(/^[A-Z2-7]{16,128}$/u);
+          const makeTotpCode = await createRuntimeTotpGenerator(
+            path.join(repositoryRoot, "apps/portal-api"),
+          );
+          const totpVerified = await callStaffRealm(
+            "two-factor/verify-totp",
+            { code: await makeTotpCode(totpSeed!) },
+            setupCookie,
+          );
+          expect(totpVerified.status).toBe(200);
+          expect((await callStaffRealm("sign-out", {}, setupCookie)).status).toBe(200);
+
+          const authorizedPortal = {
+            email: `stage9-browser-authorized-${randomUUID()}@example.test`,
+            password: randomBytes(32).toString("base64url"),
+          };
+          const ungrantedPortal = {
+            email: `stage9-browser-ungranted-${randomUUID()}@example.test`,
+            password: randomBytes(32).toString("base64url"),
+          };
+          const authorizedEnrollment = await portalEnrollment.enroll({
+            ...authorizedPortal,
+            name: "Stage 9 Synthetic Authorized Portal",
+          });
+          await portalEnrollment.enroll({
+            ...ungrantedPortal,
+            name: "Stage 9 Synthetic Ungranted Portal",
+          });
+
+          const browserTripId = databaseModule.createUuidV7();
+          const browserPersonId = databaseModule.createUuidV7();
+          const browserTravellerId = databaseModule.createUuidV7();
+          const browserCustomerId = databaseModule.createUuidV7();
+          const browserUnpublishedTripTitle = "Stage 9 Browser Ungranted Fixture";
+          const browserWorkspaceTripTitle = "Stage 9 Browser Snapshot Lifecycle";
+          const browserRevisedWorkspaceTripTitle = "Stage 9 Browser Snapshot Lifecycle v2";
+          const browserPublishedSnapshotTitle = browserWorkspaceTripTitle;
+          const browserFlightTitle = "Stage 9 Browser Flight";
+          const browserRevisedFlightTitle = "Stage 9 Browser Flight v2";
+          const browserInitialAccommodationTitle = "Stage 9 Browser Accommodation v1";
+          const browserRevisedAccommodationTitle = "Stage 9 Browser Accommodation v2";
+          await withOwnerLogin(priorDatabaseName, async (client) => {
+            await client.query("BEGIN");
+            try {
+              await client.query(
+                `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName", "email")
+                 VALUES ($1::uuid, $2::uuid, 'Stage 9 Browser', 'Traveller', NULL)`,
+                [browserPersonId, priorAgencyId],
+              );
+              await client.query(
+                `INSERT INTO "trip_ops"."trip"
+                   ("id", "agencyId", "title", "startDate", "endDate", "state")
+                 VALUES ($1::uuid, $2::uuid, $3,
+                         '2026-11-15', '2026-11-16', 'DRAFT')`,
+                [browserTripId, priorAgencyId, browserUnpublishedTripTitle],
+              );
+              await client.query(
+                `INSERT INTO "trip_ops"."trip_traveller"
+                   ("id", "agencyId", "tripId", "personId", "role")
+                 VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'PRIMARY_TRAVELLER')`,
+                [browserTravellerId, priorAgencyId, browserTripId, browserPersonId],
+              );
+              await client.query(
+                `INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
+                 VALUES ($1::uuid, $2::uuid, 'Stage 9 Browser Customer')`,
+                [browserCustomerId, priorAgencyId],
+              );
+              await client.query(
+                `INSERT INTO "crm"."customer_person"
+                   ("agencyId", "customerId", "personId", "role", "isPrimary")
+                 VALUES ($1::uuid, $2::uuid, $3::uuid, 'PRIMARY_CONTACT', true)`,
+                [priorAgencyId, browserCustomerId, browserPersonId],
+              );
+              await client.query("COMMIT");
+            } catch (error) {
+              await client.query("ROLLBACK").catch(() => undefined);
+              throw error;
+            }
+          });
+          const grantCreatedTripAccess = async (createdTripId: string): Promise<void> => {
+            await withOwnerLogin(priorDatabaseName, async (client) => {
+              const grant = await client.query(
+                `INSERT INTO "portal_access"."trip_access_grant"
+                 ("grantId", "agencyId", "portalPrincipalId", "tripId", "capabilities",
+                  "issuedByStaffPrincipalId", "issuedAt", "expiresAt")
+              VALUES ($1::uuid, $2::uuid, $3, $4::uuid, ARRAY['trip.view_current']::text[],
+                      $5, statement_timestamp(), NULL)`,
+                [
+                  randomUUID(),
+                  priorAgencyId,
+                  authorizedEnrollment.portalPrincipalId,
+                  createdTripId,
+                  browserStaffPrincipalId!,
+                ],
+              );
+              expect(grant.rowCount).toBe(1);
+            });
+          };
+
+          const sessionResolver = createAdminStaffSessionResolver(browserStaffRealm, staffPolicy);
+          const workspaceOperations = createM1StaffTripWorkspaceOperations({
+            repository: createPostgresM1StaffTripWorkspaceRepository(adminPersistence!),
+            authorizationRepository: staffAccessRepository,
+            sessionResolver,
+          });
+          const workspaceWriteOperations =
+            databaseModule.createPostgresM1StaffTripWorkspaceWriteOperations(
+              adminPersistence!,
+              sessionResolver,
+            );
+          const publicationOperations =
+            databaseModule.createPostgresM1StaffTripPublicationOperations(
+              adminPersistence!,
+              sessionResolver,
+              {
+                validate: (value) =>
+                  void AdminTripPublicationPreviewV1Schema.shape.projection.parse(value),
+              },
+            );
+          adminApplication = await createAdminApi({
+            expectedHost: adminHost.expectedHost,
+            auth: {
+              realm: browserStaffRealm,
+              policy: staffPolicy,
+              environment: "DEVELOPMENT",
+              staffAccessRepository,
+              m1Operations: databaseModule.createPostgresM1StaffTripOperations(
+                adminPersistence!,
+                sessionResolver,
+              ),
+              m1WorkspaceOperations: workspaceOperations,
+              m1WorkspaceWriteOperations: workspaceWriteOperations,
+              m1PublicationOperations: publicationOperations,
+            },
+          });
+          await adminApplication.listen(0, "127.0.0.1");
+          const adminAddress = adminApplication.getHttpServer().address();
+          if (adminAddress === null || typeof adminAddress === "string") {
+            throw new Error("Stage 9 Admin browser API did not bind a TCP address");
+          }
+          adminHost.setApiUpstreamPort(adminAddress.port);
+
+          const portalReaders = await portalPersistence!.withConnection(async (connection) => ({
+            list: portalTripReadRepositoryModule.createPostgresPortalAuthorizedTripListReader(
+              connection,
+            ),
+            snapshot: createPostgresPortalTripSnapshotReader(connection),
+          }));
+          portalApplication = await createPortalApi({
+            expectedHost: portalHost.expectedHost,
+            auth: { realm: browserPortalRealm, policy: portalPolicy },
+            tripListReader: portalReaders.list,
+            tripSnapshotReader: portalReaders.snapshot,
+          });
+          await portalApplication.listen(0, "127.0.0.1");
+          const portalAddress = portalApplication.getHttpServer().address();
+          if (portalAddress === null || typeof portalAddress === "string") {
+            throw new Error("Stage 9 Portal browser API did not bind a TCP address");
+          }
+          portalHost.setApiUpstreamPort(portalAddress.port);
+
+          const browserEvidenceDirectory =
+            process.env["TRAVELOS_STAGE7_EVIDENCE_DIR"] ??
+            path.join(repositoryRoot, ".hermes/state", `stage9-browser-${process.pid}`);
+          const browserResult = await runStage9BrowserJourney({
+            adminOrigin: adminHost.origin,
+            portalOrigin: portalHost.origin,
+            staffCookieName: browserStaffRealm.cookieName,
+            portalCookieName: browserPortalRealm.cookieName,
+            tripId: browserTripId,
+            workspaceTripTitle: browserWorkspaceTripTitle,
+            revisedWorkspaceTripTitle: browserRevisedWorkspaceTripTitle,
+            publishedSnapshotTitle: browserPublishedSnapshotTitle,
+            flightTitle: browserFlightTitle,
+            revisedFlightTitle: browserRevisedFlightTitle,
+            initialAccommodationTitle: browserInitialAccommodationTitle,
+            revisedAccommodationTitle: browserRevisedAccommodationTitle,
+            staff: { email: staffEmail, password: staffPassword, totpSeed: totpSeed! },
+            authorizedPortal,
+            ungrantedPortal,
+            artifactIdentity: {
+              candidate: stage9Candidate,
+              artifactId: artifactRelease.artifactId as string,
+              sourceSnapshotSha256: artifactRelease.source?.snapshotSha256 as string,
+            },
+            makeTotpCode,
+            grantCreatedTripAccess,
+            evidenceDirectory: browserEvidenceDirectory,
+          });
+          expect(browserResult.createdTripId).not.toBe(browserTripId);
+          expect(browserResult.createdFlightId).toMatch(/^[0-9a-f-]{36}$/iu);
+          expect(browserResult.createdAccommodationId).toMatch(/^[0-9a-f-]{36}$/iu);
+          expect(browserResult.workspaceRevisions).toEqual(["1", "2", "3", "4", "5", "6"]);
+          expect(browserResult.screenshotCount).toBe(12);
+          const browserReport = JSON.parse(
+            await readFile(path.join(browserEvidenceDirectory, "browser-acceptance.json"), "utf8"),
+          ) as {
+            workflow?: {
+              tripUpdatedThroughAdminUi?: unknown;
+              flightUpdatedThroughAdminUi?: unknown;
+            };
+          };
+          expect(browserReport.workflow).toMatchObject({
+            tripUpdatedThroughAdminUi: true,
+            flightUpdatedThroughAdminUi: true,
+          });
+          expect(browserResult.axeScanCount).toBeGreaterThanOrEqual(18);
+        } finally {
+          await Promise.all([
+            portalApplication?.close(),
+            adminApplication?.close(),
+            portalHost?.close(),
+            adminHost.close(),
+          ]);
+        }
+      },
+      180_000,
+    );
   });
 });

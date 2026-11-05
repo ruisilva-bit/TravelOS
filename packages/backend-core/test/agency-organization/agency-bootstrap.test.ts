@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import * as backendCore from "../../src/index.js";
 import {
   bootstrapRootAgency,
   PERMISSION_REGISTRY_VERSION,
@@ -66,6 +67,45 @@ describe("root Agency bootstrap identifiers", () => {
         allowedScopeKinds: ["AGENCY"],
         allowedAccessLevels: ["ALL"],
       });
+    }
+  });
+
+  it("exposes exactly the fixed lower-privilege Trip Operations template", () => {
+    const exports = backendCore as unknown as Record<string, unknown>;
+    const templateKey = exports.TRIP_OPERATIONS_ROLE_TEMPLATE_KEY;
+    const permissionIds = exports.TRIP_OPERATIONS_ROLE_PERMISSION_IDS;
+    const template = exports.TRIP_OPERATIONS_ROLE_TEMPLATE as
+      { readonly templateKey: unknown; readonly permissionIds: readonly string[] } | undefined;
+
+    expect(templateKey).toBe("trip-operations-v1");
+    expect(permissionIds).toEqual([
+      "agency.view",
+      "customer.edit",
+      "traveller.edit",
+      "trip.view",
+      "trip.edit",
+      "trip.preview",
+      "trip.publish",
+      "trip.access.manage",
+    ]);
+    expect(Object.isFrozen(permissionIds)).toBe(true);
+    expect(template).toEqual({ templateKey, permissionIds });
+    expect(Object.isFrozen(template)).toBe(true);
+    for (const forbidden of [
+      "staff.invite",
+      "staff.view",
+      "staff.manage_roles",
+      "staff.suspend",
+      "agency.manage_settings",
+      "finance.view_prices",
+      "finance.view_costs",
+      "finance.manage_costs",
+      "reservation.view",
+      "reservation.edit",
+      "trip.withdraw_publication",
+      "runtime_acceptance.fixture.manage",
+    ]) {
+      expect(permissionIds).not.toContain(forbidden);
     }
   });
 });

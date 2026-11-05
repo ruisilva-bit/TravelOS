@@ -2,6 +2,8 @@ import {
   OWNER_ROLE_PERMISSION_IDS,
   OWNER_ROLE_TEMPLATE_KEY,
   PERMISSION_REGISTRY_VERSION,
+  TRIP_OPERATIONS_ROLE_PERMISSION_IDS,
+  TRIP_OPERATIONS_ROLE_TEMPLATE_KEY,
   type StaffPermissionId,
 } from "../staff-access/permission-registry.js";
 import { isUuidV7 } from "../shared-kernel/opaque-id.js";
@@ -35,6 +37,16 @@ export const ROOT_AGENCY_OWNER_TEMPLATE: OwnerRoleTemplate = {
   templateKey: OWNER_ROLE_TEMPLATE_KEY,
   permissionIds: OWNER_ROLE_PERMISSION_IDS,
 };
+
+export interface TripOperationsRoleTemplate {
+  readonly templateKey: typeof TRIP_OPERATIONS_ROLE_TEMPLATE_KEY;
+  readonly permissionIds: typeof TRIP_OPERATIONS_ROLE_PERMISSION_IDS;
+}
+
+export const TRIP_OPERATIONS_ROLE_TEMPLATE: TripOperationsRoleTemplate = Object.freeze({
+  templateKey: TRIP_OPERATIONS_ROLE_TEMPLATE_KEY,
+  permissionIds: TRIP_OPERATIONS_ROLE_PERMISSION_IDS,
+});
 
 const nonEmpty = (value: string, label: string): void => {
   if (value.trim().length === 0) throw new Error(`${label} must not be blank`);

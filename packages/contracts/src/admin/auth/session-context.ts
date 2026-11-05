@@ -10,6 +10,8 @@ export const AdminStaffSessionContextSchema = z
     agencyId: z.uuid(),
     authorizationEpoch: z.string().regex(/^[1-9][0-9]*$/),
     recentMfaVerifiedAtEpochMs: z.number().int().nonnegative().nullable(),
+    // UI hint only; every Staff API command still reauthorizes server-side.
+    canInviteStaff: z.boolean().optional(),
   })
   .strict();
 

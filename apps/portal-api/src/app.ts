@@ -2,7 +2,10 @@ import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters/portal";
 import { createRequestTelemetry } from "@travelos/observability";
-import type { CurrentPublishedPortalTripSnapshotReader } from "@travelos/portal-safe-core/customer-presentation";
+import type {
+  CurrentAuthorizedPortalTripListReader,
+  CurrentPublishedPortalTripSnapshotReader,
+} from "@travelos/portal-safe-core/customer-presentation";
 
 import { PortalApiModule } from "./app.module.js";
 import { registerPortalAuthBridge, type PortalAuthBridgeOptions } from "./auth-bridge.js";
@@ -13,6 +16,7 @@ export interface CreatePortalApiOptions {
   readonly expectedHost: string;
   readonly auth?: PortalAuthBridgeOptions;
   readonly tripSnapshotReader?: CurrentPublishedPortalTripSnapshotReader;
+  readonly tripListReader?: CurrentAuthorizedPortalTripListReader;
 }
 
 const isCanonicalOriginForHost = (canonicalOrigin: string, expectedHost: string): boolean => {
@@ -54,14 +58,15 @@ export const createPortalApi = async (
   if (options.auth !== undefined) {
     registerPortalAuthBridge(application, options.auth);
   }
-  if (options.tripSnapshotReader !== undefined) {
+  if (options.tripSnapshotReader !== undefined || options.tripListReader !== undefined) {
     if (options.auth === undefined) {
       throw new Error("Portal Trip routes require Portal authentication");
     }
     registerPortalTripRoutes(application, {
       realm: options.auth.realm,
       policy: options.auth.policy,
-      reader: options.tripSnapshotReader,
+      ...(options.tripSnapshotReader === undefined ? {} : { reader: options.tripSnapshotReader }),
+      ...(options.tripListReader === undefined ? {} : { listReader: options.tripListReader }),
     });
   }
   await application.init();

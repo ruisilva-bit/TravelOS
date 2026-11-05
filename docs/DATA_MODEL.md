@@ -48,7 +48,7 @@ Rules:
 | Schema | Representative tables | Owner |
 |---|---|---|
 | `organization` | `agency`, `organization_unit`, `team`, `team_member`, `branding_draft` | Agency Organization |
-| `staff_access` | auth-library-prefixed staff tables, `staff_membership`, `role`, `role_permission`, `role_assignment`, `permission_registry_version` | Staff Access |
+| `staff_access` | auth-library-prefixed staff tables, `staff_membership`, `role`, `role_permission`, `role_assignment`, `permission_registry_version`, `staff_invitation` | Staff Access |
 | `crm` | `person`, `customer`, `customer_person`, `traveller_group`, `traveller_group_member`, contact/address tables | CRM |
 | `sales` | `lead`, `travel_request`, `opportunity`, `quote`, `quote_version`, `proposal_alternative`, `sale` | Sales |
 | `trip_ops` | `trip`, `trip_traveller`, `itinerary_item`, family detail tables, `journey_group`, `reservation`, `reservation_item_link` | Trip Operations |
@@ -59,11 +59,22 @@ Rules:
 | `work_service` | `task`, `case`, assignment/state history | Work & Service |
 | `communications` | `conversation`, `message`, `delivery_request` | Communications |
 | `activity` | `activity_entry` | Activity |
-| `audit` | `audit_event` | Audit |
+| `audit` | `audit_event`, `staff_invitation_event` | Audit |
 | `integration` | `provider_config`, `provider_reference`, `webhook_inbox`, `outbox_message`, `outbox_delivery` | Integrations |
 | `job_runtime` | `job`, `job_attempt`, `recurring_job_key` | TravelOS Job Runtime |
 
 Authentication-library tables are physically separate per realm and cannot share a session/account table.
+
+### Stage 9 Staff invitations
+
+| Record/data | Owner and classification | Portal eligibility | Retention, audit and access |
+|---|---|---|---|
+| `staff_access.staff_invitation` | Staff Access. `targetEmail` is Staff-access PII; `tokenDigest` is restricted authentication material (lowercase SHA-256 digest only); identifiers and lifecycle timestamps are internal operational data. | None. The Portal has no contract or database privilege for this table. | Pending tokens expire after 60 minutes; expiry is not a record-retention period. The migration defines no automatic purge: terminal invitation metadata/digests remain subject to the privileged, policy-controlled retention/deletion process. Every issue, reissue, revoke, expiry and consume transition has a same-transaction audit event. The Admin runtime uses Agency-scoped permission `staff.invite` with recent MFA; list pages are bounded/keyset-paginated by Agency and ID, expiry scans use Agency/status/expiry, and acceptance looks up the unique digest. |
+| `audit.staff_invitation_event` | Audit. Agency/invitation/actor identifiers, event type and timestamp only; no email, raw token, digest, password, MFA seed or recovery code. | None. The Portal has no contract or database privilege for this table. | Append-only, retained under the privileged Audit retention policy. A restricted Admin runtime may select/insert; mutation and truncation are denied. Foreign keys bind invitation, related invitation and actor to the same Agency; retention/deletion must reconcile linked invitation and audit rows together. |
+
+The 60-minute expiry limits token use, not how long the invitation email or digest is retained. This Stage 9 extension introduces no numeric post-terminal retention period; the existing privileged retention policy remains authoritative and must be followed before any purge.
+
+The only Stage 9 inviteable role is the code-owned Agency template `trip-operations-v1`; callers cannot choose a role ID or permission set. Acceptance locks and validates the pending invitation, creates the Better Auth Staff identity and its controlled email-verification state, inserts the active Agency membership and fixed role assignment, consumes the invitation, and appends the immutable audit event in one transaction. Any failure rolls back the complete operation. The issuer-approved email binding is not independent proof of mailbox ownership. No session is issued by enrolment, and Staff authorization context remains unavailable until TOTP MFA is enabled and verified. Portal roles have no access to invitation or invitation-audit data.
 
 ## 5. Core relationship model
 
@@ -71,6 +82,8 @@ Authentication-library tables are physically separate per realm and cannot share
 erDiagram
   AGENCY ||--o{ ORGANIZATION_UNIT : contains
   AGENCY ||--o{ STAFF_MEMBERSHIP : authorizes
+  AGENCY ||--o{ STAFF_INVITATION : scopes
+  STAFF_MEMBERSHIP ||--o{ STAFF_INVITATION : issues
   AGENCY ||--o{ CUSTOMER : owns
   CUSTOMER }o--o{ PERSON : relates
   PERSON ||--o{ TRIP_TRAVELLER : participates_as

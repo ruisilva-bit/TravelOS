@@ -19,9 +19,11 @@ import {
   type CancelM1TripInput,
   type OpaqueId,
   type ScheduledLocalDateTime,
+  type CreateM1TripWorkspaceInput,
   type CreateM1TripSliceInput,
   type StaffAuthorizationOperationProof,
   type StaffPermissionId,
+  type Trip,
   type UpdateAccommodationInput,
   type UpdateInternalNoteInput,
 } from "@travelos/backend-core";
@@ -713,6 +715,94 @@ const resolveRuntimeAcceptanceFixtureTripSlot = async (
 
 class PostgresM1OperationalSliceRepository implements M1OperationalSliceRepository {
   constructor(private readonly persistence: PostgresPersistence<DatabaseShape>) {}
+
+  async createTripWorkspace(
+    input: CreateM1TripWorkspaceInput,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<Trip> {
+    const session = authorization?.session;
+    if (typeof session?.agencyId !== "string") {
+      throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    }
+    let agencyId: OpaqueId;
+    try {
+      agencyId = asOpaqueId(session.agencyId);
+    } catch {
+      throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    }
+
+    return withMappedPostgresError(() =>
+      this.persistence.transaction.runInTransaction(async (context) =>
+        this.persistence.withTransactionContext(context, async (database) => {
+          await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`.execute(database);
+          await assertStaffAuthorizationInTransaction(
+            database,
+            authorization,
+            agencyId,
+            M1_OPERATION_PERMISSION_REQUIREMENTS.WORKSPACE_CREATE,
+          );
+
+          const personId = createUuidV7();
+          const customerId = createUuidV7();
+          const tripId = createUuidV7();
+          const travellerId = createUuidV7();
+          await sql`
+            INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName", "email")
+            VALUES (
+              ${personId}::uuid, ${agencyId}::uuid,
+              ${input.primaryTraveller.givenName.trim()}, ${input.primaryTraveller.familyName.trim()}, NULL
+            )
+          `.execute(database);
+          await sql`
+            INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
+            VALUES (${customerId}::uuid, ${agencyId}::uuid, ${input.customer.displayName.trim()})
+          `.execute(database);
+          await sql`
+            INSERT INTO "crm"."customer_person"
+              ("agencyId", "customerId", "personId", "role", "isPrimary")
+            VALUES (${agencyId}::uuid, ${customerId}::uuid, ${personId}::uuid, 'PRIMARY_CONTACT', true)
+          `.execute(database);
+          await sql`
+            INSERT INTO "trip_ops"."trip"
+              ("id", "agencyId", "title", "startDate", "endDate", "state")
+            VALUES (
+              ${tripId}::uuid, ${agencyId}::uuid, ${input.trip.title.trim()},
+              ${input.trip.startDate}, ${input.trip.endDate}, 'DRAFT'
+            )
+          `.execute(database);
+          await sql`
+            INSERT INTO "trip_ops"."trip_traveller"
+              ("id", "agencyId", "tripId", "personId", "role")
+            VALUES (${travellerId}::uuid, ${agencyId}::uuid, ${tripId}::uuid, ${personId}::uuid, 'PRIMARY_TRAVELLER')
+          `.execute(database);
+
+          const trip = first(
+            (
+              await sql<TripRow>`
+                SELECT "id"::text AS "id", "agencyId"::text AS "agencyId", "title",
+                       "startDate"::text AS "startDate", "endDate"::text AS "endDate", "state",
+                       "workspaceRevision"::text AS "workspaceRevision",
+                       "lockVersion"::text AS "lockVersion"
+                  FROM "trip_ops"."trip"
+                 WHERE "agencyId" = ${agencyId}::uuid AND "id" = ${tripId}::uuid
+              `.execute(database)
+            ).rows,
+          );
+          if (trip === null) throw new Error("Trip workspace was not readable after creation");
+          return {
+            id: asOpaqueId(trip.id),
+            agencyId: asOpaqueId(trip.agencyId),
+            title: trip.title,
+            startDate: trip.startDate,
+            endDate: trip.endDate,
+            state: trip.state,
+            workspaceRevision: BigInt(trip.workspaceRevision),
+            lockVersion: BigInt(trip.lockVersion),
+          };
+        }),
+      ),
+    );
+  }
 
   async createM1TripSlice(
     input: CreateM1TripSliceInput,

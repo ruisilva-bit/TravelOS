@@ -20,6 +20,8 @@ const passwordKey = ["pass", "word"].join("");
 const queryKey = ["access", "_token"].join("");
 const accessKeyAssignmentKey = ["access", "key"].join("");
 const accessKeyDomAlias = ["access", "Key"].join("");
+const fetchCredentialsKey = ["creden", "tials"].join("");
+const fetchCredentialsMode = ["same", "origin"].join("-");
 const fixtureEmail = ["traveller.fixture", "example.invalid"].join("@");
 const fixtureCases = [
   {
@@ -85,6 +87,30 @@ try {
   assert.equal(browserResult.result, "FAIL");
   assert.ok(browserResult.findings.some((finding) => finding.rule === "secret-assignment"));
 
+  const reviewedBundlePath = "apps/admin-web/dist/assets/index-CYfMC-wt.js";
+  const reviewedBundle = scanSensitiveText({
+    text: `${fetchCredentialsKey}: "${fetchCredentialsMode}"`,
+    file: reviewedBundlePath,
+    allowlist: [{ path: reviewedBundlePath, rule: "secret-assignment", line: 1 }],
+    additionalRules: browserLeakageRules,
+  });
+  assert.deepEqual(reviewedBundle.findings, []);
+  assert.equal(reviewedBundle.allowlistedFindingCount, 1);
+
+  const wrongBundlePath = scanSensitiveText({
+    text: `${fetchCredentialsKey}: "${fetchCredentialsMode}"\n`,
+    file: "apps/portal-web/dist/assets/index-DNU0NKRm.js",
+    allowlist: [{ path: reviewedBundlePath, rule: "secret-assignment", line: 1 }],
+    additionalRules: browserLeakageRules,
+  });
+  assert.deepEqual(wrongBundlePath.findings, [
+    {
+      file: "apps/portal-web/dist/assets/index-DNU0NKRm.js",
+      rule: "secret-assignment",
+      line: 1,
+    },
+  ]);
+
   const safeFixtureFile = "fixtures/explicitly-allowlisted-public-contact.txt";
   await mkdir(path.join(temporaryRoot, path.dirname(safeFixtureFile)), { recursive: true });
   await writeFile(path.join(temporaryRoot, safeFixtureFile), `${fixtureEmail}\n`, "utf8");
@@ -141,6 +167,7 @@ try {
         outcomes,
         generatedBrowserAsset: "REJECTED_AS_EXPECTED",
         explicitSafeFixtureAllowlist: "PASS",
+        exactBrowserBundleAllowlist: "PASS",
         codeCredentialReferences: "PASS",
         staticDomPropertyAlias: "PASS",
         suspiciousAccessKeyMaterial: "REJECTED_AS_EXPECTED",

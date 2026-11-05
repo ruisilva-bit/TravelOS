@@ -1,13 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-PT">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>TravelOS Portal — Development Foundation</title>
+    <meta name="theme-color" content="#f9fbfc" />
+    <title>TravelOS Portal: itinerários do cliente</title>
   </head>
   <body>
-    <div id="portal-root"></div>
+    <div id="portal-root">
+      <main class="auth-page">
+        <section class="auth-card" aria-labelledby="static-portal-auth-title">
+          <a class="auth-card__brand" href="/">TravelOS <span>Portal</span></a>
+          <h1 id="static-portal-auth-title">Entrar no Portal</h1>
+          <p class="auth-card__intro">Consulte os itinerários publicados e autorizados para si.</p>
+          <form
+            method="post"
+            action="/api/auth/portal/sign-in/email"
+            aria-labelledby="static-portal-auth-title"
+          >
+            <div class="field">
+              <label for="static-portal-email">Email</label>
+              <input
+                id="static-portal-email"
+                name="email"
+                type="email"
+                autocomplete="username"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="static-portal-password">Palavra-passe</label>
+              <input
+                id="static-portal-password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <button class="button button--primary" type="submit">Entrar</button>
+          </form>
+          <noscript><p>Ative JavaScript para consultar o Portal com segurança.</p></noscript>
+        </section>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

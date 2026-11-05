@@ -159,3 +159,15 @@ export const permissionDefinitionFor = (permissionId: StaffPermissionId): Permis
 export const OWNER_ROLE_TEMPLATE_KEY = "agency-owner-v1" as const;
 export const OWNER_ROLE_PERMISSION_IDS: readonly StaffPermissionId[] =
   STAGE_7_PERMISSION_REGISTRY.map(({ id }) => id);
+
+export const TRIP_OPERATIONS_ROLE_TEMPLATE_KEY = "trip-operations-v1" as const;
+export const TRIP_OPERATIONS_ROLE_PERMISSION_IDS = Object.freeze([
+  "agency.view",
+  "customer.edit",
+  "traveller.edit",
+  "trip.view",
+  "trip.edit",
+  "trip.preview",
+  "trip.publish",
+  "trip.access.manage",
+] as const satisfies readonly StaffPermissionId[]);

@@ -2,6 +2,7 @@ import {
   OWNER_ROLE_TEMPLATE_KEY,
   PERMISSION_REGISTRY_VERSION,
   ROOT_AGENCY_OWNER_TEMPLATE,
+  TRIP_OPERATIONS_ROLE_TEMPLATE,
   permissionDefinitionFor,
   type RootAgencyBootstrapInput,
   type RootAgencyBootstrapPort,
@@ -180,6 +181,92 @@ const activeOwnerRole = async (
   return row.id;
 };
 
+const ensureTripOperationsRole = async (
+  database: Kysely<DatabaseShape>,
+  agencyId: string,
+): Promise<string> => {
+  await sql`
+    INSERT INTO "staff_access"."role"
+      ("id", "agencyId", "templateKey", "displayName", "isSystemTemplate")
+    VALUES (
+      ${createUuidV7()}::uuid,
+      ${agencyId}::uuid,
+      ${TRIP_OPERATIONS_ROLE_TEMPLATE.templateKey},
+      'Trip Operations',
+      true
+    )
+    ON CONFLICT ("agencyId", "templateKey") WHERE "templateKey" IS NOT NULL DO NOTHING
+  `.execute(database);
+
+  const role = asSingle(
+    (
+      await sql<{ id: string; displayName: string; isSystemTemplate: boolean }>`
+        SELECT "id", "displayName", "isSystemTemplate"
+          FROM "staff_access"."role"
+         WHERE "agencyId" = ${agencyId}::uuid
+           AND "templateKey" = ${TRIP_OPERATIONS_ROLE_TEMPLATE.templateKey}
+         FOR UPDATE
+      `.execute(database)
+    ).rows,
+  );
+  if (role === null || role.displayName !== "Trip Operations" || !role.isSystemTemplate) {
+    throw new Error("The code-owned Trip Operations role has an unexpected shape");
+  }
+
+  for (const permissionId of TRIP_OPERATIONS_ROLE_TEMPLATE.permissionIds) {
+    const definition = permissionDefinitionFor(permissionId);
+    for (const scopeKind of definition.allowedScopeKinds) {
+      for (const accessLevel of definition.allowedAccessLevels) {
+        await sql`
+          INSERT INTO "staff_access"."role_permission"
+            ("roleId", "permissionId", "scopeKind", "accessLevel")
+          VALUES (${role.id}::uuid, ${permissionId}, ${scopeKind}, ${accessLevel})
+          ON CONFLICT DO NOTHING
+        `.execute(database);
+      }
+    }
+  }
+
+  const actualPermissions = (
+    await sql<{
+      permissionId: string;
+      scopeKind: "AGENCY" | "ORGANIZATION_UNIT";
+      accessLevel: "OWN" | "TEAM" | "ALL";
+    }>`
+      SELECT "permissionId", "scopeKind", "accessLevel"
+        FROM "staff_access"."role_permission"
+       WHERE "roleId" = ${role.id}::uuid
+       ORDER BY "permissionId", "scopeKind", "accessLevel"
+    `.execute(database)
+  ).rows;
+  const expectedPermissions = TRIP_OPERATIONS_ROLE_TEMPLATE.permissionIds
+    .flatMap((permissionId) => {
+      const definition = permissionDefinitionFor(permissionId);
+      return definition.allowedScopeKinds.flatMap((scopeKind) =>
+        definition.allowedAccessLevels.map((accessLevel) => ({
+          permissionId,
+          scopeKind,
+          accessLevel,
+        })),
+      );
+    })
+    .map(({ permissionId, scopeKind, accessLevel }) =>
+      [permissionId, scopeKind, accessLevel].join("\u0000"),
+    )
+    .sort();
+  const actualPermissionKeys = actualPermissions
+    .map(({ permissionId, scopeKind, accessLevel }) =>
+      [permissionId, scopeKind, accessLevel].join("\u0000"),
+    )
+    .sort();
+  if (JSON.stringify(actualPermissionKeys) !== JSON.stringify(expectedPermissions)) {
+    throw new Error(
+      "The code-owned Trip Operations role permissions differ from the exact allowlist",
+    );
+  }
+  return role.id;
+};
+
 class PostgresStaffAccessRepository implements StaffAccessRepository {
   constructor(private readonly persistence: PostgresPersistence<DatabaseShape>) {}
 
@@ -258,6 +345,8 @@ class PostgresStaffAccessRepository implements StaffAccessRepository {
             }
           }
         }
+
+        await ensureTripOperationsRole(database, agency.id);
 
         return {
           agencyId: agency.id,
