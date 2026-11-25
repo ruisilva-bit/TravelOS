@@ -38,48 +38,6 @@
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "apps/admin-web/src/api.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "68dbd5979967421ab281e440552f26e412d9682e32b5cb7448b2199bedc9a6af",
-      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
-      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
-    },
-    {
-      "path": "apps/admin-web/src/auth-client.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "def117139e25ffd7d5e395ee068c4df21492893a91e98f2333734fb025853799",
-      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
-      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
-    },
-    {
-      "path": "apps/admin-web/src/staff-invitation-api.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "68dbd5979967421ab281e440552f26e412d9682e32b5cb7448b2199bedc9a6af",
-      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
-      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
-    },
-    {
-      "path": "apps/admin-web/test/api.test.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "4e9a9729c03c8759ef3ebddf31b6bb9499f7fcc1b952a1baf9990e6b4edf2cba",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/admin-web/test/api.test.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "531753b1c3cf69e928e2097680a5005fffeb3f8083027d051837c02253e94599",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/admin-web/test/api.test.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "d29044615b20f612e545e4cc31d5670277ababef7035c03bf2bde06fd46e1005",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
       "path": "apps/admin-web/test/app.test.tsx",
       "rule": "credential-url-query",
       "lineSha256": "2c0b489826631bb0337d3473b6ab6222758d3b5f41cf6f5474c6fbb95b163e0d",
@@ -131,21 +89,7 @@
     {
       "path": "apps/admin-web/test/app.test.tsx",
       "rule": "secret-assignment",
-      "lineSha256": "4e9a9729c03c8759ef3ebddf31b6bb9499f7fcc1b952a1baf9990e6b4edf2cba",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/admin-web/test/app.test.tsx",
-      "rule": "secret-assignment",
       "lineSha256": "81f6c02311d3cb1a455365a36ee0d8e2a28deb1994cf16dc8b5a6552aa2b13c9",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/admin-web/test/app.test.tsx",
-      "rule": "secret-assignment",
-      "lineSha256": "b6fa8e9e81d49b76ebf2ad64273172a3829dbf93096e6df03bdca59040915737",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
@@ -208,49 +152,7 @@
     {
       "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
       "rule": "secret-assignment",
-      "lineSha256": "4e9a9729c03c8759ef3ebddf31b6bb9499f7fcc1b952a1baf9990e6b4edf2cba",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
-      "rule": "secret-assignment",
-      "lineSha256": "690bd4cbf77fa75a12ce2812ff0eb7f449d2c55b7463046c323790e015cb3fd5",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
-      "rule": "secret-assignment",
-      "lineSha256": "d29044615b20f612e545e4cc31d5670277ababef7035c03bf2bde06fd46e1005",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
-      "rule": "secret-assignment",
       "lineSha256": "f79ce7ebaa5b9f0fd79bc5bfe03f4a2a0ff90951ce87f0a35bd3fdca2eb1bf77",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/portal-web/src/api.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "68dbd5979967421ab281e440552f26e412d9682e32b5cb7448b2199bedc9a6af",
-      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
-      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
-    },
-    {
-      "path": "apps/portal-web/src/auth-client.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "def117139e25ffd7d5e395ee068c4df21492893a91e98f2333734fb025853799",
-      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
-      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
-    },
-    {
-      "path": "apps/portal-web/test/api.test.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "4e9a9729c03c8759ef3ebddf31b6bb9499f7fcc1b952a1baf9990e6b4edf2cba",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
@@ -271,21 +173,7 @@
     {
       "path": "apps/portal-web/test/app.test.tsx",
       "rule": "secret-assignment",
-      "lineSha256": "4e9a9729c03c8759ef3ebddf31b6bb9499f7fcc1b952a1baf9990e6b4edf2cba",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/portal-web/test/app.test.tsx",
-      "rule": "secret-assignment",
       "lineSha256": "81f6c02311d3cb1a455365a36ee0d8e2a28deb1994cf16dc8b5a6552aa2b13c9",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/portal-web/test/app.test.tsx",
-      "rule": "secret-assignment",
-      "lineSha256": "b6fa8e9e81d49b76ebf2ad64273172a3829dbf93096e6df03bdca59040915737",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
