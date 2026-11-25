@@ -29,6 +29,7 @@
     "auth:schema:verify": "tsx tooling/auth/verify-better-auth-schema-drift.ts",
     "test:stage3:postgres": "node tooling/database/run-stage-3-disposable.mjs",
     "test:stage4:postgres": "node tooling/database/run-stage-4-disposable.mjs",
+    "test:postgres": "node tooling/database/run-postgres-integration.mjs",
     "stage3:aggregate": "node tooling/database/run-stage-3-aggregate.mjs",
     "stage3:verify": "node tooling/database/run-stage-3-aggregate.mjs",
     "stage3:corrections:verify": "tsx tooling/database/verify-stage-3-corrections.ts",
