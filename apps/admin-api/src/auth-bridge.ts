@@ -1,7 +1,6 @@
 import {
   authRequestPathMatchesBase,
   dispatchAuthRealmRequest,
-  hostHeaderMatchesExpectedHost,
   STAFF_AUTH_BASE_PATH,
   type AuthRealm,
   type AuthSurfacePolicy,
@@ -20,6 +19,11 @@ import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
 import type { StaffAccessRepository } from "@travelos/database";
 
 import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
+import {
+  headersFor,
+  requestUrlFor,
+  surfaceRejectionStatus as boundarySurfaceRejectionStatus,
+} from "./request-boundary.js";
 import {
   registerAdminM1Routes,
   type AdminRuntimeAcceptanceFixtureRouteOperations,
@@ -77,45 +81,12 @@ export interface AdminAuthBridgeOptions {
 
 type SetCookieHeaders = Headers & { readonly getSetCookie?: () => string[] };
 
-const headersFor = (request: IncomingHttpRequest): Headers => {
-  const headers = new Headers();
-  for (const [name, value] of Object.entries(request.headers)) {
-    if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      const separator = name.toLowerCase() === "cookie" ? "; " : ", ";
-      headers.set(name, value.join(separator));
-    } else {
-      headers.set(name, value);
-    }
-  }
-  return headers;
-};
-
-const requestUrlFor = (request: IncomingHttpRequest, policy: AuthSurfacePolicy): URL | null => {
-  try {
-    const canonicalOrigin = new URL(policy.canonicalOrigin);
-    const target = new URL(request.originalUrl ?? request.url, canonicalOrigin);
-    return target.origin === canonicalOrigin.origin ? target : null;
-  } catch {
-    return null;
-  }
-};
-
-const surfaceRejectionStatus = (
-  request: IncomingHttpRequest,
-  policy: AuthSurfacePolicy,
-): 403 | 404 | null => {
-  const headers = headersFor(request);
-  if (!hostHeaderMatchesExpectedHost(headers.get("host"), policy.expectedHost)) return 404;
-  const forwardedHost = headers.get("x-forwarded-host");
-  if (
-    headers.has("authorization") ||
-    (forwardedHost !== null && !hostHeaderMatchesExpectedHost(forwardedHost, policy.expectedHost))
-  ) {
-    return 403;
-  }
-  return null;
-};
+const surfaceRejectionStatus = (request: IncomingHttpRequest, policy: AuthSurfacePolicy) =>
+  boundarySurfaceRejectionStatus(request, policy, {
+    requireRoutableUrl: false,
+    requireCanonicalOrigin: false,
+    rejectQueryString: false,
+  });
 
 const writeBridgeResponse = (
   response: OutgoingHttpResponse,
