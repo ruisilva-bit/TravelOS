@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -8,7 +8,6 @@ import { fileURLToPath, URL } from "node:url";
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const temporaryRoot = await mkdtemp(path.join(tmpdir(), "travelos-browser-bundle-scan-"));
 const scannerPath = path.join(repositoryRoot, "tooling/ci/scan-browser-bundles.mjs");
-const reviewedBundle = "apps/admin-web/dist/assets/index-DGPZ55aE.js";
 const syntheticKey = ["api", "Token"].join("");
 const syntheticValue = "A".repeat(24);
 
@@ -32,34 +31,27 @@ try {
   assert.equal(cleanRun.status, 0, cleanRun.stderr);
   const cleanReport = JSON.parse(cleanRun.stdout);
   assert.equal(cleanReport.result, "PASS");
-  assert.equal(cleanReport.allowlistedFindingCount, 4);
+  assert.equal(cleanReport.allowlistedFindingCount, 0);
 
-  const bundlePath = path.join(temporaryRoot, reviewedBundle);
-  const lines = (await readFile(bundlePath, "utf8")).split("\n");
-  assert.ok(lines.length >= 72, "reviewed bundle must retain the reviewed line");
-  lines[71] = `${lines[71]};${syntheticKey}="${syntheticValue}";`;
-  await writeFile(bundlePath, lines.join("\n"), "utf8");
+  // Inject a synthetic secret assignment into the current-tree Admin bundle: it must fail.
+  const assets = path.join(temporaryRoot, "apps/admin-web/dist/assets");
+  const bundleName = (await readdir(assets)).find((name) => name.endsWith(".js"));
+  assert.ok(bundleName, "admin-web build must emit a JavaScript bundle");
+  const bundle = `apps/admin-web/dist/assets/${bundleName}`;
+  const bundlePath = path.join(temporaryRoot, bundle);
+  const original = await readFile(bundlePath, "utf8");
+  await writeFile(bundlePath, `${original}\n${syntheticKey}="${syntheticValue}";\n`, "utf8");
 
   const tamperedRun = runScanner();
-  assert.equal(tamperedRun.status, 1, "modified bytes at a reviewed path must fail the scan");
+  assert.equal(tamperedRun.status, 1, "a secret assignment in a bundle must fail the scan");
   const tamperedReport = JSON.parse(tamperedRun.stdout);
   assert.equal(tamperedReport.result, "FAIL");
   assert.equal(tamperedReport.matchedValuesEmitted, false);
   assert.ok(
     tamperedReport.findings.some(
-      (finding) =>
-        finding.file === reviewedBundle && finding.rule === "reviewed-bundle-sha256-mismatch",
+      (finding) => finding.file === bundle && finding.rule === "secret-assignment",
     ),
-    "a changed bundle must invalidate its reviewed finding exceptions",
-  );
-  assert.ok(
-    tamperedReport.findings.some(
-      (finding) =>
-        finding.file === reviewedBundle &&
-        finding.rule === "secret-assignment" &&
-        finding.line === 72,
-    ),
-    "a new secret assignment on a reviewed line must remain visible as a finding",
+    "the injected secret assignment must be reported",
   );
   assert.ok(!tamperedRun.stdout.includes(syntheticValue));
   assert.ok(!tamperedRun.stderr.includes(syntheticValue));
@@ -67,8 +59,8 @@ try {
   console.log(
     JSON.stringify({
       result: "PASS",
-      cleanReviewedBundle: "PASS",
-      mutatedReviewedBundleRejected: "PASS",
+      cleanCurrentBundles: "PASS",
+      injectedSecretRejected: "PASS",
       matchedValuesEmitted: false,
       stage10Actions: 0,
     }),

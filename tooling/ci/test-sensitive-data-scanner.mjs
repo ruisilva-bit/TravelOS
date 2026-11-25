@@ -13,6 +13,8 @@ import {
 const temporaryRoot = await mkdtemp(path.join(tmpdir(), "travelos-sensitive-scanner-"));
 const alphabeticSentinel = ["Synthetic", "Credential", "Material", "Alpha", "9472"].join("");
 const tokenAssignmentKey = ["api", "Token"].join("");
+// Long enough for `secret-assignment`, too short for the high-entropy rule.
+const lowEntropySentinel = "X".repeat(12);
 const authorizationHeader = ["Author", "ization"].join("");
 const bearerPrefix = ["Bear", "er"].join("");
 const privateKeyHeader = ["-----BEGIN ", "PRIVATE ", "KEY-----"].join("");
@@ -89,7 +91,7 @@ try {
 
   const reviewedBundlePath = "apps/admin-web/dist/assets/index-CYfMC-wt.js";
   const reviewedBundle = scanSensitiveText({
-    text: `${fetchCredentialsKey}: "${fetchCredentialsMode}"`,
+    text: `${tokenAssignmentKey}: "${lowEntropySentinel}"`,
     file: reviewedBundlePath,
     allowlist: [{ path: reviewedBundlePath, rule: "secret-assignment", line: 1 }],
     additionalRules: browserLeakageRules,
@@ -98,7 +100,7 @@ try {
   assert.equal(reviewedBundle.allowlistedFindingCount, 1);
 
   const wrongBundlePath = scanSensitiveText({
-    text: `${fetchCredentialsKey}: "${fetchCredentialsMode}"\n`,
+    text: `${tokenAssignmentKey}: "${lowEntropySentinel}"\n`,
     file: "apps/portal-web/dist/assets/index-DNU0NKRm.js",
     allowlist: [{ path: reviewedBundlePath, rule: "secret-assignment", line: 1 }],
     additionalRules: browserLeakageRules,
@@ -157,6 +159,19 @@ try {
     file: "fixtures/unsafe-access-key-material.ts",
   });
   assert.ok(unsafeAccessKey.findings.some((finding) => finding.rule === "secret-assignment"));
+
+  const safeFetchCredentialsMode = scanSensitiveText({
+    text: `fetch(url,{${fetchCredentialsKey}:\`${fetchCredentialsMode}\`});fetch(url,{${fetchCredentialsKey}:"${fetchCredentialsMode}"})\n`,
+    file: "fixtures/safe-fetch-credentials-mode.js",
+  });
+  assert.equal(safeFetchCredentialsMode.findings.length, 0);
+  const unsafeCredentialsValue = scanSensitiveText({
+    text: `${fetchCredentialsKey}: "${alphabeticSentinel}"\n`,
+    file: "fixtures/unsafe-credentials-material.ts",
+  });
+  assert.ok(
+    unsafeCredentialsValue.findings.some((finding) => finding.rule === "secret-assignment"),
+  );
 
   console.log(
     JSON.stringify(

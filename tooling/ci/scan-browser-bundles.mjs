@@ -9,22 +9,12 @@ const sha256 = (content) => createHash("sha256").update(content).digest("hex");
 const findings = [];
 const bundleResults = [];
 const allowlistedFindings = [];
-const reviewedBundleDigests = new Map([
-  [
-    "apps/admin-web/dist/assets/index-DGPZ55aE.js",
-    "7a9cd4d3c4fe16b6b50fb5a45f45513af31c281581d60ae768706f84cb4bcf42",
-  ],
-  [
-    "apps/portal-web/dist/assets/index-DcpDYlmL.js",
-    "c9561c2dcb9aa3fe0120272d4b0660de3b3ad4bd6387bcb2a032862b15520fbc",
-  ],
-]);
-const reviewedBundleFindings = [
-  { path: "apps/admin-web/dist/assets/index-DGPZ55aE.js", rule: "secret-assignment", line: 72 },
-  { path: "apps/admin-web/dist/assets/index-DGPZ55aE.js", rule: "secret-assignment", line: 74 },
-  { path: "apps/portal-web/dist/assets/index-DcpDYlmL.js", rule: "secret-assignment", line: 72 },
-  { path: "apps/portal-web/dist/assets/index-DcpDYlmL.js", rule: "secret-assignment", line: 74 },
-];
+// ADR-015: bundles are scanned as built from the current tree. The previously pinned
+// bundle-digest exceptions covered Fetch `credentials: "same-origin"` options, which the shared
+// scanner now recognises as a public enum value, so no per-build exception is needed. Add an
+// exception here only for a reviewed finding the scanner cannot express generically.
+const reviewedBundleDigests = new Map();
+const reviewedBundleFindings = [];
 const findingKey = ({ path: file, rule, line }) => `${file}\0${rule}\0${line}`;
 const observedReviewedFindings = new Set();
 
