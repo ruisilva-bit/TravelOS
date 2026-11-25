@@ -3,13 +3,13 @@ import { createHash } from "node:crypto";
 import {
   asOpaqueId,
   IdempotencyConflictError,
-  M1_STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
-  M1InputValidationError,
-  M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
-  M1TransactionConflictError,
+  STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
+  InputValidationError,
+  STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
+  TransactionConflictError,
   TRIP_ACCESS_CAPABILITY_IDS,
   type IssueTripAccessGrantCommand,
-  type M1StaffTripAccessRepository,
+  type StaffTripAccessRepository,
   type PortalPrincipalRetirementResult,
   type RevokeTripAccessGrantCommand,
   type RetireFixturePortalPrincipalCommand,
@@ -19,7 +19,7 @@ import {
 import { sql, type Kysely, type Transaction as KyselyTransaction } from "kysely";
 
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
-import { assertStaffAuthorizationInTransaction } from "../trip-operations/m1-operational-slice-repository.js";
+import { assertStaffAuthorizationInTransaction } from "../trip-operations/operational-slice-repository.js";
 import { createUuidV7 } from "../uuidv7.js";
 import { bindEventCorrelation } from "../job-runtime/event-context.js";
 
@@ -71,7 +71,7 @@ const postgresConstraint = (error: unknown): string | null => {
 };
 
 const invalidInput = (): never => {
-  throw new M1InputValidationError("Invalid Trip access persistence command");
+  throw new InputValidationError("Invalid Trip access persistence command");
 };
 
 const hasControlCharacter = (value: string): boolean =>
@@ -335,7 +335,7 @@ const expireGrant = async (database: Database, grant: GrantRow): Promise<GrantRo
                 "expiredAt"
     `.execute(database)
   ).rows[0];
-  if (expired === undefined) throw new M1TransactionConflictError();
+  if (expired === undefined) throw new TransactionConflictError();
   await appendEvent(database, expired, "TRIP_ACCESS_GRANT_EXPIRED", null);
   return expired;
 };
@@ -355,13 +355,13 @@ const serializable = async <Result>(
       const retryable = code === "40001" || code === "40P01";
       const idempotencyRace = code === "23505" && constraint === "trip_access_idempotency_pkey";
       if (code === "23505" && constraint === "trip_access_grant_one_active_scope_idx") {
-        throw new M1TransactionConflictError();
+        throw new TransactionConflictError();
       }
       if (!retryable && !idempotencyRace) throw error;
-      if (attempt === MAX_SERIALIZATION_ATTEMPTS) throw new M1TransactionConflictError();
+      if (attempt === MAX_SERIALIZATION_ATTEMPTS) throw new TransactionConflictError();
     }
   }
-  throw new M1TransactionConflictError();
+  throw new TransactionConflictError();
 };
 
 const createGrant = async (
@@ -400,20 +400,19 @@ const createGrant = async (
                 "expiredAt"
     `.execute(database)
   ).rows[0];
-  if (row === undefined)
-    throw new M1InputValidationError("Trip access expiry must be in the future");
+  if (row === undefined) throw new InputValidationError("Trip access expiry must be in the future");
   return row;
 };
 
-export const createPostgresM1StaffTripAccessRepository = (
+export const createPostgresStaffTripAccessRepository = (
   persistence: PostgresPersistence<DatabaseShape>,
-): M1StaffTripAccessRepository => {
-  const repository: M1StaffTripAccessRepository = {
+): StaffTripAccessRepository => {
+  const repository: StaffTripAccessRepository = {
     async issueTripAccessGrant(untrustedCommand, authorization) {
       const command = parseIssueCommand(untrustedCommand);
       const actorId = authorization?.session?.staffPrincipalId;
       if (typeof actorId !== "string") {
-        throw new M1InputValidationError("Invalid Staff authorization proof");
+        throw new InputValidationError("Invalid Staff authorization proof");
       }
       const requestHash = hashRequest([
         ISSUE_COMMAND,
@@ -431,7 +430,7 @@ export const createPostgresM1StaffTripAccessRepository = (
           database,
           authorization,
           command.agencyId,
-          M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
+          STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
         );
         const existing = await getIdempotency(
           database,
@@ -492,7 +491,7 @@ export const createPostgresM1StaffTripAccessRepository = (
             databaseNow === undefined ||
             priorActiveGrant.expiresAt.getTime() > databaseNow.now.getTime()
           ) {
-            throw new M1TransactionConflictError();
+            throw new TransactionConflictError();
           }
           await expireGrant(database, priorActiveGrant);
         }
@@ -516,7 +515,7 @@ export const createPostgresM1StaffTripAccessRepository = (
       const command = parseRevokeCommand(untrustedCommand);
       const actorId = authorization?.session?.staffPrincipalId;
       if (typeof actorId !== "string") {
-        throw new M1InputValidationError("Invalid Staff authorization proof");
+        throw new InputValidationError("Invalid Staff authorization proof");
       }
       const requestHash = hashRequest([REVOKE_COMMAND, command.agencyId, actorId, command.grantId]);
 
@@ -525,7 +524,7 @@ export const createPostgresM1StaffTripAccessRepository = (
           database,
           authorization,
           command.agencyId,
-          M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
+          STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
         );
         const existing = await getIdempotency(
           database,
@@ -578,7 +577,7 @@ export const createPostgresM1StaffTripAccessRepository = (
                           "expiredAt"
               `.execute(database)
             ).rows[0];
-            if (revoked === undefined) throw new M1TransactionConflictError();
+            if (revoked === undefined) throw new TransactionConflictError();
             const principal = (
               await sql<{ readonly authorizationEpoch: string }>`
                 UPDATE "portal_access"."portal_principal_context"
@@ -625,7 +624,7 @@ export const createPostgresM1StaffTripAccessRepository = (
       }
       const actorId = authorization?.session?.staffPrincipalId;
       if (typeof actorId !== "string") {
-        throw new M1InputValidationError("Invalid Staff authorization proof");
+        throw new InputValidationError("Invalid Staff authorization proof");
       }
 
       return serializable(persistence, async (database) => {
@@ -633,7 +632,7 @@ export const createPostgresM1StaffTripAccessRepository = (
           database,
           authorization,
           command.agencyId,
-          M1_STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
+          STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
           5 * 60 * 1_000,
         );
 
@@ -700,7 +699,7 @@ export const createPostgresM1StaffTripAccessRepository = (
             RETURNING "authorizationEpoch"::text AS "authorizationEpoch", "retiredAt"
           `.execute(database)
         ).rows[0];
-        if (retired === undefined) throw new M1TransactionConflictError();
+        if (retired === undefined) throw new TransactionConflictError();
 
         const eventId = createUuidV7();
         await sql`

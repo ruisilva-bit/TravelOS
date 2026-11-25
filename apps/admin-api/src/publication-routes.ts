@@ -11,17 +11,17 @@ import {
   runHandler,
   send,
   surfaceRejectionStatus,
-  type AdminM1ExpressApplication,
-  type AdminM1RouteOptions,
-} from "./m1-route-http.js";
+  type AdminExpressApplication,
+  type AdminRouteOptions,
+} from "./admin-route-http.js";
 import { headersFor } from "./request-boundary.js";
 
 export const registerAdminPublicationRoutes = (
-  application: AdminM1ExpressApplication,
-  options: AdminM1RouteOptions,
+  application: AdminExpressApplication,
+  options: AdminRouteOptions,
 ): void => {
-  if (options.m1PublicationOperations !== undefined) {
-    const publicationOperations = options.m1PublicationOperations;
+  if (options.publicationOperations !== undefined) {
+    const publicationOperations = options.publicationOperations;
     application.get("/api/admin/trips/:tripId/publication-preview", (request, response, next) => {
       runHandler(
         async () => {

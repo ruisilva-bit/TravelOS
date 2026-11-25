@@ -4,23 +4,23 @@ import {
   authorizeStaffRequest,
   createMoney,
   createScheduledLocalDateTime,
-  M1TripCancellationIdempotencyConflictError,
-  M1InputValidationError,
-  M1OptimisticConflictError,
-  M1TripNotFoundError,
-  M1_OPERATION_PERMISSION_REQUIREMENTS,
-  M1RuntimeAcceptanceFixtureConflictError,
-  M1StaffAuthorizationError,
-  M1TransactionConflictError,
-  M1UnsupportedTripStateError,
+  TripCancellationIdempotencyConflictError,
+  InputValidationError,
+  OptimisticConflictError,
+  TripNotFoundError,
+  OPERATION_PERMISSION_REQUIREMENTS,
+  RuntimeAcceptanceFixtureConflictError,
+  StaffAuthorizationError,
+  TransactionConflictError,
+  UnsupportedTripStateError,
   isStaffPermissionId,
-  type M1OperationalSliceRepository,
-  type M1TripSlice,
-  type CancelM1TripInput,
+  type OperationalSliceRepository,
+  type TripSlice,
+  type CancelTripInput,
   type OpaqueId,
   type ScheduledLocalDateTime,
-  type CreateM1TripWorkspaceInput,
-  type CreateM1TripSliceInput,
+  type CreateTripWorkspaceInput,
+  type CreateTripSliceInput,
   type StaffAuthorizationOperationProof,
   type StaffPermissionId,
   type Trip,
@@ -67,7 +67,7 @@ export const assertStaffAuthorizationInTransaction = async (
     authorization.requiredPermissionIds.length === 0 ||
     !authorization.requiredPermissionIds.every(isStaffPermissionId)
   ) {
-    throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    throw new StaffAuthorizationError("UNAUTHENTICATED");
   }
   const suppliedPermissions = new Set(authorization.requiredPermissionIds);
   if (
@@ -75,17 +75,17 @@ export const assertStaffAuthorizationInTransaction = async (
     suppliedPermissions.size !== requiredPermissionIds.length ||
     requiredPermissionIds.some((permissionId) => !suppliedPermissions.has(permissionId))
   ) {
-    throw new M1StaffAuthorizationError("FORBIDDEN");
+    throw new StaffAuthorizationError("FORBIDDEN");
   }
 
   let sessionAgencyId: OpaqueId;
   try {
     sessionAgencyId = asOpaqueId(session.agencyId);
   } catch {
-    throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    throw new StaffAuthorizationError("UNAUTHENTICATED");
   }
   if (sessionAgencyId !== targetAgencyId) {
-    throw new M1StaffAuthorizationError("FORBIDDEN");
+    throw new StaffAuthorizationError("FORBIDDEN");
   }
   if (
     recentMfaMaximumAgeMs !== null &&
@@ -124,7 +124,7 @@ export const assertStaffAuthorizationInTransaction = async (
     `.execute(database)
   ).rows[0];
   if (liveSession === undefined) {
-    throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    throw new StaffAuthorizationError("UNAUTHENTICATED");
   }
   const verifiedSession = {
     sessionId: session.sessionId,
@@ -154,7 +154,7 @@ export const assertStaffAuthorizationInTransaction = async (
       recentMfaMaximumAgeMs,
     });
     if (decision.result === "DENY") {
-      throw new M1StaffAuthorizationError(
+      throw new StaffAuthorizationError(
         decision.reason === "UNAUTHENTICATED" ? "UNAUTHENTICATED" : "FORBIDDEN",
       );
     }
@@ -298,8 +298,8 @@ const postgresErrorCode = (error: unknown): string | null => {
 
 export const mapPostgresMutationError = (error: unknown): unknown => {
   const code = postgresErrorCode(error);
-  if (code === "40001") return new M1OptimisticConflictError();
-  if (code === "40P01") return new M1TransactionConflictError();
+  if (code === "40001") return new OptimisticConflictError();
+  if (code === "40P01") return new TransactionConflictError();
   return error;
 };
 
@@ -331,7 +331,7 @@ const scheduled = (
   }),
 });
 
-const mapFlightRow = (flight: FlightRow): M1TripSlice["flights"][number] => ({
+const mapFlightRow = (flight: FlightRow): TripSlice["flights"][number] => ({
   id: asOpaqueId(flight.id),
   agencyId: asOpaqueId(flight.agencyId),
   tripId: asOpaqueId(flight.tripId),
@@ -366,7 +366,7 @@ const mapFlightRow = (flight: FlightRow): M1TripSlice["flights"][number] => ({
 
 const mapAccommodationRow = (
   accommodation: AccommodationRow,
-): M1TripSlice["accommodations"][number] => ({
+): TripSlice["accommodations"][number] => ({
   id: asOpaqueId(accommodation.id),
   agencyId: asOpaqueId(accommodation.agencyId),
   tripId: asOpaqueId(accommodation.tripId),
@@ -394,7 +394,7 @@ const mapAccommodationRow = (
   boardType: accommodation.boardType,
 });
 
-const mapReservationRow = (reservation: ReservationRow): M1TripSlice["reservations"][number] => ({
+const mapReservationRow = (reservation: ReservationRow): TripSlice["reservations"][number] => ({
   id: asOpaqueId(reservation.id),
   agencyId: asOpaqueId(reservation.agencyId),
   tripId: asOpaqueId(reservation.tripId),
@@ -405,9 +405,7 @@ const mapReservationRow = (reservation: ReservationRow): M1TripSlice["reservatio
   lockVersion: BigInt(reservation.lockVersion),
 });
 
-const mapSupplierCostRow = (
-  supplierCost: SupplierCostRow,
-): M1TripSlice["supplierCosts"][number] => ({
+const mapSupplierCostRow = (supplierCost: SupplierCostRow): TripSlice["supplierCosts"][number] => ({
   id: asOpaqueId(supplierCost.id),
   agencyId: asOpaqueId(supplierCost.agencyId),
   tripId: asOpaqueId(supplierCost.tripId),
@@ -426,7 +424,7 @@ const readSlice = async (
   database: Kysely<DatabaseShape>,
   agencyId: OpaqueId,
   tripId: OpaqueId,
-): Promise<M1TripSlice | null> => {
+): Promise<TripSlice | null> => {
   const person = first(
     (
       await sql<PersonRow>`
@@ -675,7 +673,7 @@ const resolveRuntimeAcceptanceFixtureTripSlot = async (
   if (existing !== undefined) {
     const sameCreator = existing.createdByStaffPrincipalId === staffPrincipalId;
     if (!sameCreator || existing.state !== "OPEN") {
-      throw new M1RuntimeAcceptanceFixtureConflictError(
+      throw new RuntimeAcceptanceFixtureConflictError(
         sameCreator && existing.state === "CLEANUP_PENDING" ? fixtureRunId : null,
       );
     }
@@ -688,7 +686,7 @@ const resolveRuntimeAcceptanceFixtureTripSlot = async (
     ).rows[0]?.count;
     if (linkedTrips === undefined) throw new Error("Fixture Trip count query returned no row");
     if (linkedTrips >= 2) {
-      throw new M1RuntimeAcceptanceFixtureConflictError(fixtureRunId);
+      throw new RuntimeAcceptanceFixtureConflictError(fixtureRunId);
     }
     return (linkedTrips + 1) as 1 | 2;
   }
@@ -710,25 +708,25 @@ const resolveRuntimeAcceptanceFixtureTripSlot = async (
     unresolved?.createdByStaffPrincipalId === staffPrincipalId
       ? asOpaqueId(unresolved.fixtureRunId)
       : null;
-  throw new M1RuntimeAcceptanceFixtureConflictError(recoveryFixtureRunId);
+  throw new RuntimeAcceptanceFixtureConflictError(recoveryFixtureRunId);
 };
 
-class PostgresM1OperationalSliceRepository implements M1OperationalSliceRepository {
+class PostgresOperationalSliceRepository implements OperationalSliceRepository {
   constructor(private readonly persistence: PostgresPersistence<DatabaseShape>) {}
 
   async createTripWorkspace(
-    input: CreateM1TripWorkspaceInput,
+    input: CreateTripWorkspaceInput,
     authorization: StaffAuthorizationOperationProof,
   ): Promise<Trip> {
     const session = authorization?.session;
     if (typeof session?.agencyId !== "string") {
-      throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+      throw new StaffAuthorizationError("UNAUTHENTICATED");
     }
     let agencyId: OpaqueId;
     try {
       agencyId = asOpaqueId(session.agencyId);
     } catch {
-      throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+      throw new StaffAuthorizationError("UNAUTHENTICATED");
     }
 
     return withMappedPostgresError(() =>
@@ -739,7 +737,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
             database,
             authorization,
             agencyId,
-            M1_OPERATION_PERMISSION_REQUIREMENTS.WORKSPACE_CREATE,
+            OPERATION_PERMISSION_REQUIREMENTS.WORKSPACE_CREATE,
           );
 
           const personId = createUuidV7();
@@ -804,26 +802,26 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
     );
   }
 
-  async createM1TripSlice(
-    input: CreateM1TripSliceInput,
+  async createTripSlice(
+    input: CreateTripSliceInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice> {
-    return this.createTripSlice(input, authorization, null);
+  ): Promise<TripSlice> {
+    return this.persistTripSlice(input, authorization, null);
   }
 
   async createRuntimeAcceptanceFixtureTrip(
-    input: CreateM1TripSliceInput,
+    input: CreateTripSliceInput,
     fixtureRunId: OpaqueId,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice> {
-    return this.createTripSlice(input, authorization, fixtureRunId);
+  ): Promise<TripSlice> {
+    return this.persistTripSlice(input, authorization, fixtureRunId);
   }
 
-  private async createTripSlice(
-    input: CreateM1TripSliceInput,
+  private async persistTripSlice(
+    input: CreateTripSliceInput,
     authorization: StaffAuthorizationOperationProof,
     fixtureRunId: OpaqueId | null,
-  ): Promise<M1TripSlice> {
+  ): Promise<TripSlice> {
     return withMappedPostgresError(() =>
       this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
@@ -834,8 +832,8 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
           }
           const requiredPermissions =
             fixtureRunId === null
-              ? M1_OPERATION_PERMISSION_REQUIREMENTS.CREATE
-              : M1_OPERATION_PERMISSION_REQUIREMENTS.FIXTURE_CREATE;
+              ? OPERATION_PERMISSION_REQUIREMENTS.CREATE
+              : OPERATION_PERMISSION_REQUIREMENTS.FIXTURE_CREATE;
           await assertStaffAuthorizationInTransaction(
             database,
             authorization,
@@ -946,11 +944,11 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
     );
   }
 
-  async getM1TripSlice(
+  async getTripSlice(
     agencyId: OpaqueId,
     tripId: OpaqueId,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice | null> {
+  ): Promise<TripSlice | null> {
     return withMappedPostgresError(() =>
       this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
@@ -959,7 +957,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
             database,
             authorization,
             agencyId,
-            M1_OPERATION_PERMISSION_REQUIREMENTS.READ,
+            OPERATION_PERMISSION_REQUIREMENTS.READ,
           );
           return readSlice(database, agencyId, tripId);
         }),
@@ -970,7 +968,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
   async updateAccommodation(
     input: UpdateAccommodationInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice> {
+  ): Promise<TripSlice> {
     try {
       return await this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
@@ -979,7 +977,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
             database,
             authorization,
             input.agencyId,
-            M1_OPERATION_PERMISSION_REQUIREMENTS.ACCOMMODATION_EDIT,
+            OPERATION_PERMISSION_REQUIREMENTS.ACCOMMODATION_EDIT,
           );
           const result = await sql<{ readonly updated: boolean }>`
             SELECT "trip_ops"."cas_update_accommodation_presentation"(
@@ -991,7 +989,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
               ${input.description.trim()}
             ) AS "updated"
           `.execute(database);
-          if (result.rows[0]?.updated !== true) throw new M1OptimisticConflictError();
+          if (result.rows[0]?.updated !== true) throw new OptimisticConflictError();
           const slice = await readSlice(database, input.agencyId, input.tripId);
           if (slice === null)
             throw new Error("M1 Trip slice disappeared during accommodation update");
@@ -1006,7 +1004,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
   async updateInternalSupplierNote(
     input: UpdateInternalNoteInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice> {
+  ): Promise<TripSlice> {
     try {
       return await this.persistence.transaction.runInTransaction(async (context) =>
         this.persistence.withTransactionContext(context, async (database) => {
@@ -1015,7 +1013,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
             database,
             authorization,
             input.agencyId,
-            M1_OPERATION_PERMISSION_REQUIREMENTS.INTERNAL_NOTE_EDIT,
+            OPERATION_PERMISSION_REQUIREMENTS.INTERNAL_NOTE_EDIT,
           );
           const result = await sql<{ readonly updated: boolean }>`
             SELECT "trip_ops"."cas_update_supplier_cost_internal_note"(
@@ -1026,7 +1024,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
               ${input.internalNote.trim()}
             ) AS "updated"
           `.execute(database);
-          if (result.rows[0]?.updated !== true) throw new M1OptimisticConflictError();
+          if (result.rows[0]?.updated !== true) throw new OptimisticConflictError();
           const slice = await readSlice(database, input.agencyId, input.tripId);
           if (slice === null) throw new Error("M1 Trip slice disappeared during internal update");
           return slice;
@@ -1038,9 +1036,9 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
   }
 
   async cancelTrip(
-    input: CancelM1TripInput,
+    input: CancelTripInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice> {
+  ): Promise<TripSlice> {
     if (
       typeof input.tripId !== "string" ||
       typeof input.expectedLockVersion !== "bigint" ||
@@ -1051,7 +1049,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
       input.idempotencyKey.length > 128 ||
       containsControlCharacter(input.idempotencyKey)
     ) {
-      throw new M1InputValidationError("Invalid Trip cancellation request");
+      throw new InputValidationError("Invalid Trip cancellation request");
     }
     const session = authorization?.session;
     if (
@@ -1059,13 +1057,13 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
       typeof session.staffPrincipalId !== "string" ||
       session.staffPrincipalId.length === 0
     ) {
-      throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+      throw new StaffAuthorizationError("UNAUTHENTICATED");
     }
     let agencyId: OpaqueId;
     try {
       agencyId = asOpaqueId(session.agencyId);
     } catch {
-      throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+      throw new StaffAuthorizationError("UNAUTHENTICATED");
     }
     const actorId = session.staffPrincipalId;
     const requestHash = createHash("sha256")
@@ -1080,7 +1078,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
             database,
             authorization,
             agencyId,
-            M1_OPERATION_PERMISSION_REQUIREMENTS.CANCEL,
+            OPERATION_PERMISSION_REQUIREMENTS.CANCEL,
             5 * 60 * 1_000,
           );
 
@@ -1101,10 +1099,10 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
           );
           if (existing !== null) {
             if (existing.tripId !== input.tripId || existing.requestHash.trim() !== requestHash) {
-              throw new M1TripCancellationIdempotencyConflictError();
+              throw new TripCancellationIdempotencyConflictError();
             }
             const prior = await readSlice(database, agencyId, input.tripId);
-            if (prior === null) throw new M1TripNotFoundError();
+            if (prior === null) throw new TripNotFoundError();
             return prior;
           }
 
@@ -1125,16 +1123,16 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
             ).rows,
           );
           if (cancellation === null || cancellation.outcome === "NOT_FOUND") {
-            throw new M1TripNotFoundError();
+            throw new TripNotFoundError();
           }
           if (cancellation.outcome === "STALE_VERSION") {
-            throw new M1OptimisticConflictError();
+            throw new OptimisticConflictError();
           }
           if (
             cancellation.outcome === "UNSUPPORTED_STATE" ||
             cancellation.outcome === "ACTIVE_PUBLICATION"
           ) {
-            throw new M1UnsupportedTripStateError();
+            throw new UnsupportedTripStateError();
           }
           if (
             cancellation.outcome !== "CANCELLED" &&
@@ -1180,7 +1178,7 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
           `.execute(database);
 
           const result = await readSlice(database, agencyId, input.tripId);
-          if (result === null) throw new M1TripNotFoundError();
+          if (result === null) throw new TripNotFoundError();
           return result;
         }),
       ),
@@ -1188,6 +1186,6 @@ class PostgresM1OperationalSliceRepository implements M1OperationalSliceReposito
   }
 }
 
-export const createM1OperationalSliceRepository = (
+export const createOperationalSliceRepository = (
   persistence: PostgresPersistence<DatabaseShape>,
-): M1OperationalSliceRepository => new PostgresM1OperationalSliceRepository(persistence);
+): OperationalSliceRepository => new PostgresOperationalSliceRepository(persistence);

@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   asOpaqueId,
-  createM1RuntimeAcceptanceFixtureOperations,
-  M1RuntimeAcceptanceFixtureConflictError,
-  M1StaffAuthorizationError,
-  type M1RuntimeAcceptanceFixtureOperations,
-  type M1StaffTripOperations,
+  createRuntimeAcceptanceFixtureOperations,
+  RuntimeAcceptanceFixtureConflictError,
+  StaffAuthorizationError,
+  type RuntimeAcceptanceFixtureOperations,
+  type StaffTripOperations,
   type RuntimeAcceptanceFixtureCleanupRepository,
   type RuntimeAcceptanceCleanupReceipt,
   type StaffPermissionId,
@@ -17,7 +17,7 @@ import {
   type AuthSurfacePolicy,
 } from "@travelos/auth-adapters";
 import { registerAdminAuthBridge } from "../src/auth-bridge.js";
-import type { AdminM1ExpressApplication } from "../src/m1-routes.js";
+import type { AdminExpressApplication } from "../src/admin-routes.js";
 
 const agencyId = "00000000-0000-7000-8000-000000000001";
 const fixtureRunId = "00000000-0000-7000-8000-000000000002";
@@ -135,26 +135,26 @@ interface InvokeResult {
   readonly nextError: unknown;
 }
 
-type Handler = Parameters<AdminM1ExpressApplication["post"]>[1];
+type Handler = Parameters<AdminExpressApplication["post"]>[1];
 type FixtureRouteOperations = {
-  readonly createFixtureTrip: M1StaffTripOperations["createRuntimeAcceptanceFixtureTrip"];
-  readonly cleanupFixture: M1RuntimeAcceptanceFixtureOperations["cleanupFixture"];
+  readonly createFixtureTrip: StaffTripOperations["createRuntimeAcceptanceFixtureTrip"];
+  readonly cleanupFixture: RuntimeAcceptanceFixtureOperations["cleanupFixture"];
 };
 
-const makeM1Operations = () => {
+const makeOperations = () => {
   const createTripSlice = vi
-    .fn<M1StaffTripOperations["createTripSlice"]>()
-    .mockRejectedValue(new M1StaffAuthorizationError("FORBIDDEN"));
+    .fn<StaffTripOperations["createTripSlice"]>()
+    .mockRejectedValue(new StaffAuthorizationError("FORBIDDEN"));
   const createRuntimeAcceptanceFixtureTrip =
-    vi.fn<M1StaffTripOperations["createRuntimeAcceptanceFixtureTrip"]>();
+    vi.fn<StaffTripOperations["createRuntimeAcceptanceFixtureTrip"]>();
   const operations = {
     createTripSlice,
     createRuntimeAcceptanceFixtureTrip,
-    readTripSlice: vi.fn<M1StaffTripOperations["readTripSlice"]>(),
-    updateAccommodation: vi.fn<M1StaffTripOperations["updateAccommodation"]>(),
-    updateInternalSupplierNote: vi.fn<M1StaffTripOperations["updateInternalSupplierNote"]>(),
-    cancelTrip: vi.fn<M1StaffTripOperations["cancelTrip"]>(),
-  } as unknown as M1StaffTripOperations;
+    readTripSlice: vi.fn<StaffTripOperations["readTripSlice"]>(),
+    updateAccommodation: vi.fn<StaffTripOperations["updateAccommodation"]>(),
+    updateInternalSupplierNote: vi.fn<StaffTripOperations["updateInternalSupplierNote"]>(),
+    cancelTrip: vi.fn<StaffTripOperations["cancelTrip"]>(),
+  } as unknown as StaffTripOperations;
   return { operations, createTripSlice, createRuntimeAcceptanceFixtureTrip };
 };
 
@@ -204,7 +204,7 @@ const makeCleanupOperations = ({
     beginCleanup: vi.fn(beginCleanup),
     completeCleanup: vi.fn(async () => cleanupReceipt),
   };
-  const operations = createM1RuntimeAcceptanceFixtureOperations({
+  const operations = createRuntimeAcceptanceFixtureOperations({
     repository,
     authorizationRepository: { getStaffAuthorizationSnapshot },
     sessionResolver: { resolveStaffSession },
@@ -224,11 +224,11 @@ const makeCleanupOperations = ({
 
 const registerRoutes = ({
   environment = "DEVELOPMENT",
-  m1Operations,
+  tripOperations,
   fixtureOperations,
 }: {
   readonly environment?: "DEVELOPMENT" | "PRODUCTION";
-  readonly m1Operations: M1StaffTripOperations;
+  readonly tripOperations: StaffTripOperations;
   readonly fixtureOperations?: FixtureRouteOperations;
 }) => {
   const routes = new Map<string, Handler>();
@@ -252,11 +252,11 @@ const registerRoutes = ({
     realm,
     policy,
     staffAccessRepository: { getStaffAuthorizationSnapshot: vi.fn() },
-    m1Operations,
+    tripOperations,
     environment,
     ...(fixtureOperations === undefined
       ? {}
-      : { m1RuntimeAcceptanceFixtureOperations: fixtureOperations }),
+      : { runtimeAcceptanceFixtureOperations: fixtureOperations }),
   };
   registerAdminAuthBridge(
     { getHttpAdapter: () => ({ getInstance: () => express }) },
@@ -328,12 +328,12 @@ const invoke = async (
 
 describe("Admin runtime acceptance fixture cleanup routes", () => {
   it("cleanupRouteRequiresStaffRecentMfaAndFixturePermission", async () => {
-    const m1 = makeM1Operations();
+    const harness = makeOperations();
     const permitted = makeCleanupOperations();
     const routes = registerRoutes({
-      m1Operations: m1.operations,
+      tripOperations: harness.operations,
       fixtureOperations: {
-        createFixtureTrip: m1.operations.createRuntimeAcceptanceFixtureTrip,
+        createFixtureTrip: harness.operations.createRuntimeAcceptanceFixtureTrip,
         cleanupFixture: permitted.operations.cleanupFixture,
       },
     });
@@ -351,9 +351,9 @@ describe("Admin runtime acceptance fixture cleanup routes", () => {
       recentMfaVerifiedAtEpochMs: nowEpochMs - 6 * 60 * 1_000,
     });
     const staleMfaRoutes = registerRoutes({
-      m1Operations: m1.operations,
+      tripOperations: harness.operations,
       fixtureOperations: {
-        createFixtureTrip: m1.operations.createRuntimeAcceptanceFixtureTrip,
+        createFixtureTrip: harness.operations.createRuntimeAcceptanceFixtureTrip,
         cleanupFixture: staleMfa.operations.cleanupFixture,
       },
     });
@@ -366,9 +366,9 @@ describe("Admin runtime acceptance fixture cleanup routes", () => {
 
     const missingPermission = makeCleanupOperations({ permissions: [] });
     const missingPermissionRoutes = registerRoutes({
-      m1Operations: m1.operations,
+      tripOperations: harness.operations,
       fixtureOperations: {
-        createFixtureTrip: m1.operations.createRuntimeAcceptanceFixtureTrip,
+        createFixtureTrip: harness.operations.createRuntimeAcceptanceFixtureTrip,
         cleanupFixture: missingPermission.operations.cleanupFixture,
       },
     });
@@ -381,9 +381,9 @@ describe("Admin runtime acceptance fixture cleanup routes", () => {
 
     const anonymous = makeCleanupOperations({ session: false });
     const anonymousRoutes = registerRoutes({
-      m1Operations: m1.operations,
+      tripOperations: harness.operations,
       fixtureOperations: {
-        createFixtureTrip: m1.operations.createRuntimeAcceptanceFixtureTrip,
+        createFixtureTrip: harness.operations.createRuntimeAcceptanceFixtureTrip,
         cleanupFixture: anonymous.operations.cleanupFixture,
       },
     });
@@ -409,12 +409,12 @@ describe("Admin runtime acceptance fixture cleanup routes", () => {
   });
 
   it("cleanupRouteRejectsCrossAgencyAndUnknownFields", async () => {
-    const m1 = makeM1Operations();
+    const harness = makeOperations();
     const cleanup = makeCleanupOperations({ beginCleanup: async () => null });
     const routes = registerRoutes({
-      m1Operations: m1.operations,
+      tripOperations: harness.operations,
       fixtureOperations: {
-        createFixtureTrip: m1.operations.createRuntimeAcceptanceFixtureTrip,
+        createFixtureTrip: harness.operations.createRuntimeAcceptanceFixtureTrip,
         cleanupFixture: cleanup.operations.cleanupFixture,
       },
     });
@@ -454,13 +454,13 @@ describe("Admin runtime acceptance fixture cleanup routes", () => {
   });
 
   it("cleanupRouteIsNotRegisteredOutsideDevelopment", () => {
-    const m1 = makeM1Operations();
+    const harness = makeOperations();
     const cleanup = makeCleanupOperations();
     const routes = registerRoutes({
       environment: "PRODUCTION",
-      m1Operations: m1.operations,
+      tripOperations: harness.operations,
       fixtureOperations: {
-        createFixtureTrip: m1.operations.createRuntimeAcceptanceFixtureTrip,
+        createFixtureTrip: harness.operations.createRuntimeAcceptanceFixtureTrip,
         cleanupFixture: cleanup.operations.cleanupFixture,
       },
     });
@@ -469,8 +469,11 @@ describe("Admin runtime acceptance fixture cleanup routes", () => {
   });
 
   it("fixtureTripHeaderFailsClosedWithoutDevelopmentCapability", async () => {
-    const m1 = makeM1Operations();
-    const routes = registerRoutes({ environment: "PRODUCTION", m1Operations: m1.operations });
+    const harness = makeOperations();
+    const routes = registerRoutes({
+      environment: "PRODUCTION",
+      tripOperations: harness.operations,
+    });
     const response = await invoke(routes, "POST /api/admin/trips", {
       body: requestBody(),
       headers: {
@@ -481,17 +484,17 @@ describe("Admin runtime acceptance fixture cleanup routes", () => {
       },
     });
     expect(response.statusCode).toBe(403);
-    expect(m1.createTripSlice).not.toHaveBeenCalled();
-    expect(m1.createRuntimeAcceptanceFixtureTrip).not.toHaveBeenCalled();
+    expect(harness.createTripSlice).not.toHaveBeenCalled();
+    expect(harness.createRuntimeAcceptanceFixtureTrip).not.toHaveBeenCalled();
   });
 
   it("onlyCreatorReceivesPendingRunIdOnFixtureConflict", async () => {
-    const creator = makeM1Operations();
+    const creator = makeOperations();
     creator.createRuntimeAcceptanceFixtureTrip.mockRejectedValue(
-      new M1RuntimeAcceptanceFixtureConflictError(asOpaqueId(recoveryFixtureRunId)),
+      new RuntimeAcceptanceFixtureConflictError(asOpaqueId(recoveryFixtureRunId)),
     );
     const creatorRoutes = registerRoutes({
-      m1Operations: creator.operations,
+      tripOperations: creator.operations,
       fixtureOperations: {
         createFixtureTrip: creator.operations.createRuntimeAcceptanceFixtureTrip,
         cleanupFixture: makeCleanupOperations().operations.cleanupFixture,
@@ -514,12 +517,12 @@ describe("Admin runtime acceptance fixture cleanup routes", () => {
     expect(creator.createRuntimeAcceptanceFixtureTrip).toHaveBeenCalledOnce();
     expect(creator.createTripSlice).not.toHaveBeenCalled();
 
-    const otherCreator = makeM1Operations();
+    const otherCreator = makeOperations();
     otherCreator.createRuntimeAcceptanceFixtureTrip.mockRejectedValue(
-      new M1RuntimeAcceptanceFixtureConflictError(null),
+      new RuntimeAcceptanceFixtureConflictError(null),
     );
     const otherCreatorRoutes = registerRoutes({
-      m1Operations: otherCreator.operations,
+      tripOperations: otherCreator.operations,
       fixtureOperations: {
         createFixtureTrip: otherCreator.operations.createRuntimeAcceptanceFixtureTrip,
         cleanupFixture: makeCleanupOperations().operations.cleanupFixture,

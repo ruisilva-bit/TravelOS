@@ -9,14 +9,14 @@ import {
   runHandler,
   send,
   surfaceRejectionStatus,
-  type AdminM1ExpressApplication,
-  type AdminM1RouteOptions,
-} from "./m1-route-http.js";
+  type AdminExpressApplication,
+  type AdminRouteOptions,
+} from "./admin-route-http.js";
 import { headersFor } from "./request-boundary.js";
 
 export const registerAdminRuntimeAcceptanceRoutes = (
-  application: AdminM1ExpressApplication,
-  options: AdminM1RouteOptions,
+  application: AdminExpressApplication,
+  options: AdminRouteOptions,
 ): void => {
   if (options.runtimeAcceptanceFixtureOperations !== undefined) {
     const fixtureOperations = options.runtimeAcceptanceFixtureOperations;

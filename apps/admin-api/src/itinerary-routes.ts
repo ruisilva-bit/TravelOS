@@ -4,21 +4,21 @@ import {
   AdminSupplierCostNoteUpdateRequestSchema,
 } from "@travelos/contracts/admin";
 
-import { mapSlice } from "./m1-trip-slice-mapper.js";
+import { mapSlice } from "./trip-slice-mapper.js";
 import {
   badRequest,
   idFrom,
   runHandler,
   send,
   surfaceRejectionStatus,
-  type AdminM1ExpressApplication,
-  type AdminM1RouteOptions,
-} from "./m1-route-http.js";
+  type AdminExpressApplication,
+  type AdminRouteOptions,
+} from "./admin-route-http.js";
 import { headersFor } from "./request-boundary.js";
 
 export const registerAdminItineraryRoutes = (
-  application: AdminM1ExpressApplication,
-  options: AdminM1RouteOptions,
+  application: AdminExpressApplication,
+  options: AdminRouteOptions,
 ): void => {
   application.patch("/api/admin/itinerary/accommodations/:itemId", (request, response, next) => {
     runHandler(
@@ -34,7 +34,7 @@ export const registerAdminItineraryRoutes = (
           response.status(rejection).end();
           return;
         }
-        const slice = await options.m1Operations.updateAccommodation(
+        const slice = await options.tripOperations.updateAccommodation(
           headersFor(request).get("cookie"),
           {
             agencyId: asOpaqueId(parsed.data.agencyId),
@@ -72,7 +72,7 @@ export const registerAdminItineraryRoutes = (
             response.status(rejection).end();
             return;
           }
-          const slice = await options.m1Operations.updateInternalSupplierNote(
+          const slice = await options.tripOperations.updateInternalSupplierNote(
             headersFor(request).get("cookie"),
             {
               agencyId: asOpaqueId(parsed.data.agencyId),

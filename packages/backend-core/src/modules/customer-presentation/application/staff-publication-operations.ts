@@ -2,9 +2,9 @@ import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
 import type { StaffPermissionId } from "../../../staff-access/permission-registry.js";
 import type { StaffAuthorizationOperationProof } from "../../../staff-access/authorization.js";
 import {
-  authorizeM1Operation,
-  type M1StaffAuthorizationDependencies,
-} from "../../trip-operations/application/m1-staff-operations.js";
+  authorizeOperation,
+  type StaffAuthorizationDependencies,
+} from "../../trip-operations/application/staff-trip-operations.js";
 import type { TripPublicationCandidate } from "./projection.js";
 
 const containsControlCharacter = (value: string): boolean => {
@@ -59,7 +59,7 @@ export interface TripPublicationResult {
   readonly projection: TripPublicationCandidate["projection"];
 }
 
-export interface M1StaffTripPublicationRepository {
+export interface StaffTripPublicationRepository {
   previewTrip(
     agencyId: OpaqueId,
     tripId: OpaqueId,
@@ -85,11 +85,11 @@ export interface M1StaffTripPublicationRepository {
   ): Promise<TripPublicationWithdrawalResult>;
 }
 
-export interface M1StaffTripPublicationOperationsDependencies extends M1StaffAuthorizationDependencies {
-  readonly repository: M1StaffTripPublicationRepository;
+export interface StaffTripPublicationOperationsDependencies extends StaffAuthorizationDependencies {
+  readonly repository: StaffTripPublicationRepository;
 }
 
-export interface M1StaffTripPublicationOperations {
+export interface StaffTripPublicationOperations {
   previewTrip(cookieHeader: unknown, tripId: unknown): Promise<TripPublicationCandidate>;
   publishTrip(
     cookieHeader: unknown,
@@ -126,7 +126,7 @@ export class IdempotencyConflictError extends Error {
   }
 }
 
-export class M1StaffPublicationInputError extends Error {
+export class StaffPublicationInputError extends Error {
   readonly code = "INVALID_PUBLICATION_REQUEST" as const;
 
   constructor() {
@@ -150,17 +150,17 @@ const WITHDRAW_PERMISSIONS = Object.freeze([
 const RECENT_MFA_MAXIMUM_AGE_MS = 5 * 60 * 1_000;
 
 const parseTripId = (value: unknown): OpaqueId => {
-  if (typeof value !== "string") throw new M1StaffPublicationInputError();
+  if (typeof value !== "string") throw new StaffPublicationInputError();
   try {
     return asOpaqueId(value);
   } catch {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
 };
 
 const parsePublishRequest = (value: unknown): PublishTripRequest => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
   const request = value as Record<string, unknown>;
   if (
@@ -177,13 +177,13 @@ const parsePublishRequest = (value: unknown): PublishTripRequest => {
     request.idempotencyKey.length > 128 ||
     containsControlCharacter(request.idempotencyKey)
   ) {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
   let expectedWorkspaceRevision: bigint;
   try {
     expectedWorkspaceRevision = BigInt(request.expectedWorkspaceRevision);
   } catch {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
   return {
     expectedWorkspaceRevision,
@@ -194,11 +194,11 @@ const parsePublishRequest = (value: unknown): PublishTripRequest => {
 
 const parseWithdrawalRequest = (value: unknown): WithdrawActivePublicationRequest => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
   const prototype = Object.getPrototypeOf(value);
   if (prototype !== Object.prototype && prototype !== null) {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
   const request = value as Record<string, unknown>;
   const keys = Reflect.ownKeys(request);
@@ -214,7 +214,7 @@ const parseWithdrawalRequest = (value: unknown): WithdrawActivePublicationReques
     typeof request.reason !== "string" ||
     typeof request.idempotencyKey !== "string"
   ) {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
   const reason = request.reason.trim();
   if (
@@ -225,7 +225,7 @@ const parseWithdrawalRequest = (value: unknown): WithdrawActivePublicationReques
     request.idempotencyKey.length > 128 ||
     containsControlCharacter(request.idempotencyKey)
   ) {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
   return { reason, idempotencyKey: request.idempotencyKey };
 };
@@ -233,22 +233,22 @@ const parseWithdrawalRequest = (value: unknown): WithdrawActivePublicationReques
 const parseHistoryCursor = (value: unknown): number | null => {
   if (value === undefined || value === null) return null;
   if (typeof value !== "string" || !/^[1-9][0-9]*$/u.test(value)) {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
   const version = Number(value);
   if (!Number.isSafeInteger(version) || version > 2_147_483_647) {
-    throw new M1StaffPublicationInputError();
+    throw new StaffPublicationInputError();
   }
   return version;
 };
 
 const authorizePublicationOperation = (
-  dependencies: M1StaffTripPublicationOperationsDependencies,
+  dependencies: StaffTripPublicationOperationsDependencies,
   cookieHeader: unknown,
   permissionIds: readonly StaffPermissionId[],
   requireRecentMfa: boolean,
 ) =>
-  authorizeM1Operation(
+  authorizeOperation(
     dependencies,
     cookieHeader,
     null,
@@ -256,10 +256,10 @@ const authorizePublicationOperation = (
     requireRecentMfa ? RECENT_MFA_MAXIMUM_AGE_MS : null,
   );
 
-export const createM1StaffTripPublicationOperations = (
-  dependencies: M1StaffTripPublicationOperationsDependencies,
-): M1StaffTripPublicationOperations => {
-  const operations: M1StaffTripPublicationOperations = {
+export const createStaffTripPublicationOperations = (
+  dependencies: StaffTripPublicationOperationsDependencies,
+): StaffTripPublicationOperations => {
+  const operations: StaffTripPublicationOperations = {
     async previewTrip(cookieHeader, tripIdValue) {
       const tripId = parseTripId(tripIdValue);
       const authorization = await authorizePublicationOperation(

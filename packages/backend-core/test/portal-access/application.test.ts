@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 import * as backendCore from "../../src/index.js";
-import { M1InputValidationError } from "../../src/index.js";
+import { InputValidationError } from "../../src/index.js";
 import type {
-  M1StaffAuthorizationDependencies,
-  M1StaffAuthorizationError,
+  StaffAuthorizationDependencies,
+  StaffAuthorizationError,
   OpaqueId,
   StaffAuthorizationOperationProof,
 } from "../../src/index.js";
@@ -63,14 +63,14 @@ interface StaffTripAccessOperations {
 }
 
 type CreateOperations = (
-  dependencies: M1StaffAuthorizationDependencies & {
+  dependencies: StaffAuthorizationDependencies & {
     readonly repository: TripAccessGrantRepository;
   },
 ) => StaffTripAccessOperations;
 
 const exportedFactory = (
-  backendCore as unknown as { readonly createM1StaffTripAccessOperations?: unknown }
-).createM1StaffTripAccessOperations;
+  backendCore as unknown as { readonly createStaffTripAccessOperations?: unknown }
+).createStaffTripAccessOperations;
 const createOperations =
   typeof exportedFactory === "function" ? (exportedFactory as CreateOperations) : null;
 const itWhenImplemented = createOperations === null ? it.skip : it;
@@ -225,7 +225,7 @@ describe("Staff TripAccessGrant application boundary", () => {
       operations.issueTripAccessGrant("invalid-cookie", issueRequest),
     ).rejects.toMatchObject({
       code: "UNAUTHENTICATED",
-    } satisfies Partial<M1StaffAuthorizationError>);
+    } satisfies Partial<StaffAuthorizationError>);
     expect(context.repository.issueTripAccessGrant).not.toHaveBeenCalled();
   });
 
@@ -235,7 +235,7 @@ describe("Staff TripAccessGrant application boundary", () => {
 
     await expect(
       operations.issueTripAccessGrant("staff-cookie", { ...issueRequest, agencyId: otherAgencyId }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<M1StaffAuthorizationError>);
+    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<StaffAuthorizationError>);
     expect(context.authorizationRepository.getStaffAuthorizationSnapshot).not.toHaveBeenCalled();
     expect(context.repository.issueTripAccessGrant).not.toHaveBeenCalled();
   });
@@ -248,7 +248,7 @@ describe("Staff TripAccessGrant application boundary", () => {
       operations.revokeTripAccessGrant("staff-cookie", revokeRequest),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-    } satisfies Partial<M1StaffAuthorizationError>);
+    } satisfies Partial<StaffAuthorizationError>);
     expect(context.repository.revokeTripAccessGrant).not.toHaveBeenCalled();
   });
 
@@ -264,7 +264,7 @@ describe("Staff TripAccessGrant application boundary", () => {
           capabilities: ["trip.view_current", "message.create"],
           issuedByStaffPrincipalId: "attacker-chosen-actor",
         }),
-      ).rejects.toBeInstanceOf(M1InputValidationError);
+      ).rejects.toBeInstanceOf(InputValidationError);
       expect(context.repository.issueTripAccessGrant).not.toHaveBeenCalled();
     },
   );
@@ -278,7 +278,7 @@ describe("Staff TripAccessGrant application boundary", () => {
         ...issueRequest,
         expiresAt: "2026-10-15T09:59:59.000Z",
       }),
-    ).rejects.toBeInstanceOf(M1InputValidationError);
+    ).rejects.toBeInstanceOf(InputValidationError);
     expect(context.repository.issueTripAccessGrant).not.toHaveBeenCalled();
   });
 

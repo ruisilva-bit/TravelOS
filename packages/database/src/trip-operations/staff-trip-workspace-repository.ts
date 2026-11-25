@@ -1,12 +1,12 @@
 import {
   asOpaqueId,
   createScheduledLocalDateTime,
-  M1InputValidationError,
+  InputValidationError,
   type AccommodationItem,
   type FlightItem,
-  type M1StaffTripWorkspaceReadRepository,
-  type M1TripWorkspace,
-  type M1TripWorkspacePage,
+  type StaffTripWorkspaceReadRepository,
+  type TripWorkspace,
+  type TripWorkspacePage,
   type OpaqueId,
   type StaffAuthorizationOperationProof,
   type Trip,
@@ -14,7 +14,7 @@ import {
 import { sql, type Kysely } from "kysely";
 
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
-import { assertStaffAuthorizationInTransaction } from "./m1-operational-slice-repository.js";
+import { assertStaffAuthorizationInTransaction } from "./operational-slice-repository.js";
 
 type DatabaseShape = Record<string, never>;
 
@@ -268,7 +268,7 @@ export const readTripWorkspace = async (
   database: Kysely<DatabaseShape>,
   agencyId: OpaqueId,
   tripId: OpaqueId,
-): Promise<M1TripWorkspace | null> => {
+): Promise<TripWorkspace | null> => {
   const trip = await readTripRow(database, agencyId, tripId);
   if (trip === null) return null;
   const [flights, accommodations] = await Promise.all([
@@ -280,15 +280,15 @@ export const readTripWorkspace = async (
 
 const validateListInput = (limit: number, cursor: OpaqueId | null): void => {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 50) {
-    throw new M1InputValidationError("Trip workspace list limit is invalid");
+    throw new InputValidationError("Trip workspace list limit is invalid");
   }
   if (cursor !== null) asOpaqueId(cursor);
 };
 
-export const createPostgresM1StaffTripWorkspaceRepository = (
+export const createPostgresStaffTripWorkspaceRepository = (
   persistence: PostgresPersistence<DatabaseShape>,
-): M1StaffTripWorkspaceReadRepository => {
-  const repository: M1StaffTripWorkspaceReadRepository = {
+): StaffTripWorkspaceReadRepository => {
+  const repository: StaffTripWorkspaceReadRepository = {
     async listTrips(agencyId, limit, cursor, authorization: StaffAuthorizationOperationProof) {
       validateListInput(limit, cursor);
       return persistence.transaction.runInTransaction(async (context) =>
@@ -321,7 +321,7 @@ export const createPostgresM1StaffTripWorkspaceRepository = (
           return {
             items,
             nextCursor: hasNextPage && lastItem !== undefined ? lastItem.id : null,
-          } satisfies M1TripWorkspacePage;
+          } satisfies TripWorkspacePage;
         }),
       );
     },

@@ -7,8 +7,8 @@ import {
   digestStaffInvitationToken,
 } from "@travelos/auth-adapters";
 import {
-  createM1RuntimeAcceptanceFixtureOperations,
-  createM1StaffTripAccessOperations,
+  createRuntimeAcceptanceFixtureOperations,
+  createStaffTripAccessOperations,
   createStaffInvitationOperations,
 } from "@travelos/backend-core";
 import {
@@ -17,11 +17,11 @@ import {
   type DevelopmentInstanceManifest,
 } from "@travelos/config";
 import {
-  createPostgresM1StaffTripAccessRepository,
-  createPostgresM1StaffTripPublicationOperations,
-  createPostgresM1StaffTripOperations,
-  createPostgresM1StaffTripWorkspaceOperations,
-  createPostgresM1StaffTripWorkspaceWriteOperations,
+  createPostgresStaffTripAccessRepository,
+  createPostgresStaffTripPublicationOperations,
+  createPostgresStaffTripOperations,
+  createPostgresStaffTripWorkspaceOperations,
+  createPostgresStaffTripWorkspaceWriteOperations,
   createPostgresRuntimeAcceptanceFixtureCleanupRepository,
   createPostgresPersistence,
   createStaffAccessRepository,
@@ -30,7 +30,7 @@ import {
 import { AdminTripPublicationPreviewV1Schema } from "@travelos/contracts/admin";
 
 import { createAdminApi, type CreateAdminApiOptions } from "./app.js";
-import { createAdminStaffSessionResolver } from "./m1-session-resolver.js";
+import { createAdminStaffSessionResolver } from "./staff-session-resolver.js";
 import { createStaffInvitationRateLimiter } from "./staff-invitation-rate-limit.js";
 
 const readRequiredArgument = (name: string): string => {
@@ -86,21 +86,21 @@ const createAdminAuthOptions = async (
     };
     const staffAccessRepository = createStaffAccessRepository(persistence);
     const sessionResolver = createAdminStaffSessionResolver(realm, policy);
-    const m1Operations = createPostgresM1StaffTripOperations(persistence, sessionResolver);
-    const m1WorkspaceOperations = createPostgresM1StaffTripWorkspaceOperations(
+    const tripOperations = createPostgresStaffTripOperations(persistence, sessionResolver);
+    const workspaceOperations = createPostgresStaffTripWorkspaceOperations(
       persistence,
       sessionResolver,
     );
-    const m1WorkspaceWriteOperations = createPostgresM1StaffTripWorkspaceWriteOperations(
+    const workspaceWriteOperations = createPostgresStaffTripWorkspaceWriteOperations(
       persistence,
       sessionResolver,
     );
-    const m1TripAccessOperations = createM1StaffTripAccessOperations({
-      repository: createPostgresM1StaffTripAccessRepository(persistence),
+    const tripAccessOperations = createStaffTripAccessOperations({
+      repository: createPostgresStaffTripAccessRepository(persistence),
       authorizationRepository: staffAccessRepository,
       sessionResolver,
     });
-    const m1PublicationOperations = createPostgresM1StaffTripPublicationOperations(
+    const publicationOperations = createPostgresStaffTripPublicationOperations(
       persistence,
       sessionResolver,
       {
@@ -131,13 +131,13 @@ const createAdminAuthOptions = async (
     const staffInvitationRateLimiter = createStaffInvitationRateLimiter();
     const runtimeAcceptanceFixtureOperations =
       manifest.environment === "DEVELOPMENT"
-        ? createM1RuntimeAcceptanceFixtureOperations({
+        ? createRuntimeAcceptanceFixtureOperations({
             repository: createPostgresRuntimeAcceptanceFixtureCleanupRepository(persistence),
             authorizationRepository: staffAccessRepository,
             sessionResolver,
-            tripOperations: m1Operations,
-            tripAccessOperations: m1TripAccessOperations,
-            publicationOperations: m1PublicationOperations,
+            tripOperations: tripOperations,
+            tripAccessOperations: tripAccessOperations,
+            publicationOperations: publicationOperations,
           })
         : undefined;
     return {
@@ -147,18 +147,18 @@ const createAdminAuthOptions = async (
           policy,
           environment: manifest.environment,
           staffAccessRepository,
-          m1Operations,
-          m1WorkspaceOperations,
-          m1WorkspaceWriteOperations,
-          m1TripAccessOperations,
-          m1PublicationOperations,
+          tripOperations,
+          workspaceOperations,
+          workspaceWriteOperations,
+          tripAccessOperations,
+          publicationOperations,
           staffInvitationOperations,
           staffInvitationRateLimiter,
           ...(runtimeAcceptanceFixtureOperations === undefined
             ? {}
             : {
-                m1RuntimeAcceptanceFixtureOperations: {
-                  createFixtureTrip: m1Operations.createRuntimeAcceptanceFixtureTrip,
+                runtimeAcceptanceFixtureOperations: {
+                  createFixtureTrip: tripOperations.createRuntimeAcceptanceFixtureTrip,
                   cleanupFixture: runtimeAcceptanceFixtureOperations.cleanupFixture,
                 },
               }),

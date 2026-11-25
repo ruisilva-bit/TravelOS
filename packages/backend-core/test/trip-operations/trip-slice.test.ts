@@ -1,24 +1,24 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  createM1StaffTripOperations,
-  M1StaffAuthorizationError,
-  M1InputValidationError,
+  createStaffTripOperations,
+  StaffAuthorizationError,
+  InputValidationError,
   permissionDefinitionFor,
-  type M1OperationalSliceRepository,
+  type OperationalSliceRepository,
   type StaffAuthorizationOperationProof,
   type StaffAuthorizationSnapshot,
   type StaffPermissionId,
   type StaffSessionAuthorizationProof,
 } from "../../src/index.js";
 import {
-  createM1TripSlice as createM1TripSliceWithAuthorization,
-  readM1TripSlice as readM1TripSliceWithAuthorization,
-  updateM1Accommodation as updateM1AccommodationWithAuthorization,
-  updateM1InternalSupplierNote as updateM1InternalSupplierNoteWithAuthorization,
-  validateCreateM1TripSliceInput,
-  type CreateM1TripSliceInput,
-} from "../../src/modules/trip-operations/application/m1-trip-slice.js";
+  createTripSlice as createTripSliceWithAuthorization,
+  readTripSlice as readTripSliceWithAuthorization,
+  updateAccommodation as updateAccommodationWithAuthorization,
+  updateInternalSupplierNote as updateInternalSupplierNoteWithAuthorization,
+  validateCreateTripSliceInput,
+  type CreateTripSliceInput,
+} from "../../src/modules/trip-operations/application/trip-slice.js";
 
 const syntheticEmail = ["rui", "example.test"].join(String.fromCharCode(64));
 
@@ -30,9 +30,9 @@ const rejectUnexpectedTripWorkspaceCreation = async (): Promise<never> => {
   throw new Error("Unexpected minimal Trip workspace creation in unit test");
 };
 
-const agencyId = "00000000-0000-7000-8000-000000000001" as CreateM1TripSliceInput["agencyId"];
+const agencyId = "00000000-0000-7000-8000-000000000001" as CreateTripSliceInput["agencyId"];
 
-const m1PermissionIds = [
+const permissionIds = [
   "customer.view",
   "customer.edit",
   "traveller.view_sensitive",
@@ -55,7 +55,7 @@ const readPermissionIds = [
 
 const testAuthorization = (
   requiredPermissionIds: readonly StaffPermissionId[],
-  authorizationAgencyId: CreateM1TripSliceInput["agencyId"] = agencyId,
+  authorizationAgencyId: CreateTripSliceInput["agencyId"] = agencyId,
 ): StaffAuthorizationOperationProof => {
   const nowEpochMs = Date.now();
   return {
@@ -72,49 +72,46 @@ const testAuthorization = (
   };
 };
 
-const createM1TripSlice = (
-  repository: M1OperationalSliceRepository,
-  value: CreateM1TripSliceInput,
-) =>
-  createM1TripSliceWithAuthorization(
+const createTripSlice = (repository: OperationalSliceRepository, value: CreateTripSliceInput) =>
+  createTripSliceWithAuthorization(
     repository,
     value,
-    testAuthorization(m1PermissionIds, value.agencyId),
+    testAuthorization(permissionIds, value.agencyId),
   );
 
-const readM1TripSlice = (
-  repository: M1OperationalSliceRepository,
-  readAgencyId: CreateM1TripSliceInput["agencyId"],
-  tripId: CreateM1TripSliceInput["agencyId"],
+const readTripSlice = (
+  repository: OperationalSliceRepository,
+  readAgencyId: CreateTripSliceInput["agencyId"],
+  tripId: CreateTripSliceInput["agencyId"],
 ) =>
-  readM1TripSliceWithAuthorization(
+  readTripSliceWithAuthorization(
     repository,
     readAgencyId,
     tripId,
     testAuthorization(readPermissionIds, readAgencyId),
   );
 
-const updateM1Accommodation = (
-  repository: M1OperationalSliceRepository,
-  value: Parameters<typeof updateM1AccommodationWithAuthorization>[1],
+const updateAccommodation = (
+  repository: OperationalSliceRepository,
+  value: Parameters<typeof updateAccommodationWithAuthorization>[1],
 ) =>
-  updateM1AccommodationWithAuthorization(
+  updateAccommodationWithAuthorization(
     repository,
     value,
     testAuthorization([...readPermissionIds, "trip.edit"], value.agencyId),
   );
 
-const updateM1InternalSupplierNote = (
-  repository: M1OperationalSliceRepository,
-  value: Parameters<typeof updateM1InternalSupplierNoteWithAuthorization>[1],
+const updateInternalSupplierNote = (
+  repository: OperationalSliceRepository,
+  value: Parameters<typeof updateInternalSupplierNoteWithAuthorization>[1],
 ) =>
-  updateM1InternalSupplierNoteWithAuthorization(
+  updateInternalSupplierNoteWithAuthorization(
     repository,
     value,
     testAuthorization([...readPermissionIds, "finance.manage_costs"], value.agencyId),
   );
 
-const input = (): CreateM1TripSliceInput => ({
+const input = (): CreateTripSliceInput => ({
   agencyId,
   person: { givenName: "Rui", familyName: "Silva", email: syntheticEmail },
   customer: { displayName: "Silva Travel" },
@@ -183,9 +180,9 @@ const input = (): CreateM1TripSliceInput => ({
   },
 });
 
-describe("Stage 5 M1 application invariants", () => {
-  it("keeps M1 permissions Agency-wide until resource ownership is modelled", () => {
-    for (const permissionId of m1PermissionIds) {
+describe("Stage 5 application invariants", () => {
+  it("keeps trip-operation permissions Agency-wide until resource ownership is modelled", () => {
+    for (const permissionId of permissionIds) {
       expect(permissionDefinitionFor(permissionId)).toMatchObject({
         allowedScopeKinds: ["AGENCY"],
         allowedAccessLevels: ["ALL"],
@@ -194,39 +191,39 @@ describe("Stage 5 M1 application invariants", () => {
   });
 
   it("validates the full continuity and structured itinerary input before persistence", () => {
-    expect(() => validateCreateM1TripSliceInput(input())).not.toThrow();
+    expect(() => validateCreateTripSliceInput(input())).not.toThrow();
   });
 
   it("rejects same-airport flights, inverted times and invalid trip dates", () => {
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...input(),
         trip: { ...input().trip, startDate: "2026-09-29" },
       }),
     ).toThrow("Trip start date");
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...input(),
         flight: { ...input().flight, arrivalAirport: "LIS" },
       }),
     ).toThrow("airports must differ");
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...input(),
         accommodation: { ...input().accommodation, checkOut: input().accommodation.checkIn },
       }),
     ).toThrow("check-in must be before check-out");
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...input(),
         flight: { ...input().flight, arrivalAirport: "LIS" },
       }),
-    ).toThrow(M1InputValidationError);
+    ).toThrow(InputValidationError);
   });
 
   it("rejects non-primary traveller roles before the repository boundary", () => {
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...input(),
         travellerRole: "TRAVELLER" as never,
       }),
@@ -237,11 +234,11 @@ describe("Stage 5 M1 application invariants", () => {
     const calls = { create: 0, updateAccommodation: 0, updateInternalNote: 0 };
     const repository = {
       createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
-      async createM1TripSlice(value: CreateM1TripSliceInput) {
+      async createTripSlice(value: CreateTripSliceInput) {
         calls.create += 1;
         return { value } as never;
       },
-      async getM1TripSlice() {
+      async getTripSlice() {
         return null;
       },
       async updateAccommodation() {
@@ -258,22 +255,22 @@ describe("Stage 5 M1 application invariants", () => {
       createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
     await expect(
-      createM1TripSlice(repository, { ...input(), unexpected: true } as never),
-    ).rejects.toThrow(M1InputValidationError);
+      createTripSlice(repository, { ...input(), unexpected: true } as never),
+    ).rejects.toThrow(InputValidationError);
     await expect(
-      createM1TripSlice(repository, {
+      createTripSlice(repository, {
         ...input(),
         flight: { ...input().flight, description: "x".repeat(10_001) },
       }),
-    ).rejects.toThrow(M1InputValidationError);
+    ).rejects.toThrow(InputValidationError);
     await expect(
-      createM1TripSlice(repository, {
+      createTripSlice(repository, {
         ...input(),
         trip: { ...input().trip, state: "BROKEN" },
       } as never),
-    ).rejects.toThrow(M1InputValidationError);
+    ).rejects.toThrow(InputValidationError);
     await expect(
-      updateM1Accommodation(repository, {
+      updateAccommodation(repository, {
         agencyId,
         tripId: agencyId,
         itemId: agencyId,
@@ -281,9 +278,9 @@ describe("Stage 5 M1 application invariants", () => {
         title: "x".repeat(301),
         description: "valid description",
       }),
-    ).rejects.toThrow(M1InputValidationError);
+    ).rejects.toThrow(InputValidationError);
     await expect(
-      updateM1Accommodation(repository, {
+      updateAccommodation(repository, {
         agencyId,
         tripId: agencyId,
         itemId: agencyId,
@@ -291,40 +288,40 @@ describe("Stage 5 M1 application invariants", () => {
         title: "valid title",
         description: "valid description",
       }),
-    ).rejects.toThrow(M1InputValidationError);
+    ).rejects.toThrow(InputValidationError);
     await expect(
-      updateM1InternalSupplierNote(repository, {
+      updateInternalSupplierNote(repository, {
         agencyId,
         tripId: agencyId,
         reservationId: agencyId,
         expectedLockVersion: -1n,
         internalNote: "valid note",
       }),
-    ).rejects.toThrow(M1InputValidationError);
+    ).rejects.toThrow(InputValidationError);
     await expect(
-      updateM1InternalSupplierNote(repository, {
+      updateInternalSupplierNote(repository, {
         agencyId,
         tripId: agencyId,
         reservationId: agencyId,
         expectedLockVersion: 9_223_372_036_854_775_808n,
         internalNote: "valid note",
       }),
-    ).rejects.toThrow(M1InputValidationError);
+    ).rejects.toThrow(InputValidationError);
     await expect(
-      updateM1InternalSupplierNote(repository, {
+      updateInternalSupplierNote(repository, {
         agencyId,
         tripId: agencyId,
         reservationId: agencyId,
         expectedLockVersion: 0n,
         internalNote: "x".repeat(10_001),
       }),
-    ).rejects.toThrow(M1InputValidationError);
+    ).rejects.toThrow(InputValidationError);
     expect(calls).toEqual({ create: 0, updateAccommodation: 0, updateInternalNote: 0 });
   });
 
   it("reconstructs Money at the exported application boundary", () => {
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...input(),
         supplierCost: {
           ...input().supplierCost,
@@ -333,7 +330,7 @@ describe("Stage 5 M1 application invariants", () => {
       }),
     ).toThrow("Money JSON has invalid primitive types");
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...input(),
         supplierCost: {
           ...input().supplierCost,
@@ -350,13 +347,13 @@ describe("Stage 5 M1 application invariants", () => {
 
   it("rejects malformed create, read and update inputs before every repository call", async () => {
     const calls = { create: 0, read: 0, updateAccommodation: 0, updateInternalNote: 0 };
-    const repository: M1OperationalSliceRepository = {
+    const repository: OperationalSliceRepository = {
       createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
-      async createM1TripSlice() {
+      async createTripSlice() {
         calls.create += 1;
         return undefined as never;
       },
-      async getM1TripSlice() {
+      async getTripSlice() {
         calls.read += 1;
         return null;
       },
@@ -492,8 +489,8 @@ describe("Stage 5 M1 application invariants", () => {
       });
     }
     for (const candidate of malformedCreates) {
-      await expect(createM1TripSlice(repository, candidate as never)).rejects.toBeInstanceOf(
-        M1InputValidationError,
+      await expect(createTripSlice(repository, candidate as never)).rejects.toBeInstanceOf(
+        InputValidationError,
       );
     }
 
@@ -627,25 +624,25 @@ describe("Stage 5 M1 application invariants", () => {
       { agencyId, reservationId: agencyId, expectedLockVersion: 0n, internalNote: "Net" },
     ];
     for (const candidate of invalidAccommodationUpdates) {
-      await expect(updateM1Accommodation(repository, candidate as never)).rejects.toBeInstanceOf(
-        M1InputValidationError,
+      await expect(updateAccommodation(repository, candidate as never)).rejects.toBeInstanceOf(
+        InputValidationError,
       );
     }
     for (const candidate of invalidInternalNoteUpdates) {
       await expect(
-        updateM1InternalSupplierNote(repository, candidate as never),
-      ).rejects.toBeInstanceOf(M1InputValidationError);
+        updateInternalSupplierNote(repository, candidate as never),
+      ).rejects.toBeInstanceOf(InputValidationError);
     }
     await expect(
-      readM1TripSlice(repository, "00000000-0000-4000-8000-000000000001" as never, agencyId),
-    ).rejects.toBeInstanceOf(M1InputValidationError);
-    await expect(readM1TripSlice(repository, agencyId, "bad-id" as never)).rejects.toBeInstanceOf(
-      M1InputValidationError,
+      readTripSlice(repository, "00000000-0000-4000-8000-000000000001" as never, agencyId),
+    ).rejects.toBeInstanceOf(InputValidationError);
+    await expect(readTripSlice(repository, agencyId, "bad-id" as never)).rejects.toBeInstanceOf(
+      InputValidationError,
     );
 
     expect(calls).toEqual({ create: 0, read: 0, updateAccommodation: 0, updateInternalNote: 0 });
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...base,
         supplierCost: {
           ...base.supplierCost,
@@ -654,7 +651,7 @@ describe("Stage 5 M1 application invariants", () => {
       }),
     ).not.toThrow();
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...base,
         supplierCost: {
           ...base.supplierCost,
@@ -666,7 +663,7 @@ describe("Stage 5 M1 application invariants", () => {
 
   it("orders supported millisecond instants without precision loss", () => {
     expect(() =>
-      validateCreateM1TripSliceInput({
+      validateCreateTripSliceInput({
         ...input(),
         flight: {
           ...input().flight,
@@ -684,10 +681,10 @@ describe("Stage 5 M1 application invariants", () => {
   it("keeps application persistence behind the repository port", async () => {
     const repository = {
       createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
-      async createM1TripSlice(value: CreateM1TripSliceInput) {
+      async createTripSlice(value: CreateTripSliceInput) {
         return { value } as never;
       },
-      async getM1TripSlice() {
+      async getTripSlice() {
         return null;
       },
       async updateAccommodation() {
@@ -701,18 +698,18 @@ describe("Stage 5 M1 application invariants", () => {
       },
       createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
-    await expect(createM1TripSlice(repository, input())).resolves.toMatchObject({ value: input() });
+    await expect(createTripSlice(repository, input())).resolves.toMatchObject({ value: input() });
   });
 
   it("passes reconstructed JSON Money to the repository port", async () => {
-    const captured: { value: CreateM1TripSliceInput | null } = { value: null };
+    const captured: { value: CreateTripSliceInput | null } = { value: null };
     const repository = {
       createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
-      async createM1TripSlice(value: CreateM1TripSliceInput) {
+      async createTripSlice(value: CreateTripSliceInput) {
         captured.value = value;
         return { value } as never;
       },
-      async getM1TripSlice() {
+      async getTripSlice() {
         return null;
       },
       async updateAccommodation() {
@@ -726,7 +723,7 @@ describe("Stage 5 M1 application invariants", () => {
       },
       createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
-    await createM1TripSlice(repository, {
+    await createTripSlice(repository, {
       ...input(),
       supplierCost: {
         ...input().supplierCost,
@@ -777,13 +774,13 @@ describe("Stage 5 M1 application invariants", () => {
       })),
     };
     const calls: string[] = [];
-    const repository: M1OperationalSliceRepository = {
+    const repository: OperationalSliceRepository = {
       createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
-      async createM1TripSlice(value) {
+      async createTripSlice(value) {
         calls.push("workspace:create");
         return { value } as never;
       },
-      async getM1TripSlice() {
+      async getTripSlice() {
         calls.push("workspace:read");
         return null;
       },
@@ -800,7 +797,7 @@ describe("Stage 5 M1 application invariants", () => {
       },
       createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
-    const operations = createM1StaffTripOperations({
+    const operations = createStaffTripOperations({
       repository,
       authorizationRepository: {
         async getStaffAuthorizationSnapshot(_staffPrincipalId, requestedAgencyId) {
@@ -829,7 +826,7 @@ describe("Stage 5 M1 application invariants", () => {
         } as never,
         input(),
       ),
-    ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
+    ).rejects.toBeInstanceOf(StaffAuthorizationError);
     expect(calls).toEqual([]);
 
     await operations.createTripSlice("staff-session-cookie=opaque", input());
@@ -850,13 +847,13 @@ describe("Stage 5 M1 application invariants", () => {
       recentMfaVerifiedAtEpochMs: null,
     };
     const workspaceCalls: string[] = [];
-    const repository: M1OperationalSliceRepository = {
+    const repository: OperationalSliceRepository = {
       createTripWorkspace: rejectUnexpectedTripWorkspaceCreation,
-      async createM1TripSlice() {
+      async createTripSlice() {
         workspaceCalls.push("create");
         return undefined as never;
       },
-      async getM1TripSlice() {
+      async getTripSlice() {
         workspaceCalls.push("read");
         return null;
       },
@@ -874,7 +871,7 @@ describe("Stage 5 M1 application invariants", () => {
       createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
     const makeOperations = (snapshot: StaffAuthorizationSnapshot | null) =>
-      createM1StaffTripOperations({
+      createStaffTripOperations({
         repository,
         authorizationRepository: {
           async getStaffAuthorizationSnapshot() {
@@ -910,7 +907,7 @@ describe("Stage 5 M1 application invariants", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
     const otherAgencyId =
-      "00000000-0000-7000-8000-000000000002" as CreateM1TripSliceInput["agencyId"];
+      "00000000-0000-7000-8000-000000000002" as CreateTripSliceInput["agencyId"];
     await expect(
       makeOperations(inactiveSnapshot).createTripSlice("staff-session-cookie=opaque", {
         ...input(),
@@ -941,8 +938,8 @@ describe("Stage 5 M1 application invariants", () => {
     await expect(
       readOnlyOperations.updateAccommodation("staff-session-cookie=opaque", {
         agencyId,
-        tripId: "00000000-0000-7000-8000-000000000020" as CreateM1TripSliceInput["agencyId"],
-        itemId: "00000000-0000-7000-8000-000000000021" as CreateM1TripSliceInput["agencyId"],
+        tripId: "00000000-0000-7000-8000-000000000020" as CreateTripSliceInput["agencyId"],
+        itemId: "00000000-0000-7000-8000-000000000021" as CreateTripSliceInput["agencyId"],
         expectedLockVersion: 0n,
         title: "Updated hotel",
         description: "Updated description",
@@ -951,8 +948,8 @@ describe("Stage 5 M1 application invariants", () => {
     await expect(
       readOnlyOperations.updateInternalSupplierNote("staff-session-cookie=opaque", {
         agencyId,
-        tripId: "00000000-0000-7000-8000-000000000020" as CreateM1TripSliceInput["agencyId"],
-        reservationId: "00000000-0000-7000-8000-000000000022" as CreateM1TripSliceInput["agencyId"],
+        tripId: "00000000-0000-7000-8000-000000000020" as CreateTripSliceInput["agencyId"],
+        reservationId: "00000000-0000-7000-8000-000000000022" as CreateTripSliceInput["agencyId"],
         expectedLockVersion: 0n,
         internalNote: "Unauthorized change",
       }),
@@ -1015,8 +1012,8 @@ describe("Stage 5 M1 application invariants", () => {
         return createdTrip;
       },
     };
-    const operations = createM1StaffTripOperations({
-      repository: repository as unknown as M1OperationalSliceRepository,
+    const operations = createStaffTripOperations({
+      repository: repository as unknown as OperationalSliceRepository,
       authorizationRepository: {
         async getStaffAuthorizationSnapshot() {
           calls.push("authorization:snapshot");
@@ -1069,8 +1066,8 @@ describe("Stage 5 M1 application invariants", () => {
         return undefined;
       },
     };
-    const operations = createM1StaffTripOperations({
-      repository: repository as unknown as M1OperationalSliceRepository,
+    const operations = createStaffTripOperations({
+      repository: repository as unknown as OperationalSliceRepository,
       authorizationRepository: {
         async getStaffAuthorizationSnapshot() {
           return {
@@ -1096,7 +1093,7 @@ describe("Stage 5 M1 application invariants", () => {
     const create = candidate as (cookieHeader: unknown, value: unknown) => Promise<unknown>;
     await expect(
       create.call(operations, "staff-session-cookie=opaque", { ...request, agencyId }),
-    ).rejects.toBeInstanceOf(M1InputValidationError);
+    ).rejects.toBeInstanceOf(InputValidationError);
     await expect(
       create.call(operations, "staff-session-cookie=opaque", request),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });

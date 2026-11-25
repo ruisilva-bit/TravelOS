@@ -1,12 +1,12 @@
 import {
   asOpaqueId,
-  createM1StaffTripWorkspaceWriteOperations,
-  M1InputValidationError,
-  M1OptimisticConflictError,
-  type M1StaffSessionResolver,
-  type M1StaffTripWorkspaceWriteOperations,
-  type M1StaffTripWorkspaceWriteRepository,
-  type M1TripWorkspace,
+  createStaffTripWorkspaceWriteOperations,
+  InputValidationError,
+  OptimisticConflictError,
+  type StaffSessionResolver,
+  type StaffTripWorkspaceWriteOperations,
+  type StaffTripWorkspaceWriteRepository,
+  type TripWorkspace,
   type OpaqueId,
   type StaffAuthorizationOperationProof,
 } from "@travelos/backend-core";
@@ -18,8 +18,8 @@ import { createUuidV7 } from "../uuidv7.js";
 import {
   assertStaffAuthorizationInTransaction,
   mapPostgresMutationError,
-} from "./m1-operational-slice-repository.js";
-import { readTripWorkspace } from "./m1-staff-trip-workspace-repository.js";
+} from "./operational-slice-repository.js";
+import { readTripWorkspace } from "./staff-trip-workspace-repository.js";
 
 type DatabaseShape = Record<string, never>;
 
@@ -55,7 +55,7 @@ const workspaceLockOutcome = async (
 
 const isTripLocked = (outcome: WorkspaceLockOutcome): boolean => {
   if (outcome === "NOT_FOUND") return false;
-  if (outcome === "STALE") throw new M1OptimisticConflictError();
+  if (outcome === "STALE") throw new OptimisticConflictError();
   if (outcome !== "LOCKED")
     throw new Error("PostgreSQL workspace lock returned an unknown outcome");
   return true;
@@ -66,9 +66,9 @@ const workspaceFromMutation = async (
   agencyId: OpaqueId,
   tripId: OpaqueId,
   outcome: WorkspaceMutationOutcome,
-): Promise<M1TripWorkspace | null> => {
+): Promise<TripWorkspace | null> => {
   if (outcome === "NOT_FOUND") return null;
-  if (outcome === "STALE") throw new M1OptimisticConflictError();
+  if (outcome === "STALE") throw new OptimisticConflictError();
   if (outcome !== "UPDATED") {
     throw new Error("PostgreSQL workspace mutation returned an unknown outcome");
   }
@@ -81,7 +81,7 @@ const readWrittenWorkspace = async (
   database: Kysely<DatabaseShape>,
   agencyId: OpaqueId,
   tripId: OpaqueId,
-): Promise<M1TripWorkspace> => {
+): Promise<TripWorkspace> => {
   const workspace = await readTripWorkspace(database, agencyId, tripId);
   if (workspace === null) throw new Error("Trip workspace disappeared during a locked write");
   return workspace;
@@ -104,14 +104,14 @@ const nextSortOrder = async (
     currentMaximum < 0 ||
     currentMaximum >= MAX_POSTGRES_INTEGER
   ) {
-    throw new M1InputValidationError("Trip itinerary has reached its supported size");
+    throw new InputValidationError("Trip itinerary has reached its supported size");
   }
   return currentMaximum + 1;
 };
 
-export const createPostgresM1StaffTripWorkspaceWriteRepository = (
+export const createPostgresStaffTripWorkspaceWriteRepository = (
   persistence: PostgresPersistence<DatabaseShape>,
-): M1StaffTripWorkspaceWriteRepository => {
+): StaffTripWorkspaceWriteRepository => {
   const withWriteTransaction = async <Result>(
     agencyId: OpaqueId,
     authorization: StaffAuthorizationOperationProof,
@@ -135,7 +135,7 @@ export const createPostgresM1StaffTripWorkspaceWriteRepository = (
     }
   };
 
-  const repository: M1StaffTripWorkspaceWriteRepository = {
+  const repository: StaffTripWorkspaceWriteRepository = {
     async createFlight(agencyId, tripId, expectedWorkspaceRevision, flight, authorization) {
       const normalizedAgencyId = asOpaqueId(agencyId);
       const normalizedTripId = asOpaqueId(tripId);
@@ -372,12 +372,12 @@ export const createPostgresM1StaffTripWorkspaceWriteRepository = (
   return Object.freeze(repository);
 };
 
-export const createPostgresM1StaffTripWorkspaceWriteOperations = (
+export const createPostgresStaffTripWorkspaceWriteOperations = (
   persistence: PostgresPersistence<DatabaseShape>,
-  sessionResolver: M1StaffSessionResolver,
-): M1StaffTripWorkspaceWriteOperations =>
-  createM1StaffTripWorkspaceWriteOperations({
-    repository: createPostgresM1StaffTripWorkspaceWriteRepository(persistence),
+  sessionResolver: StaffSessionResolver,
+): StaffTripWorkspaceWriteOperations =>
+  createStaffTripWorkspaceWriteOperations({
+    repository: createPostgresStaffTripWorkspaceWriteRepository(persistence),
     authorizationRepository: createStaffAccessRepository(persistence),
     sessionResolver,
   });

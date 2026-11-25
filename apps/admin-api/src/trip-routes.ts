@@ -1,4 +1,4 @@
-import { asOpaqueId, createMoney, type M1TripWorkspace } from "@travelos/backend-core";
+import { asOpaqueId, createMoney, type TripWorkspace } from "@travelos/backend-core";
 import {
   ADMIN_RUNTIME_ACCEPTANCE_FIXTURE_RUN_HEADER,
   AdminCreateM1TripSliceRequestSchema,
@@ -18,19 +18,19 @@ import {
   type AdminTripWorkspaceCreateV1Request,
 } from "@travelos/contracts/admin";
 
-import { mapSlice } from "./m1-trip-slice-mapper.js";
+import { mapSlice } from "./trip-slice-mapper.js";
 import {
   badRequest,
   idFrom,
   runHandler,
   send,
   surfaceRejectionStatus,
-  type AdminM1ExpressApplication,
-  type AdminM1RouteOptions,
-} from "./m1-route-http.js";
+  type AdminExpressApplication,
+  type AdminRouteOptions,
+} from "./admin-route-http.js";
 import { headersFor } from "./request-boundary.js";
 
-const mapTripWorkspaceTrip = (trip: M1TripWorkspace["trip"]) => ({
+const mapTripWorkspaceTrip = (trip: TripWorkspace["trip"]) => ({
   id: trip.id,
   agencyId: trip.agencyId,
   title: trip.title,
@@ -41,7 +41,7 @@ const mapTripWorkspaceTrip = (trip: M1TripWorkspace["trip"]) => ({
   lockVersion: trip.lockVersion.toString(),
 });
 
-const mapTripWorkspace = (workspace: M1TripWorkspace) =>
+const mapTripWorkspace = (workspace: TripWorkspace) =>
   AdminTripWorkspaceV1ResponseSchema.parse({
     trip: mapTripWorkspaceTrip(workspace.trip),
     flights: workspace.flights.map((flight) => ({
@@ -231,8 +231,8 @@ const toWorkspaceTripDraft = (trip: AdminTripWorkspaceTripUpdateV1Request["trip"
 });
 
 export const registerAdminTripRoutes = (
-  application: AdminM1ExpressApplication,
-  options: AdminM1RouteOptions,
+  application: AdminExpressApplication,
+  options: AdminRouteOptions,
 ): void => {
   application.post("/api/admin/trips/workspace", (request, response, next) => {
     runHandler(
@@ -247,7 +247,7 @@ export const registerAdminTripRoutes = (
           response.status(rejection).end();
           return;
         }
-        const trip = await options.m1Operations.createTripWorkspace(
+        const trip = await options.tripOperations.createTripWorkspace(
           headersFor(request).get("cookie"),
           toTripWorkspaceCreateInput(parsed.data),
         );
@@ -300,7 +300,7 @@ export const registerAdminTripRoutes = (
           send(response, 201, mapSlice(slice));
           return;
         }
-        const slice = await options.m1Operations.createTripSlice(
+        const slice = await options.tripOperations.createTripSlice(
           headers.get("cookie"),
           toCreateInput(parsed.data),
         );
@@ -311,8 +311,8 @@ export const registerAdminTripRoutes = (
     );
   });
 
-  if (options.m1WorkspaceOperations !== undefined) {
-    const workspaceOperations = options.m1WorkspaceOperations;
+  if (options.workspaceOperations !== undefined) {
+    const workspaceOperations = options.workspaceOperations;
     application.get("/api/admin/trips", (request, response, next) => {
       runHandler(
         async () => {
@@ -373,8 +373,8 @@ export const registerAdminTripRoutes = (
     });
   }
 
-  if (options.m1WorkspaceWriteOperations !== undefined) {
-    const writeOperations = options.m1WorkspaceWriteOperations;
+  if (options.workspaceWriteOperations !== undefined) {
+    const writeOperations = options.workspaceWriteOperations;
     application.post("/api/admin/trips/:tripId/workspace/flights", (request, response, next) => {
       runHandler(
         async () => {
@@ -554,7 +554,7 @@ export const registerAdminTripRoutes = (
           response.status(rejection).end();
           return;
         }
-        const slice = await options.m1Operations.readTripSlice(
+        const slice = await options.tripOperations.readTripSlice(
           headersFor(request).get("cookie"),
           tripId,
         );

@@ -3,14 +3,14 @@
   "scope": "Reviewed sensitive-data scanner findings for the current tracked source tree (ADR-015). Each entry matches exact path + rule + SHA-256 of the line bytes without terminator; any edited or new matching line becomes an unclassified finding and fails the gate.",
   "entries": [
     {
-      "path": "apps/admin-api/test/composed-m1-body-parser.test.ts",
+      "path": "apps/admin-api/test/composed-body-parser.test.ts",
       "rule": "high-entropy-secret-assignment",
       "lineSha256": "d74b49eec930ffb1a4dfdc7d294d4bd9be69855d19e86881428778830782b442",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "apps/admin-api/test/composed-m1-body-parser.test.ts",
+      "path": "apps/admin-api/test/composed-body-parser.test.ts",
       "rule": "secret-assignment",
       "lineSha256": "d74b49eec930ffb1a4dfdc7d294d4bd9be69855d19e86881428778830782b442",
       "category": "SYNTHETIC_TEST_FIXTURE",
@@ -729,6 +729,20 @@
       "lineSha256": "e32fa01035ec1a1e03d2822855ed2b35bec33a28fa31be1ad9be07c1b9faffbb",
       "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
       "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
+    },
+    {
+      "path": "tooling/ci/test-scan-current-source.mjs",
+      "rule": "email-address",
+      "lineSha256": "336b85335f74f2618ddb9fb746127a0c810471f910f65524d45ac17b608eb4ff",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Scanner self-test fixture uses a reserved .invalid example address; no real-person data."
+    },
+    {
+      "path": "tooling/ci/test-scan-current-source.mjs",
+      "rule": "email-address",
+      "lineSha256": "ff12403a5eeb308453441312df46f24e4a48d32b07ff75f92f9d26544725401f",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Scanner self-test fixture uses a reserved .invalid example address; no real-person data."
     },
     {
       "path": "tooling/deployment/stage10-backup-encryption.py",

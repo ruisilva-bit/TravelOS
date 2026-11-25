@@ -13,18 +13,18 @@ import {
   validateTripDates,
   type AccommodationDraft,
   type FlightDraft,
-  type M1TripSlice,
+  type TripSlice,
   type Reservation,
   type ReservationDraft,
   type Trip,
-} from "../domain/m1-slice.js";
+} from "../domain/trip-slice.js";
 import {
   validateSupplierCostDraft,
   type SupplierCostDraft,
   type SupplierCostLine,
 } from "../../finance-operations/domain/supplier-cost.js";
 
-export interface CreateM1TripSliceInput {
+export interface CreateTripSliceInput {
   readonly agencyId: OpaqueId;
   readonly person: PersonDraft;
   readonly customer: CustomerDraft;
@@ -37,38 +37,38 @@ export interface CreateM1TripSliceInput {
   readonly supplierCost: SupplierCostDraft;
 }
 
-export interface CreateM1TripWorkspaceInput {
+export interface CreateTripWorkspaceInput {
   readonly customer: CustomerDraft;
   readonly primaryTraveller: Pick<PersonDraft, "givenName" | "familyName">;
   readonly trip: Pick<Trip, "title" | "startDate" | "endDate">;
 }
 
-export interface CreateM1TripWorkspaceFlightInput {
+export interface CreateTripWorkspaceFlightInput {
   readonly expectedWorkspaceRevision: bigint;
   readonly flight: FlightDraft;
 }
 
-export interface UpdateM1TripWorkspaceFlightInput {
+export interface UpdateTripWorkspaceFlightInput {
   readonly expectedWorkspaceRevision: bigint;
   readonly expectedLockVersion: bigint;
   readonly flight: FlightDraft;
 }
 
-export interface CreateM1TripWorkspaceAccommodationInput {
+export interface CreateTripWorkspaceAccommodationInput {
   readonly expectedWorkspaceRevision: bigint;
   readonly accommodation: AccommodationDraft;
 }
 
-export interface UpdateM1TripWorkspaceAccommodationInput {
+export interface UpdateTripWorkspaceAccommodationInput {
   readonly expectedWorkspaceRevision: bigint;
   readonly expectedLockVersion: bigint;
   readonly accommodation: AccommodationDraft;
 }
 
-export interface UpdateM1TripWorkspaceTripInput {
+export interface UpdateTripWorkspaceTripInput {
   readonly expectedWorkspaceRevision: bigint;
   readonly expectedLockVersion: bigint;
-  readonly trip: CreateM1TripWorkspaceInput["trip"];
+  readonly trip: CreateTripWorkspaceInput["trip"];
 }
 
 export interface UpdateAccommodationInput {
@@ -88,13 +88,13 @@ export interface UpdateInternalNoteInput {
   readonly internalNote: string;
 }
 
-export interface CancelM1TripInput {
+export interface CancelTripInput {
   readonly tripId: OpaqueId;
   readonly expectedLockVersion: bigint;
   readonly idempotencyKey: string;
 }
 
-export class M1OptimisticConflictError extends Error {
+export class OptimisticConflictError extends Error {
   readonly code = "OPTIMISTIC_CONFLICT" as const;
 
   constructor(message = "The M1 workspace record is stale") {
@@ -103,7 +103,7 @@ export class M1OptimisticConflictError extends Error {
   }
 }
 
-export class M1TransactionConflictError extends Error {
+export class TransactionConflictError extends Error {
   readonly code = "TRANSACTION_CONFLICT" as const;
 
   constructor() {
@@ -112,7 +112,7 @@ export class M1TransactionConflictError extends Error {
   }
 }
 
-export class M1InputValidationError extends Error {
+export class InputValidationError extends Error {
   readonly code = "M1_INPUT_VALIDATION" as const;
 
   constructor(message: string) {
@@ -121,7 +121,7 @@ export class M1InputValidationError extends Error {
   }
 }
 
-export class M1UnsupportedTripStateError extends Error {
+export class UnsupportedTripStateError extends Error {
   readonly code = "UNSUPPORTED_TRIP_STATE" as const;
 
   constructor() {
@@ -130,7 +130,7 @@ export class M1UnsupportedTripStateError extends Error {
   }
 }
 
-export class M1TripNotFoundError extends Error {
+export class TripNotFoundError extends Error {
   readonly code = "NOT_FOUND" as const;
 
   constructor() {
@@ -139,7 +139,7 @@ export class M1TripNotFoundError extends Error {
   }
 }
 
-export class M1TripCancellationIdempotencyConflictError extends Error {
+export class TripCancellationIdempotencyConflictError extends Error {
   readonly code = "IDEMPOTENCY_KEY_CONFLICT" as const;
 
   constructor() {
@@ -152,8 +152,8 @@ const runInputValidation = <Result>(work: () => Result): Result => {
   try {
     return work();
   } catch (error) {
-    if (error instanceof M1InputValidationError) throw error;
-    throw new M1InputValidationError(error instanceof Error ? error.message : "Invalid M1 input");
+    if (error instanceof InputValidationError) throw error;
+    throw new InputValidationError(error instanceof Error ? error.message : "Invalid M1 input");
   }
 };
 
@@ -295,7 +295,7 @@ const parseCustomer = (value: unknown): CustomerDraft => {
   };
 };
 
-const parseTrip = (value: unknown): CreateM1TripSliceInput["trip"] => {
+const parseTrip = (value: unknown): CreateTripSliceInput["trip"] => {
   const record = exactRecord(value, ["endDate", "startDate", "state", "title"], "Trip");
   const startDate = createLocalDate(
     requiredString(record, "startDate", "Trip start date", { trim: false }),
@@ -318,7 +318,7 @@ const parseTrip = (value: unknown): CreateM1TripSliceInput["trip"] => {
   };
 };
 
-const parseTripWorkspace = (value: unknown): CreateM1TripWorkspaceInput["trip"] => {
+const parseTripWorkspace = (value: unknown): CreateTripWorkspaceInput["trip"] => {
   const record = exactRecord(value, ["endDate", "startDate", "title"], "Trip");
   const trip = parseTrip({
     title: record.title,
@@ -477,40 +477,40 @@ const parseReservation = (value: unknown): ReservationDraft => {
   };
 };
 
-export interface M1OperationalSliceRepository {
+export interface OperationalSliceRepository {
   createTripWorkspace(
-    input: CreateM1TripWorkspaceInput,
+    input: CreateTripWorkspaceInput,
     authorization: StaffAuthorizationOperationProof,
   ): Promise<Trip>;
-  createM1TripSlice(
-    input: CreateM1TripSliceInput,
+  createTripSlice(
+    input: CreateTripSliceInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice>;
+  ): Promise<TripSlice>;
   createRuntimeAcceptanceFixtureTrip(
-    input: CreateM1TripSliceInput,
+    input: CreateTripSliceInput,
     fixtureRunId: OpaqueId,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice>;
-  getM1TripSlice(
+  ): Promise<TripSlice>;
+  getTripSlice(
     agencyId: OpaqueId,
     tripId: OpaqueId,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice | null>;
+  ): Promise<TripSlice | null>;
   updateAccommodation(
     input: UpdateAccommodationInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice>;
+  ): Promise<TripSlice>;
   updateInternalSupplierNote(
     input: UpdateInternalNoteInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice>;
+  ): Promise<TripSlice>;
   cancelTrip(
-    input: CancelM1TripInput,
+    input: CancelTripInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripSlice>;
+  ): Promise<TripSlice>;
 }
 
-export const validateCreateM1TripWorkspaceInput = (input: unknown): CreateM1TripWorkspaceInput =>
+export const validateCreateTripWorkspaceInput = (input: unknown): CreateTripWorkspaceInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -535,12 +535,12 @@ export const validateCreateM1TripWorkspaceInput = (input: unknown): CreateM1Trip
         }),
       },
       trip: parseTripWorkspace(record.trip),
-    } satisfies CreateM1TripWorkspaceInput;
+    } satisfies CreateTripWorkspaceInput;
   });
 
-export const validateCreateM1TripWorkspaceFlightInput = (
+export const validateCreateTripWorkspaceFlightInput = (
   input: unknown,
-): CreateM1TripWorkspaceFlightInput =>
+): CreateTripWorkspaceFlightInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -554,12 +554,12 @@ export const validateCreateM1TripWorkspaceFlightInput = (
         "Expected Trip workspace revision",
       ),
       flight: validateFlightSchedule(parseFlight(record.flight)),
-    } satisfies CreateM1TripWorkspaceFlightInput;
+    } satisfies CreateTripWorkspaceFlightInput;
   });
 
-export const validateUpdateM1TripWorkspaceFlightInput = (
+export const validateUpdateTripWorkspaceFlightInput = (
   input: unknown,
-): UpdateM1TripWorkspaceFlightInput =>
+): UpdateTripWorkspaceFlightInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -578,12 +578,12 @@ export const validateUpdateM1TripWorkspaceFlightInput = (
         "Expected Flight lock version",
       ),
       flight: validateFlightSchedule(parseFlight(record.flight)),
-    } satisfies UpdateM1TripWorkspaceFlightInput;
+    } satisfies UpdateTripWorkspaceFlightInput;
   });
 
-export const validateCreateM1TripWorkspaceAccommodationInput = (
+export const validateCreateTripWorkspaceAccommodationInput = (
   input: unknown,
-): CreateM1TripWorkspaceAccommodationInput =>
+): CreateTripWorkspaceAccommodationInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -597,12 +597,12 @@ export const validateCreateM1TripWorkspaceAccommodationInput = (
         "Expected Trip workspace revision",
       ),
       accommodation: validateAccommodationSchedule(parseAccommodation(record.accommodation)),
-    } satisfies CreateM1TripWorkspaceAccommodationInput;
+    } satisfies CreateTripWorkspaceAccommodationInput;
   });
 
-export const validateUpdateM1TripWorkspaceAccommodationInput = (
+export const validateUpdateTripWorkspaceAccommodationInput = (
   input: unknown,
-): UpdateM1TripWorkspaceAccommodationInput =>
+): UpdateTripWorkspaceAccommodationInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -621,12 +621,12 @@ export const validateUpdateM1TripWorkspaceAccommodationInput = (
         "Expected Accommodation lock version",
       ),
       accommodation: validateAccommodationSchedule(parseAccommodation(record.accommodation)),
-    } satisfies UpdateM1TripWorkspaceAccommodationInput;
+    } satisfies UpdateTripWorkspaceAccommodationInput;
   });
 
-export const validateUpdateM1TripWorkspaceTripInput = (
+export const validateUpdateTripWorkspaceTripInput = (
   input: unknown,
-): UpdateM1TripWorkspaceTripInput =>
+): UpdateTripWorkspaceTripInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -645,12 +645,10 @@ export const validateUpdateM1TripWorkspaceTripInput = (
         "Expected Trip lock version",
       ),
       trip: parseTripWorkspace(record.trip),
-    } satisfies UpdateM1TripWorkspaceTripInput;
+    } satisfies UpdateTripWorkspaceTripInput;
   });
 
-export const validateCreateM1TripSliceInput = (
-  input: CreateM1TripSliceInput,
-): CreateM1TripSliceInput =>
+export const validateCreateTripSliceInput = (input: CreateTripSliceInput): CreateTripSliceInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -716,26 +714,26 @@ export const validateCreateM1TripSliceInput = (
     };
   });
 
-export const createM1TripSlice = async (
-  repository: M1OperationalSliceRepository,
-  input: CreateM1TripSliceInput,
+export const createTripSlice = async (
+  repository: OperationalSliceRepository,
+  input: CreateTripSliceInput,
   authorization: StaffAuthorizationOperationProof,
-): Promise<M1TripSlice> => {
-  const validatedInput = validateCreateM1TripSliceInput(input);
-  return repository.createM1TripSlice(validatedInput, authorization);
+): Promise<TripSlice> => {
+  const validatedInput = validateCreateTripSliceInput(input);
+  return repository.createTripSlice(validatedInput, authorization);
 };
 
-export const readM1TripSlice = async (
-  repository: M1OperationalSliceRepository,
+export const readTripSlice = async (
+  repository: OperationalSliceRepository,
   agencyId: OpaqueId,
   tripId: OpaqueId,
   authorization: StaffAuthorizationOperationProof,
-): Promise<M1TripSlice | null> =>
+): Promise<TripSlice | null> =>
   runInputValidation(() =>
-    repository.getM1TripSlice(asOpaqueId(agencyId), asOpaqueId(tripId), authorization),
+    repository.getTripSlice(asOpaqueId(agencyId), asOpaqueId(tripId), authorization),
   );
 
-export const validateUpdateM1AccommodationInput = (input: unknown): UpdateAccommodationInput =>
+export const validateUpdateAccommodationInput = (input: unknown): UpdateAccommodationInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -759,16 +757,14 @@ export const validateUpdateM1AccommodationInput = (input: unknown): UpdateAccomm
     } satisfies UpdateAccommodationInput;
   });
 
-export const updateM1Accommodation = async (
-  repository: M1OperationalSliceRepository,
+export const updateAccommodation = async (
+  repository: OperationalSliceRepository,
   input: UpdateAccommodationInput,
   authorization: StaffAuthorizationOperationProof,
-): Promise<M1TripSlice> =>
-  repository.updateAccommodation(validateUpdateM1AccommodationInput(input), authorization);
+): Promise<TripSlice> =>
+  repository.updateAccommodation(validateUpdateAccommodationInput(input), authorization);
 
-export const validateUpdateM1InternalSupplierNoteInput = (
-  input: unknown,
-): UpdateInternalNoteInput =>
+export const validateUpdateInternalSupplierNoteInput = (input: unknown): UpdateInternalNoteInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -791,13 +787,13 @@ export const validateUpdateM1InternalSupplierNoteInput = (
     } satisfies UpdateInternalNoteInput;
   });
 
-export const updateM1InternalSupplierNote = async (
-  repository: M1OperationalSliceRepository,
+export const updateInternalSupplierNote = async (
+  repository: OperationalSliceRepository,
   input: UpdateInternalNoteInput,
   authorization: StaffAuthorizationOperationProof,
-): Promise<M1TripSlice> =>
+): Promise<TripSlice> =>
   repository.updateInternalSupplierNote(
-    validateUpdateM1InternalSupplierNoteInput(input),
+    validateUpdateInternalSupplierNoteInput(input),
     authorization,
   );
 
@@ -807,7 +803,7 @@ const containsControlCharacter = (value: string): boolean =>
     return codePoint !== undefined && (codePoint <= 0x1f || codePoint === 0x7f);
   });
 
-export const validateCancelM1TripInput = (input: unknown): CancelM1TripInput =>
+export const validateCancelTripInput = (input: unknown): CancelTripInput =>
   runInputValidation(() => {
     const record = exactRecord(
       input,
@@ -843,8 +839,8 @@ export const validateCancelM1TripInput = (input: unknown): CancelM1TripInput =>
     };
   });
 
-export type M1RepositoryPerson = Person;
-export type M1RepositoryCustomer = Customer;
-export type M1RepositoryCustomerPerson = CustomerPerson;
-export type M1RepositoryReservation = Reservation;
-export type M1RepositorySupplierCost = SupplierCostLine;
+export type RepositoryPerson = Person;
+export type RepositoryCustomer = Customer;
+export type RepositoryCustomerPerson = CustomerPerson;
+export type RepositoryReservation = Reservation;
+export type RepositorySupplierCost = SupplierCostLine;

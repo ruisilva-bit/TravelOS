@@ -1,7 +1,7 @@
-import { moneyToJson, type M1TripSlice } from "@travelos/backend-core";
+import { moneyToJson, type TripSlice } from "@travelos/backend-core";
 import { AdminM1TripSliceResponseSchema } from "@travelos/contracts/admin";
 
-export const mapSlice = (slice: M1TripSlice) =>
+export const mapSlice = (slice: TripSlice) =>
   AdminM1TripSliceResponseSchema.parse({
     person: {
       id: slice.person.id,

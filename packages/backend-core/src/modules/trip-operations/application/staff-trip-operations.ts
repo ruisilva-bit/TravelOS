@@ -6,61 +6,61 @@ import {
 } from "../../../staff-access/authorization.js";
 import type { StaffPermissionId } from "../../../staff-access/permission-registry.js";
 import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
-import type { M1TripSlice, Trip } from "../domain/m1-slice.js";
+import type { TripSlice, Trip } from "../domain/trip-slice.js";
 import {
-  validateCancelM1TripInput,
-  validateCreateM1TripWorkspaceInput,
-  validateCreateM1TripSliceInput,
-  validateUpdateM1AccommodationInput,
-  validateUpdateM1InternalSupplierNoteInput,
-  type CancelM1TripInput,
-  type CreateM1TripWorkspaceInput,
-  type CreateM1TripSliceInput,
-  type M1OperationalSliceRepository,
+  validateCancelTripInput,
+  validateCreateTripWorkspaceInput,
+  validateCreateTripSliceInput,
+  validateUpdateAccommodationInput,
+  validateUpdateInternalSupplierNoteInput,
+  type CancelTripInput,
+  type CreateTripWorkspaceInput,
+  type CreateTripSliceInput,
+  type OperationalSliceRepository,
   type UpdateAccommodationInput,
   type UpdateInternalNoteInput,
-} from "./m1-trip-slice.js";
+} from "./trip-slice.js";
 
-export interface M1StaffSessionResolver {
+export interface StaffSessionResolver {
   /** Resolves an untrusted cookie with the Staff auth realm; callers never provide identity claims. */
   resolveStaffSession(cookieHeader: string): Promise<unknown>;
 }
 
-export interface M1StaffAuthorizationRepository {
+export interface StaffAuthorizationRepository {
   getStaffAuthorizationSnapshot(
     staffPrincipalId: string,
     agencyId: OpaqueId,
   ): Promise<StaffAuthorizationSnapshot | null>;
 }
 
-export interface M1StaffTripOperations {
-  createTripWorkspace(cookieHeader: unknown, input: CreateM1TripWorkspaceInput): Promise<Trip>;
-  createTripSlice(cookieHeader: unknown, input: CreateM1TripSliceInput): Promise<M1TripSlice>;
+export interface StaffTripOperations {
+  createTripWorkspace(cookieHeader: unknown, input: CreateTripWorkspaceInput): Promise<Trip>;
+  createTripSlice(cookieHeader: unknown, input: CreateTripSliceInput): Promise<TripSlice>;
   createRuntimeAcceptanceFixtureTrip(
     cookieHeader: unknown,
     input: unknown,
     fixtureRunId: unknown,
-  ): Promise<M1TripSlice>;
-  readTripSlice(cookieHeader: unknown, tripId: OpaqueId): Promise<M1TripSlice | null>;
-  updateAccommodation(cookieHeader: unknown, input: UpdateAccommodationInput): Promise<M1TripSlice>;
+  ): Promise<TripSlice>;
+  readTripSlice(cookieHeader: unknown, tripId: OpaqueId): Promise<TripSlice | null>;
+  updateAccommodation(cookieHeader: unknown, input: UpdateAccommodationInput): Promise<TripSlice>;
   updateInternalSupplierNote(
     cookieHeader: unknown,
     input: UpdateInternalNoteInput,
-  ): Promise<M1TripSlice>;
-  cancelTrip(cookieHeader: unknown, input: unknown): Promise<M1TripSlice>;
+  ): Promise<TripSlice>;
+  cancelTrip(cookieHeader: unknown, input: unknown): Promise<TripSlice>;
 }
 
-export interface M1StaffAuthorizationDependencies {
-  readonly authorizationRepository: M1StaffAuthorizationRepository;
-  readonly sessionResolver: M1StaffSessionResolver;
+export interface StaffAuthorizationDependencies {
+  readonly authorizationRepository: StaffAuthorizationRepository;
+  readonly sessionResolver: StaffSessionResolver;
   readonly nowEpochMs?: () => number;
 }
 
-export interface M1StaffTripOperationsDependencies extends M1StaffAuthorizationDependencies {
-  readonly repository: M1OperationalSliceRepository;
+export interface StaffTripOperationsDependencies extends StaffAuthorizationDependencies {
+  readonly repository: OperationalSliceRepository;
 }
 
-export class M1StaffAuthorizationError extends Error {
+export class StaffAuthorizationError extends Error {
   readonly code: "UNAUTHENTICATED" | "FORBIDDEN";
 
   constructor(code: "UNAUTHENTICATED" | "FORBIDDEN") {
@@ -74,7 +74,7 @@ export class M1StaffAuthorizationError extends Error {
   }
 }
 
-export class M1RuntimeAcceptanceFixtureConflictError extends Error {
+export class RuntimeAcceptanceFixtureConflictError extends Error {
   readonly code = "FIXTURE_RUN_CONFLICT" as const;
   readonly recoveryFixtureRunId: OpaqueId | null;
 
@@ -85,7 +85,7 @@ export class M1RuntimeAcceptanceFixtureConflictError extends Error {
   }
 }
 
-const M1_COMPOSITE_READ_PERMISSIONS = Object.freeze([
+const COMPOSITE_READ_PERMISSIONS = Object.freeze([
   "customer.view",
   "traveller.view_sensitive",
   "trip.view",
@@ -93,8 +93,8 @@ const M1_COMPOSITE_READ_PERMISSIONS = Object.freeze([
   "finance.view_costs",
 ] as const satisfies readonly StaffPermissionId[]);
 
-const M1_CREATE_PERMISSIONS = Object.freeze([
-  ...M1_COMPOSITE_READ_PERMISSIONS,
+const CREATE_PERMISSIONS = Object.freeze([
+  ...COMPOSITE_READ_PERMISSIONS,
   "customer.edit",
   "traveller.edit",
   "trip.edit",
@@ -102,42 +102,42 @@ const M1_CREATE_PERMISSIONS = Object.freeze([
   "finance.manage_costs",
 ] as const satisfies readonly StaffPermissionId[]);
 
-const M1_TRIP_WORKSPACE_CREATE_PERMISSIONS = Object.freeze([
+const TRIP_WORKSPACE_CREATE_PERMISSIONS = Object.freeze([
   "customer.edit",
   "traveller.edit",
   "trip.edit",
   "trip.view",
 ] as const satisfies readonly StaffPermissionId[]);
 
-const M1_RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS = Object.freeze([
-  ...M1_CREATE_PERMISSIONS,
+const RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS = Object.freeze([
+  ...CREATE_PERMISSIONS,
   "runtime_acceptance.fixture.manage",
 ] as const satisfies readonly StaffPermissionId[]);
 
-const M1_ACCOMMODATION_EDIT_PERMISSIONS = Object.freeze([
-  ...M1_COMPOSITE_READ_PERMISSIONS,
+const ACCOMMODATION_EDIT_PERMISSIONS = Object.freeze([
+  ...COMPOSITE_READ_PERMISSIONS,
   "trip.edit",
 ] as const satisfies readonly StaffPermissionId[]);
 
-const M1_INTERNAL_NOTE_EDIT_PERMISSIONS = Object.freeze([
-  ...M1_COMPOSITE_READ_PERMISSIONS,
+const INTERNAL_NOTE_EDIT_PERMISSIONS = Object.freeze([
+  ...COMPOSITE_READ_PERMISSIONS,
   "finance.manage_costs",
 ] as const satisfies readonly StaffPermissionId[]);
 
-const M1_CANCEL_PERMISSIONS = Object.freeze([
-  ...M1_COMPOSITE_READ_PERMISSIONS,
+const CANCEL_PERMISSIONS = Object.freeze([
+  ...COMPOSITE_READ_PERMISSIONS,
   "trip.edit",
 ] as const satisfies readonly StaffPermissionId[]);
 
 /** Fixed policy per operation; persistence adapters enforce it independently of caller input. */
-export const M1_OPERATION_PERMISSION_REQUIREMENTS = Object.freeze({
-  CREATE: M1_CREATE_PERMISSIONS,
-  WORKSPACE_CREATE: M1_TRIP_WORKSPACE_CREATE_PERMISSIONS,
-  FIXTURE_CREATE: M1_RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS,
-  READ: M1_COMPOSITE_READ_PERMISSIONS,
-  ACCOMMODATION_EDIT: M1_ACCOMMODATION_EDIT_PERMISSIONS,
-  INTERNAL_NOTE_EDIT: M1_INTERNAL_NOTE_EDIT_PERMISSIONS,
-  CANCEL: M1_CANCEL_PERMISSIONS,
+export const OPERATION_PERMISSION_REQUIREMENTS = Object.freeze({
+  CREATE: CREATE_PERMISSIONS,
+  WORKSPACE_CREATE: TRIP_WORKSPACE_CREATE_PERMISSIONS,
+  FIXTURE_CREATE: RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS,
+  READ: COMPOSITE_READ_PERMISSIONS,
+  ACCOMMODATION_EDIT: ACCOMMODATION_EDIT_PERMISSIONS,
+  INTERNAL_NOTE_EDIT: INTERNAL_NOTE_EDIT_PERMISSIONS,
+  CANCEL: CANCEL_PERMISSIONS,
 });
 
 const sessionProofFrom = (value: unknown): StaffSessionAuthorizationProof | null => {
@@ -194,13 +194,13 @@ const cookieFrom = (value: unknown): string => {
     value.includes("\u0000") ||
     /[\r\n]/u.test(value)
   ) {
-    throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    throw new StaffAuthorizationError("UNAUTHENTICATED");
   }
   return value;
 };
 
-export const authorizeM1Operation = async (
-  dependencies: M1StaffAuthorizationDependencies,
+export const authorizeOperation = async (
+  dependencies: StaffAuthorizationDependencies,
   cookieHeader: unknown,
   targetAgencyId: OpaqueId | null,
   permissionIds: readonly StaffPermissionId[],
@@ -208,11 +208,11 @@ export const authorizeM1Operation = async (
 ): Promise<StaffAuthorizationOperationProof> => {
   const cookie = cookieFrom(cookieHeader);
   const session = sessionProofFrom(await dependencies.sessionResolver.resolveStaffSession(cookie));
-  if (session === null) throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+  if (session === null) throw new StaffAuthorizationError("UNAUTHENTICATED");
 
   const sessionAgencyId = asOpaqueId(session.agencyId);
   if (targetAgencyId !== null && targetAgencyId !== sessionAgencyId) {
-    throw new M1StaffAuthorizationError("FORBIDDEN");
+    throw new StaffAuthorizationError("FORBIDDEN");
   }
 
   const snapshot = await dependencies.authorizationRepository.getStaffAuthorizationSnapshot(
@@ -237,7 +237,7 @@ export const authorizeM1Operation = async (
       recentMfaMaximumAgeMs,
     });
     if (decision.result === "DENY") {
-      throw new M1StaffAuthorizationError(
+      throw new StaffAuthorizationError(
         decision.reason === "UNAUTHENTICATED" ? "UNAUTHENTICATED" : "FORBIDDEN",
       );
     }
@@ -249,34 +249,34 @@ export const authorizeM1Operation = async (
   };
 };
 
-export const createM1StaffTripOperations = (
-  dependencies: M1StaffTripOperationsDependencies,
-): M1StaffTripOperations => {
-  const operations: M1StaffTripOperations = {
+export const createStaffTripOperations = (
+  dependencies: StaffTripOperationsDependencies,
+): StaffTripOperations => {
+  const operations: StaffTripOperations = {
     async createTripWorkspace(cookieHeader, input) {
-      const normalizedInput = validateCreateM1TripWorkspaceInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalizedInput = validateCreateTripWorkspaceInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_TRIP_WORKSPACE_CREATE_PERMISSIONS,
+        TRIP_WORKSPACE_CREATE_PERMISSIONS,
       );
       return dependencies.repository.createTripWorkspace(normalizedInput, authorization);
     },
 
     async createTripSlice(cookieHeader, input) {
-      const normalizedInput = validateCreateM1TripSliceInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalizedInput = validateCreateTripSliceInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         normalizedInput.agencyId,
-        M1_CREATE_PERMISSIONS,
+        CREATE_PERMISSIONS,
       );
-      return dependencies.repository.createM1TripSlice(normalizedInput, authorization);
+      return dependencies.repository.createTripSlice(normalizedInput, authorization);
     },
 
     async createRuntimeAcceptanceFixtureTrip(cookieHeader, input, fixtureRunIdValue) {
-      const normalizedInput = validateCreateM1TripSliceInput(input as CreateM1TripSliceInput);
+      const normalizedInput = validateCreateTripSliceInput(input as CreateTripSliceInput);
       if (typeof fixtureRunIdValue !== "string") {
         throw new Error("Invalid runtime acceptance fixture run identifier");
       }
@@ -286,11 +286,11 @@ export const createM1StaffTripOperations = (
       } catch {
         throw new Error("Invalid runtime acceptance fixture run identifier");
       }
-      const authorization = await authorizeM1Operation(
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         normalizedInput.agencyId,
-        M1_RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS,
+        RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS,
         5 * 60 * 1_000,
       );
       return dependencies.repository.createRuntimeAcceptanceFixtureTrip(
@@ -302,13 +302,13 @@ export const createM1StaffTripOperations = (
 
     async readTripSlice(cookieHeader, tripId) {
       const normalizedTripId = asOpaqueId(tripId);
-      const authorization = await authorizeM1Operation(
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_COMPOSITE_READ_PERMISSIONS,
+        COMPOSITE_READ_PERMISSIONS,
       );
-      return dependencies.repository.getM1TripSlice(
+      return dependencies.repository.getTripSlice(
         asOpaqueId(authorization.session.agencyId),
         normalizedTripId,
         authorization,
@@ -316,34 +316,34 @@ export const createM1StaffTripOperations = (
     },
 
     async updateAccommodation(cookieHeader, input) {
-      const normalizedInput = validateUpdateM1AccommodationInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalizedInput = validateUpdateAccommodationInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         normalizedInput.agencyId,
-        M1_ACCOMMODATION_EDIT_PERMISSIONS,
+        ACCOMMODATION_EDIT_PERMISSIONS,
       );
       return dependencies.repository.updateAccommodation(normalizedInput, authorization);
     },
 
     async updateInternalSupplierNote(cookieHeader, input) {
-      const normalizedInput = validateUpdateM1InternalSupplierNoteInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalizedInput = validateUpdateInternalSupplierNoteInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         normalizedInput.agencyId,
-        M1_INTERNAL_NOTE_EDIT_PERMISSIONS,
+        INTERNAL_NOTE_EDIT_PERMISSIONS,
       );
       return dependencies.repository.updateInternalSupplierNote(normalizedInput, authorization);
     },
 
     async cancelTrip(cookieHeader, input) {
-      const normalizedInput: CancelM1TripInput = validateCancelM1TripInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalizedInput: CancelTripInput = validateCancelTripInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_CANCEL_PERMISSIONS,
+        CANCEL_PERMISSIONS,
         5 * 60 * 1_000,
       );
       return dependencies.repository.cancelTrip(normalizedInput, authorization);

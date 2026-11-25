@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import * as backendCore from "../../src/index.js";
 import type {
-  M1StaffAuthorizationDependencies,
+  StaffAuthorizationDependencies,
   OpaqueId,
   StaffAuthorizationOperationProof,
   StaffPermissionId,
@@ -163,16 +163,16 @@ interface WorkspaceWriteOperations {
 }
 
 type CreateWorkspaceWriteOperations = (
-  dependencies: M1StaffAuthorizationDependencies & {
+  dependencies: StaffAuthorizationDependencies & {
     readonly repository: WorkspaceWriteRepository;
   },
 ) => WorkspaceWriteOperations;
 
 const exportedFactory = (
   backendCore as unknown as {
-    readonly createM1StaffTripWorkspaceWriteOperations?: unknown;
+    readonly createStaffTripWorkspaceWriteOperations?: unknown;
   }
-).createM1StaffTripWorkspaceWriteOperations;
+).createStaffTripWorkspaceWriteOperations;
 const createOperations: CreateWorkspaceWriteOperations | null =
   typeof exportedFactory === "function"
     ? (exportedFactory as CreateWorkspaceWriteOperations)

@@ -1,68 +1,68 @@
 import {
-  authorizeM1Operation,
-  type M1StaffAuthorizationDependencies,
-} from "./m1-staff-operations.js";
+  authorizeOperation,
+  type StaffAuthorizationDependencies,
+} from "./staff-trip-operations.js";
 import type { StaffAuthorizationOperationProof } from "../../../staff-access/authorization.js";
 import type { StaffPermissionId } from "../../../staff-access/permission-registry.js";
 import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
-import type { AccommodationItem, FlightItem, Trip } from "../domain/m1-slice.js";
-import { M1InputValidationError } from "./m1-trip-slice.js";
+import type { AccommodationItem, FlightItem, Trip } from "../domain/trip-slice.js";
+import { InputValidationError } from "./trip-slice.js";
 
-const M1_WORKSPACE_READ_PERMISSIONS = Object.freeze([
+const WORKSPACE_READ_PERMISSIONS = Object.freeze([
   "trip.view",
 ] as const satisfies readonly StaffPermissionId[]);
 
-export interface M1TripWorkspacePage {
+export interface TripWorkspacePage {
   readonly items: readonly Trip[];
   readonly nextCursor: OpaqueId | null;
 }
 
-export interface M1TripWorkspace {
+export interface TripWorkspace {
   readonly trip: Trip;
   readonly flights: readonly FlightItem[];
   readonly accommodations: readonly AccommodationItem[];
 }
 
-export interface M1StaffTripWorkspaceReadRepository {
+export interface StaffTripWorkspaceReadRepository {
   listTrips(
     agencyId: OpaqueId,
     limit: number,
     cursor: OpaqueId | null,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripWorkspacePage>;
+  ): Promise<TripWorkspacePage>;
   readTripWorkspace(
     agencyId: OpaqueId,
     tripId: OpaqueId,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripWorkspace | null>;
+  ): Promise<TripWorkspace | null>;
 }
 
-export interface M1StaffTripWorkspaceOperations {
+export interface StaffTripWorkspaceOperations {
   listTrips(
     cookieHeader: unknown,
     query: { readonly limit: number; readonly cursor: OpaqueId | null },
-  ): Promise<M1TripWorkspacePage>;
-  readTripWorkspace(cookieHeader: unknown, tripId: OpaqueId): Promise<M1TripWorkspace | null>;
+  ): Promise<TripWorkspacePage>;
+  readTripWorkspace(cookieHeader: unknown, tripId: OpaqueId): Promise<TripWorkspace | null>;
 }
 
-export interface M1StaffTripWorkspaceOperationsDependencies extends M1StaffAuthorizationDependencies {
-  readonly repository: M1StaffTripWorkspaceReadRepository;
+export interface StaffTripWorkspaceOperationsDependencies extends StaffAuthorizationDependencies {
+  readonly repository: StaffTripWorkspaceReadRepository;
 }
 
-export const createM1StaffTripWorkspaceOperations = (
-  dependencies: M1StaffTripWorkspaceOperationsDependencies,
-): M1StaffTripWorkspaceOperations => {
-  const operations: M1StaffTripWorkspaceOperations = {
+export const createStaffTripWorkspaceOperations = (
+  dependencies: StaffTripWorkspaceOperationsDependencies,
+): StaffTripWorkspaceOperations => {
+  const operations: StaffTripWorkspaceOperations = {
     async listTrips(cookieHeader, query) {
       if (!Number.isSafeInteger(query.limit) || query.limit < 1 || query.limit > 50) {
-        throw new M1InputValidationError("Trip workspace list limit is invalid");
+        throw new InputValidationError("Trip workspace list limit is invalid");
       }
       const cursor = query.cursor === null ? null : asOpaqueId(query.cursor);
-      const authorization = await authorizeM1Operation(
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_WORKSPACE_READ_PERMISSIONS,
+        WORKSPACE_READ_PERMISSIONS,
       );
       return dependencies.repository.listTrips(
         asOpaqueId(authorization.session.agencyId),
@@ -74,11 +74,11 @@ export const createM1StaffTripWorkspaceOperations = (
 
     async readTripWorkspace(cookieHeader, tripId) {
       const normalizedTripId = asOpaqueId(tripId);
-      const authorization = await authorizeM1Operation(
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_WORKSPACE_READ_PERMISSIONS,
+        WORKSPACE_READ_PERMISSIONS,
       );
       return dependencies.repository.readTripWorkspace(
         asOpaqueId(authorization.session.agencyId),

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { AuthRealm } from "@travelos/auth-adapters";
 
-import { createAdminStaffSessionResolver } from "../src/m1-session-resolver.js";
+import { createAdminStaffSessionResolver } from "../src/staff-session-resolver.js";
 
 const policy = {
   canonicalOrigin: "https://admin.example.test",

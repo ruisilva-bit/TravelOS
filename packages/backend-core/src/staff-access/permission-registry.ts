@@ -10,7 +10,7 @@ export interface PermissionDefinition {
 }
 
 /**
- * Stage 5 owns the first product capabilities used by the M1 Admin API.
+ * Stage 5 owns the first product capabilities used by the Admin API.
  * Product permissions are added by their owning stage, never inferred from role labels.
  */
 export const STAGE_5_PERMISSION_REGISTRY = [

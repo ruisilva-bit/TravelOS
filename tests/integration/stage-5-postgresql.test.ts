@@ -12,24 +12,24 @@ import { STAFF_AUTH_BASE_PATH, type AuthRealm } from "../../packages/auth-adapte
 import {
   asOpaqueId,
   bootstrapRootAgency,
-  createM1StaffTripOperations,
+  createStaffTripOperations,
   createMoney,
-  M1StaffAuthorizationError,
-  M1OptimisticConflictError,
+  StaffAuthorizationError,
+  OptimisticConflictError,
   PERMISSION_REGISTRY_VERSION,
   TRAVELOS_CANONICAL_TIMEZONE_NAMES,
   type StaffAuthorizationOperationProof,
   type StaffPermissionId,
   type StaffSessionAuthorizationProof,
-  type M1TripSlice,
+  type TripSlice,
 } from "../../packages/backend-core/src/index.js";
 import {
-  createM1TripSlice as createM1TripSliceWithAuthorization,
-  readM1TripSlice as readM1TripSliceWithAuthorization,
-  updateM1Accommodation as updateM1AccommodationWithAuthorization,
-  updateM1InternalSupplierNote as updateM1InternalSupplierNoteWithAuthorization,
-  type CreateM1TripSliceInput,
-} from "../../packages/backend-core/src/modules/trip-operations/application/m1-trip-slice.js";
+  createTripSlice as createTripSliceWithAuthorization,
+  readTripSlice as readTripSliceWithAuthorization,
+  updateAccommodation as updateAccommodationWithAuthorization,
+  updateInternalSupplierNote as updateInternalSupplierNoteWithAuthorization,
+  type CreateTripSliceInput,
+} from "../../packages/backend-core/src/modules/trip-operations/application/trip-slice.js";
 import {
   createPostgresPersistence,
   createStaffAccessRepository,
@@ -37,7 +37,7 @@ import {
   mapPostgresMutationError,
   type PostgresPersistence,
 } from "../../packages/database/src/index.js";
-import { createM1OperationalSliceRepository } from "../../packages/database/src/trip-operations/m1-operational-slice-repository.js";
+import { createOperationalSliceRepository } from "../../packages/database/src/trip-operations/operational-slice-repository.js";
 import {
   inspectMigrationStatus,
   runMigrationChain,
@@ -108,34 +108,34 @@ const migrationTarget: MigrationTarget = {
 };
 
 let persistence: PostgresPersistence<Record<string, never>> | null = null;
-let repository: ReturnType<typeof createM1OperationalSliceRepository>;
+let repository: ReturnType<typeof createOperationalSliceRepository>;
 let staffAccessRepository: ReturnType<typeof createStaffAccessRepository>;
-let slice: M1TripSlice;
-let upgradedSlice: M1TripSlice | null = null;
+let slice: TripSlice;
+let upgradedSlice: TripSlice | null = null;
 let predecessorMigrationDirectory: string | null = null;
 const staffSessions = new Map<string, StaffSessionAuthorizationProof>();
 
-const M1_READ_PERMISSION_IDS = [
+const READ_PERMISSION_IDS = [
   "customer.view",
   "traveller.view_sensitive",
   "trip.view",
   "reservation.view",
   "finance.view_costs",
 ] as const satisfies readonly StaffPermissionId[];
-const M1_CREATE_PERMISSION_IDS = [
-  ...M1_READ_PERMISSION_IDS,
+const CREATE_PERMISSION_IDS = [
+  ...READ_PERMISSION_IDS,
   "customer.edit",
   "traveller.edit",
   "trip.edit",
   "reservation.edit",
   "finance.manage_costs",
 ] as const satisfies readonly StaffPermissionId[];
-const M1_ACCOMMODATION_PERMISSION_IDS = [
-  ...M1_READ_PERMISSION_IDS,
+const ACCOMMODATION_PERMISSION_IDS = [
+  ...READ_PERMISSION_IDS,
   "trip.edit",
 ] as const satisfies readonly StaffPermissionId[];
-const M1_INTERNAL_NOTE_PERMISSION_IDS = [
-  ...M1_READ_PERMISSION_IDS,
+const INTERNAL_NOTE_PERMISSION_IDS = [
+  ...READ_PERMISSION_IDS,
   "finance.manage_costs",
 ] as const satisfies readonly StaffPermissionId[];
 
@@ -152,67 +152,67 @@ const authorizationFor = (
   return { session, requiredPermissionIds, nowEpochMs: Date.now() };
 };
 
-const createM1TripSlice = (
-  targetRepository: ReturnType<typeof createM1OperationalSliceRepository>,
-  input: CreateM1TripSliceInput,
+const createTripSlice = (
+  targetRepository: ReturnType<typeof createOperationalSliceRepository>,
+  input: CreateTripSliceInput,
 ) =>
-  createM1TripSliceWithAuthorization(
+  createTripSliceWithAuthorization(
     targetRepository,
     input,
-    authorizationFor(input.agencyId, M1_CREATE_PERMISSION_IDS),
+    authorizationFor(input.agencyId, CREATE_PERMISSION_IDS),
   );
 
-const readM1TripSlice = (
-  targetRepository: ReturnType<typeof createM1OperationalSliceRepository>,
-  targetAgencyId: CreateM1TripSliceInput["agencyId"],
-  tripId: CreateM1TripSliceInput["agencyId"],
+const readTripSlice = (
+  targetRepository: ReturnType<typeof createOperationalSliceRepository>,
+  targetAgencyId: CreateTripSliceInput["agencyId"],
+  tripId: CreateTripSliceInput["agencyId"],
 ) =>
-  readM1TripSliceWithAuthorization(
+  readTripSliceWithAuthorization(
     targetRepository,
     targetAgencyId,
     tripId,
-    authorizationFor(targetAgencyId, M1_READ_PERMISSION_IDS),
+    authorizationFor(targetAgencyId, READ_PERMISSION_IDS),
   );
 
-const updateM1Accommodation = (
-  targetRepository: ReturnType<typeof createM1OperationalSliceRepository>,
-  input: Parameters<typeof updateM1AccommodationWithAuthorization>[1],
+const updateAccommodation = (
+  targetRepository: ReturnType<typeof createOperationalSliceRepository>,
+  input: Parameters<typeof updateAccommodationWithAuthorization>[1],
 ) =>
-  updateM1AccommodationWithAuthorization(
+  updateAccommodationWithAuthorization(
     targetRepository,
     input,
-    authorizationFor(input.agencyId, M1_ACCOMMODATION_PERMISSION_IDS),
+    authorizationFor(input.agencyId, ACCOMMODATION_PERMISSION_IDS),
   );
 
-const updateM1InternalSupplierNote = (
-  targetRepository: ReturnType<typeof createM1OperationalSliceRepository>,
-  input: Parameters<typeof updateM1InternalSupplierNoteWithAuthorization>[1],
+const updateInternalSupplierNote = (
+  targetRepository: ReturnType<typeof createOperationalSliceRepository>,
+  input: Parameters<typeof updateInternalSupplierNoteWithAuthorization>[1],
 ) =>
-  updateM1InternalSupplierNoteWithAuthorization(
+  updateInternalSupplierNoteWithAuthorization(
     targetRepository,
     input,
-    authorizationFor(input.agencyId, M1_INTERNAL_NOTE_PERMISSION_IDS),
+    authorizationFor(input.agencyId, INTERNAL_NOTE_PERMISSION_IDS),
   );
 
-const primaryFlight = (value: M1TripSlice): M1TripSlice["flights"][number] => {
+const primaryFlight = (value: TripSlice): TripSlice["flights"][number] => {
   const item = value.flights[0];
   if (item === undefined) throw new Error("Qualification Trip has no Flight");
   return item;
 };
 
-const primaryAccommodation = (value: M1TripSlice): M1TripSlice["accommodations"][number] => {
+const primaryAccommodation = (value: TripSlice): TripSlice["accommodations"][number] => {
   const item = value.accommodations[0];
   if (item === undefined) throw new Error("Qualification Trip has no Accommodation");
   return item;
 };
 
-const primaryReservation = (value: M1TripSlice): M1TripSlice["reservations"][number] => {
+const primaryReservation = (value: TripSlice): TripSlice["reservations"][number] => {
   const item = value.reservations[0];
   if (item === undefined) throw new Error("Qualification Trip has no Reservation");
   return item;
 };
 
-const primarySupplierCost = (value: M1TripSlice): M1TripSlice["supplierCosts"][number] => {
+const primarySupplierCost = (value: TripSlice): TripSlice["supplierCosts"][number] => {
   const item = value.supplierCosts[0];
   if (item === undefined) throw new Error("Qualification Trip has no supplier cost");
   return item;
@@ -337,7 +337,7 @@ const seedPrimaryStaffAuthorization = async (): Promise<StaffSessionAuthorizatio
       `INSERT INTO "staff_access"."role_permission" ("roleId", "permissionId", "scopeKind", "accessLevel")
        SELECT $1::uuid, permission_id, 'AGENCY', 'ALL'
          FROM unnest($2::text[]) AS permission_id`,
-      [primaryStaffFixture.roleId, [...M1_CREATE_PERMISSION_IDS]],
+      [primaryStaffFixture.roleId, [...CREATE_PERMISSION_IDS]],
     );
     await client.query(
       `INSERT INTO "staff_access"."role_assignment"
@@ -377,7 +377,7 @@ const seedPrimaryStaffAuthorization = async (): Promise<StaffSessionAuthorizatio
   return session;
 };
 
-const baseInput = (): CreateM1TripSliceInput => ({
+const baseInput = (): CreateTripSliceInput => ({
   agencyId,
   person: { givenName: "Rui", familyName: "Silva", email: syntheticEmail },
   customer: { displayName: "Silva Travel" },
@@ -547,7 +547,7 @@ beforeAll(async () => {
     maxConnections: 5,
   });
   staffAccessRepository = createStaffAccessRepository(persistence);
-  repository = createM1OperationalSliceRepository(persistence);
+  repository = createOperationalSliceRepository(persistence);
 
   const upgradeBootstrap = await bootstrapRootAgency(staffAccessRepository, {
     agencyId,
@@ -557,7 +557,7 @@ beforeAll(async () => {
   expect(upgradeBootstrap.created).toBe(true);
   await seedPrimaryStaffAuthorization();
   const upgradeInput = baseInput();
-  const predecessorSlice = await createM1TripSlice(repository, {
+  const predecessorSlice = await createTripSlice(repository, {
     ...upgradeInput,
     agencyId,
     trip: { ...upgradeInput.trip, title: "Stage 5 migration predecessor fixture" },
@@ -574,7 +574,7 @@ beforeAll(async () => {
 
   const migration = await runMigrationChain(migrationTarget, productionChain);
   expect(migration.result).toBe("PASS");
-  const converted = await readM1TripSlice(repository, agencyId, predecessorSlice.trip.id);
+  const converted = await readTripSlice(repository, agencyId, predecessorSlice.trip.id);
   if (converted === null) throw new Error("The Stage 5 predecessor fixture disappeared on upgrade");
   upgradedSlice = converted;
 });
@@ -667,7 +667,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
   });
 
   it("creates the complete scoped continuity, itinerary, reservation/link and internal Money slice", async () => {
-    slice = await createM1TripSlice(repository, baseInput());
+    slice = await createTripSlice(repository, baseInput());
     expect(slice.person.agencyId).toBe(agencyId);
     expect(slice.customerPerson.personId).toBe(slice.person.id);
     expect(slice.traveller.tripId).toBe(slice.trip.id);
@@ -744,13 +744,13 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           `INSERT INTO "staff_access"."role_permission" ("roleId", "permissionId", "scopeKind", "accessLevel")
            SELECT $1::uuid, permission_id, 'AGENCY', 'ALL'
              FROM unnest($2::text[]) AS permission_id`,
-          [rootRoleId, [...M1_READ_PERMISSION_IDS, "trip.edit"]],
+          [rootRoleId, [...READ_PERMISSION_IDS, "trip.edit"]],
         );
         await client.query(
           `INSERT INTO "staff_access"."role_permission" ("roleId", "permissionId", "scopeKind", "accessLevel")
            SELECT $1::uuid, permission_id, 'AGENCY', 'ALL'
              FROM unnest($2::text[]) AS permission_id`,
-          [secondRoleId, [...M1_READ_PERMISSION_IDS, "finance.manage_costs"]],
+          [secondRoleId, [...READ_PERMISSION_IDS, "finance.manage_costs"]],
         );
         await client.query(
           `INSERT INTO "staff_access"."role_assignment"
@@ -795,7 +795,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         rootSnapshot?.assignments.every((assignment) => assignment.agencyId === agencyId),
       ).toBe(true);
       expect(rootSnapshot?.assignments.map(({ permissionId }) => permissionId).toSorted()).toEqual(
-        [...M1_READ_PERMISSION_IDS, "trip.edit"].toSorted(),
+        [...READ_PERMISSION_IDS, "trip.edit"].toSorted(),
       );
       expect(secondSnapshot?.agencyId).toBe(secondAgencyId);
       expect(
@@ -803,7 +803,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       ).toBe(true);
       expect(
         secondSnapshot?.assignments.map(({ permissionId }) => permissionId).toSorted(),
-      ).toEqual([...M1_READ_PERMISSION_IDS, "finance.manage_costs"].toSorted());
+      ).toEqual([...READ_PERMISSION_IDS, "finance.manage_costs"].toSorted());
       const nowEpochMs = Date.now();
       const rootAuthorization: StaffAuthorizationOperationProof = {
         session: {
@@ -814,7 +814,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           expiresAtEpochMs: nowEpochMs + 60 * 60 * 1_000,
           recentMfaVerifiedAtEpochMs: null,
         },
-        requiredPermissionIds: M1_READ_PERMISSION_IDS,
+        requiredPermissionIds: READ_PERMISSION_IDS,
         nowEpochMs,
       };
       const secondAuthorization: StaffAuthorizationOperationProof = {
@@ -826,11 +826,11 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           expiresAtEpochMs: nowEpochMs + 60 * 60 * 1_000,
           recentMfaVerifiedAtEpochMs: null,
         },
-        requiredPermissionIds: M1_READ_PERMISSION_IDS,
+        requiredPermissionIds: READ_PERMISSION_IDS,
         nowEpochMs,
       };
       expect(
-        await readM1TripSliceWithAuthorization(
+        await readTripSliceWithAuthorization(
           repository,
           asOpaqueId(secondAgencyId),
           slice.trip.id,
@@ -838,7 +838,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         ),
       ).toBeNull();
       expect(
-        await readM1TripSliceWithAuthorization(
+        await readTripSliceWithAuthorization(
           repository,
           agencyId,
           slice.trip.id,
@@ -890,17 +890,17 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
   it("rechecks current Staff authorization inside the mutation transaction", async () => {
     const session = staffSessions.get(agencyId);
     if (session === undefined) throw new Error("The primary Staff session fixture is unavailable");
-    const before = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    const before = await readTripSlice(repository, agencyId, slice.trip.id);
     if (before === null) throw new Error("The authorized Trip is unavailable before revocation");
     const currentAccommodation = primaryAccommodation(before);
-    const revokingRepository: Parameters<typeof createM1StaffTripOperations>[0]["repository"] = {
+    const revokingRepository: Parameters<typeof createStaffTripOperations>[0]["repository"] = {
       async createTripWorkspace() {
         throw new Error(
           "Unexpected minimal Trip workspace creation in the Stage 5 authorization test",
         );
       },
-      createM1TripSlice: repository.createM1TripSlice,
-      getM1TripSlice: repository.getM1TripSlice,
+      createTripSlice: repository.createTripSlice,
+      getTripSlice: repository.getTripSlice,
       updateAccommodation: async (input, authorization) => {
         await withOwnerTransaction(async (client) => {
           const result = await client.query(
@@ -919,7 +919,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       cancelTrip: repository.cancelTrip,
       createRuntimeAcceptanceFixtureTrip: repository.createRuntimeAcceptanceFixtureTrip,
     };
-    const operations = createM1StaffTripOperations({
+    const operations = createStaffTripOperations({
       repository: revokingRepository,
       authorizationRepository: staffAccessRepository,
       sessionResolver: {
@@ -939,7 +939,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           title: "Must not persist after role revocation",
           description: "The transaction must recheck current permissions",
         }),
-      ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
+      ).rejects.toBeInstanceOf(StaffAuthorizationError);
     } finally {
       try {
         await withOwnerTransaction(async (client) => {
@@ -981,7 +981,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     }
     if (fixtureRestorationFailure !== undefined) throw fixtureRestorationFailure;
 
-    const after = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    const after = await readTripSlice(repository, agencyId, slice.trip.id);
     if (after === null) throw new Error("The Trip disappeared after authorization revalidation");
     expect(after.trip.workspaceRevision).toBe(before.trip.workspaceRevision);
     expect(primaryAccommodation(after)).toEqual(currentAccommodation);
@@ -990,7 +990,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
   it("rejects fabricated Staff session metadata at the database boundary before creating rows", async () => {
     const input = baseInput();
     const tripTitle = `Rejected forged session ${randomUUID()}`;
-    const forgedAuthorization = authorizationFor(agencyId, M1_CREATE_PERMISSION_IDS);
+    const forgedAuthorization = authorizationFor(agencyId, CREATE_PERMISSION_IDS);
     const unbackedAuthorization: StaffAuthorizationOperationProof = {
       ...forgedAuthorization,
       session: {
@@ -1002,12 +1002,12 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     };
 
     await expect(
-      createM1TripSliceWithAuthorization(
+      createTripSliceWithAuthorization(
         repository,
         { ...input, trip: { ...input.trip, title: tripTitle } },
         unbackedAuthorization,
       ),
-    ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
+    ).rejects.toBeInstanceOf(StaffAuthorizationError);
 
     const rows = await queryAsOwner<{ readonly count: string }>(
       `SELECT count(*)::text AS "count" FROM "trip_ops"."trip" WHERE "title" = '${tripTitle}'`,
@@ -1016,7 +1016,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
   });
 
   it("rejects caller-selected weak permissions at the repository boundary before mutation", async () => {
-    const before = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    const before = await readTripSlice(repository, agencyId, slice.trip.id);
     if (before === null)
       throw new Error("The authorized Trip is unavailable before weak-permission probe");
     const accommodation = primaryAccommodation(before);
@@ -1034,16 +1034,16 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         },
         weakAuthorization,
       ),
-    ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
+    ).rejects.toBeInstanceOf(StaffAuthorizationError);
 
-    const after = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    const after = await readTripSlice(repository, agencyId, slice.trip.id);
     if (after === null) throw new Error("The Trip disappeared after weak-permission rejection");
     expect(after.trip.workspaceRevision).toBe(before.trip.workspaceRevision);
     expect(primaryAccommodation(after)).toEqual(accommodation);
   });
 
   it("increments once per committed relevant transaction and returns typed conflicts for stale and racing writes", async () => {
-    const edited = await updateM1Accommodation(repository, {
+    const edited = await updateAccommodation(repository, {
       agencyId,
       tripId: slice.trip.id,
       itemId: primaryAccommodation(slice).id,
@@ -1056,7 +1056,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       primaryAccommodation(slice).lockVersion + 1n,
     );
     await expect(
-      updateM1Accommodation(repository, {
+      updateAccommodation(repository, {
         agencyId,
         tripId: slice.trip.id,
         itemId: primaryAccommodation(slice).id,
@@ -1064,8 +1064,8 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         title: "Stale write",
         description: "Must fail",
       }),
-    ).rejects.toBeInstanceOf(M1OptimisticConflictError);
-    const afterStale = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    ).rejects.toBeInstanceOf(OptimisticConflictError);
+    const afterStale = await readTripSlice(repository, agencyId, slice.trip.id);
     if (afterStale === null) throw new Error("The Trip disappeared after a stale CAS rejection");
     expect(afterStale.trip.workspaceRevision).toBe(edited.trip.workspaceRevision);
     expect(primaryAccommodation(afterStale).lockVersion).toBe(
@@ -1073,7 +1073,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     );
     expect(primaryAccommodation(afterStale).title).toBe(primaryAccommodation(edited).title);
 
-    const secondEdit = await updateM1Accommodation(repository, {
+    const secondEdit = await updateAccommodation(repository, {
       agencyId,
       tripId: slice.trip.id,
       itemId: primaryAccommodation(edited).id,
@@ -1086,7 +1086,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       primaryAccommodation(edited).lockVersion + 1n,
     );
 
-    const internal = await updateM1InternalSupplierNote(repository, {
+    const internal = await updateInternalSupplierNote(repository, {
       agencyId,
       tripId: slice.trip.id,
       reservationId: primaryReservation(slice).id,
@@ -1099,15 +1099,15 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     );
     expect(primarySupplierCost(internal).internalNote).toBe("Updated internal-only note");
     await expect(
-      updateM1InternalSupplierNote(repository, {
+      updateInternalSupplierNote(repository, {
         agencyId,
         tripId: slice.trip.id,
         reservationId: primaryReservation(slice).id,
         expectedLockVersion: primarySupplierCost(slice).lockVersion,
         internalNote: "Stale supplier-cost note",
       }),
-    ).rejects.toBeInstanceOf(M1OptimisticConflictError);
-    const afterStaleSupplierCost = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    ).rejects.toBeInstanceOf(OptimisticConflictError);
+    const afterStaleSupplierCost = await readTripSlice(repository, agencyId, slice.trip.id);
     if (afterStaleSupplierCost === null) {
       throw new Error("The Trip disappeared after a stale supplier-cost CAS rejection");
     }
@@ -1120,7 +1120,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     );
 
     const concurrent = await Promise.allSettled([
-      updateM1Accommodation(repository, {
+      updateAccommodation(repository, {
         agencyId,
         tripId: slice.trip.id,
         itemId: primaryAccommodation(slice).id,
@@ -1128,7 +1128,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         title: "Concurrent accommodation A",
         description: "Concurrent description A",
       }),
-      updateM1Accommodation(repository, {
+      updateAccommodation(repository, {
         agencyId,
         tripId: slice.trip.id,
         itemId: primaryAccommodation(slice).id,
@@ -1140,7 +1140,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     expect(concurrent.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     const rejected = concurrent.find((result) => result.status === "rejected");
     expect(rejected?.status === "rejected" ? rejected.reason : null).toBeInstanceOf(
-      M1OptimisticConflictError,
+      OptimisticConflictError,
     );
     const committed = concurrent.find((result) => result.status === "fulfilled");
     if (committed?.status !== "fulfilled") throw new Error("No concurrent CAS mutation committed");
@@ -1149,7 +1149,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
 
   it("round-trips and compare-and-swaps bigint lock versions beyond JavaScript safe integer", async () => {
     const input = baseInput();
-    const seeded = await createM1TripSlice(repository, {
+    const seeded = await createTripSlice(repository, {
       ...input,
       trip: { ...input.trip, title: "Bigint lock version qualification" },
     });
@@ -1173,12 +1173,12 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       );
     });
 
-    const loaded = await readM1TripSlice(repository, agencyId, seeded.trip.id);
+    const loaded = await readTripSlice(repository, agencyId, seeded.trip.id);
     if (loaded === null) throw new Error("The high-version Trip fixture was not readable");
     expect(primaryAccommodation(loaded).lockVersion).toBe(highLockVersion);
     expect(primarySupplierCost(loaded).lockVersion).toBe(highLockVersion);
 
-    const updatedAccommodation = await updateM1Accommodation(repository, {
+    const updatedAccommodation = await updateAccommodation(repository, {
       agencyId,
       tripId: seeded.trip.id,
       itemId: primaryAccommodation(loaded).id,
@@ -1188,7 +1188,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     });
     expect(primaryAccommodation(updatedAccommodation).lockVersion).toBe(highLockVersion + 1n);
 
-    const updatedInternal = await updateM1InternalSupplierNote(repository, {
+    const updatedInternal = await updateInternalSupplierNote(repository, {
       agencyId,
       tripId: seeded.trip.id,
       reservationId: primaryReservation(loaded).id,
@@ -1203,7 +1203,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
 
   it("rolls back both workspace revision and deduplication state with a failed transaction", async () => {
     const input = baseInput();
-    const seeded = await createM1TripSlice(repository, {
+    const seeded = await createTripSlice(repository, {
       ...input,
       trip: { ...input.trip, title: "Workspace revision rollback qualification" },
     });
@@ -1220,12 +1220,12 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         throw new Error("Intentional transaction rollback");
       }),
     ).rejects.toThrow("Intentional transaction rollback");
-    const rolledBack = await readM1TripSlice(repository, agencyId, seeded.trip.id);
+    const rolledBack = await readTripSlice(repository, agencyId, seeded.trip.id);
     if (rolledBack === null) throw new Error("The rollback Trip fixture was not readable");
     expect(rolledBack.trip.workspaceRevision).toBe(seeded.trip.workspaceRevision);
     expect(primaryAccommodation(rolledBack).title).toBe(primaryAccommodation(seeded).title);
 
-    const committed = await updateM1Accommodation(repository, {
+    const committed = await updateAccommodation(repository, {
       agencyId,
       tripId: seeded.trip.id,
       itemId: primaryAccommodation(seeded).id,
@@ -1567,7 +1567,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
        VALUES ('${secondaryTravellerId}'::uuid, '${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${secondaryPersonId}'::uuid, 'TRAVELLER')`,
     );
-    const projected = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    const projected = await readTripSlice(repository, agencyId, slice.trip.id);
     expect(projected).not.toBeNull();
     expect(projected?.person.id).toBe(slice.person.id);
     expect(projected?.customer.id).toBe(slice.customer.id);
@@ -1578,7 +1578,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
 
   it("increments workspace revision for projected Person, Customer and CustomerPerson changes", async () => {
     const projectionInput = baseInput();
-    const projectedSlice = await createM1TripSlice(repository, {
+    const projectedSlice = await createTripSlice(repository, {
       ...projectionInput,
       trip: { ...projectionInput.trip, title: "CRM projection revision trip" },
     });
@@ -1680,7 +1680,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
 
   it("ignores a forged transaction-local marker while deduplicating multiple relevant edits", async () => {
     const input = baseInput();
-    const seeded = await createM1TripSlice(repository, {
+    const seeded = await createTripSlice(repository, {
       ...input,
       trip: { ...input.trip, title: "Revision marker spoof qualification" },
     });
@@ -1763,7 +1763,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       await client.end();
     }
 
-    const projected = await readM1TripSlice(repository, agencyId, seeded.trip.id);
+    const projected = await readTripSlice(repository, agencyId, seeded.trip.id);
     if (projected === null) throw new Error("The marker-spoof Trip fixture was not readable");
     expect(projected.trip.workspaceRevision).toBe(seeded.trip.workspaceRevision + 1n);
     expect(primaryAccommodation(projected).lockVersion).toBe(accommodation.lockVersion + 2n);
@@ -1772,7 +1772,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
 
   it("increments an Admin-created Trip despite a forged transaction-local revision marker", async () => {
     const input = baseInput();
-    const seeded = await createM1TripSlice(repository, {
+    const seeded = await createTripSlice(repository, {
       ...input,
       trip: { ...input.trip, title: "Trip insert marker spoof qualification" },
     });
@@ -2007,7 +2007,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         secondError = error;
       });
       expect((secondError as { readonly code?: string } | null)?.code).toBe("40001");
-      expect(mapPostgresMutationError(secondError)).toBeInstanceOf(M1OptimisticConflictError);
+      expect(mapPostgresMutationError(secondError)).toBeInstanceOf(OptimisticConflictError);
       await secondClient.query("ROLLBACK");
     } finally {
       await firstClient.query("ROLLBACK").catch(() => undefined);
@@ -2018,7 +2018,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
   });
 
   it("maps a real repository PostgreSQL deadlock SQLSTATE 40P01 through the registered Admin HTTP route", async () => {
-    const current = await readM1TripSlice(repository, agencyId, slice.trip.id);
+    const current = await readTripSlice(repository, agencyId, slice.trip.id);
     if (current === null) throw new Error("The deadlock Trip fixture is unavailable");
     const cost = primarySupplierCost(current);
     const reservation = primaryReservation(current);
@@ -2084,7 +2084,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         poolMetrics: activePersistence.poolMetrics.bind(activePersistence),
         destroy: activePersistence.destroy.bind(activePersistence),
       };
-      const deadlockRepository = createM1OperationalSliceRepository(observedPersistence);
+      const deadlockRepository = createOperationalSliceRepository(observedPersistence);
       const expectedHost = "admin-stage5-deadlock.example.test";
       const deadlockRealm: AuthRealm = {
         kind: "STAFF",
@@ -2098,9 +2098,9 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           return null;
         },
       };
-      const operations = createM1StaffTripOperations({
+      const operations = createStaffTripOperations({
         repository: deadlockRepository as unknown as Parameters<
-          typeof createM1StaffTripOperations
+          typeof createStaffTripOperations
         >[0]["repository"],
         authorizationRepository: staffAccessRepository,
         sessionResolver: {
@@ -2115,8 +2115,8 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
           realm: deadlockRealm,
           policy: { canonicalOrigin: `http://${expectedHost}`, expectedHost },
           staffAccessRepository,
-          m1Operations: operations as unknown as NonNullable<
-            NonNullable<Parameters<typeof createAdminApi>[0]["auth"]>["m1Operations"]
+          tripOperations: operations as unknown as NonNullable<
+            NonNullable<Parameters<typeof createAdminApi>[0]["auth"]>["tripOperations"]
           >,
         },
       });
@@ -2181,7 +2181,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       expect(responseCacheControl).toBe("private, no-store");
       await blockerClient.query("ROLLBACK");
 
-      const after = await readM1TripSlice(repository, agencyId, current.trip.id);
+      const after = await readTripSlice(repository, agencyId, current.trip.id);
       if (after === null) throw new Error("The Trip disappeared after deadlock rollback");
       expect(after.trip.workspaceRevision).toBe(current.trip.workspaceRevision);
       expect(primarySupplierCost(after)).toEqual(cost);
@@ -2196,11 +2196,11 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
 
   it("maps a real stale supplier-cost compare-and-swap through the registered Admin HTTP route", async () => {
     const input = baseInput();
-    const seeded = await createM1TripSlice(repository, {
+    const seeded = await createTripSlice(repository, {
       ...input,
       trip: { ...input.trip, title: "Real stale supplier-cost HTTP qualification" },
     });
-    const current = await updateM1InternalSupplierNote(repository, {
+    const current = await updateInternalSupplierNote(repository, {
       agencyId,
       tripId: seeded.trip.id,
       reservationId: primaryReservation(seeded).id,
@@ -2226,9 +2226,9 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         return null;
       },
     };
-    const operations = createM1StaffTripOperations({
+    const operations = createStaffTripOperations({
       repository: repository as unknown as Parameters<
-        typeof createM1StaffTripOperations
+        typeof createStaffTripOperations
       >[0]["repository"],
       authorizationRepository: staffAccessRepository,
       sessionResolver: {
@@ -2243,8 +2243,8 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         realm: staleCostRealm,
         policy: { canonicalOrigin: `http://${expectedHost}`, expectedHost },
         staffAccessRepository,
-        m1Operations: operations as unknown as NonNullable<
-          NonNullable<Parameters<typeof createAdminApi>[0]["auth"]>["m1Operations"]
+        tripOperations: operations as unknown as NonNullable<
+          NonNullable<Parameters<typeof createAdminApi>[0]["auth"]>["tripOperations"]
         >,
       },
     });
@@ -2267,7 +2267,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     } finally {
       await application.close();
     }
-    const after = await readM1TripSlice(repository, agencyId, current.trip.id);
+    const after = await readTripSlice(repository, agencyId, current.trip.id);
     if (after === null) throw new Error("The stale supplier-cost HTTP fixture disappeared");
     expect(primarySupplierCost(after).lockVersion).toBe(primarySupplierCost(current).lockVersion);
     expect(primarySupplierCost(after).internalNote).toBe("Current supplier-cost note");
@@ -2442,7 +2442,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
 
   it("persists and reads plural typed itinerary items, reservations and many-to-many links", async () => {
     const input = baseInput();
-    const seeded = await createM1TripSlice(repository, {
+    const seeded = await createTripSlice(repository, {
       ...input,
       trip: { ...input.trip, title: "Plural cardinality qualification" },
     });
@@ -2515,7 +2515,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       );
     });
 
-    const projected = await readM1TripSlice(repository, agencyId, seeded.trip.id);
+    const projected = await readTripSlice(repository, agencyId, seeded.trip.id);
     if (projected === null) throw new Error("Plural qualification Trip was not readable");
     const plural = projected;
     expect(plural.flights.map((item) => [item.id, item.sortOrder])).toEqual([
@@ -2618,7 +2618,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
 
   it("enforces the four-digit temporal contract at the PostgreSQL boundary", async () => {
     const input = baseInput();
-    const temporalSlice = await createM1TripSlice(repository, {
+    const temporalSlice = await createTripSlice(repository, {
       ...input,
       trip: { ...input.trip, title: "Temporal calendar-boundary qualification" },
     });
@@ -2819,7 +2819,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
 
   it("proves Agency and same-Trip constraints, wrong-family rejection and no float columns", async () => {
     const secondInput = baseInput();
-    const secondSlice = await createM1TripSlice(repository, {
+    const secondSlice = await createTripSlice(repository, {
       ...secondInput,
       trip: { ...secondInput.trip, title: "Second Stage 5 qualification trip" },
     });
@@ -3027,17 +3027,17 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         expiresAtEpochMs: nowEpochMs + 60 * 60 * 1_000,
         recentMfaVerifiedAtEpochMs: null,
       },
-      requiredPermissionIds: M1_READ_PERMISSION_IDS,
+      requiredPermissionIds: READ_PERMISSION_IDS,
       nowEpochMs,
     };
     await expect(
-      readM1TripSliceWithAuthorization(
+      readTripSliceWithAuthorization(
         repository,
         otherAgency,
         slice.trip.id,
         unassignedAgencyAuthorization,
       ),
-    ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
+    ).rejects.toBeInstanceOf(StaffAuthorizationError);
   });
 });
 

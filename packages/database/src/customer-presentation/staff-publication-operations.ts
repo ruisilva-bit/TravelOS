@@ -1,22 +1,22 @@
 import {
-  createM1StaffTripPublicationOperations,
-  type M1StaffSessionResolver,
-  type M1StaffTripPublicationOperations,
+  createStaffTripPublicationOperations,
+  type StaffSessionResolver,
+  type StaffTripPublicationOperations,
   type PortalTripSnapshotValidatorPort,
 } from "@travelos/backend-core";
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
 import { createPortalTripSnapshotSha256Hasher } from "../customer-presentation/snapshot-hash.js";
-import { createPostgresM1StaffTripPublicationRepository } from "../customer-presentation/staff-publication-repository.js";
+import { createPostgresStaffTripPublicationRepository } from "../customer-presentation/staff-publication-repository.js";
 import { createStaffAccessRepository } from "../staff-access/staff-access-repository.js";
 
 /** Composes the authorized Stage 6 boundary; callers supply the independent V1 contract validator. */
-export const createPostgresM1StaffTripPublicationOperations = (
+export const createPostgresStaffTripPublicationOperations = (
   persistence: PostgresPersistence<Record<string, never>>,
-  sessionResolver: M1StaffSessionResolver,
+  sessionResolver: StaffSessionResolver,
   validator: PortalTripSnapshotValidatorPort,
-): M1StaffTripPublicationOperations =>
-  createM1StaffTripPublicationOperations({
-    repository: createPostgresM1StaffTripPublicationRepository(
+): StaffTripPublicationOperations =>
+  createStaffTripPublicationOperations({
+    repository: createPostgresStaffTripPublicationRepository(
       persistence,
       createPortalTripSnapshotSha256Hasher(),
       validator,

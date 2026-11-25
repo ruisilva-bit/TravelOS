@@ -9,11 +9,11 @@ import {
   authorizeStaffRequest,
   STAFF_INVITATION_RECENT_MFA_MAXIMUM_AGE_MS,
 } from "@travelos/backend-core";
-import type { M1StaffTripOperations } from "@travelos/backend-core";
-import type { M1StaffTripWorkspaceOperations } from "@travelos/backend-core";
-import type { M1StaffTripWorkspaceWriteOperations } from "@travelos/backend-core";
-import type { M1StaffTripAccessOperations } from "@travelos/backend-core";
-import type { M1StaffTripPublicationOperations } from "@travelos/backend-core";
+import type { StaffTripOperations } from "@travelos/backend-core";
+import type { StaffTripWorkspaceOperations } from "@travelos/backend-core";
+import type { StaffTripWorkspaceWriteOperations } from "@travelos/backend-core";
+import type { StaffTripAccessOperations } from "@travelos/backend-core";
+import type { StaffTripPublicationOperations } from "@travelos/backend-core";
 import type { StaffInvitationOperations } from "@travelos/backend-core";
 import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
 import type { StaffAccessRepository } from "@travelos/database";
@@ -25,9 +25,9 @@ import {
   surfaceRejectionStatus as boundarySurfaceRejectionStatus,
 } from "./request-boundary.js";
 import {
-  registerAdminM1Routes,
+  registerAdminRoutes,
   type AdminRuntimeAcceptanceFixtureRouteOperations,
-} from "./m1-routes.js";
+} from "./admin-routes.js";
 import { registerAdminStaffInvitationRoutes } from "./staff-invitation-routes.js";
 import type { StaffInvitationRateLimiter } from "./staff-invitation-rate-limit.js";
 
@@ -69,12 +69,12 @@ export interface AdminAuthBridgeOptions {
   readonly policy: AuthSurfacePolicy;
   readonly environment?: "DEVELOPMENT" | "PRODUCTION";
   readonly staffAccessRepository: Pick<StaffAccessRepository, "getStaffAuthorizationSnapshot">;
-  readonly m1Operations?: M1StaffTripOperations;
-  readonly m1WorkspaceOperations?: M1StaffTripWorkspaceOperations;
-  readonly m1WorkspaceWriteOperations?: M1StaffTripWorkspaceWriteOperations;
-  readonly m1TripAccessOperations?: M1StaffTripAccessOperations;
-  readonly m1PublicationOperations?: M1StaffTripPublicationOperations;
-  readonly m1RuntimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
+  readonly tripOperations?: StaffTripOperations;
+  readonly workspaceOperations?: StaffTripWorkspaceOperations;
+  readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
+  readonly tripAccessOperations?: StaffTripAccessOperations;
+  readonly publicationOperations?: StaffTripPublicationOperations;
+  readonly runtimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
   readonly staffInvitationOperations?: StaffInvitationOperations;
   readonly staffInvitationRateLimiter?: StaffInvitationRateLimiter;
 }
@@ -258,26 +258,26 @@ export const registerAdminAuthBridge = (
   } else if (options.staffInvitationRateLimiter !== undefined) {
     throw new Error("Admin Staff invitation rate limiter requires invitation operations");
   }
-  if (options.m1Operations !== undefined) {
-    registerAdminM1Routes(http, {
+  if (options.tripOperations !== undefined) {
+    registerAdminRoutes(http, {
       policy: options.policy,
-      m1Operations: options.m1Operations,
-      ...(options.m1WorkspaceOperations === undefined
+      tripOperations: options.tripOperations,
+      ...(options.workspaceOperations === undefined
         ? {}
-        : { m1WorkspaceOperations: options.m1WorkspaceOperations }),
-      ...(options.m1WorkspaceWriteOperations === undefined
+        : { workspaceOperations: options.workspaceOperations }),
+      ...(options.workspaceWriteOperations === undefined
         ? {}
-        : { m1WorkspaceWriteOperations: options.m1WorkspaceWriteOperations }),
-      ...(options.m1TripAccessOperations === undefined
+        : { workspaceWriteOperations: options.workspaceWriteOperations }),
+      ...(options.tripAccessOperations === undefined
         ? {}
-        : { m1TripAccessOperations: options.m1TripAccessOperations }),
-      ...(options.m1PublicationOperations === undefined
+        : { tripAccessOperations: options.tripAccessOperations }),
+      ...(options.publicationOperations === undefined
         ? {}
-        : { m1PublicationOperations: options.m1PublicationOperations }),
+        : { publicationOperations: options.publicationOperations }),
       ...(options.environment !== "DEVELOPMENT" ||
-      options.m1RuntimeAcceptanceFixtureOperations === undefined
+      options.runtimeAcceptanceFixtureOperations === undefined
         ? {}
-        : { runtimeAcceptanceFixtureOperations: options.m1RuntimeAcceptanceFixtureOperations }),
+        : { runtimeAcceptanceFixtureOperations: options.runtimeAcceptanceFixtureOperations }),
     });
   }
 };

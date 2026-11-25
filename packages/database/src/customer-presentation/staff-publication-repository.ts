@@ -5,13 +5,13 @@ import {
   buildTripPublicationCandidateFromSources,
   canonicalPortalTripSnapshotV1Json,
   IdempotencyConflictError,
-  M1StaffAuthorizationError,
-  M1StaffPublicationInputError,
-  M1TransactionConflictError,
+  StaffAuthorizationError,
+  StaffPublicationInputError,
+  TransactionConflictError,
   isStaffPermissionId,
   StalePublicationCandidateError,
   TripPublicationNotFoundError,
-  type M1StaffTripPublicationRepository,
+  type StaffTripPublicationRepository,
   type PortalTripSnapshotHashPort,
   type PortalTripSnapshotValidatorPort,
   type PublicationHistoryEntry,
@@ -25,7 +25,7 @@ import {
 import { sql, type Kysely, type Transaction as KyselyTransaction } from "kysely";
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
 import { readStaffAuthorizationSnapshot } from "../staff-access/staff-access-repository.js";
-import { assertStaffAuthorizationInTransaction } from "../trip-operations/m1-operational-slice-repository.js";
+import { assertStaffAuthorizationInTransaction } from "../trip-operations/operational-slice-repository.js";
 import { createUuidV7 } from "../uuidv7.js";
 import { bindEventCorrelation } from "../job-runtime/event-context.js";
 import { publicationReaders } from "./publication-source-repository.js";
@@ -192,16 +192,16 @@ const assertStaffAuthorizationReadOnly = async (
     !Array.isArray(authorization.requiredPermissionIds) ||
     !authorization.requiredPermissionIds.every(isStaffPermissionId)
   ) {
-    throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    throw new StaffAuthorizationError("UNAUTHENTICATED");
   }
   const suppliedPermissions = new Set(authorization.requiredPermissionIds);
   if (
     suppliedPermissions.size !== requiredPermissionIds.length ||
     requiredPermissionIds.some((permissionId) => !suppliedPermissions.has(permissionId))
   ) {
-    throw new M1StaffAuthorizationError("FORBIDDEN");
+    throw new StaffAuthorizationError("FORBIDDEN");
   }
-  if (session.agencyId !== targetAgencyId) throw new M1StaffAuthorizationError("FORBIDDEN");
+  if (session.agencyId !== targetAgencyId) throw new StaffAuthorizationError("FORBIDDEN");
   const liveSession = (
     await sql<{
       readonly agencyId: string;
@@ -230,7 +230,7 @@ const assertStaffAuthorizationReadOnly = async (
          AND context."authorizationEpoch" = ${session.authorizationEpoch}
     `.execute(database)
   ).rows[0];
-  if (liveSession === undefined) throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+  if (liveSession === undefined) throw new StaffAuthorizationError("UNAUTHENTICATED");
   const currentSession = {
     sessionId: session.sessionId,
     staffPrincipalId: liveSession.staffPrincipalId,
@@ -244,7 +244,7 @@ const assertStaffAuthorizationReadOnly = async (
     currentSession.staffPrincipalId,
     currentSession.agencyId,
   );
-  if (snapshot === null) throw new M1StaffAuthorizationError("FORBIDDEN");
+  if (snapshot === null) throw new StaffAuthorizationError("FORBIDDEN");
   for (const permissionId of requiredPermissionIds) {
     const decision = authorizeStaffRequest({
       session: currentSession,
@@ -258,7 +258,7 @@ const assertStaffAuthorizationReadOnly = async (
       nowEpochMs: liveSession.databaseNowEpochMs,
       recentMfaMaximumAgeMs: null,
     });
-    if (decision.result === "DENY") throw new M1StaffAuthorizationError("FORBIDDEN");
+    if (decision.result === "DENY") throw new StaffAuthorizationError("FORBIDDEN");
   }
 };
 
@@ -292,11 +292,11 @@ const loadExistingIdempotentResult = async (
   return readPublication(database, hasher, validator, agencyId, tripId, existing.publicationId);
 };
 
-export const createPostgresM1StaffTripPublicationRepository = (
+export const createPostgresStaffTripPublicationRepository = (
   persistence: PostgresPersistence<DatabaseShape>,
   hasher: PortalTripSnapshotHashPort,
   validator: PortalTripSnapshotValidatorPort,
-): M1StaffTripPublicationRepository => {
+): StaffTripPublicationRepository => {
   const readOnly = <Result>(work: (database: Transaction) => Promise<Result>): Promise<Result> =>
     persistence.withConnection((database) =>
       database
@@ -323,15 +323,15 @@ export const createPostgresM1StaffTripPublicationRepository = (
             postgresConstraint(error) ?? "",
           );
         if ((!retryable && !idempotencyRace) || attempt === MAX_SERIALIZATION_ATTEMPTS) {
-          if (retryable || idempotencyRace) throw new M1TransactionConflictError();
+          if (retryable || idempotencyRace) throw new TransactionConflictError();
           throw error;
         }
       }
     }
-    throw new M1TransactionConflictError();
+    throw new TransactionConflictError();
   };
 
-  const repository: M1StaffTripPublicationRepository = {
+  const repository: StaffTripPublicationRepository = {
     previewTrip(agencyId, tripId, authorization) {
       return readOnly(async (database) => {
         await assertStaffAuthorizationReadOnly(
@@ -357,7 +357,7 @@ export const createPostgresM1StaffTripPublicationRepository = (
         requiredIdempotencyKey.length > 128 ||
         containsControlCharacter(requiredIdempotencyKey)
       ) {
-        throw new M1StaffPublicationInputError();
+        throw new StaffPublicationInputError();
       }
       return serializable(async (database) => {
         const assuranceVerifiedAtEpochMs = await assertStaffAuthorizationInTransaction(
@@ -368,7 +368,7 @@ export const createPostgresM1StaffTripPublicationRepository = (
           RECENT_MFA_MAXIMUM_AGE_MS,
         );
         if (assuranceVerifiedAtEpochMs === null) {
-          throw new M1StaffAuthorizationError("FORBIDDEN");
+          throw new StaffAuthorizationError("FORBIDDEN");
         }
         const staffPrincipalId = authorization.session.staffPrincipalId;
         const repeatedBeforeLock = await loadExistingIdempotentResult(
@@ -589,7 +589,7 @@ export const createPostgresM1StaffTripPublicationRepository = (
         request.idempotencyKey.length > 128 ||
         containsControlCharacter(request.idempotencyKey)
       ) {
-        throw new M1StaffPublicationInputError();
+        throw new StaffPublicationInputError();
       }
       const actorId = authorization.session.staffPrincipalId;
       const expectedRequestHash = withdrawalRequestHash(tripId, request);
@@ -603,7 +603,7 @@ export const createPostgresM1StaffTripPublicationRepository = (
           RECENT_MFA_MAXIMUM_AGE_MS,
         );
         if (assuranceVerifiedAtEpochMs === null) {
-          throw new M1StaffAuthorizationError("FORBIDDEN");
+          throw new StaffAuthorizationError("FORBIDDEN");
         }
 
         const existing = (
@@ -691,7 +691,7 @@ export const createPostgresM1StaffTripPublicationRepository = (
             RETURNING "tripId"::text AS "tripId"
           `.execute(database)
         ).rows[0];
-        if (deletedPointer === undefined) throw new M1TransactionConflictError();
+        if (deletedPointer === undefined) throw new TransactionConflictError();
 
         const eventId = createUuidV7();
         await sql`

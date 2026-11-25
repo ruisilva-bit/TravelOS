@@ -1,8 +1,8 @@
 import {
   asOpaqueId,
-  M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
-  M1InputValidationError,
-  M1StaffAuthorizationError,
+  RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
+  InputValidationError,
+  StaffAuthorizationError,
   type OpaqueId,
   type RuntimeAcceptanceCleanupCommand,
   type RuntimeAcceptanceCleanupCounts,
@@ -18,7 +18,7 @@ import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
 import {
   assertStaffAuthorizationInTransaction,
   mapPostgresMutationError,
-} from "../trip-operations/m1-operational-slice-repository.js";
+} from "../trip-operations/operational-slice-repository.js";
 
 const RECENT_MFA_MAXIMUM_AGE_MS = 5 * 60 * 1_000;
 const MAX_COUNT = 10_000;
@@ -58,7 +58,7 @@ const containsControlCharacter = (value: string): boolean =>
 
 const parseCommand = (value: RuntimeAcceptanceCleanupCommand): RuntimeAcceptanceCleanupCommand => {
   if (typeof value !== "object" || value === null) {
-    throw new M1InputValidationError("Invalid runtime acceptance cleanup command");
+    throw new InputValidationError("Invalid runtime acceptance cleanup command");
   }
   try {
     const agencyId = asOpaqueId(value.agencyId);
@@ -74,12 +74,12 @@ const parseCommand = (value: RuntimeAcceptanceCleanupCommand): RuntimeAcceptance
       value.idempotencyKey.length > RECOVERY_IDEMPOTENCY_KEY_MAX_LENGTH ||
       containsControlCharacter(value.idempotencyKey)
     ) {
-      throw new M1InputValidationError("Invalid runtime acceptance cleanup command");
+      throw new InputValidationError("Invalid runtime acceptance cleanup command");
     }
     return { ...value, agencyId, fixtureRunId };
   } catch (error) {
-    if (error instanceof M1InputValidationError) throw error;
-    throw new M1InputValidationError("Invalid runtime acceptance cleanup command");
+    if (error instanceof InputValidationError) throw error;
+    throw new InputValidationError("Invalid runtime acceptance cleanup command");
   }
 };
 
@@ -89,13 +89,13 @@ const assertCleanupAuthorization = async (
   authorization: StaffAuthorizationOperationProof,
 ): Promise<void> => {
   if (authorization?.session?.staffPrincipalId !== command.staffPrincipalId) {
-    throw new M1StaffAuthorizationError("UNAUTHENTICATED");
+    throw new StaffAuthorizationError("UNAUTHENTICATED");
   }
   await assertStaffAuthorizationInTransaction(
     database,
     authorization,
     command.agencyId,
-    M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
+    RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
     RECENT_MFA_MAXIMUM_AGE_MS,
   );
 };

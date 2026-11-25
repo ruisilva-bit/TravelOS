@@ -3,21 +3,21 @@ import { describe, expect, it, vi } from "vitest";
 import {
   asOpaqueId,
   createMoney,
-  createM1StaffTripOperations,
-  createM1StaffTripWorkspaceOperations,
+  createStaffTripOperations,
+  createStaffTripWorkspaceOperations,
   createScheduledLocalDateTime,
-  M1OptimisticConflictError,
-  M1TransactionConflictError,
-  M1TripNotFoundError,
-  type M1StaffTripWorkspaceWriteOperations,
-  type M1TripSlice,
-  type M1TripWorkspace,
-  type M1OperationalSliceRepository,
+  OptimisticConflictError,
+  TransactionConflictError,
+  TripNotFoundError,
+  type StaffTripWorkspaceWriteOperations,
+  type TripSlice,
+  type TripWorkspace,
+  type OperationalSliceRepository,
   type StaffAuthorizationSnapshot,
   type StaffPermissionId,
 } from "@travelos/backend-core";
 import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
-import { registerAdminM1Routes, type AdminM1ExpressApplication } from "../src/m1-routes.js";
+import { registerAdminRoutes, type AdminExpressApplication } from "../src/admin-routes.js";
 
 const syntheticEmail = ["rui", "example.test"].join(String.fromCharCode(64));
 
@@ -48,7 +48,7 @@ const grantedPermissions = [
   "reservation.edit",
 ] as const satisfies readonly StaffPermissionId[];
 
-const slice: M1TripSlice = {
+const slice: TripSlice = {
   person: {
     id: personId,
     agencyId: agency,
@@ -269,9 +269,9 @@ const makeHarness = (
   sessionAgencyId = agencyId,
   permissionIds: readonly StaffPermissionId[] = grantedPermissions,
 ) => {
-  type Handler = Parameters<AdminM1ExpressApplication["post"]>[1];
+  type Handler = Parameters<AdminExpressApplication["post"]>[1];
   const handlers = new Map<string, Handler>();
-  const application: AdminM1ExpressApplication = {
+  const application: AdminExpressApplication = {
     get: (path, handler) => handlers.set(`GET ${path}`, handler),
     post: (path, handler) => handlers.set(`POST ${path}`, handler),
     patch: (path, handler) => handlers.set(`PATCH ${path}`, handler),
@@ -288,8 +288,8 @@ const makeHarness = (
   };
   const repository = {
     createTripWorkspace: vi.fn().mockResolvedValue(slice.trip),
-    createM1TripSlice: vi.fn().mockResolvedValue(slice),
-    getM1TripSlice: vi.fn().mockResolvedValue(slice),
+    createTripSlice: vi.fn().mockResolvedValue(slice),
+    getTripSlice: vi.fn().mockResolvedValue(slice),
     updateAccommodation: vi.fn().mockResolvedValue(slice),
     updateInternalSupplierNote: vi.fn().mockResolvedValue(slice),
     cancelTrip: vi.fn().mockResolvedValue(slice),
@@ -308,8 +308,8 @@ const makeHarness = (
       })),
     }),
   };
-  const m1Operations = createM1StaffTripOperations({
-    repository: repository as unknown as M1OperationalSliceRepository,
+  const tripOperations = createStaffTripOperations({
+    repository: repository as unknown as OperationalSliceRepository,
     authorizationRepository,
     sessionResolver,
   });
@@ -322,7 +322,7 @@ const makeHarness = (
       supplierCosts: slice.supplierCosts,
       INTERNAL_ONLY: "not-for-portal-or-workspace",
     },
-  ) as unknown as M1TripWorkspace;
+  ) as unknown as TripWorkspace;
   const workspaceRepository = {
     listTrips: vi.fn().mockResolvedValue({ items: [slice.trip], nextCursor: null }),
     readTripWorkspace: vi.fn().mockResolvedValue(rawWorkspace),
@@ -333,17 +333,17 @@ const makeHarness = (
     createAccommodation: vi.fn().mockResolvedValue(rawWorkspace),
     updateAccommodation: vi.fn().mockResolvedValue(rawWorkspace),
     updateTrip: vi.fn().mockResolvedValue(rawWorkspace),
-  } as unknown as M1StaffTripWorkspaceWriteOperations;
-  const m1WorkspaceOperations = createM1StaffTripWorkspaceOperations({
+  } as unknown as StaffTripWorkspaceWriteOperations;
+  const workspaceOperations = createStaffTripWorkspaceOperations({
     repository: workspaceRepository,
     authorizationRepository,
     sessionResolver,
   });
-  registerAdminM1Routes(application, {
+  registerAdminRoutes(application, {
     policy,
-    m1Operations,
-    m1WorkspaceOperations,
-    m1WorkspaceWriteOperations: workspaceWriteOperations,
+    tripOperations,
+    workspaceOperations,
+    workspaceWriteOperations: workspaceWriteOperations,
   });
   const invoke = async (
     key: string,
@@ -412,7 +412,7 @@ describe("Admin Stage 5 routes", () => {
       unexpected: true,
     });
     expect(response.statusCode).toBe(400);
-    expect(harness.repository.createM1TripSlice).not.toHaveBeenCalled();
+    expect(harness.repository.createTripSlice).not.toHaveBeenCalled();
 
     const accepted = await harness.invoke("POST /api/admin/trips", requestBody());
     expect(accepted.statusCode).toBe(201);
@@ -425,7 +425,7 @@ describe("Admin Stage 5 routes", () => {
       accommodations: [{ lockVersion: "9007199254740993" }],
       supplierCosts: [{ classification: "INTERNAL_ONLY" }],
     });
-    expect(harness.repository.createM1TripSlice).toHaveBeenCalledOnce();
+    expect(harness.repository.createTripSlice).toHaveBeenCalledOnce();
   });
 
   it("accepts only a forwarded host that corroborates the configured Admin host", async () => {
@@ -442,7 +442,7 @@ describe("Admin Stage 5 routes", () => {
       },
     );
     expect(accepted.statusCode).toBe(201);
-    expect(harness.repository.createM1TripSlice).toHaveBeenCalledOnce();
+    expect(harness.repository.createTripSlice).toHaveBeenCalledOnce();
 
     const conflicting = makeHarness();
     const rejected = await conflicting.invoke(
@@ -457,7 +457,7 @@ describe("Admin Stage 5 routes", () => {
       },
     );
     expect(rejected.statusCode).toBe(403);
-    expect(conflicting.repository.createM1TripSlice).not.toHaveBeenCalled();
+    expect(conflicting.repository.createTripSlice).not.toHaveBeenCalled();
   });
 
   it("rejects missing, opaque, duplicate, or sibling Origins before resolving a mutation session", async () => {
@@ -483,7 +483,7 @@ describe("Admin Stage 5 routes", () => {
       );
       expect(response.statusCode).toBe(403);
       expect(harness.sessionResolver.resolveStaffSession).not.toHaveBeenCalled();
-      expect(harness.repository.createM1TripSlice).not.toHaveBeenCalled();
+      expect(harness.repository.createTripSlice).not.toHaveBeenCalled();
     }
   });
 
@@ -491,21 +491,21 @@ describe("Admin Stage 5 routes", () => {
     const harness = makeHarness(agencyId, ["agency.manage_settings", "finance.view_costs"]);
     const response = await harness.invoke("POST /api/admin/trips", requestBody());
     expect(response.statusCode).toBe(403);
-    expect(harness.repository.createM1TripSlice).not.toHaveBeenCalled();
+    expect(harness.repository.createTripSlice).not.toHaveBeenCalled();
   });
 
   it("denies composite reads without the Stage 5 product view capabilities", async () => {
     const harness = makeHarness(agencyId, ["agency.view", "finance.view_costs"]);
     const response = await harness.invoke("GET /api/admin/trips/:tripId", {}, { tripId });
     expect(response.statusCode).toBe(403);
-    expect(harness.repository.getM1TripSlice).not.toHaveBeenCalled();
+    expect(harness.repository.getTripSlice).not.toHaveBeenCalled();
   });
 
   it("fails closed for a session bound to a different Agency", async () => {
     const harness = makeHarness("00000000-0000-7000-8000-000000000099");
     const response = await harness.invoke("POST /api/admin/trips", requestBody());
     expect(response.statusCode).toBe(403);
-    expect(harness.repository.createM1TripSlice).not.toHaveBeenCalled();
+    expect(harness.repository.createTripSlice).not.toHaveBeenCalled();
   });
 
   it("does not return INTERNAL_ONLY data to a settings-only accommodation editor", async () => {
@@ -605,7 +605,7 @@ describe("Admin Stage 5 routes", () => {
     const harness = makeHarness(agencyId, grantedPermissions);
     harness.repository.updateInternalSupplierNote = vi
       .fn()
-      .mockRejectedValue(new M1OptimisticConflictError());
+      .mockRejectedValue(new OptimisticConflictError());
     const response = await harness.invoke(
       "PATCH /api/admin/reservations/:reservationId/internal-note",
       {
@@ -624,7 +624,7 @@ describe("Admin Stage 5 routes", () => {
     const harness = makeHarness(agencyId, grantedPermissions);
     harness.repository.updateInternalSupplierNote = vi
       .fn()
-      .mockRejectedValue(new M1TransactionConflictError());
+      .mockRejectedValue(new TransactionConflictError());
     const response = await harness.invoke(
       "PATCH /api/admin/reservations/:reservationId/internal-note",
       {
@@ -1020,7 +1020,7 @@ describe("Admin Trip workspace write V1 routes", () => {
   it("maps_a_stale_workspace_write_to_the_typed_conflict_response", async () => {
     const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
     vi.mocked(harness.workspaceWriteOperations.updateTrip).mockRejectedValue(
-      new M1OptimisticConflictError(),
+      new OptimisticConflictError(),
     );
     const route = "PATCH /api/admin/trips/:tripId/workspace";
     expect(harness.handlers.has(route)).toBe(true);
@@ -1043,7 +1043,7 @@ describe("Admin Trip workspace write V1 routes", () => {
   it("conceals_cross_trip_item_updates_as_not_found", async () => {
     const harness = makeHarness(agencyId, ["trip.edit", "trip.view"]);
     vi.mocked(harness.workspaceWriteOperations.updateFlight).mockRejectedValue(
-      new M1TripNotFoundError(),
+      new TripNotFoundError(),
     );
     const route = "PATCH /api/admin/trips/:tripId/workspace/flights/:itemId";
     expect(harness.handlers.has(route)).toBe(true);

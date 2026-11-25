@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   asOpaqueId,
-  M1StaffTripAccessNotFoundError,
+  StaffTripAccessNotFoundError,
   type TripAccessGrant,
 } from "@travelos/backend-core";
 import {
@@ -11,7 +11,7 @@ import {
   type AuthSurfacePolicy,
 } from "@travelos/auth-adapters";
 import { registerAdminAuthBridge } from "../../src/auth-bridge.js";
-import { registerAdminM1Routes, type AdminM1ExpressApplication } from "../../src/m1-routes.js";
+import { registerAdminRoutes, type AdminExpressApplication } from "../../src/admin-routes.js";
 
 const agencyId = "00000000-0000-7000-8000-000000000001";
 const tripId = "00000000-0000-7000-8000-000000000010";
@@ -53,9 +53,9 @@ const makeHarness = (
     readonly revoke?: () => Promise<TripAccessGrant>;
   } = {},
 ) => {
-  type Handler = Parameters<AdminM1ExpressApplication["post"]>[1];
+  type Handler = Parameters<AdminExpressApplication["post"]>[1];
   const handlers = new Map<string, Handler>();
-  const application: AdminM1ExpressApplication = {
+  const application: AdminExpressApplication = {
     get: (path, handler) => handlers.set(`GET ${path}`, handler),
     post: (path, handler) => handlers.set(`POST ${path}`, handler),
     patch: (path, handler) => handlers.set(`PATCH ${path}`, handler),
@@ -65,10 +65,10 @@ const makeHarness = (
     revokeTripAccessGrant: vi.fn(overrides.revoke ?? (async () => revokedGrant)),
     retireFixturePortalPrincipal: vi.fn(async () => undefined as never),
   };
-  registerAdminM1Routes(application, {
+  registerAdminRoutes(application, {
     policy,
-    m1Operations: {} as never,
-    m1TripAccessOperations: operations,
+    tripOperations: {} as never,
+    tripAccessOperations: operations,
   });
 
   const invoke = async (
@@ -199,7 +199,7 @@ describe("Admin TripAccessGrant routes", () => {
   it("maps a missing or cross-Agency grant to a non-leaking 404", async () => {
     const harness = makeHarness({
       revoke: async () => {
-        throw new M1StaffTripAccessNotFoundError();
+        throw new StaffTripAccessNotFoundError();
       },
     });
     const response = await harness.invoke(
@@ -239,8 +239,8 @@ describe("Admin TripAccessGrant routes", () => {
         realm,
         policy,
         staffAccessRepository: { getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue(null) },
-        m1Operations: {} as never,
-        m1TripAccessOperations: {
+        tripOperations: {} as never,
+        tripAccessOperations: {
           issueTripAccessGrant: vi.fn(),
           revokeTripAccessGrant: vi.fn(),
           retireFixturePortalPrincipal: vi.fn(),

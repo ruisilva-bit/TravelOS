@@ -1,23 +1,23 @@
 import {
   asOpaqueId,
-  M1InputValidationError,
-  M1RuntimeAcceptanceFixtureConflictError,
-  M1RuntimeAcceptanceFixtureNotFoundError,
-  M1OptimisticConflictError,
-  M1TransactionConflictError,
-  M1StaffAuthorizationError,
-  M1StaffPublicationInputError,
-  M1TripNotFoundError,
+  InputValidationError,
+  RuntimeAcceptanceFixtureConflictError,
+  RuntimeAcceptanceFixtureNotFoundError,
+  OptimisticConflictError,
+  TransactionConflictError,
+  StaffAuthorizationError,
+  StaffPublicationInputError,
+  TripNotFoundError,
   StalePublicationCandidateError,
   IdempotencyConflictError,
   TripPublicationNotFoundError,
-  M1StaffTripAccessNotFoundError,
-  type M1StaffTripWorkspaceWriteOperations,
-  type M1StaffTripAccessOperations,
-  type M1StaffTripOperations,
-  type M1StaffTripWorkspaceOperations,
-  type M1StaffTripPublicationOperations,
-  type M1RuntimeAcceptanceFixtureOperations,
+  StaffTripAccessNotFoundError,
+  type StaffTripWorkspaceWriteOperations,
+  type StaffTripAccessOperations,
+  type StaffTripOperations,
+  type StaffTripWorkspaceOperations,
+  type StaffTripPublicationOperations,
+  type RuntimeAcceptanceFixtureOperations,
 } from "@travelos/backend-core";
 import { AdminRuntimeAcceptanceFixtureConflictV1ResponseSchema } from "@travelos/contracts/admin";
 import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
@@ -49,28 +49,28 @@ export type HttpHandler = (
   next: Next,
 ) => void;
 
-export interface AdminM1ExpressApplication {
+export interface AdminExpressApplication {
   get(path: string, handler: HttpHandler): void;
   post(path: string, handler: HttpHandler): void;
   patch(path: string, handler: HttpHandler): void;
 }
 
-export interface AdminM1RouteOptions {
+export interface AdminRouteOptions {
   readonly policy: AuthSurfacePolicy;
-  readonly m1Operations: M1StaffTripOperations;
-  readonly m1WorkspaceOperations?: M1StaffTripWorkspaceOperations;
-  readonly m1WorkspaceWriteOperations?: M1StaffTripWorkspaceWriteOperations;
-  readonly m1TripAccessOperations?: M1StaffTripAccessOperations;
-  readonly m1PublicationOperations?: M1StaffTripPublicationOperations;
+  readonly tripOperations: StaffTripOperations;
+  readonly workspaceOperations?: StaffTripWorkspaceOperations;
+  readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
+  readonly tripAccessOperations?: StaffTripAccessOperations;
+  readonly publicationOperations?: StaffTripPublicationOperations;
   readonly runtimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
 }
 
 export interface AdminRuntimeAcceptanceFixtureRouteOperations {
-  readonly createFixtureTrip: M1StaffTripOperations["createRuntimeAcceptanceFixtureTrip"];
-  readonly cleanupFixture: M1RuntimeAcceptanceFixtureOperations["cleanupFixture"];
+  readonly createFixtureTrip: StaffTripOperations["createRuntimeAcceptanceFixtureTrip"];
+  readonly cleanupFixture: RuntimeAcceptanceFixtureOperations["cleanupFixture"];
 }
 
-/** Admin M1 route policy: URL, Host, Authorization, X-Forwarded-Host and (when required) Origin. */
+/** Admin route policy: URL, Host, Authorization, X-Forwarded-Host and (when required) Origin. */
 export const surfaceRejectionStatus = (
   request: IncomingHttpRequest,
   policy: AuthSurfacePolicy,
@@ -105,15 +105,15 @@ export const runHandler = (
 ): void => {
   response.setHeader("Cache-Control", ADMIN_PRIVATE_NO_STORE);
   void work().catch((error: unknown) => {
-    if (error instanceof M1StaffAuthorizationError) {
+    if (error instanceof StaffAuthorizationError) {
       response.status(error.code === "UNAUTHENTICATED" ? 401 : 403).end();
       return;
     }
-    if (error instanceof M1OptimisticConflictError) {
+    if (error instanceof OptimisticConflictError) {
       send(response, 409, { error: "optimistic_conflict" });
       return;
     }
-    if (error instanceof M1TransactionConflictError) {
+    if (error instanceof TransactionConflictError) {
       send(response, 409, { error: "transaction_conflict" });
       return;
     }
@@ -129,19 +129,19 @@ export const runHandler = (
       response.status(404).end();
       return;
     }
-    if (error instanceof M1TripNotFoundError) {
+    if (error instanceof TripNotFoundError) {
       response.status(404).end();
       return;
     }
-    if (error instanceof M1StaffTripAccessNotFoundError) {
+    if (error instanceof StaffTripAccessNotFoundError) {
       response.status(404).end();
       return;
     }
-    if (error instanceof M1RuntimeAcceptanceFixtureNotFoundError) {
+    if (error instanceof RuntimeAcceptanceFixtureNotFoundError) {
       response.status(404).end();
       return;
     }
-    if (error instanceof M1RuntimeAcceptanceFixtureConflictError) {
+    if (error instanceof RuntimeAcceptanceFixtureConflictError) {
       const conflictResponse =
         error.recoveryFixtureRunId === null
           ? { error: "runtime_acceptance_fixture_conflict" as const }
@@ -156,11 +156,11 @@ export const runHandler = (
       );
       return;
     }
-    if (error instanceof M1StaffPublicationInputError) {
+    if (error instanceof StaffPublicationInputError) {
       badRequest(response);
       return;
     }
-    if (error instanceof M1InputValidationError) {
+    if (error instanceof InputValidationError) {
       badRequest(response);
       return;
     }

@@ -28,29 +28,29 @@ const expectPackageSubpathDenied = (specifier: string): void => {
 };
 
 describe("Stage 5 application authorization boundary", () => {
-  it("exposes only the authorization-enforcing M1 application and database factories", () => {
-    expect(backendCore).toHaveProperty("createM1StaffTripOperations");
-    expect(database).toHaveProperty("createPostgresM1StaffTripOperations");
+  it("exposes only the authorization-enforcing application and database factories", () => {
+    expect(backendCore).toHaveProperty("createStaffTripOperations");
+    expect(database).toHaveProperty("createPostgresStaffTripOperations");
 
     for (const rawUseCase of [
-      "createM1TripSlice",
-      "readM1TripSlice",
-      "updateM1Accommodation",
-      "updateM1InternalSupplierNote",
+      "createTripSlice",
+      "readTripSlice",
+      "updateAccommodation",
+      "updateInternalSupplierNote",
     ]) {
       expect(backendCore).not.toHaveProperty(rawUseCase);
     }
-    expect(database).not.toHaveProperty("createM1OperationalSliceRepository");
+    expect(database).not.toHaveProperty("createOperationalSliceRepository");
   });
 
   it("limits package subpaths so unguarded use cases and repositories cannot be imported", async () => {
     await expect(packageExportPaths("packages/backend-core/package.json")).resolves.toEqual(["."]);
     await expect(packageExportPaths("packages/database/package.json")).resolves.toEqual(["."]);
     expectPackageSubpathDenied(
-      "@travelos/backend-core/modules/trip-operations/application/m1-trip-slice.js",
+      "@travelos/backend-core/modules/trip-operations/application/trip-slice.js",
     );
     expectPackageSubpathDenied(
-      "@travelos/database/trip-operations/m1-operational-slice-repository.js",
+      "@travelos/database/trip-operations/operational-slice-repository.js",
     );
   });
 });

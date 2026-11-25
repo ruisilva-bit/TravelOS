@@ -1,39 +1,39 @@
 import {
-  authorizeM1Operation,
-  type M1StaffAuthorizationDependencies,
-} from "./m1-staff-operations.js";
+  authorizeOperation,
+  type StaffAuthorizationDependencies,
+} from "./staff-trip-operations.js";
 import type { StaffAuthorizationOperationProof } from "../../../staff-access/authorization.js";
 import type { StaffPermissionId } from "../../../staff-access/permission-registry.js";
 import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
-import type { AccommodationDraft, FlightDraft } from "../domain/m1-slice.js";
-import type { M1TripWorkspace } from "./m1-staff-workspace-operations.js";
+import type { AccommodationDraft, FlightDraft } from "../domain/trip-slice.js";
+import type { TripWorkspace } from "./staff-workspace-operations.js";
 import {
-  validateCreateM1TripWorkspaceAccommodationInput,
-  validateCreateM1TripWorkspaceFlightInput,
-  validateUpdateM1TripWorkspaceAccommodationInput,
-  validateUpdateM1TripWorkspaceFlightInput,
-  validateUpdateM1TripWorkspaceTripInput,
-  M1TripNotFoundError,
-  type CreateM1TripWorkspaceAccommodationInput,
-  type CreateM1TripWorkspaceFlightInput,
-  type UpdateM1TripWorkspaceAccommodationInput,
-  type UpdateM1TripWorkspaceFlightInput,
-  type UpdateM1TripWorkspaceTripInput,
-} from "./m1-trip-slice.js";
+  validateCreateTripWorkspaceAccommodationInput,
+  validateCreateTripWorkspaceFlightInput,
+  validateUpdateTripWorkspaceAccommodationInput,
+  validateUpdateTripWorkspaceFlightInput,
+  validateUpdateTripWorkspaceTripInput,
+  TripNotFoundError,
+  type CreateTripWorkspaceAccommodationInput,
+  type CreateTripWorkspaceFlightInput,
+  type UpdateTripWorkspaceAccommodationInput,
+  type UpdateTripWorkspaceFlightInput,
+  type UpdateTripWorkspaceTripInput,
+} from "./trip-slice.js";
 
-const M1_WORKSPACE_WRITE_PERMISSIONS = Object.freeze([
+const WORKSPACE_WRITE_PERMISSIONS = Object.freeze([
   "trip.edit",
   "trip.view",
 ] as const satisfies readonly StaffPermissionId[]);
 
-export interface M1StaffTripWorkspaceWriteRepository {
+export interface StaffTripWorkspaceWriteRepository {
   createFlight(
     agencyId: OpaqueId,
     tripId: OpaqueId,
     expectedWorkspaceRevision: bigint,
     flight: FlightDraft,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripWorkspace | null>;
+  ): Promise<TripWorkspace | null>;
   updateFlight(
     agencyId: OpaqueId,
     tripId: OpaqueId,
@@ -42,14 +42,14 @@ export interface M1StaffTripWorkspaceWriteRepository {
     expectedLockVersion: bigint,
     flight: FlightDraft,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripWorkspace | null>;
+  ): Promise<TripWorkspace | null>;
   createAccommodation(
     agencyId: OpaqueId,
     tripId: OpaqueId,
     expectedWorkspaceRevision: bigint,
     accommodation: AccommodationDraft,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripWorkspace | null>;
+  ): Promise<TripWorkspace | null>;
   updateAccommodation(
     agencyId: OpaqueId,
     tripId: OpaqueId,
@@ -58,67 +58,67 @@ export interface M1StaffTripWorkspaceWriteRepository {
     expectedLockVersion: bigint,
     accommodation: AccommodationDraft,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripWorkspace | null>;
+  ): Promise<TripWorkspace | null>;
   updateTrip(
     agencyId: OpaqueId,
     tripId: OpaqueId,
     expectedWorkspaceRevision: bigint,
     expectedLockVersion: bigint,
-    trip: UpdateM1TripWorkspaceTripInput["trip"],
+    trip: UpdateTripWorkspaceTripInput["trip"],
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripWorkspace | null>;
+  ): Promise<TripWorkspace | null>;
 }
 
-export interface M1StaffTripWorkspaceWriteOperations {
+export interface StaffTripWorkspaceWriteOperations {
   createFlight(
     cookieHeader: unknown,
     tripId: OpaqueId,
-    input: CreateM1TripWorkspaceFlightInput,
-  ): Promise<M1TripWorkspace>;
+    input: CreateTripWorkspaceFlightInput,
+  ): Promise<TripWorkspace>;
   updateFlight(
     cookieHeader: unknown,
     tripId: OpaqueId,
     itemId: OpaqueId,
-    input: UpdateM1TripWorkspaceFlightInput,
-  ): Promise<M1TripWorkspace>;
+    input: UpdateTripWorkspaceFlightInput,
+  ): Promise<TripWorkspace>;
   createAccommodation(
     cookieHeader: unknown,
     tripId: OpaqueId,
-    input: CreateM1TripWorkspaceAccommodationInput,
-  ): Promise<M1TripWorkspace>;
+    input: CreateTripWorkspaceAccommodationInput,
+  ): Promise<TripWorkspace>;
   updateAccommodation(
     cookieHeader: unknown,
     tripId: OpaqueId,
     itemId: OpaqueId,
-    input: UpdateM1TripWorkspaceAccommodationInput,
-  ): Promise<M1TripWorkspace>;
+    input: UpdateTripWorkspaceAccommodationInput,
+  ): Promise<TripWorkspace>;
   updateTrip(
     cookieHeader: unknown,
     tripId: OpaqueId,
-    input: UpdateM1TripWorkspaceTripInput,
-  ): Promise<M1TripWorkspace>;
+    input: UpdateTripWorkspaceTripInput,
+  ): Promise<TripWorkspace>;
 }
 
-export interface M1StaffTripWorkspaceWriteOperationsDependencies extends M1StaffAuthorizationDependencies {
-  readonly repository: M1StaffTripWorkspaceWriteRepository;
+export interface StaffTripWorkspaceWriteOperationsDependencies extends StaffAuthorizationDependencies {
+  readonly repository: StaffTripWorkspaceWriteRepository;
 }
 
-const requireWorkspace = (workspace: M1TripWorkspace | null): M1TripWorkspace => {
-  if (workspace === null) throw new M1TripNotFoundError();
+const requireWorkspace = (workspace: TripWorkspace | null): TripWorkspace => {
+  if (workspace === null) throw new TripNotFoundError();
   return workspace;
 };
 
-export const createM1StaffTripWorkspaceWriteOperations = (
-  dependencies: M1StaffTripWorkspaceWriteOperationsDependencies,
-): M1StaffTripWorkspaceWriteOperations => {
-  const operations: M1StaffTripWorkspaceWriteOperations = {
+export const createStaffTripWorkspaceWriteOperations = (
+  dependencies: StaffTripWorkspaceWriteOperationsDependencies,
+): StaffTripWorkspaceWriteOperations => {
+  const operations: StaffTripWorkspaceWriteOperations = {
     async createFlight(cookieHeader, tripId, input) {
-      const normalized = validateCreateM1TripWorkspaceFlightInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalized = validateCreateTripWorkspaceFlightInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_WORKSPACE_WRITE_PERMISSIONS,
+        WORKSPACE_WRITE_PERMISSIONS,
       );
       return requireWorkspace(
         await dependencies.repository.createFlight(
@@ -132,12 +132,12 @@ export const createM1StaffTripWorkspaceWriteOperations = (
     },
 
     async updateFlight(cookieHeader, tripId, itemId, input) {
-      const normalized = validateUpdateM1TripWorkspaceFlightInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalized = validateUpdateTripWorkspaceFlightInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_WORKSPACE_WRITE_PERMISSIONS,
+        WORKSPACE_WRITE_PERMISSIONS,
       );
       return requireWorkspace(
         await dependencies.repository.updateFlight(
@@ -153,12 +153,12 @@ export const createM1StaffTripWorkspaceWriteOperations = (
     },
 
     async createAccommodation(cookieHeader, tripId, input) {
-      const normalized = validateCreateM1TripWorkspaceAccommodationInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalized = validateCreateTripWorkspaceAccommodationInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_WORKSPACE_WRITE_PERMISSIONS,
+        WORKSPACE_WRITE_PERMISSIONS,
       );
       return requireWorkspace(
         await dependencies.repository.createAccommodation(
@@ -172,12 +172,12 @@ export const createM1StaffTripWorkspaceWriteOperations = (
     },
 
     async updateAccommodation(cookieHeader, tripId, itemId, input) {
-      const normalized = validateUpdateM1TripWorkspaceAccommodationInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalized = validateUpdateTripWorkspaceAccommodationInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_WORKSPACE_WRITE_PERMISSIONS,
+        WORKSPACE_WRITE_PERMISSIONS,
       );
       return requireWorkspace(
         await dependencies.repository.updateAccommodation(
@@ -193,12 +193,12 @@ export const createM1StaffTripWorkspaceWriteOperations = (
     },
 
     async updateTrip(cookieHeader, tripId, input) {
-      const normalized = validateUpdateM1TripWorkspaceTripInput(input);
-      const authorization = await authorizeM1Operation(
+      const normalized = validateUpdateTripWorkspaceTripInput(input);
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_WORKSPACE_WRITE_PERMISSIONS,
+        WORKSPACE_WRITE_PERMISSIONS,
       );
       return requireWorkspace(
         await dependencies.repository.updateTrip(

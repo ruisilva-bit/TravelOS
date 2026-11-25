@@ -1,11 +1,11 @@
 import type { AuthRealm, AuthSurfacePolicy } from "@travelos/auth-adapters";
-import type { M1StaffSessionResolver } from "@travelos/backend-core";
+import type { StaffSessionResolver } from "@travelos/backend-core";
 
 /** Adapts an untrusted Staff cookie to the server-verified session context. */
 export const createAdminStaffSessionResolver = (
   realm: AuthRealm,
   policy: AuthSurfacePolicy,
-): M1StaffSessionResolver => {
+): StaffSessionResolver => {
   if (realm.kind !== "STAFF") {
     throw new Error("M1 application authorization requires the Staff auth realm");
   }

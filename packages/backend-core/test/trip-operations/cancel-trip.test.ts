@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { asOpaqueId } from "../../src/shared-kernel/opaque-id.js";
-import { createM1StaffTripOperations } from "../../src/modules/trip-operations/application/m1-staff-operations.js";
+import { createStaffTripOperations } from "../../src/modules/trip-operations/application/staff-trip-operations.js";
 import {
-  M1InputValidationError,
-  M1OptimisticConflictError,
-} from "../../src/modules/trip-operations/application/m1-trip-slice.js";
+  InputValidationError,
+  OptimisticConflictError,
+} from "../../src/modules/trip-operations/application/trip-slice.js";
 import type { StaffPermissionId } from "../../src/staff-access/permission-registry.js";
 
 const agencyId = asOpaqueId("abcdef12-3456-7abc-8def-000000000001");
@@ -52,8 +52,8 @@ const makeContext = ({
     recentMfaVerifiedAtEpochMs,
   };
   const repository = {
-    createM1TripSlice: vi.fn(async () => cancelledSlice),
-    getM1TripSlice: vi.fn(async () => cancelledSlice),
+    createTripSlice: vi.fn(async () => cancelledSlice),
+    getTripSlice: vi.fn(async () => cancelledSlice),
     updateAccommodation: vi.fn(async () => cancelledSlice),
     updateInternalSupplierNote: vi.fn(async () => cancelledSlice),
     cancelTrip: vi.fn(
@@ -69,7 +69,7 @@ const makeContext = ({
       },
     ),
   };
-  const operations = createM1StaffTripOperations({
+  const operations = createStaffTripOperations({
     repository: repository as never,
     authorizationRepository: {
       getStaffAuthorizationSnapshot: vi.fn(async () => ({
@@ -99,7 +99,7 @@ const cancelTripFrom = (operations: unknown): CancelTrip =>
 
 describe("supported Staff Trip cancellation", () => {
   it("rejects stale versions and unsupported terminal states with typed errors", async () => {
-    const stale = makeContext({ cancelError: new M1OptimisticConflictError() });
+    const stale = makeContext({ cancelError: new OptimisticConflictError() });
     await expect(
       cancelTripFrom(stale.operations)("staff-cookie", {
         tripId,
@@ -142,14 +142,14 @@ describe("supported Staff Trip cancellation", () => {
         idempotencyKey: "cancel-003",
         agencyId,
       }),
-    ).rejects.toBeInstanceOf(M1InputValidationError);
+    ).rejects.toBeInstanceOf(InputValidationError);
     await expect(
       cancelTrip("staff-cookie", {
         tripId,
         expectedLockVersion: "03",
         idempotencyKey: "cancel-004",
       }),
-    ).rejects.toBeInstanceOf(M1InputValidationError);
+    ).rejects.toBeInstanceOf(InputValidationError);
 
     const staleMfa = makeContext({ recentMfaVerifiedAtEpochMs: nowEpochMs - 301_000 });
     await expect(

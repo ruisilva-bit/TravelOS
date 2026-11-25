@@ -113,7 +113,7 @@ export interface ReservationItemLink {
   readonly linkRole: "PRIMARY" | "SECONDARY";
 }
 
-export interface M1TripSlice {
+export interface TripSlice {
   readonly person: Person;
   readonly customer: Customer;
   readonly customerPerson: CustomerPerson;

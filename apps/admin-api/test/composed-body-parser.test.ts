@@ -8,16 +8,16 @@ import {
 } from "@travelos/auth-adapters";
 import {
   asOpaqueId,
-  createM1StaffTripOperations,
-  type M1OperationalSliceRepository,
-  type M1TripSlice,
+  createStaffTripOperations,
+  type OperationalSliceRepository,
+  type TripSlice,
   type StaffAuthorizationSnapshot,
   type StaffPermissionId,
   type StaffInvitationOperations,
 } from "@travelos/backend-core";
 
 import { createAdminApi } from "../src/app.js";
-import { createAdminStaffSessionResolver } from "../src/m1-session-resolver.js";
+import { createAdminStaffSessionResolver } from "../src/staff-session-resolver.js";
 import { createStaffInvitationRateLimiter } from "../src/staff-invitation-rate-limit.js";
 
 const agencyId = "00000000-0000-7000-8000-000000000001";
@@ -128,7 +128,7 @@ const authorizedSnapshot: StaffAuthorizationSnapshot = {
   })),
 };
 
-const authorizedTripSlice: M1TripSlice = {
+const authorizedTripSlice: TripSlice = {
   person: {
     id: personId,
     agencyId: agency,
@@ -186,14 +186,14 @@ const startAuthorizedAdminApi = async (failCreate = false) => {
     },
     getServerSession,
   };
-  const createM1TripSlice = vi.fn().mockResolvedValue(authorizedTripSlice);
-  if (failCreate) createM1TripSlice.mockRejectedValue(new Error("synthetic application failure"));
-  const repository: M1OperationalSliceRepository = {
+  const createTripSlice = vi.fn().mockResolvedValue(authorizedTripSlice);
+  if (failCreate) createTripSlice.mockRejectedValue(new Error("synthetic application failure"));
+  const repository: OperationalSliceRepository = {
     createTripWorkspace: vi
       .fn()
       .mockRejectedValue(new Error("Unexpected minimal workspace creation in body-parser test")),
-    createM1TripSlice,
-    getM1TripSlice: vi.fn().mockResolvedValue(authorizedTripSlice),
+    createTripSlice,
+    getTripSlice: vi.fn().mockResolvedValue(authorizedTripSlice),
     updateAccommodation: vi.fn().mockResolvedValue(authorizedTripSlice),
     updateInternalSupplierNote: vi.fn().mockResolvedValue(authorizedTripSlice),
     cancelTrip: vi.fn().mockResolvedValue(authorizedTripSlice),
@@ -204,14 +204,14 @@ const startAuthorizedAdminApi = async (failCreate = false) => {
   const staffAccessRepository = {
     getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue(authorizedSnapshot),
   };
-  const m1Operations = createM1StaffTripOperations({
+  const tripOperations = createStaffTripOperations({
     repository,
     authorizationRepository: staffAccessRepository,
     sessionResolver: createAdminStaffSessionResolver(realm, policy),
   });
   const application = await createAdminApi({
     expectedHost,
-    auth: { realm, policy, staffAccessRepository, m1Operations },
+    auth: { realm, policy, staffAccessRepository, tripOperations },
   });
   return { application, repository, getServerSession };
 };
@@ -223,19 +223,19 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
       basePath: STAFF_AUTH_BASE_PATH,
       getServerSession: vi.fn().mockResolvedValue(null),
     } as unknown as AuthRealm;
-    const m1Repository: M1OperationalSliceRepository = {
+    const sliceRepository: OperationalSliceRepository = {
       createTripWorkspace: vi
         .fn()
         .mockRejectedValue(new Error("Unexpected minimal workspace creation in body-parser test")),
-      createM1TripSlice: vi.fn(),
-      getM1TripSlice: vi.fn(),
+      createTripSlice: vi.fn(),
+      getTripSlice: vi.fn(),
       updateAccommodation: vi.fn(),
       updateInternalSupplierNote: vi.fn(),
       cancelTrip: vi.fn(),
       createRuntimeAcceptanceFixtureTrip: vi.fn(),
     };
-    const m1Operations = createM1StaffTripOperations({
-      repository: m1Repository,
+    const tripOperations = createStaffTripOperations({
+      repository: sliceRepository,
       authorizationRepository: {
         getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue(null),
       },
@@ -250,7 +250,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
           expectedHost: "admin.example.test",
         },
         staffAccessRepository: { getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue(null) },
-        m1Operations,
+        tripOperations,
       },
     });
     try {
@@ -261,7 +261,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
         .send("{");
       expect(rejectedBeforeParsing.status).toBe(404);
       expect(rejectedBeforeParsing.text).toBe("");
-      expect(m1Repository.createM1TripSlice).not.toHaveBeenCalled();
+      expect(sliceRepository.createTripSlice).not.toHaveBeenCalled();
 
       const response = await request(application.getHttpServer())
         .post("/api/admin/trips")
@@ -271,7 +271,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
         .send(validCreateBody());
       expect(response.status).toBe(401);
       expect(response.headers["cache-control"]).toBe("private, no-store");
-      expect(m1Repository.createM1TripSlice).not.toHaveBeenCalled();
+      expect(sliceRepository.createTripSlice).not.toHaveBeenCalled();
 
       const invalidRoleResponse = await request(application.getHttpServer())
         .post("/api/admin/trips")
@@ -280,7 +280,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
         .send({ ...validCreateBody(), travellerRole: "TRAVELLER" });
       expect(invalidRoleResponse.status).toBe(400);
       expect(invalidRoleResponse.headers["cache-control"]).toBe("private, no-store");
-      expect(m1Repository.createM1TripSlice).not.toHaveBeenCalled();
+      expect(sliceRepository.createTripSlice).not.toHaveBeenCalled();
     } finally {
       await application.close();
     }
@@ -341,7 +341,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
       expect(hostRejection.headers["cache-control"]).toBe("private, no-store");
 
       expect(getServerSession).not.toHaveBeenCalled();
-      expect(repository.createM1TripSlice).not.toHaveBeenCalled();
+      expect(repository.createTripSlice).not.toHaveBeenCalled();
       expect(repository.updateAccommodation).not.toHaveBeenCalled();
       expect(repository.updateInternalSupplierNote).not.toHaveBeenCalled();
 
@@ -355,7 +355,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
       expect(accepted.headers["cache-control"]).toBe("private, no-store");
       expect(accepted.body.trip).toMatchObject({ id: tripId.toString(), workspaceRevision: "1" });
       expect(getServerSession).toHaveBeenCalledOnce();
-      expect(repository.createM1TripSlice).toHaveBeenCalledOnce();
+      expect(repository.createTripSlice).toHaveBeenCalledOnce();
     } finally {
       await application.close();
     }
@@ -372,7 +372,7 @@ describe("Admin Stage 5 composed HTTP body parsing", () => {
         .send(validCreateBody());
       expect(response.status).toBe(500);
       expect(response.headers["cache-control"]).toBe("private, no-store");
-      expect(repository.createM1TripSlice).toHaveBeenCalledOnce();
+      expect(repository.createTripSlice).toHaveBeenCalledOnce();
     } finally {
       await application.close();
     }

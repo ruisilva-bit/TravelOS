@@ -9,21 +9,21 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   asOpaqueId,
   bootstrapRootAgency,
-  createM1StaffTripOperations,
+  createStaffTripOperations,
   createMoney,
   createScheduledLocalDateTime,
   OWNER_ROLE_PERMISSION_IDS,
-  type M1StaffSessionResolver,
-  type M1StaffTripOperations,
-  type M1StaffTripPublicationOperations,
+  type StaffSessionResolver,
+  type StaffTripOperations,
+  type StaffTripPublicationOperations,
   type PublicationHistoryEntry,
   type StaffSessionAuthorizationProof,
 } from "@travelos/backend-core";
-import type { CreateM1TripSliceInput } from "@travelos/backend-core";
+import type { CreateTripSliceInput } from "@travelos/backend-core";
 import { canonicalPortalTripSnapshotV1Json } from "@travelos/backend-core";
-import { createM1OperationalSliceRepository } from "../../packages/database/src/trip-operations/m1-operational-slice-repository.js";
+import { createOperationalSliceRepository } from "../../packages/database/src/trip-operations/operational-slice-repository.js";
 import {
-  createPostgresM1StaffTripPublicationOperations,
+  createPostgresStaffTripPublicationOperations,
   createPostgresPersistence,
   createStaffAccessRepository,
   createUuidV7,
@@ -62,9 +62,9 @@ const migrationTarget: MigrationTarget = {
 };
 
 let persistence: ReturnType<typeof createPostgresPersistence<Record<string, never>>> | null = null;
-let staffOperations: M1StaffTripOperations;
-let publicationOperations: M1StaffTripPublicationOperations;
-let slice: Awaited<ReturnType<M1StaffTripOperations["createTripSlice"]>>;
+let staffOperations: StaffTripOperations;
+let publicationOperations: StaffTripPublicationOperations;
+let slice: Awaited<ReturnType<StaffTripOperations["createTripSlice"]>>;
 let predecessorMigrationDirectory: string | null = null;
 let sessionProof: StaffSessionAuthorizationProof;
 let roleId = "";
@@ -217,7 +217,7 @@ const stage5MigrationChain = async (): Promise<MigrationChain> => {
   return { directory, checksumManifestPath };
 };
 
-const tripInput = (): CreateM1TripSliceInput => ({
+const tripInput = (): CreateTripSliceInput => ({
   agencyId,
   person: {
     givenName: "Synthetic",
@@ -290,7 +290,7 @@ const tripInput = (): CreateM1TripSliceInput => ({
   },
 });
 
-const authorizationSessionResolver: M1StaffSessionResolver = {
+const authorizationSessionResolver: StaffSessionResolver = {
   resolveStaffSession: async (cookieHeader) => (cookieHeader === cookie ? sessionProof : null),
 };
 
@@ -412,14 +412,14 @@ beforeAll(async () => {
     recentMfaVerifiedAtEpochMs: Date.now(),
   };
 
-  const operationalRepository = createM1OperationalSliceRepository(persistence);
-  staffOperations = createM1StaffTripOperations({
+  const operationalRepository = createOperationalSliceRepository(persistence);
+  staffOperations = createStaffTripOperations({
     repository: operationalRepository,
     authorizationRepository: staffAccess,
     sessionResolver: authorizationSessionResolver,
   });
   slice = await staffOperations.createTripSlice(cookie, tripInput());
-  publicationOperations = createPostgresM1StaffTripPublicationOperations(
+  publicationOperations = createPostgresStaffTripPublicationOperations(
     persistence,
     authorizationSessionResolver,
     {
@@ -834,7 +834,7 @@ describe.sequential("TravelOS Stage 6 disposable PostgreSQL publication qualific
   });
 
   it("rejects unauthenticated and unauthorized direct use-case invocation", async () => {
-    const denied = createPostgresM1StaffTripPublicationOperations(
+    const denied = createPostgresStaffTripPublicationOperations(
       persistence!,
       { resolveStaffSession: async () => null },
       {
