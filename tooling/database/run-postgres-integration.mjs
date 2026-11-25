@@ -101,12 +101,15 @@ const portClosed = (port) =>
     socket.setTimeout(1_000, () => finish(true));
   });
 
-// Stage 3/4/5 suites are pinned to their own migration head; they receive the checksummed prefix
+// Stage 3/4/5/7/8/9 suites are pinned to their own migration head; they receive the checksummed prefix
 // of the authoritative chain ending at that head (see vitest.postgres.config.ts).
 const prefixChainLengths = {
   "stage-3-postgresql.test.ts": 3,
   "stage-4-postgresql.test.ts": 6,
   "stage-5-postgresql.test.ts": 10,
+  "stage-7-postgresql.test.ts": 16,
+  "stage-8-postgresql.test.ts": 16,
+  "stage-9-staff-invitations-postgresql.test.ts": 16,
 };
 const writePrefixChain = async (directory, length) => {
   const source = path.join(repositoryRoot, "migrations");
