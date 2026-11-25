@@ -18,6 +18,7 @@ All Phase 0 ADRs became **Accepted** after Product Owner acceptance, verified po
 | [ADR-012](ADR-012-persistence-boundary-and-fleet-safe-migrations.md) | Kysely, node-pg-migrate and one fleet migration chain | Accepted |
 | [ADR-013](ADR-013-monorepo-web-runtime-and-build-orchestration.md) | React/Vite, Nest roots and pnpm-only monorepo | Accepted |
 | [ADR-014](ADR-014-durable-privacy-erasure-across-backups.md) | Privacy deletion, bounded backup retention and explicit residual risk | Accepted |
+| [ADR-015](ADR-015-steady-state-delivery-pipeline.md) | Stage-free current-tree CI gates; stage-frozen verifiers become historical | Accepted (2026-11-25, PO decision) |
 
 ## ADR rule
 

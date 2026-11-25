@@ -1,6 +1,6 @@
 # AGENTS.md — TravelOS Engineering Constitution
 
-This constitution is mirrored in `docs/reviews/AGENTS_CANDIDATE.md` for Phase 0 review traceability.
+This constitution is mirrored in `docs/reviews/AGENTS_CANDIDATE.md` for Phase 0 review traceability. That mirror records the accepted Phase 0 text; later amendments made through an ADR (currently ADR-015 in §9) appear only here.
 
 This file governs all future human, Hermes and Codex work in this repository.
 
@@ -140,6 +140,8 @@ For every change, select and execute the applicable evidence:
 - deployment/upgrade/backup/restore tests when operational scope changes, including exact-host rejection, backup expiry and privacy-deletion reconciliation where applicable.
 
 Use synthetic disposable fixtures and clean them. A mocked unit test cannot prove PostgreSQL privileges/constraints or a browser security boundary. Keep Kanban/status truthful and exactly one execution task in progress.
+
+The required composition of these gates is `pnpm ci:verify` (ADR-015): stage-free current-tree checks, including the classified current-source sensitive-data scan and real PostgreSQL 18.6 integration. M1 stage-frozen verifiers are historical; never edit them to fit new code. Every new entry in `tooling/ci/current-source-findings.json` is a security-relevant change and needs a category and rationale. New evidence goes to CI output/artifacts and reviews, not `docs/evidence/**`.
 
 ## 10. Definition of done
 
