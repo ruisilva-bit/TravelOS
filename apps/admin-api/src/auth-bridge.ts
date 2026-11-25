@@ -15,6 +15,7 @@ import type { StaffTripWorkspaceWriteOperations } from "@travelos/backend-core";
 import type { StaffTripAccessOperations } from "@travelos/backend-core";
 import type { StaffTripPublicationOperations } from "@travelos/backend-core";
 import type { StaffInvitationOperations } from "@travelos/backend-core";
+import type { StaffLeadOperations } from "@travelos/backend-core";
 import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
 import type { StaffAccessRepository } from "@travelos/database";
 
@@ -74,6 +75,7 @@ export interface AdminAuthBridgeOptions {
   readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
   readonly tripAccessOperations?: StaffTripAccessOperations;
   readonly publicationOperations?: StaffTripPublicationOperations;
+  readonly leadOperations?: StaffLeadOperations;
   readonly runtimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
   readonly staffInvitationOperations?: StaffInvitationOperations;
   readonly staffInvitationRateLimiter?: StaffInvitationRateLimiter;
@@ -274,6 +276,7 @@ export const registerAdminAuthBridge = (
       ...(options.publicationOperations === undefined
         ? {}
         : { publicationOperations: options.publicationOperations }),
+      ...(options.leadOperations === undefined ? {} : { leadOperations: options.leadOperations }),
       ...(options.environment !== "DEVELOPMENT" ||
       options.runtimeAcceptanceFixtureOperations === undefined
         ? {}

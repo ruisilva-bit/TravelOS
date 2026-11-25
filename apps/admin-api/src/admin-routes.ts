@@ -1,4 +1,5 @@
 import { registerAdminItineraryRoutes } from "./itinerary-routes.js";
+import { registerAdminLeadRoutes } from "./lead-routes.js";
 import type { AdminExpressApplication, AdminRouteOptions } from "./admin-route-http.js";
 import { registerAdminPortalAccessRoutes } from "./portal-access-routes.js";
 import { registerAdminPublicationRoutes } from "./publication-routes.js";
@@ -21,4 +22,5 @@ export const registerAdminRoutes = (
   registerAdminItineraryRoutes(application, options);
   registerAdminPortalAccessRoutes(application, options);
   registerAdminPublicationRoutes(application, options);
+  registerAdminLeadRoutes(application, options);
 };

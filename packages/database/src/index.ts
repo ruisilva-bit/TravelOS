@@ -27,3 +27,5 @@ export { createPortalTripSnapshotSha256Hasher } from "./customer-presentation/sn
 export { createPostgresStaffTripPublicationOperations } from "./customer-presentation/staff-publication-operations.js";
 export { createPostgresStaffTripAccessRepository } from "./portal-access/staff-trip-access-repository.js";
 export { createPostgresRuntimeAcceptanceFixtureCleanupRepository } from "./portal-access/runtime-acceptance-fixture-repository.js";
+export { createPostgresLeadRepository } from "./sales/lead-repository.js";
+export { createPostgresStaffLeadOperations } from "./sales/staff-lead-operations.js";

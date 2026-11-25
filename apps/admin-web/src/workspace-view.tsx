@@ -1,5 +1,6 @@
 import { WorkspaceFrame } from "@travelos/design-system";
 import type { getAdminTripWorkspace, listAdminTrips } from "./api.js";
+import { LeadsView } from "./leads-view.js";
 import { StaffInvitationsView } from "./staff-invitations-view.js";
 import { TripCreateForm, TripWorkspaceEditor } from "./trip-workflows.js";
 import type { AdminWorkflowWorkspace } from "./trip-workflows.js";
@@ -27,7 +28,8 @@ export type AdminWorkspaceState =
   | { readonly kind: "ready"; readonly workspace: AdminWorkspace };
 
 interface AdminWorkspaceViewProps {
-  readonly page: "overview" | "trips" | "staff-invitations" | "detail";
+  readonly page: "overview" | "trips" | "leads" | "lead-detail" | "staff-invitations" | "detail";
+  readonly leadId: string | null;
   readonly canInviteStaff: boolean;
   readonly trips: AdminTripsState;
   readonly workspace: AdminWorkspaceState;
@@ -368,6 +370,7 @@ function TripDetail({
 
 export function AdminWorkspaceView({
   page,
+  leadId,
   canInviteStaff,
   trips,
   workspace,
@@ -382,15 +385,25 @@ export function AdminWorkspaceView({
   signOutError,
 }: AdminWorkspaceViewProps) {
   const activeHref =
-    page === "overview" ? "#/" : page === "staff-invitations" ? "#/staff/invitations" : "#/trips";
+    page === "overview"
+      ? "#/"
+      : page === "staff-invitations"
+        ? "#/staff/invitations"
+        : page === "leads" || page === "lead-detail"
+          ? "#/leads"
+          : "#/trips";
   const headerContext =
     page === "overview"
       ? "Visão geral"
       : page === "trips"
         ? "Viagens"
-        : page === "staff-invitations"
-          ? "Convites de equipa"
-          : "Detalhe da viagem";
+        : page === "leads"
+          ? "Leads"
+          : page === "lead-detail"
+            ? "Detalhe do lead"
+            : page === "staff-invitations"
+              ? "Convites de equipa"
+              : "Detalhe da viagem";
 
   return (
     <WorkspaceFrame
@@ -399,6 +412,7 @@ export function AdminWorkspaceView({
       navigation={[
         { href: "#/", label: "Visão geral" },
         { href: "#/trips", label: "Viagens" },
+        { href: "#/leads", label: "Leads" },
         ...(canInviteStaff ? [{ href: "#/staff/invitations", label: "Convites de equipa" }] : []),
       ]}
       activeHref={activeHref}
@@ -418,7 +432,12 @@ export function AdminWorkspaceView({
           {signOutError}
         </p>
       ) : null}
-      {page === "detail" ? (
+      {page === "leads" || page === "lead-detail" ? (
+        <LeadsView
+          leadId={page === "lead-detail" ? leadId : null}
+          onAuthenticationRequired={onAuthenticationRequired}
+        />
+      ) : page === "detail" ? (
         <TripDetail
           state={workspace}
           onRetry={onRetryWorkspace}

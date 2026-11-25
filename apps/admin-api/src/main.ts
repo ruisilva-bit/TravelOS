@@ -19,6 +19,7 @@ import {
 import {
   createPostgresStaffTripAccessRepository,
   createPostgresStaffTripPublicationOperations,
+  createPostgresStaffLeadOperations,
   createPostgresStaffTripOperations,
   createPostgresStaffTripWorkspaceOperations,
   createPostgresStaffTripWorkspaceWriteOperations,
@@ -107,6 +108,7 @@ const createAdminAuthOptions = async (
         validate: (value) => void AdminTripPublicationPreviewV1Schema.shape.projection.parse(value),
       },
     );
+    const leadOperations = createPostgresStaffLeadOperations(persistence, sessionResolver);
     const staffInvitationOperations = createStaffInvitationOperations({
       repository: createPostgresStaffInvitationRepository(persistence),
       authorizationRepository: staffAccessRepository,
@@ -152,6 +154,7 @@ const createAdminAuthOptions = async (
           workspaceWriteOperations,
           tripAccessOperations,
           publicationOperations,
+          leadOperations,
           staffInvitationOperations,
           staffInvitationRateLimiter,
           ...(runtimeAcceptanceFixtureOperations === undefined

@@ -1,4 +1,13 @@
 import {
+  ADMIN_IDEMPOTENCY_KEY_HEADER,
+  AdminIdempotencyKeySchema,
+  AdminLeadCreateV1RequestSchema,
+  AdminLeadDisqualifyV1RequestSchema,
+  AdminLeadListV1QuerySchema,
+  AdminLeadListV1ResponseSchema,
+  AdminLeadQualifyV1RequestSchema,
+  AdminLeadUpdateV1RequestSchema,
+  AdminLeadV1ResponseSchema,
   AdminPublishTripV1RequestSchema,
   AdminTripPublicationHistoryV1ResponseSchema,
   AdminTripPublicationPreviewV1Schema,
@@ -14,6 +23,12 @@ import {
   AdminTripWorkspaceListV1ResponseSchema,
   AdminTripWorkspaceTripUpdateV1RequestSchema,
   AdminTripWorkspaceV1ResponseSchema,
+  type AdminLeadCreateV1Request,
+  type AdminLeadDisqualifyV1Request,
+  type AdminLeadListV1Response,
+  type AdminLeadQualifyV1Request,
+  type AdminLeadUpdateV1Request,
+  type AdminLeadV1Response,
   type AdminPublishTripV1Request,
   type AdminStaffSessionContext,
   type AdminTripPublicationHistoryV1Response,
@@ -110,6 +125,7 @@ const sendJson = async <TRequest, TResponse>(
   input: unknown,
   requestSchema: SafeParseSchema<TRequest>,
   responseSchema: SafeParseSchema<TResponse>,
+  extraHeaders: Readonly<Record<string, string>> = {},
 ): Promise<TResponse> => {
   const request = requestSchema.safeParse(input);
   if (!request.success) throw new AdminApiError("INVALID_REQUEST");
@@ -120,7 +136,11 @@ const sendJson = async <TRequest, TResponse>(
       method,
       credentials: "same-origin",
       cache: "no-store",
-      headers: { accept: "application/json", "content-type": "application/json" },
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        ...extraHeaders,
+      },
       body: JSON.stringify(request.data),
     });
   } catch {
@@ -283,4 +303,114 @@ export const listAdminTripPublications = (
   const path = tripResourcePath(tripId, "publications");
   const query = before === null ? "" : `?${new URLSearchParams({ before }).toString()}`;
   return getJson(`${path}${query}`, AdminTripPublicationHistoryV1ResponseSchema);
+};
+
+const leadResourcePath = (leadId: string, resource = ""): string => {
+  const parsedId = AdminOpaqueIdSchema.safeParse(leadId);
+  if (!parsedId.success) throw new AdminApiError("INVALID_REQUEST");
+  return `/api/admin/leads/${encodeURIComponent(parsedId.data)}${resource}`;
+};
+
+const idempotencyHeaders = (idempotencyKey: string): Readonly<Record<string, string>> => {
+  const parsed = AdminIdempotencyKeySchema.safeParse(idempotencyKey);
+  if (!parsed.success) throw new AdminApiError("INVALID_REQUEST");
+  return { [ADMIN_IDEMPOTENCY_KEY_HEADER]: parsed.data };
+};
+
+export const listAdminLeads = (input: {
+  readonly limit: number;
+  readonly cursor: string | null;
+  readonly state: AdminLeadV1Response["state"] | null;
+}): Promise<AdminLeadListV1Response> => {
+  const parsed = AdminLeadListV1QuerySchema.safeParse({
+    limit: String(input.limit),
+    cursor: input.cursor,
+    state: input.state,
+  });
+  if (!parsed.success) return Promise.reject(new AdminApiError("INVALID_REQUEST"));
+  const query = new URLSearchParams({ limit: String(parsed.data.limit) });
+  if (parsed.data.cursor !== null) query.set("cursor", parsed.data.cursor);
+  if (parsed.data.state !== null) query.set("state", parsed.data.state);
+  return getJson(`/api/admin/leads?${query.toString()}`, AdminLeadListV1ResponseSchema);
+};
+
+export const getAdminLead = (leadId: string): Promise<AdminLeadV1Response> => {
+  try {
+    return getJson(leadResourcePath(leadId), AdminLeadV1ResponseSchema);
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const createAdminLead = (
+  input: AdminLeadCreateV1Request,
+  idempotencyKey: string,
+): Promise<AdminLeadV1Response> => {
+  try {
+    return sendJson(
+      "/api/admin/leads",
+      "POST",
+      input,
+      AdminLeadCreateV1RequestSchema,
+      AdminLeadV1ResponseSchema,
+      idempotencyHeaders(idempotencyKey),
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const updateAdminLead = (
+  leadId: string,
+  input: AdminLeadUpdateV1Request,
+): Promise<AdminLeadV1Response> => {
+  try {
+    return sendJson(
+      leadResourcePath(leadId),
+      "PATCH",
+      input,
+      AdminLeadUpdateV1RequestSchema,
+      AdminLeadV1ResponseSchema,
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const qualifyAdminLead = (
+  leadId: string,
+  input: AdminLeadQualifyV1Request,
+  idempotencyKey: string,
+): Promise<AdminLeadV1Response> => {
+  try {
+    return sendJson(
+      leadResourcePath(leadId, "/qualification"),
+      "POST",
+      input,
+      AdminLeadQualifyV1RequestSchema,
+      AdminLeadV1ResponseSchema,
+      idempotencyHeaders(idempotencyKey),
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const disqualifyAdminLead = (
+  leadId: string,
+  input: AdminLeadDisqualifyV1Request,
+  idempotencyKey: string,
+): Promise<AdminLeadV1Response> => {
+  try {
+    return sendJson(
+      leadResourcePath(leadId, "/disqualification"),
+      "POST",
+      input,
+      AdminLeadDisqualifyV1RequestSchema,
+      AdminLeadV1ResponseSchema,
+      idempotencyHeaders(idempotencyKey),
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
 };

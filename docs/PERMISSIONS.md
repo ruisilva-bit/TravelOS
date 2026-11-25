@@ -73,6 +73,18 @@ Owner, Admin, Manager, Sales, Quotation, Customer Service, Finance and Read Only
 
 Owner is reserved and protected. At least one active Staff Principal must retain Owner. Owner does not bypass document access/audit invisibly; broad permissions remain explicit.
 
+### M2 slice 1 Sales Lead capabilities
+
+`sales.view` and `sales.edit` are registered in the code-owned permission registry (version 7) at Agency scope and are assigned to the bootstrapped Owner role: new Agencies receive them at bootstrap, and migration `0017` adds them to the existing Owner role of an upgraded database. Business code never checks a role name.
+
+| Use case | Required permissions |
+|---|---|
+| List and read Leads | `sales.view` |
+| Create, update and disqualify a Lead | `sales.edit` |
+| Qualify a Lead (creates or links a Customer) | `sales.edit` **and** `customer.edit` |
+
+Each use case authorizes inside the application use case and again inside the repository transaction against the live session, membership and authorization epoch; a missing permission or a Lead/Customer of another Agency gives a generic forbidden or not-found response. The `trip-operations-v1` template below is unchanged by this slice (its exact Stage 9 set is a documented contract); a Sales role template is a later decision. Lead data has no Portal access.
+
 ### Stage 9 fixed invitation role
 
 Stage 9 provides one code-owned Agency role template, `trip-operations-v1`, for invited staff who need the workspace, preview/publish and explicit Portal Trip-grant workflows. Its exact Agency-scoped permission set is `agency.view`, `customer.edit`, `traveller.edit`, `trip.view`, `trip.edit`, `trip.preview`, `trip.publish` and `trip.access.manage`. It excludes `staff.invite`, `staff.view`, `staff.manage_roles`, `staff.suspend`, `agency.manage_settings`, finance permissions, reservation permissions, `trip.withdraw_publication` and `runtime_acceptance.fixture.manage`. Invitation requests cannot select another role or submit permission IDs.

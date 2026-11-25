@@ -12,6 +12,10 @@ import {
   IdempotencyConflictError,
   TripPublicationNotFoundError,
   StaffTripAccessNotFoundError,
+  LeadIdempotencyConflictError,
+  LeadNotFoundError,
+  LeadNotOpenError,
+  type StaffLeadOperations,
   type StaffTripWorkspaceWriteOperations,
   type StaffTripAccessOperations,
   type StaffTripOperations,
@@ -62,6 +66,7 @@ export interface AdminRouteOptions {
   readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
   readonly tripAccessOperations?: StaffTripAccessOperations;
   readonly publicationOperations?: StaffTripPublicationOperations;
+  readonly leadOperations?: StaffLeadOperations;
   readonly runtimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
 }
 
@@ -123,6 +128,18 @@ export const runHandler = (
     }
     if (error instanceof IdempotencyConflictError) {
       send(response, 409, { error: "IDEMPOTENCY_KEY_CONFLICT" });
+      return;
+    }
+    if (error instanceof LeadNotOpenError) {
+      send(response, 409, { error: error.code });
+      return;
+    }
+    if (error instanceof LeadIdempotencyConflictError) {
+      send(response, 409, { error: error.code });
+      return;
+    }
+    if (error instanceof LeadNotFoundError) {
+      response.status(404).end();
       return;
     }
     if (error instanceof TripPublicationNotFoundError) {

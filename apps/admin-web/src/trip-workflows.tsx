@@ -73,7 +73,7 @@ const isRetryablePublishFailure = (error: unknown): boolean =>
   error instanceof AdminApiError &&
   (error.code === "NETWORK_FAILURE" || error.code === "UNAVAILABLE");
 
-const createIdempotencyKey = (): string => {
+export const createIdempotencyKey = (): string => {
   const cryptoApi = globalThis.crypto;
   if (typeof cryptoApi?.getRandomValues === "function") {
     const bytes = cryptoApi.getRandomValues(new Uint8Array(16));

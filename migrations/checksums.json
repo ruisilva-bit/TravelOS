@@ -65,6 +65,10 @@
     {
       "file": "0016_stage9_staff_invitations.cjs",
       "sha256": "a1734cef25a350d22de35b1a967282375c46b894c434601d781f925e33eb6070"
+    },
+    {
+      "file": "0017_m2_sales_lead.cjs",
+      "sha256": "33ded36ed997a7ce2b38ad90bb1bf01ef50c82754b3c44b98b96079951c48fff"
     }
   ]
 }

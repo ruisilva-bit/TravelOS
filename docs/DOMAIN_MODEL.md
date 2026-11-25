@@ -130,7 +130,11 @@ Solid arrows mean stable identifiers/contracts, not shared ORM objects. Dotted p
 
 ### Sales
 
-- **Lead** is retained after qualification; qualification links to created/found Customer.
+- **Lead** is retained after qualification; qualification links to created/found Customer. M2 slice 1 (migration `0017`) implements it as a small aggregate: `source` (`WEBSITE`, `PHONE`, `EMAIL`, `REFERRAL`, `WALK_IN`, `OTHER`), a contact snapshot (given/family name, optional email and phone, all `CONFIDENTIAL_PERSONAL`), an `INTERNAL_ONLY` internal note, `state`, `qualifiedCustomerId`, `disqualificationReason`, `lock_version` and `closedAt`.
+  - State changes are commands, never free-form status edits: `OPEN --update--> OPEN`, `OPEN --qualify--> QUALIFIED` and `OPEN --disqualify(reason)--> DISQUALIFIED`. `QUALIFIED` and `DISQUALIFIED` are terminal; every command on them fails with the typed `LEAD_NOT_OPEN` error, and a stale expected lock version fails with the existing typed optimistic conflict.
+  - `QUALIFIED` holds exactly when `qualifiedCustomerId` is set, `DISQUALIFIED` exactly when a categorical reason (`NO_RESPONSE`, `NOT_INTERESTED`, `NOT_SERVICEABLE`, `DUPLICATE`, `OTHER`) is set, and `closedAt` is set exactly when the Lead is not `OPEN`.
+  - Qualification has two explicit modes. `CREATE_CUSTOMER` creates, in one transaction, a Person copied from the contact snapshot, a Customer (display name `"<given> <family>"` unless provided) and a primary `PRIMARY_CONTACT` link. `LINK_CUSTOMER` links a caller-chosen Customer of the same Agency and creates or modifies no Person. Email equality never selects or links an existing Person or Customer; deduplication stays an explicit merge use case.
+  - Qualify and disqualify append, in the same transaction as the state change, one Audit event, one Activity entry and one outbox message (`LeadQualified`/`LeadDisqualified`) that carries only identifiers and the new lock version. Lead data has no Portal contract, source field or database privilege.
 - **TravelRequest** captures needs and constraints.
 - **Opportunity** owns pipeline state and responsibility.
 - **Quote** owns sequential immutable QuoteVersions.
