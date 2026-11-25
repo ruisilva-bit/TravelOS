@@ -1,0 +1,106 @@
+{
+  "scope": "AUTHOR_CHECKPOINT_NOT_QUALIFICATION",
+  "task": "t_9fbc40f6",
+  "run": 77,
+  "entries": [
+    {
+      "path": "tooling/deployment/stage10-qualification-transport.py",
+      "sha256": "e75a5d283458539e0c7a45d5301cb823eca9665e37a2b9592f74c16011d83218",
+      "bytes": 11272
+    },
+    {
+      "path": "tooling/deployment/test-stage10-qualification-transport.py",
+      "sha256": "1812a31566406b7ee9f74d8538d1b7934ff0be2e72c961d53d221bb83291875c",
+      "bytes": 9202
+    },
+    {
+      "path": "tooling/deployment/stage10-qualification-preflight.py",
+      "sha256": "a5e247cd228ae4fc5bde6185d88ccd638ddcc7ba4f574f9117eac497b0c65306",
+      "bytes": 4402
+    },
+    {
+      "path": "tooling/deployment/stage10-process-boundary.py",
+      "sha256": "443a10b92a5978a1b4224dcb08d8de9939368a6ef5301e9b58ee2cbc8ca3e9bc",
+      "bytes": 3963
+    },
+    {
+      "path": "tooling/deployment/stage10-ct200-db-inspection.py",
+      "sha256": "90610bb9479e14c87ec70dbb62942f8ccb3a3a4c870b0426d0301d52b7254aca",
+      "bytes": 6576
+    },
+    {
+      "path": "tooling/deployment/stage10-ct200-known-hosts",
+      "sha256": "e310ef2185876d970e7c40c40ad3c3ff4ed029d0b1d4ca7b8f431b84634f5b5c",
+      "bytes": 94
+    },
+    {
+      "path": "docs/reviews/phase-1-m1/stage-10/CODING_TRANSPORT_RUN77.md",
+      "sha256": "4f4c0b89d8f3baeea11a300a0f4d56f53d73f20f315fe713b819acb655903f56",
+      "bytes": 12086
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-browser-dependencies.json",
+      "sha256": "3813ac93e939d6442d91300839aa54e39e7c0be1773bf7a6b650ff7c1c899f53",
+      "bytes": 2067
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-manager-cgroup.json",
+      "sha256": "2a206500960bd4dcfe370f726bdd25b5271629d334b9b3a4585eb7547d014065",
+      "bytes": 768
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-preflight.json",
+      "sha256": "00b618c5e588b2b6c8d8dea7ea16479ca4adedac4e63a468454fb9b45e9db150",
+      "bytes": 2761
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-real-package.json",
+      "sha256": "47ab15a028e59e2992211eb00d7fa02392db5ea109d2def309df0efd5481f767",
+      "bytes": 315
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-regression.log",
+      "sha256": "81e0a3061e6dcef063e36f91b410610322e0d06d4492a115559c70f0209f193e",
+      "bytes": 3982
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-start.json",
+      "sha256": "c844bd3526065f68741f5603b731ccdf3edf4656c3c4fee8df4daf308b77c593",
+      "bytes": 476389
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-transport-green.log",
+      "sha256": "9b2b4999b58936542493860ca54c4a5f90b0994f038f693f6d1ce5a878ddcb5d",
+      "bytes": 1560
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-transport-red.log",
+      "sha256": "69fd011b6b2120bcf9123aad113bd45ee8f63eaf1e6c9e809b7e842a194ed8ef",
+      "bytes": 2183
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-unpack-green.log",
+      "sha256": "4ea432d910fe55fb9b597e056e81ff8869fbd76db0f646b9ad79c1471c4e017f",
+      "bytes": 1987
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-unpack-red.log",
+      "sha256": "5817d0044a6288cd6d3984d859119a55a7343b92479fb1aa8a665df19c3c5fcb",
+      "bytes": 5815
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-run77-user-manager.json",
+      "sha256": "af23e4305824b5330d6364e119d2f0bd33b22938f178c8aa2e8ef893e3221b00",
+      "bytes": 260
+    }
+  ],
+  "originalPathsMissing": [],
+  "changedExistingSourcePaths": [
+    "tooling/deployment/stage10-qualification-transport.py",
+    "tooling/deployment/test-stage10-qualification-transport.py"
+  ],
+  "trackedDiffEmpty": true,
+  "stagedDiffEmpty": true,
+  "canonicalClaimsMade": false,
+  "remoteRuntimeExecuted": false
+}

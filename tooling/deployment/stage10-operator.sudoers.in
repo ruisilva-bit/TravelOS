@@ -1,0 +1,6 @@
+# TEMPLATE ONLY. Render both tokens from independently approved host inventory.
+# Validate the rendered file with visudo -cf before any separately approved install.
+# This grant does NOT revoke existing ALL, helper, group, include or polkit grants.
+Defaults!/usr/local/sbin/travelos-stage10-operator env_reset
+Defaults!/usr/local/sbin/travelos-stage10-operator secure_path=/usr/bin:/bin
+@OPERATOR@ ALL=(root) NOPASSWD: NOSETENV: sha256:@ENTRY_SHA256@ /usr/local/sbin/travelos-stage10-operator validate, sha256:@ENTRY_SHA256@ /usr/local/sbin/travelos-stage10-operator activate

@@ -1,0 +1,3 @@
+# Generated Python interpreter caches are not Stage 10 source/evidence.
+__pycache__/
+*.pyc

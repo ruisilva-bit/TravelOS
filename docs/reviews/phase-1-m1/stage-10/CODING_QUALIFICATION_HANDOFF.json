@@ -1,0 +1,334 @@
+{
+  "schemaVersion": 1,
+  "taskId": "t_9fbc40f6",
+  "authority": "AUTHOR_IMPLEMENTATION_HANDOFF_NOT_INDEPENDENT_REVIEW",
+  "stageStatus": "NOT_READY_NO_GO_FOR_CLOSURE",
+  "scope": "SAFE_MUTABLE_CORRECTIONS_ONLY; INHERITED_PG_AND_OPERATIONAL_IMPLEMENTATION_NOT_COMPLETE",
+  "branch": "phase-1/stage-10",
+  "changedFilesRelativeToTaskStart": [
+    {
+      "path": "docs/implementation/M1_STAGE_10_CT200_EXECUTION_CHECKLIST.md",
+      "bytes": 8153,
+      "sha256": "400c375d10682314b9f3d627498cd063beacc7ac01776d65f660b4b7fad606e7",
+      "status": "modified_existing_untracked"
+    },
+    {
+      "path": "docs/implementation/M1_STAGE_10_INHERITED_GATE_COVERAGE.md",
+      "bytes": 36002,
+      "sha256": "d7447397d782b19cd01f38dd7773daa65e502e2e6acd809fe7011ccb36bbdbbc",
+      "status": "modified_existing_untracked"
+    },
+    {
+      "path": "docs/reviews/phase-1-m1/stage-10/CODING_QUALIFICATION_HANDOFF.md",
+      "bytes": 12453,
+      "sha256": "17491ef049f25cf77ceb1640a707e99d4ef6cef5bcf7c259d3f4e43d44ca3ee5",
+      "status": "new"
+    },
+    {
+      "path": "tooling/ci/stage-10/gate-process.mjs",
+      "bytes": 7321,
+      "sha256": "78c37b90d6c2ef8caac5d1c120937ea94b8e1458df22108cf4ead1dba7e67cac",
+      "status": "modified_existing_untracked"
+    },
+    {
+      "path": "tooling/ci/stage-10/gates.mjs",
+      "bytes": 4410,
+      "sha256": "a54f4c41951fc971cdc8a3e862fc02445d3a82bb8543575082f0a5df5118484b",
+      "status": "modified_existing_untracked"
+    },
+    {
+      "path": "tooling/ci/stage-10/inherited-compatibility-adapter.mjs",
+      "bytes": 13921,
+      "sha256": "7af3ac6b28cffdc0d353b9339e4672b8e2866bfed045f2bd0f8b2207b820746d",
+      "status": "modified_existing_untracked"
+    },
+    {
+      "path": "tooling/ci/stage-10/stage6-fixture-regression.mjs",
+      "bytes": 3080,
+      "sha256": "8ba1423b1d48071335b0790d1d957d7c49acc60ed5b8a954d2cc7ba3878d5561",
+      "status": "new"
+    },
+    {
+      "path": "tooling/ci/stage-10/successor-baseline.mjs",
+      "bytes": 3941,
+      "sha256": "1ba5c6ec8f4f2025ac3ce57ecc28699f6150f2ab823c714180fab0ace57a9c52",
+      "status": "modified_existing_untracked"
+    },
+    {
+      "path": "tooling/ci/stage-10/test-inherited-gate-drift.mjs",
+      "bytes": 6204,
+      "sha256": "05bbbf7f5c2a36036fb1ddf1e4a5cd08b865d1f09d3dd14c02f2070a3555a6db",
+      "status": "new"
+    },
+    {
+      "path": "tooling/ci/stage-10/test-postgres-receipt-preservation.mjs",
+      "bytes": 2301,
+      "sha256": "5adce67566dadb2658c2ba8a037b4a9f326879b25e9ce04e0dbac69798715997",
+      "status": "new"
+    },
+    {
+      "path": "tooling/ci/stage-10/test-stage10-canonical-dispatch.mjs",
+      "bytes": 3460,
+      "sha256": "63bfdca6dc341bc7fc5f84d1645d197ab436fcfe78698dbe59e3ce3b57c8afb1",
+      "status": "modified_existing_untracked"
+    },
+    {
+      "path": "tooling/ci/stage-10/test-stage6-fixture-regression.mjs",
+      "bytes": 1606,
+      "sha256": "9f1caeeb25a743d8a210ffa1e376b099e39a94ab46a37efaa747626180c69e4c",
+      "status": "new"
+    },
+    {
+      "path": "tooling/ci/stage-10/test-stage6-successor-baseline.mjs",
+      "bytes": 1280,
+      "sha256": "b825a6ccec34da294e86105103966146fa87c7ee86728e67a0d77e5365d0a00f",
+      "status": "new"
+    },
+    {
+      "path": "tooling/database/run-stage-10-postgres-disposable.mjs",
+      "bytes": 12385,
+      "sha256": "c328bc0afbfca61d05a0acc5106bb3b50452137d917da60c87a20535f0451fa6",
+      "status": "modified_existing_untracked"
+    }
+  ],
+  "manifestExcludesSelf": true,
+  "removedOriginalPaths": [],
+  "trackedPredecessorDiff": [],
+  "checks": [
+    {
+      "directory": ".hermes/state/t_9fbc40f6-checks",
+      "allLogDigestsVerified": true,
+      "results": [
+        {
+          "label": "pins",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 3186
+        },
+        {
+          "label": "migrations",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 2334
+        },
+        {
+          "label": "auth-schema",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 13535
+        },
+        {
+          "label": "lifecycle",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 5063
+        },
+        {
+          "label": "format",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 20837
+        },
+        {
+          "label": "lint",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 33149
+        },
+        {
+          "label": "typecheck",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 28861
+        },
+        {
+          "label": "dependency-universe",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 37478
+        },
+        {
+          "label": "architecture",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 157234
+        },
+        {
+          "label": "unit",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 117909
+        },
+        {
+          "label": "config-schema",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 1974
+        },
+        {
+          "label": "stage3-corrections",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 1381
+        },
+        {
+          "label": "security-scanner-tests",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 836
+        },
+        {
+          "label": "rejected-tests",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 23206
+        },
+        {
+          "label": "rejected",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 33077
+        },
+        {
+          "label": "stage4-evidence",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 929
+        }
+      ]
+    },
+    {
+      "directory": ".hermes/state/t_9fbc40f6-resumed-checks",
+      "allLogDigestsVerified": true,
+      "results": [
+        {
+          "label": "pins",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 3311
+        },
+        {
+          "label": "format",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 16345
+        },
+        {
+          "label": "lint",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 13345
+        },
+        {
+          "label": "typecheck",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 18033
+        },
+        {
+          "label": "unit",
+          "status": "PASS",
+          "exitCode": 0,
+          "durationMs": 35569
+        }
+      ]
+    }
+  ],
+  "localLogs": [
+    {
+      "path": ".hermes/state/t_9fbc40f6-focused.log",
+      "bytes": 19751,
+      "sha256": "4c7267f545e285dd9da7090e44b5bc0e66ff3eacb24b7f96db96fe0c6ba3e05c",
+      "observedCounts": {
+        "tests": 95,
+        "pass": 95,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "qualification": "SCOPED_LOCAL_ONLY"
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-resumed-focused.log",
+      "bytes": 5911,
+      "sha256": "b60719e837eaa208c9a1c1f603f29f92b6d198f20c37ec08b594dfd5efdde574",
+      "observedCounts": {
+        "tests": 71,
+        "pass": 71,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "qualification": "SCOPED_LOCAL_ONLY"
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-resumed-safety.log",
+      "bytes": 2956,
+      "sha256": "a9fdc40a194bd0f4bc0212762964d300bc2c416395331c111621b36d91a8f719",
+      "observedCounts": {
+        "tests": 28,
+        "pass": 28,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "qualification": "SCOPED_LOCAL_ONLY"
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-receipt-red.log",
+      "bytes": 16157,
+      "sha256": "88f5db2fdf27eed7bb0b312aa52a7923097a35a954785fe0e43f24fc0f852fc4",
+      "observedCounts": {
+        "tests": 3,
+        "pass": 0,
+        "fail": 3,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "qualification": "RED_REPRODUCTION"
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-receipt-green.log",
+      "bytes": 666,
+      "sha256": "6b85d1d8b96423bf5325a6d609bb6bfe95e7b1acc9907028008c3bd21e4f5ac4",
+      "observedCounts": {
+        "tests": 6,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 1
+      },
+      "qualification": "SCOPED_LOCAL_ONLY"
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-package-fixtures.log",
+      "bytes": 2761,
+      "sha256": "d53ef36ef28f78e59f87b9fc98ed69ddca537d83c1851c9d0fb198f6a459b8b2",
+      "observedCounts": {},
+      "qualification": "INTERRUPTED_NOT_PASS"
+    },
+    {
+      "path": ".hermes/state/t_9fbc40f6-resumed-predecessor.log",
+      "bytes": 415,
+      "sha256": "9ece71916b7bb6a2d16c9c47382c7b9057460f54a35aa13497f7a52c0f3351cf",
+      "observedCounts": {},
+      "qualification": "SCOPED_LOCAL_ONLY"
+    }
+  ],
+  "remainingIds": [
+    "S10-READY-PG",
+    "S10-READY-REGRESSION",
+    "S10-READY-OPS",
+    "S10-READY-SIGN",
+    "S10-READY-RECOVERY",
+    "S10-RET-002",
+    "S10-RET-004",
+    "S10-RET-005",
+    "S10-READY-CANONICAL"
+  ],
+  "newCandidateBuildOrCanonicalClaims": false,
+  "hostActionsPerformed": false,
+  "gitSealPerformed": false,
+  "stage11Actions": 0,
+  "canonicalPrivacyAcceptance": false
+}

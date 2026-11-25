@@ -1,0 +1,11 @@
+# Stage 10 post-gate binding correction review
+
+**Verdict: CORRECTION_VERIFIED — narrow scope only.** The common tail in `tooling/ci/stage-10/stage10-candidate-gate.mjs` now reruns `qualifyExtractedArtifact` and then compares `verifyInputs` to the pre-operation snapshot after route work, before returning PASS. This covers all seven gate labels, including baseline, build-receipt, and exact-artifact; the prior route-specific clean-install and PostgreSQL/browser checks remain in place. The immutable `LATEST_SUCCESSOR_DISPATCH_REVIEW.md` was preserved unchanged (SHA-256 below).
+
+The actual public `runCandidateGate` is exercised by `test-candidate-gate-drift.mjs` with scoped `node:module` hooks mocking only claim/package probes and real temporary input-marker/archive bytes. For each of the three formerly missing routes, the no-mutation control passes, source drift during work and during the final probe are rejected by the final input comparison, and archive drift during work is rejected by the final artifact qualification. This directly verifies the applicable mutation inverses without claiming a real package probe or build/CI claim.
+
+**Tests personally executed:** pinned Node v24.19.0, `/home/hermes/.local/share/travelos-stage5-toolchain/node_modules/node/bin/node --test tooling/ci/stage-10/test-candidate-gate-drift.mjs tooling/ci/stage-10/test-stage10-candidate-gate.mjs` — exit 0; 13 passed, 0 failed/cancelled/skipped/todo (12 drift cases plus the candidate-gate test file).
+
+**Remaining open:** the separate MEDIUM finding on unqualified Stage 6/other inherited labels remains open, as do operational, canonical-CI, custody/privacy and other global Stage 10 gates. This narrow code/test review grants no custody, privacy, operational, canonical-CI, build, installation, activation, or Stage 10 GO authority.
+
+**SHA-256 of reviewed correction inputs:** `tooling/ci/stage-10/stage10-candidate-gate.mjs` — `4c727379d10e1fb4f4aae295609bf1f696ef574da68124986ebc42f4e64b0305`; `tooling/ci/stage-10/test-candidate-gate-drift.mjs` — `1093ee5d6321e27933165a9a1fbf5b202a5c1db33a10f066f7333b3c5660c34f`. Preserved predecessor review `docs/reviews/phase-1-m1/stage-10/LATEST_SUCCESSOR_DISPATCH_REVIEW.md` — `2cc22fa9471672d8d073f8dc3d1d1a18d2554e8f517b40f8e5e2ce08828f8f77`.
