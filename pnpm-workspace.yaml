@@ -10,3 +10,5 @@ overrides:
 
 allowBuilds:
   esbuild: true
+
+engineStrict: true

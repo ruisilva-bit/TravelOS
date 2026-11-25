@@ -287,6 +287,8 @@ Main is protected. Required checks and independent review block merge. CI creden
 
 Initial CI provider assumption is GitHub Actions; the contract remains expressible as scripts so the provider can change. No workflow is created in Phase 0.
 
+**Steady state (ADR-015):** `pnpm ci:verify` runs `tooling/ci/verify-current.mjs`, a stage-free list of current-tree gates. It includes the classified current-source sensitive-data scan (`tooling/ci/scan-current-source.mjs` + `tooling/ci/current-source-findings.json`), the accepted-ADR immutability check (`tooling/ci/verify-accepted-adrs.mjs`) and the unified PostgreSQL 18.6 suite (`pnpm test:postgres`). M1 stage-frozen baseline verifiers are historical and are not required checks. Steps 7–10 above (Playwright in CI, SBOM/vulnerability scanning, signed release promotion) remain owned by their release-qualification milestone.
+
 ## 15. Observability
 
 ### Logs

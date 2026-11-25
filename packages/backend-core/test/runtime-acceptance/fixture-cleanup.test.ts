@@ -38,14 +38,12 @@ interface CleanupOperations {
 }
 
 interface CleanupFactoryExports {
-  readonly createM1RuntimeAcceptanceFixtureOperations?: (
-    dependencies: unknown,
-  ) => CleanupOperations;
+  readonly createRuntimeAcceptanceFixtureOperations?: (dependencies: unknown) => CleanupOperations;
 }
 
 const createOperations = (dependencies: unknown): CleanupOperations => {
   const factory = (backendCore as unknown as CleanupFactoryExports)
-    .createM1RuntimeAcceptanceFixtureOperations;
+    .createRuntimeAcceptanceFixtureOperations;
   expect(factory, "runtime-acceptance cleanup application factory must be exported").toBeTypeOf(
     "function",
   );

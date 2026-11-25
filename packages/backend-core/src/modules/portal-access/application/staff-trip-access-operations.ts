@@ -2,18 +2,18 @@ import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
 import type { StaffAuthorizationOperationProof } from "../../../staff-access/authorization.js";
 import type { StaffPermissionId } from "../../../staff-access/permission-registry.js";
 import {
-  authorizeM1Operation,
-  type M1StaffAuthorizationDependencies,
-} from "../../trip-operations/application/m1-staff-operations.js";
-import { M1InputValidationError } from "../../trip-operations/application/m1-trip-slice.js";
+  authorizeOperation,
+  type StaffAuthorizationDependencies,
+} from "../../trip-operations/application/staff-trip-operations.js";
+import { InputValidationError } from "../../trip-operations/application/trip-slice.js";
 import { TRIP_ACCESS_CAPABILITY_IDS, type TripAccessGrant } from "../domain/trip-access-grant.js";
 
 export const TRIP_ACCESS_MANAGE_PERMISSION_ID =
   "trip.access.manage" as const satisfies StaffPermissionId;
-export const M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS = Object.freeze([
+export const STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS = Object.freeze([
   TRIP_ACCESS_MANAGE_PERMISSION_ID,
 ] as const);
-export const M1_STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS = Object.freeze([
+export const STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS = Object.freeze([
   "runtime_acceptance.fixture.manage",
   TRIP_ACCESS_MANAGE_PERMISSION_ID,
 ] as const satisfies readonly StaffPermissionId[]);
@@ -48,7 +48,7 @@ export interface PortalPrincipalRetirementResult {
   readonly authorizationEpoch: bigint;
 }
 
-export interface M1StaffTripAccessRepository {
+export interface StaffTripAccessRepository {
   issueTripAccessGrant(
     command: IssueTripAccessGrantCommand,
     authorization: StaffAuthorizationOperationProof,
@@ -63,7 +63,7 @@ export interface M1StaffTripAccessRepository {
   ): Promise<PortalPrincipalRetirementResult | null>;
 }
 
-export interface M1StaffTripAccessOperations {
+export interface StaffTripAccessOperations {
   issueTripAccessGrant(cookieHeader: unknown, input: unknown): Promise<TripAccessGrant>;
   revokeTripAccessGrant(cookieHeader: unknown, input: unknown): Promise<TripAccessGrant>;
   retireFixturePortalPrincipal(
@@ -73,11 +73,11 @@ export interface M1StaffTripAccessOperations {
   ): Promise<PortalPrincipalRetirementResult>;
 }
 
-export interface M1StaffTripAccessOperationsDependencies extends M1StaffAuthorizationDependencies {
-  readonly repository: M1StaffTripAccessRepository;
+export interface StaffTripAccessOperationsDependencies extends StaffAuthorizationDependencies {
+  readonly repository: StaffTripAccessRepository;
 }
 
-export class M1StaffTripAccessNotFoundError extends Error {
+export class StaffTripAccessNotFoundError extends Error {
   readonly code = "NOT_FOUND" as const;
 
   constructor() {
@@ -89,7 +89,7 @@ export class M1StaffTripAccessNotFoundError extends Error {
 type UnknownRecord = Record<string, unknown>;
 
 const invalidInput = (): never => {
-  throw new M1InputValidationError("Invalid Trip access request");
+  throw new InputValidationError("Invalid Trip access request");
 };
 
 const recordWithExactKeys = (
@@ -244,17 +244,17 @@ const parseFixtureRunId = (value: unknown): OpaqueId => {
   }
 };
 
-export const createM1StaffTripAccessOperations = (
-  dependencies: M1StaffTripAccessOperationsDependencies,
-): M1StaffTripAccessOperations => {
-  const operations: M1StaffTripAccessOperations = {
+export const createStaffTripAccessOperations = (
+  dependencies: StaffTripAccessOperationsDependencies,
+): StaffTripAccessOperations => {
+  const operations: StaffTripAccessOperations = {
     async issueTripAccessGrant(cookieHeader, input) {
       const { command, expiryEpochMs } = parseIssueCommand(input);
-      const authorization = await authorizeM1Operation(
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         command.agencyId,
-        M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
+        STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
       );
       if (expiryEpochMs !== null && expiryEpochMs <= authorization.nowEpochMs)
         return invalidInput();
@@ -263,31 +263,31 @@ export const createM1StaffTripAccessOperations = (
         { ...command, capabilities: TRIP_ACCESS_CAPABILITY_IDS },
         authorization,
       );
-      if (grant === null) throw new M1StaffTripAccessNotFoundError();
+      if (grant === null) throw new StaffTripAccessNotFoundError();
       return grant;
     },
 
     async revokeTripAccessGrant(cookieHeader, input) {
       const command = parseRevokeCommand(input);
-      const authorization = await authorizeM1Operation(
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         command.agencyId,
-        M1_STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
+        STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
       );
       const grant = await dependencies.repository.revokeTripAccessGrant(command, authorization);
-      if (grant === null) throw new M1StaffTripAccessNotFoundError();
+      if (grant === null) throw new StaffTripAccessNotFoundError();
       return grant;
     },
 
     async retireFixturePortalPrincipal(cookieHeader, fixtureRunIdValue, principalIdValue) {
       const fixtureRunId = parseFixtureRunId(fixtureRunIdValue);
       const portalPrincipalId = portalPrincipalIdField({ portalPrincipalId: principalIdValue });
-      const authorization = await authorizeM1Operation(
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
+        STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
         5 * 60 * 1_000,
       );
       const result = await dependencies.repository.retireFixturePortalPrincipal(
@@ -299,7 +299,7 @@ export const createM1StaffTripAccessOperations = (
         },
         authorization,
       );
-      if (result === null) throw new M1StaffTripAccessNotFoundError();
+      if (result === null) throw new StaffTripAccessNotFoundError();
       return result;
     },
   };

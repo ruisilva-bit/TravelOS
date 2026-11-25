@@ -756,6 +756,43 @@ describe("Admin Web", () => {
     expect(mocks.fetch).not.toHaveBeenCalledWith("/api/admin/trips?limit=25", expect.anything());
   });
 
+  it("routes the Leads navigation entry to the lead list without loading Trips", async () => {
+    window.history.replaceState({}, "", "/#/leads");
+    mocks.fetch.mockImplementation(async (input: unknown) => {
+      const path = pathOf(input);
+      if (path === "/api/staff/session-context") return jsonResponse(staffContext);
+      if (path === "/api/admin/leads?limit=25&state=OPEN")
+        return jsonResponse({ items: [], nextCursor: null });
+      throw new Error(`Unexpected Admin API request: ${path}`);
+    });
+
+    render(<AdminRoot />);
+
+    expect(await screen.findByRole("heading", { name: "Leads", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Leads" })).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByText("Não existem leads neste estado.")).toBeInTheDocument();
+    expect(mocks.fetch).not.toHaveBeenCalledWith("/api/admin/trips?limit=25", expect.anything());
+  });
+
+  it("opens a lead detail route and rejects a malformed lead identifier", async () => {
+    const detailLeadId = "019b0101-0000-7000-8000-000000000010";
+    window.history.replaceState({}, "", `/#/leads/${detailLeadId}`);
+    mocks.fetch.mockImplementation(async (input: unknown) => {
+      const path = pathOf(input);
+      if (path === "/api/staff/session-context") return jsonResponse(staffContext);
+      if (path === `/api/admin/leads/${detailLeadId}`) return new Response(null, { status: 404 });
+      throw new Error(`Unexpected Admin API request: ${path}`);
+    });
+    render(<AdminRoot />);
+    expect(await screen.findByRole("heading", { name: "Lead não encontrado" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Leads" })).toHaveAttribute("aria-current", "page");
+    cleanup();
+
+    window.history.replaceState({}, "", "/#/leads/not-a-uuid");
+    render(<AdminRoot />);
+    expect(await screen.findByRole("heading", { name: "Endereço inválido" })).toBeInTheDocument();
+  });
+
   it("denies direct invitation navigation when the server UI hint is absent", async () => {
     window.history.replaceState({}, "", "/#/staff/invitations");
     mocks.fetch.mockImplementation(async (input: unknown) => {

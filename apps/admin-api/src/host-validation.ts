@@ -1,6 +1,7 @@
 import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters";
 
 import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
+import { headerValues } from "./request-boundary.js";
 
 interface IncomingHttpRequest {
   readonly headers: Readonly<Record<string, string | string[] | undefined>>;
@@ -19,24 +20,6 @@ type HttpHandler = (
   response: OutgoingHttpResponse,
   next: Next,
 ) => void;
-
-const headerValues = (request: IncomingHttpRequest, name: string): readonly string[] => {
-  const rawHeaders = request.rawHeaders;
-  if (rawHeaders !== undefined) {
-    if (rawHeaders.length % 2 !== 0) return [];
-    const values: string[] = [];
-    for (let index = 0; index < rawHeaders.length; index += 2) {
-      if (rawHeaders[index]?.toLowerCase() === name) {
-        values.push(rawHeaders[index + 1] ?? "");
-      }
-    }
-    return values;
-  }
-
-  const value = request.headers[name];
-  if (value === undefined) return [];
-  return Array.isArray(value) ? value : [value];
-};
 
 /** The raw Host stays authoritative; forwarded host can only corroborate that same manifest value. */
 export const createAdminHostValidationMiddleware =

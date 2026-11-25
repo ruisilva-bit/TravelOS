@@ -11,12 +11,12 @@ import request from "supertest";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AuthSurfacePolicy, PortalAuthRealm } from "@travelos/auth-adapters/portal";
 import { createAdminApi } from "../../apps/admin-api/src/app.js";
-import { createAdminStaffSessionResolver } from "../../apps/admin-api/src/m1-session-resolver.js";
+import { createAdminStaffSessionResolver } from "../../apps/admin-api/src/staff-session-resolver.js";
 import { createPortalApi } from "../../apps/portal-api/src/app.js";
 import * as portalTripReadRepositoryModule from "../../apps/portal-api/src/trip-read-repository.js";
 import * as databaseModule from "../../packages/database/src/index.js";
 import { createStaffAccessRepository } from "../../packages/database/src/index.js";
-import { createPostgresM1StaffTripWorkspaceRepository } from "../../packages/database/src/trip-operations/m1-staff-trip-workspace-repository.js";
+import { createPostgresStaffTripWorkspaceRepository } from "../../packages/database/src/trip-operations/staff-trip-workspace-repository.js";
 import { createLocalOperatorPortalEnrollmentService } from "../../packages/auth-adapters/src/realm.js";
 import {
   createOneTimeOperatorToken,
@@ -28,27 +28,27 @@ import {
 import {
   asOpaqueId,
   bootstrapRootAgency,
-  createM1RuntimeAcceptanceFixtureOperations,
-  createM1StaffTripAccessOperations,
-  createM1StaffTripWorkspaceOperations,
+  createRuntimeAcceptanceFixtureOperations,
+  createStaffTripAccessOperations,
+  createStaffTripWorkspaceOperations,
   createMoney,
   createScheduledLocalDateTime,
-  authorizeM1Operation,
+  authorizeOperation,
   IdempotencyConflictError,
-  M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
-  M1InputValidationError,
-  M1OptimisticConflictError,
-  M1StaffAuthorizationError,
-  M1TransactionConflictError,
-  M1TripNotFoundError,
-  M1UnsupportedTripStateError,
+  RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
+  InputValidationError,
+  OptimisticConflictError,
+  StaffAuthorizationError,
+  TransactionConflictError,
+  TripNotFoundError,
+  UnsupportedTripStateError,
   type IssueTripAccessGrantCommand,
-  type M1StaffTripAccessRepository,
+  type StaffTripAccessRepository,
   type RuntimeAcceptanceFixtureCleanupRepository,
   type RevokeTripAccessGrantCommand,
   type StaffAuthorizationOperationProof,
-  type CreateM1TripSliceInput,
-  type M1StaffTripWorkspaceWriteOperations,
+  type CreateTripSliceInput,
+  type StaffTripWorkspaceWriteOperations,
 } from "@travelos/backend-core";
 import { AdminTripPublicationPreviewV1Schema } from "../../packages/contracts/src/admin/index.js";
 import {
@@ -743,19 +743,19 @@ const expectSqlState = async (work: () => Promise<unknown>, sqlState: string): P
   expect(code).toBe(sqlState);
 };
 
-const createTripAccessRepository = (): M1StaffTripAccessRepository | null => {
+const createTripAccessRepository = (): StaffTripAccessRepository | null => {
   const factory = (databaseModule as unknown as Record<string, unknown>)[
-    "createPostgresM1StaffTripAccessRepository"
+    "createPostgresStaffTripAccessRepository"
   ];
   if (typeof factory !== "function" || tripAccessPersistence === null) return null;
   return (
     factory as (
       persistence: PostgresPersistence<Record<string, never>>,
-    ) => M1StaffTripAccessRepository
+    ) => StaffTripAccessRepository
   )(tripAccessPersistence);
 };
 
-const stage7TripInput = (title: string): CreateM1TripSliceInput => ({
+const stage7TripInput = (title: string): CreateTripSliceInput => ({
   agencyId: asOpaqueId(priorAgencyId),
   person: {
     givenName: "Synthetic",
@@ -850,12 +850,12 @@ const createFixtureTripTestHarness = async () => {
     canonicalOrigin: "http://admin.travelos.test",
     expectedHost: "admin.travelos.test",
   });
-  const operations = databaseModule.createPostgresM1StaffTripOperations(
+  const operations = databaseModule.createPostgresStaffTripOperations(
     tripAccessPersistence,
     resolver,
   );
   const createFixtureTrip = (
-    input: CreateM1TripSliceInput,
+    input: CreateTripSliceInput,
     fixtureRunId: string,
   ): Promise<unknown> => {
     const create = (
@@ -1692,14 +1692,14 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     if (typeof repositoryFactory !== "function") return;
 
     const { cookie, resolver } = await createFixtureTripTestHarness();
-    const authorization = await authorizeM1Operation(
+    const authorization = await authorizeOperation(
       {
         authorizationRepository: createStaffAccessRepository(persistence),
         sessionResolver: resolver,
       },
       cookie,
       null,
-      M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
+      RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
       5 * 60 * 1_000,
     );
     const createRepository = repositoryFactory as (
@@ -2924,7 +2924,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         },
         staffAuthorization,
       ),
-    ).rejects.toBeInstanceOf(M1InputValidationError);
+    ).rejects.toBeInstanceOf(InputValidationError);
 
     const staleProof: StaffAuthorizationOperationProof = {
       ...staffAuthorization,
@@ -3049,7 +3049,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     ).rejects.toBeInstanceOf(IdempotencyConflictError);
     await expect(
       repository.issueTripAccessGrant(issueCommand("stage7-duplicate-active"), staffAuthorization),
-    ).rejects.toBeInstanceOf(M1TransactionConflictError);
+    ).rejects.toBeInstanceOf(TransactionConflictError);
     expect(await readTripAccessCounts()).toEqual(before);
   });
 
@@ -3169,7 +3169,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         throw new Error("Stage 7 Staff persistence fixture was not initialized");
       }
       const staffCookie = await signedSessionCookie(staffRealm, staffSessionToken);
-      const publicationOperations = databaseModule.createPostgresM1StaffTripPublicationOperations(
+      const publicationOperations = databaseModule.createPostgresStaffTripPublicationOperations(
         tripAccessPersistence,
         createAdminStaffSessionResolver(staffRealm, {
           canonicalOrigin: "http://admin.travelos.test",
@@ -3436,7 +3436,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     );
     await expect(
       repository.issueTripAccessGrant(issueCommand("stage7-revoked-staff"), staffAuthorization),
-    ).rejects.toBeInstanceOf(M1StaffAuthorizationError);
+    ).rejects.toBeInstanceOf(StaffAuthorizationError);
     expect(await readTripAccessCounts()).toEqual(before);
   });
 
@@ -3525,7 +3525,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         "runtime_acceptance.fixture.manage",
       ]),
     );
-    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
+    const tripOperations = databaseModule.createPostgresStaffTripOperations(
       tripAccessPersistence,
       staffSessionResolver,
     );
@@ -3609,7 +3609,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
       expect(beforeCleanup.body.trip.title).toBe("Stage 7 Published Snapshot");
     });
 
-    const publicationOperations = databaseModule.createPostgresM1StaffTripPublicationOperations(
+    const publicationOperations = databaseModule.createPostgresStaffTripPublicationOperations(
       tripAccessPersistence,
       staffSessionResolver,
       { validate: (value) => void PortalTripSnapshotV1Schema.parse(value) },
@@ -3652,7 +3652,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         expectedLockVersion: "99",
         idempotencyKey: `stale-${fixtureRunId}`,
       }),
-    ).rejects.toBeInstanceOf(M1OptimisticConflictError);
+    ).rejects.toBeInstanceOf(OptimisticConflictError);
     await expect(
       tripOperations.readTripSlice(staffCookie, staleTrip.trip.id),
     ).resolves.toMatchObject({
@@ -3676,7 +3676,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         expectedLockVersion: completedTrip.trip.lockVersion.toString(),
         idempotencyKey: `completed-${fixtureRunId}`,
       }),
-    ).rejects.toBeInstanceOf(M1UnsupportedTripStateError);
+    ).rejects.toBeInstanceOf(UnsupportedTripStateError);
 
     await withOwnerLogin(priorDatabaseName, async (client) => {
       const retained = await client.query<{
@@ -3801,10 +3801,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     const persistence = tripAccessPersistence!;
     const { cookie, resolver } = await createFixtureTripTestHarness();
     const fixtureRunId = databaseModule.createUuidV7();
-    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
-      persistence,
-      resolver,
-    );
+    const tripOperations = databaseModule.createPostgresStaffTripOperations(persistence, resolver);
     for (const title of ["HTTP cleanup first Trip", "HTTP cleanup second Trip"]) {
       await tripOperations.createRuntimeAcceptanceFixtureTrip(
         cookie,
@@ -3828,19 +3825,19 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
       fixtureRunId,
     });
     const staffAccessRepository = createStaffAccessRepository(persistence);
-    const tripAccessOperations = createM1StaffTripAccessOperations({
-      repository: databaseModule.createPostgresM1StaffTripAccessRepository(persistence),
+    const tripAccessOperations = createStaffTripAccessOperations({
+      repository: databaseModule.createPostgresStaffTripAccessRepository(persistence),
       authorizationRepository: staffAccessRepository,
       sessionResolver: resolver,
     });
-    const publicationOperations = databaseModule.createPostgresM1StaffTripPublicationOperations(
+    const publicationOperations = databaseModule.createPostgresStaffTripPublicationOperations(
       persistence,
       resolver,
       { validate: (value) => void PortalTripSnapshotV1Schema.parse(value) },
     );
     const repository =
       databaseModule.createPostgresRuntimeAcceptanceFixtureCleanupRepository(persistence);
-    const cleanup = createM1RuntimeAcceptanceFixtureOperations({
+    const cleanup = createRuntimeAcceptanceFixtureOperations({
       repository,
       authorizationRepository: staffAccessRepository,
       sessionResolver: resolver,
@@ -3858,10 +3855,10 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         },
         environment: "DEVELOPMENT",
         staffAccessRepository,
-        m1Operations: tripOperations,
-        m1TripAccessOperations: tripAccessOperations,
-        m1PublicationOperations: publicationOperations,
-        m1RuntimeAcceptanceFixtureOperations: {
+        tripOperations: tripOperations,
+        tripAccessOperations: tripAccessOperations,
+        publicationOperations: publicationOperations,
+        runtimeAcceptanceFixtureOperations: {
           createFixtureTrip: tripOperations.createRuntimeAcceptanceFixtureTrip,
           cleanupFixture: cleanup.cleanupFixture,
         },
@@ -3915,14 +3912,14 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         [priorAgencyId, fixtureRunId, otherPrincipalId],
       );
     });
-    const authorization = await authorizeM1Operation(
+    const authorization = await authorizeOperation(
       {
         authorizationRepository: createStaffAccessRepository(persistence),
         sessionResolver: resolver,
       },
       cookie,
       null,
-      M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
+      RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
       5 * 60 * 1_000,
     );
     const repository =
@@ -3945,7 +3942,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
   });
 
   it("exports the PostgreSQL Staff Trip access repository", () => {
-    expect("createPostgresM1StaffTripAccessRepository" in databaseModule).toBe(true);
+    expect("createPostgresStaffTripAccessRepository" in databaseModule).toBe(true);
   });
 
   it("creates_an_authorized_minimal_trip_workspace_with_an_empty_itinerary", async () => {
@@ -3953,7 +3950,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     if (tripAccessPersistence === null) {
       throw new Error("Stage 7 Staff persistence fixture was not initialized");
     }
-    const operations = databaseModule.createPostgresM1StaffTripOperations(
+    const operations = databaseModule.createPostgresStaffTripOperations(
       tripAccessPersistence,
       resolver,
     );
@@ -4034,7 +4031,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     }
     const createWriteOperations = Reflect.get(
       databaseModule,
-      "createPostgresM1StaffTripWorkspaceWriteOperations",
+      "createPostgresStaffTripWorkspaceWriteOperations",
     );
     expect(typeof createWriteOperations).toBe("function");
     if (typeof createWriteOperations !== "function") {
@@ -4043,8 +4040,8 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     const writeOperations = Reflect.apply(createWriteOperations, undefined, [
       tripAccessPersistence,
       resolver,
-    ]) as M1StaffTripWorkspaceWriteOperations;
-    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
+    ]) as StaffTripWorkspaceWriteOperations;
+    const tripOperations = databaseModule.createPostgresStaffTripOperations(
       tripAccessPersistence,
       resolver,
     );
@@ -4168,14 +4165,14 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         expectedLockVersion: 1n,
         accommodation: drafts.accommodation,
       }),
-    ).rejects.toBeInstanceOf(M1OptimisticConflictError);
+    ).rejects.toBeInstanceOf(OptimisticConflictError);
     await expect(
       writeOperations.updateAccommodation(cookie, trip.id, accommodation.id, {
         expectedWorkspaceRevision: 6n,
         expectedLockVersion: 0n,
         accommodation: drafts.accommodation,
       }),
-    ).rejects.toBeInstanceOf(M1OptimisticConflictError);
+    ).rejects.toBeInstanceOf(OptimisticConflictError);
 
     const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
       client.query(
@@ -4228,7 +4225,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     }
     const createWriteOperations = Reflect.get(
       databaseModule,
-      "createPostgresM1StaffTripWorkspaceWriteOperations",
+      "createPostgresStaffTripWorkspaceWriteOperations",
     );
     expect(typeof createWriteOperations).toBe("function");
     if (typeof createWriteOperations !== "function") {
@@ -4237,8 +4234,8 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     const writeOperations = Reflect.apply(createWriteOperations, undefined, [
       tripAccessPersistence,
       resolver,
-    ]) as M1StaffTripWorkspaceWriteOperations;
-    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
+    ]) as StaffTripWorkspaceWriteOperations;
+    const tripOperations = databaseModule.createPostgresStaffTripOperations(
       tripAccessPersistence,
       resolver,
     );
@@ -4276,7 +4273,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         expectedLockVersion: 0n,
         flight: { ...drafts.flight, title: "Cross-Trip update must be rejected" },
       }),
-    ).rejects.toBeInstanceOf(M1TripNotFoundError);
+    ).rejects.toBeInstanceOf(TripNotFoundError);
 
     const persisted = await withOwnerLogin(priorDatabaseName, (client) =>
       client.query(
@@ -4314,7 +4311,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     }
     const createWriteOperations = Reflect.get(
       databaseModule,
-      "createPostgresM1StaffTripWorkspaceWriteOperations",
+      "createPostgresStaffTripWorkspaceWriteOperations",
     );
     expect(typeof createWriteOperations).toBe("function");
     if (typeof createWriteOperations !== "function") {
@@ -4323,8 +4320,8 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     const writeOperations = Reflect.apply(createWriteOperations, undefined, [
       tripAccessPersistence,
       resolver,
-    ]) as M1StaffTripWorkspaceWriteOperations;
-    const tripOperations = databaseModule.createPostgresM1StaffTripOperations(
+    ]) as StaffTripWorkspaceWriteOperations;
+    const tripOperations = databaseModule.createPostgresStaffTripOperations(
       tripAccessPersistence,
       resolver,
     );
@@ -4398,7 +4395,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
     if (tripAccessPersistence === null) {
       throw new Error("Stage 7 Staff persistence fixture was not initialized");
     }
-    const operations = databaseModule.createPostgresM1StaffTripOperations(
+    const operations = databaseModule.createPostgresStaffTripOperations(
       tripAccessPersistence,
       resolver,
     );
@@ -4598,7 +4595,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
         requiredPermissionIds: ["trip.view"],
         nowEpochMs,
       };
-      const repository = createPostgresM1StaffTripWorkspaceRepository(restrictedPersistence);
+      const repository = createPostgresStaffTripWorkspaceRepository(restrictedPersistence);
       const page = await repository.listTrips(agencyId, 50, null, authorization);
       expect(page.items.some((trip) => trip.id === tripId)).toBe(true);
       expect(page.items.every((trip) => trip.agencyId === agencyId)).toBe(true);
@@ -4682,7 +4679,7 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
       expect(serializedPiiBearingTrip).not.toContain("Stage 7 Synthetic Customer");
       expect(serializedPiiBearingTrip).not.toContain('"familyName":"Traveller"');
 
-      const appOperations = createM1StaffTripWorkspaceOperations({
+      const appOperations = createStaffTripWorkspaceOperations({
         repository,
         authorizationRepository: access,
         sessionResolver: resolver,
@@ -5233,25 +5230,24 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
           };
 
           const sessionResolver = createAdminStaffSessionResolver(browserStaffRealm, staffPolicy);
-          const workspaceOperations = createM1StaffTripWorkspaceOperations({
-            repository: createPostgresM1StaffTripWorkspaceRepository(adminPersistence!),
+          const workspaceOperations = createStaffTripWorkspaceOperations({
+            repository: createPostgresStaffTripWorkspaceRepository(adminPersistence!),
             authorizationRepository: staffAccessRepository,
             sessionResolver,
           });
           const workspaceWriteOperations =
-            databaseModule.createPostgresM1StaffTripWorkspaceWriteOperations(
+            databaseModule.createPostgresStaffTripWorkspaceWriteOperations(
               adminPersistence!,
               sessionResolver,
             );
-          const publicationOperations =
-            databaseModule.createPostgresM1StaffTripPublicationOperations(
-              adminPersistence!,
-              sessionResolver,
-              {
-                validate: (value) =>
-                  void AdminTripPublicationPreviewV1Schema.shape.projection.parse(value),
-              },
-            );
+          const publicationOperations = databaseModule.createPostgresStaffTripPublicationOperations(
+            adminPersistence!,
+            sessionResolver,
+            {
+              validate: (value) =>
+                void AdminTripPublicationPreviewV1Schema.shape.projection.parse(value),
+            },
+          );
           adminApplication = await createAdminApi({
             expectedHost: adminHost.expectedHost,
             auth: {
@@ -5259,13 +5255,13 @@ describe.sequential("Stage 7 PostgreSQL migration qualification", () => {
               policy: staffPolicy,
               environment: "DEVELOPMENT",
               staffAccessRepository,
-              m1Operations: databaseModule.createPostgresM1StaffTripOperations(
+              tripOperations: databaseModule.createPostgresStaffTripOperations(
                 adminPersistence!,
                 sessionResolver,
               ),
-              m1WorkspaceOperations: workspaceOperations,
-              m1WorkspaceWriteOperations: workspaceWriteOperations,
-              m1PublicationOperations: publicationOperations,
+              workspaceOperations: workspaceOperations,
+              workspaceWriteOperations: workspaceWriteOperations,
+              publicationOperations: publicationOperations,
             },
           });
           await adminApplication.listen(0, "127.0.0.1");

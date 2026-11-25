@@ -1,7 +1,6 @@
 import {
   authRequestPathMatchesBase,
   dispatchAuthRealmRequest,
-  hostHeaderMatchesExpectedHost,
   STAFF_AUTH_BASE_PATH,
   type AuthRealm,
   type AuthSurfacePolicy,
@@ -10,20 +9,26 @@ import {
   authorizeStaffRequest,
   STAFF_INVITATION_RECENT_MFA_MAXIMUM_AGE_MS,
 } from "@travelos/backend-core";
-import type { M1StaffTripOperations } from "@travelos/backend-core";
-import type { M1StaffTripWorkspaceOperations } from "@travelos/backend-core";
-import type { M1StaffTripWorkspaceWriteOperations } from "@travelos/backend-core";
-import type { M1StaffTripAccessOperations } from "@travelos/backend-core";
-import type { M1StaffTripPublicationOperations } from "@travelos/backend-core";
+import type { StaffTripOperations } from "@travelos/backend-core";
+import type { StaffTripWorkspaceOperations } from "@travelos/backend-core";
+import type { StaffTripWorkspaceWriteOperations } from "@travelos/backend-core";
+import type { StaffTripAccessOperations } from "@travelos/backend-core";
+import type { StaffTripPublicationOperations } from "@travelos/backend-core";
 import type { StaffInvitationOperations } from "@travelos/backend-core";
+import type { StaffLeadOperations } from "@travelos/backend-core";
 import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
 import type { StaffAccessRepository } from "@travelos/database";
 
 import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
 import {
-  registerAdminM1Routes,
+  headersFor,
+  requestUrlFor,
+  surfaceRejectionStatus as boundarySurfaceRejectionStatus,
+} from "./request-boundary.js";
+import {
+  registerAdminRoutes,
   type AdminRuntimeAcceptanceFixtureRouteOperations,
-} from "./m1-routes.js";
+} from "./admin-routes.js";
 import { registerAdminStaffInvitationRoutes } from "./staff-invitation-routes.js";
 import type { StaffInvitationRateLimiter } from "./staff-invitation-rate-limit.js";
 
@@ -65,57 +70,25 @@ export interface AdminAuthBridgeOptions {
   readonly policy: AuthSurfacePolicy;
   readonly environment?: "DEVELOPMENT" | "PRODUCTION";
   readonly staffAccessRepository: Pick<StaffAccessRepository, "getStaffAuthorizationSnapshot">;
-  readonly m1Operations?: M1StaffTripOperations;
-  readonly m1WorkspaceOperations?: M1StaffTripWorkspaceOperations;
-  readonly m1WorkspaceWriteOperations?: M1StaffTripWorkspaceWriteOperations;
-  readonly m1TripAccessOperations?: M1StaffTripAccessOperations;
-  readonly m1PublicationOperations?: M1StaffTripPublicationOperations;
-  readonly m1RuntimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
+  readonly tripOperations?: StaffTripOperations;
+  readonly workspaceOperations?: StaffTripWorkspaceOperations;
+  readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
+  readonly tripAccessOperations?: StaffTripAccessOperations;
+  readonly publicationOperations?: StaffTripPublicationOperations;
+  readonly leadOperations?: StaffLeadOperations;
+  readonly runtimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
   readonly staffInvitationOperations?: StaffInvitationOperations;
   readonly staffInvitationRateLimiter?: StaffInvitationRateLimiter;
 }
 
 type SetCookieHeaders = Headers & { readonly getSetCookie?: () => string[] };
 
-const headersFor = (request: IncomingHttpRequest): Headers => {
-  const headers = new Headers();
-  for (const [name, value] of Object.entries(request.headers)) {
-    if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      const separator = name.toLowerCase() === "cookie" ? "; " : ", ";
-      headers.set(name, value.join(separator));
-    } else {
-      headers.set(name, value);
-    }
-  }
-  return headers;
-};
-
-const requestUrlFor = (request: IncomingHttpRequest, policy: AuthSurfacePolicy): URL | null => {
-  try {
-    const canonicalOrigin = new URL(policy.canonicalOrigin);
-    const target = new URL(request.originalUrl ?? request.url, canonicalOrigin);
-    return target.origin === canonicalOrigin.origin ? target : null;
-  } catch {
-    return null;
-  }
-};
-
-const surfaceRejectionStatus = (
-  request: IncomingHttpRequest,
-  policy: AuthSurfacePolicy,
-): 403 | 404 | null => {
-  const headers = headersFor(request);
-  if (!hostHeaderMatchesExpectedHost(headers.get("host"), policy.expectedHost)) return 404;
-  const forwardedHost = headers.get("x-forwarded-host");
-  if (
-    headers.has("authorization") ||
-    (forwardedHost !== null && !hostHeaderMatchesExpectedHost(forwardedHost, policy.expectedHost))
-  ) {
-    return 403;
-  }
-  return null;
-};
+const surfaceRejectionStatus = (request: IncomingHttpRequest, policy: AuthSurfacePolicy) =>
+  boundarySurfaceRejectionStatus(request, policy, {
+    requireRoutableUrl: false,
+    requireCanonicalOrigin: false,
+    rejectQueryString: false,
+  });
 
 const writeBridgeResponse = (
   response: OutgoingHttpResponse,
@@ -287,26 +260,27 @@ export const registerAdminAuthBridge = (
   } else if (options.staffInvitationRateLimiter !== undefined) {
     throw new Error("Admin Staff invitation rate limiter requires invitation operations");
   }
-  if (options.m1Operations !== undefined) {
-    registerAdminM1Routes(http, {
+  if (options.tripOperations !== undefined) {
+    registerAdminRoutes(http, {
       policy: options.policy,
-      m1Operations: options.m1Operations,
-      ...(options.m1WorkspaceOperations === undefined
+      tripOperations: options.tripOperations,
+      ...(options.workspaceOperations === undefined
         ? {}
-        : { m1WorkspaceOperations: options.m1WorkspaceOperations }),
-      ...(options.m1WorkspaceWriteOperations === undefined
+        : { workspaceOperations: options.workspaceOperations }),
+      ...(options.workspaceWriteOperations === undefined
         ? {}
-        : { m1WorkspaceWriteOperations: options.m1WorkspaceWriteOperations }),
-      ...(options.m1TripAccessOperations === undefined
+        : { workspaceWriteOperations: options.workspaceWriteOperations }),
+      ...(options.tripAccessOperations === undefined
         ? {}
-        : { m1TripAccessOperations: options.m1TripAccessOperations }),
-      ...(options.m1PublicationOperations === undefined
+        : { tripAccessOperations: options.tripAccessOperations }),
+      ...(options.publicationOperations === undefined
         ? {}
-        : { m1PublicationOperations: options.m1PublicationOperations }),
+        : { publicationOperations: options.publicationOperations }),
+      ...(options.leadOperations === undefined ? {} : { leadOperations: options.leadOperations }),
       ...(options.environment !== "DEVELOPMENT" ||
-      options.m1RuntimeAcceptanceFixtureOperations === undefined
+      options.runtimeAcceptanceFixtureOperations === undefined
         ? {}
-        : { runtimeAcceptanceFixtureOperations: options.m1RuntimeAcceptanceFixtureOperations }),
+        : { runtimeAcceptanceFixtureOperations: options.runtimeAcceptanceFixtureOperations }),
     });
   }
 };

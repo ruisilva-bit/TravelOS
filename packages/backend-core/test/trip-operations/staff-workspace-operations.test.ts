@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import * as backendCore from "../../src/index.js";
 import type {
-  M1StaffAuthorizationDependencies,
+  StaffAuthorizationDependencies,
   OpaqueId,
   StaffAuthorizationOperationProof,
   StaffPermissionId,
@@ -21,12 +21,12 @@ const session = {
   recentMfaVerifiedAtEpochMs: null,
 };
 
-interface M1TripWorkspacePage {
+interface TripWorkspacePage {
   readonly items: readonly unknown[];
   readonly nextCursor: OpaqueId | null;
 }
 
-interface M1TripWorkspace {
+interface TripWorkspace {
   readonly trip: unknown;
   readonly flights: readonly unknown[];
   readonly accommodations: readonly unknown[];
@@ -38,29 +38,29 @@ interface WorkspaceReadRepository {
     limit: number,
     cursor: OpaqueId | null,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripWorkspacePage>;
+  ): Promise<TripWorkspacePage>;
   readTripWorkspace(
     agencyId: OpaqueId,
     tripId: OpaqueId,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<M1TripWorkspace | null>;
+  ): Promise<TripWorkspace | null>;
 }
 
 interface WorkspaceOperations {
   listTrips(
     cookieHeader: unknown,
     query: { readonly limit: number; readonly cursor: OpaqueId | null },
-  ): Promise<M1TripWorkspacePage>;
-  readTripWorkspace(cookieHeader: unknown, tripId: OpaqueId): Promise<M1TripWorkspace | null>;
+  ): Promise<TripWorkspacePage>;
+  readTripWorkspace(cookieHeader: unknown, tripId: OpaqueId): Promise<TripWorkspace | null>;
 }
 
 type CreateWorkspaceOperations = (
-  dependencies: M1StaffAuthorizationDependencies & { readonly repository: WorkspaceReadRepository },
+  dependencies: StaffAuthorizationDependencies & { readonly repository: WorkspaceReadRepository },
 ) => WorkspaceOperations;
 
 const exportedFactory = (
-  backendCore as unknown as { readonly createM1StaffTripWorkspaceOperations?: unknown }
-).createM1StaffTripWorkspaceOperations;
+  backendCore as unknown as { readonly createStaffTripWorkspaceOperations?: unknown }
+).createStaffTripWorkspaceOperations;
 const createOperations: CreateWorkspaceOperations | null =
   typeof exportedFactory === "function" ? (exportedFactory as CreateWorkspaceOperations) : null;
 
@@ -71,7 +71,7 @@ const makeDependencies = ({
   readonly permissions?: readonly StaffPermissionId[];
   readonly sessionValue?: unknown;
 } = {}) => {
-  const expectedPage: M1TripWorkspacePage = { items: [], nextCursor: cursorId };
+  const expectedPage: TripWorkspacePage = { items: [], nextCursor: cursorId };
   const repository: WorkspaceReadRepository = {
     listTrips: vi.fn(
       async (

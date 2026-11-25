@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { asOpaqueId } from "../../src/shared-kernel/opaque-id.js";
-import type { M1StaffAuthorizationError } from "../../src/modules/trip-operations/application/m1-staff-operations.js";
-import { M1StaffPublicationInputError } from "../../src/modules/customer-presentation/application/staff-publication-operations.js";
-import { createM1StaffTripPublicationOperations } from "../../src/modules/customer-presentation/application/staff-publication-operations.js";
+import type { StaffAuthorizationError } from "../../src/modules/trip-operations/application/staff-trip-operations.js";
+import { StaffPublicationInputError } from "../../src/modules/customer-presentation/application/staff-publication-operations.js";
+import { createStaffTripPublicationOperations } from "../../src/modules/customer-presentation/application/staff-publication-operations.js";
 import type { StaffPermissionId } from "../../src/staff-access/permission-registry.js";
 
 const agencyId = asOpaqueId("abcdef12-3456-7abc-8def-000000000001");
@@ -45,7 +45,7 @@ const makeContext = ({
         withdrawalResult,
     ),
   };
-  const operations = createM1StaffTripPublicationOperations({
+  const operations = createStaffTripPublicationOperations({
     repository: repository as never,
     authorizationRepository: {
       getStaffAuthorizationSnapshot: vi.fn(async () => ({
@@ -80,14 +80,14 @@ describe("Staff active publication withdrawal", () => {
 
     await expect(
       withdraw("staff-cookie", tripId, { reason: "  ", idempotencyKey: "withdraw-001" }),
-    ).rejects.toBeInstanceOf(M1StaffPublicationInputError);
+    ).rejects.toBeInstanceOf(StaffPublicationInputError);
     await expect(
       withdraw("staff-cookie", tripId, {
         reason: "acceptance cleanup",
         idempotencyKey: "withdraw-002",
         publicationId,
       }),
-    ).rejects.toBeInstanceOf(M1StaffPublicationInputError);
+    ).rejects.toBeInstanceOf(StaffPublicationInputError);
     expect(context.repository.withdrawActivePublication).not.toHaveBeenCalled();
   });
 
@@ -98,7 +98,7 @@ describe("Staff active publication withdrawal", () => {
         reason: "acceptance cleanup",
         idempotencyKey: "withdraw-003",
       }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<M1StaffAuthorizationError>);
+    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<StaffAuthorizationError>);
     expect(staleMfa.repository.withdrawActivePublication).not.toHaveBeenCalled();
 
     const missingPermission = makeContext({
@@ -109,7 +109,7 @@ describe("Staff active publication withdrawal", () => {
         reason: "acceptance cleanup",
         idempotencyKey: "withdraw-004",
       }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<M1StaffAuthorizationError>);
+    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<StaffAuthorizationError>);
     expect(missingPermission.repository.withdrawActivePublication).not.toHaveBeenCalled();
   });
 

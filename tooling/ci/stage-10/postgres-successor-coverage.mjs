@@ -27,13 +27,20 @@ const historicalHarness = [
 // Accepted gen11 bytes exported on the build host. No git history is copied to CT200.
 // Same-control transport hashes are not independent provenance or review.
 export const ACCEPTED_POSTGRES_SHA256 = Object.freeze({
-  "tests/integration/stage-6-publication-postgresql.test.ts": "10240d267038a43abfdb2e955d5d8c752523d1dbd8195b09acf8e5455f542418",
-  "tests/integration/stage-7-postgresql.test.ts": "6a7e9d255366390d2319e668ce51d7d15cd8f71c6a8328d15db7a1488fb640a3",
-  "tests/integration/stage-8-postgresql.test.ts": "b4d417025449f6257479853b5b24a6c9cbe27151884dcb1bf2ee1af9553e863c",
-  "tests/integration/stage-9-staff-invitations-postgresql.test.ts": "383447abbec1bc8ebcf629567d3eec6eabc4b1160febb41b0f614c4e229407c8",
-  "tooling/testing/vitest.stage-9.config.ts": "26ba710510617abe72b3afa2cbc9dce0779d5b17b3e979bd1518b4dd6baa5d79",
-  "tooling/ci/stage-9/postgres-regression-adapter.mjs": "617fb950b973c467c0153f50050f75bab515096fa89f12714737cfa8b8b480c9",
-  "tooling/ci/stage-8/regression-adapter.mjs": "66b98751ba80360382c7a5cc79b409e3f877ca6a0e966d52849a0c1044497f50",
+  "tests/integration/stage-6-publication-postgresql.test.ts":
+    "10240d267038a43abfdb2e955d5d8c752523d1dbd8195b09acf8e5455f542418",
+  "tests/integration/stage-7-postgresql.test.ts":
+    "6a7e9d255366390d2319e668ce51d7d15cd8f71c6a8328d15db7a1488fb640a3",
+  "tests/integration/stage-8-postgresql.test.ts":
+    "b4d417025449f6257479853b5b24a6c9cbe27151884dcb1bf2ee1af9553e863c",
+  "tests/integration/stage-9-staff-invitations-postgresql.test.ts":
+    "383447abbec1bc8ebcf629567d3eec6eabc4b1160febb41b0f614c4e229407c8",
+  "tooling/testing/vitest.stage-9.config.ts":
+    "26ba710510617abe72b3afa2cbc9dce0779d5b17b3e979bd1518b4dd6baa5d79",
+  "tooling/ci/stage-9/postgres-regression-adapter.mjs":
+    "617fb950b973c467c0153f50050f75bab515096fa89f12714737cfa8b8b480c9",
+  "tooling/ci/stage-8/regression-adapter.mjs":
+    "66b98751ba80360382c7a5cc79b409e3f877ca6a0e966d52849a0c1044497f50",
 });
 const successorHarness = [
   "tooling/testing/vitest.stage-10.config.ts",
@@ -95,26 +102,33 @@ export async function postgresCoverage(root, { acceptedBlobs } = {}) {
   const configuredBlobs = process.env.TRAVELOS_STAGE10_ACCEPTED_BLOBS;
   if (configuredBlobs !== undefined) {
     assert.ok(path.isAbsolute(configuredBlobs), "Invalid accepted blob path");
-    assert.ok(acceptedBlobs === undefined || acceptedBlobs === configuredBlobs,
-      "Conflicting accepted blob path");
+    assert.ok(
+      acceptedBlobs === undefined || acceptedBlobs === configuredBlobs,
+      "Conflicting accepted blob path",
+    );
     acceptedBlobs = configuredBlobs;
   }
-  assert.deepEqual(Object.keys(ACCEPTED_POSTGRES_SHA256).sort(),
-    [...POSTGRES_SUITES, ...historicalHarness].sort());
+  assert.deepEqual(
+    Object.keys(ACCEPTED_POSTGRES_SHA256).sort(),
+    [...POSTGRES_SUITES, ...historicalHarness].sort(),
+  );
   const rows = [];
   for (const file of [...POSTGRES_SUITES, ...historicalHarness, ...successorHarness]) {
     const bytes = await regularBytes(path.join(root, file));
     const accepted = POSTGRES_SUITES.includes(file) || historicalHarness.includes(file);
     if (accepted) {
-      assert.equal(sha256(bytes), ACCEPTED_POSTGRES_SHA256[file],
-        "Historical PostgreSQL assertion/harness source changed");
+      assert.equal(
+        sha256(bytes),
+        ACCEPTED_POSTGRES_SHA256[file],
+        "Historical PostgreSQL assertion/harness source changed",
+      );
       const reference = acceptedBlobs
         ? await regularBytes(path.join(acceptedBlobs, file))
         : execFileSync("git", ["show", `${PREDECESSOR.commit}:${file}`], {
-          cwd: root,
-          timeout: 30000,
-          maxBuffer: 4 * 1024 * 1024,
-        });
+            cwd: root,
+            timeout: 30000,
+            maxBuffer: 4 * 1024 * 1024,
+          });
       assert.deepEqual(bytes, reference, "Historical PostgreSQL assertion/harness source changed");
     }
     rows.push({ path: file, sha256: sha256(bytes), acceptedPredecessorBytes: accepted });

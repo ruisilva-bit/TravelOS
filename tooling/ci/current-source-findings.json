@@ -1,0 +1,776 @@
+{
+  "schemaVersion": 1,
+  "scope": "Reviewed sensitive-data scanner findings for the current tracked source tree (ADR-015). Each entry matches exact path + rule + SHA-256 of the line bytes without terminator; any edited or new matching line becomes an unclassified finding and fails the gate.",
+  "entries": [
+    {
+      "path": "apps/admin-api/test/composed-body-parser.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "d74b49eec930ffb1a4dfdc7d294d4bd9be69855d19e86881428778830782b442",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-api/test/composed-body-parser.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "d74b49eec930ffb1a4dfdc7d294d4bd9be69855d19e86881428778830782b442",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-api/test/correlation.test.ts",
+      "rule": "email-address",
+      "lineSha256": "1c4a0ae70ec8d6d5f68b4d83fba10d0c8e08bb11b60dad140a83f94ab1f16bd8",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-api/test/staff-invitation-routes.test.ts",
+      "rule": "authorization-bearer",
+      "lineSha256": "a564dec5d88c48d0f2d563a7a74f8497cce840b2727d9401bc2250d1424a2f1b",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-api/test/staff-invitation-routes.test.ts",
+      "rule": "email-address",
+      "lineSha256": "1986c048680f27152240bd34e08abd3eaa8c96e6160e57a18fa6c25cb156ba1e",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/app.test.tsx",
+      "rule": "credential-url-query",
+      "lineSha256": "2c0b489826631bb0337d3473b6ab6222758d3b5f41cf6f5474c6fbb95b163e0d",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/app.test.tsx",
+      "rule": "credential-url-query",
+      "lineSha256": "80df7f0dc778bdc928f286930c1049fd4392ae07fa71be80501ed1d5a8fbe8a3",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/app.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "1f050389e7484231ce8c5324389e5d597df5cad81b06835e61d611461e3fb454",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/app.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "2c0b489826631bb0337d3473b6ab6222758d3b5f41cf6f5474c6fbb95b163e0d",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/app.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "2df9ea9c1581f09366dade83416336e2e615ee67097600d764c1649628b8fc69",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/app.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "80df7f0dc778bdc928f286930c1049fd4392ae07fa71be80501ed1d5a8fbe8a3",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/app.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "ee366d0473be89c4d341aaa27bc095babbc500b2d1697c672f647b53b8b258cb",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/app.test.tsx",
+      "rule": "secret-assignment",
+      "lineSha256": "81f6c02311d3cb1a455365a36ee0d8e2a28deb1994cf16dc8b5a6552aa2b13c9",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "5d70a09d9154c060cda04878308e05c6cecf525066cbd48f83f8a4c3f68ec777",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "93d8f599ad8ecb21b24d1bd56e2154a61a9a92cfd39638dc96e7be79e3233893",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "c271cce75026db8c6f9768a96429bf91f0e4a84f8cf3872f3563c7f0518add67",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "d2ffd37d2f6c1f87e524a9e268e4c15418899e44e45c968b247cb02ef91e0781",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "da85a276d2a6b0af3df774451b7cf8ae5d02ba1e72634216789e13414867ef53",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "ebceae827498ac6e9b742a7f29d43d10f7e5089607f282a94505a883142f782a",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "faab03f49385780d2763747c9d19dc846114a5d65f26f6c1c93e119f737bc35e",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
+      "rule": "secret-assignment",
+      "lineSha256": "47a9cc1d083443913836995169734ef71ed55f5796d387119dc1222a3aadfce8",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/staff-invitations-view.test.tsx",
+      "rule": "secret-assignment",
+      "lineSha256": "f79ce7ebaa5b9f0fd79bc5bfe03f4a2a0ff90951ce87f0a35bd3fdca2eb1bf77",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/portal-web/test/app.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "d822f0f1413f38e3d024cdbcbdd528d7ebfdaa33878250007cfd6079c5757797",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/portal-web/test/app.test.tsx",
+      "rule": "email-address",
+      "lineSha256": "f4f99c0230856fc1f2788c3472d1ef846ae6e792604bb891088280966335a7e1",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/portal-web/test/app.test.tsx",
+      "rule": "secret-assignment",
+      "lineSha256": "81f6c02311d3cb1a455365a36ee0d8e2a28deb1994cf16dc8b5a6552aa2b13c9",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "apps/worker/src/main.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "2b1c2aa85ca1806ce390e51fa286e97331d06e30368406f6e9a8a0d53b61fb6d",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
+    },
+    {
+      "path": "apps/worker/src/main.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "2b1c2aa85ca1806ce390e51fa286e97331d06e30368406f6e9a8a0d53b61fb6d",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
+    },
+    {
+      "path": "packages/auth-adapters/src/realm.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "12a7af7613c7ef9019a01d447d49aeeaf554055fc0313f0ad7c0642a46963a09",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
+    },
+    {
+      "path": "packages/auth-adapters/test/staff-invitation-token.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "a5e63107d6d81fa48a3aceeb58a2a7a0d6a51be2733031eaacdbe64d886fe04c",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "email-address",
+      "lineSha256": "35a6d69da5828c4ff93f80cecb13471262e5a6e6987b744397f84483d15b8a45",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "email-address",
+      "lineSha256": "45cdb1d594e3cf2481354cb3325d5a3935d4007ddc16317b28bf301f1583e8cb",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "email-address",
+      "lineSha256": "6efe5e0f6e42b95509afd56808fca93b147444f0f83543b544019ed5dc8cca66",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "email-address",
+      "lineSha256": "904f379053b373999a71386ab41420925246e7ae58ce2629286f224474b37f68",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "email-address",
+      "lineSha256": "a0a181e9a77d319a1e5d0a1d7e747014504d541583494fec7455c25bec2d39e7",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "email-address",
+      "lineSha256": "e60e569d348aea253ec434be91eb00083753240d1980368fcc63399e6697e4bc",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "email-address",
+      "lineSha256": "efd0d8885bcba0668ccb247b255ba53939760f215d785f8311441df2ea7bf933",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "56aecb257b7387043bde13442223fa62e5f7fbd0b8d4895fd6353f8c4660f82c",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "77798168953d56b1f2a04b130d215be3481ba0bb6414d4cc3638aa97a83950a3",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "eb233dc44f5277b58731997ed95b898ce09869a75739a46a1c2c39d19f9a0fe1",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "56aecb257b7387043bde13442223fa62e5f7fbd0b8d4895fd6353f8c4660f82c",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "77798168953d56b1f2a04b130d215be3481ba0bb6414d4cc3638aa97a83950a3",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "e9782e9f521e23d53616d2fdf6005743b9a23973c2b930c8c65e0daf13e46078",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "eb233dc44f5277b58731997ed95b898ce09869a75739a46a1c2c39d19f9a0fe1",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/src/admin/staff/invitation-v1.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "dc60b67ebc81863c498e6c946d39d68afcf9ae14c8e63e0427f6c8253c0c75a3",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Schema/data-flow field declaration or test input, not a credential literal."
+    },
+    {
+      "path": "packages/contracts/src/admin/staff/invitation-v1.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "dc60b67ebc81863c498e6c946d39d68afcf9ae14c8e63e0427f6c8253c0c75a3",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Schema/data-flow field declaration or test input, not a credential literal."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "email-address",
+      "lineSha256": "260ac70ca9617ce947c83bcb9d672a65fce53e2b34f90995535278ceee35ee38",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "email-address",
+      "lineSha256": "d2ffd37d2f6c1f87e524a9e268e4c15418899e44e45c968b247cb02ef91e0781",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "4a2ea76b9b5131f18e85c953327104a4a9c63f83b02200ba4d263bd4dbd9172e",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "7b30368f447bb1baeebf86c7568a104f328e80057f3cf933f5ac30c126b39961",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "aac610d63e7065b1283bf021bfbddfc849436b6863c8212272d1108b34f0a8e7",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "eb233dc44f5277b58731997ed95b898ce09869a75739a46a1c2c39d19f9a0fe1",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "4a2ea76b9b5131f18e85c953327104a4a9c63f83b02200ba4d263bd4dbd9172e",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "7b30368f447bb1baeebf86c7568a104f328e80057f3cf933f5ac30c126b39961",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "aac610d63e7065b1283bf021bfbddfc849436b6863c8212272d1108b34f0a8e7",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "eb233dc44f5277b58731997ed95b898ce09869a75739a46a1c2c39d19f9a0fe1",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/contracts/test/admin-trip-workspace-v1.test.ts",
+      "rule": "email-address",
+      "lineSha256": "ba2f910585107b0146b761f69f89050dd248ab45fdb7fd5efac9ac06c8c25108",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/observability/test/telemetry.test.ts",
+      "rule": "email-address",
+      "lineSha256": "026e5e3ebba79afea585f2e610b1da07a0b3bf60fbca2a098a1cf470482da6fc",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/observability/test/telemetry.test.ts",
+      "rule": "email-address",
+      "lineSha256": "54260511fde67fd94482a9984d2600218490ad4a50239380d178e1d063a80cbb",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/observability/test/telemetry.test.ts",
+      "rule": "email-address",
+      "lineSha256": "f4f99c0230856fc1f2788c3472d1ef846ae6e792604bb891088280966335a7e1",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "packages/observability/test/telemetry.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "75a02a68cc5f0c882044518c7b907ce6a6cc3cfae326b62b2406d374f5cfb223",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "rule": "email-address",
+      "lineSha256": "4453be6769caa845c04ba27b28389f6b0ddbbf2c060e9efce1465c32ed008ce0",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "rule": "email-address",
+      "lineSha256": "4ea615fd5fe27602fb12bdefe91b9655b943b68f62e2018d482413392d8cadbf",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "rule": "email-address",
+      "lineSha256": "97da54221af4c4a78b0f489ec23b98ee841d52a5015b45f1b07c2888b2262dad",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "rule": "email-address",
+      "lineSha256": "9d7c1ecb8c8173138335ae27554d5e71797a012862ac2c6a04b2ac272345f000",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "rule": "email-address",
+      "lineSha256": "a3277fc241e32e1e922d2c610b4b317d3eae4a307ef11bd05c87f5dc10c4df71",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "rule": "email-address",
+      "lineSha256": "faacd833e8fa5401f4cc7acdda059d6568a66e10368c51d2a0837fa4219709af",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-7-postgresql.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "94aeda0c095446a0d38dbcbc670811a9923be30a4878e70d45540d85934510c2",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-7-postgresql.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "dd7da91da2a95c7e4ccbc999f3d73547b25875139515f980743fe83eb4967bfc",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-7-postgresql.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "94aeda0c095446a0d38dbcbc670811a9923be30a4878e70d45540d85934510c2",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-7-postgresql.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "dd7da91da2a95c7e4ccbc999f3d73547b25875139515f980743fe83eb4967bfc",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-8-postgresql.test.ts",
+      "rule": "email-address",
+      "lineSha256": "26d651fa80b108523a54397e04d75d7eff5822d6de93ebb2ad338c26bb593dad",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-8-postgresql.test.ts",
+      "rule": "email-address",
+      "lineSha256": "ba1c400e3a8dbce6b766e48256905aad6938f0375fd4e86873a3aa7787082364",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-9-staff-invitations-postgresql.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "4ff3b78bd01b5b08f3e12ac96a3a35ebcb3033cce11ba6456be98389f5bb17cc",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-9-staff-invitations-postgresql.test.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "94aeda0c095446a0d38dbcbc670811a9923be30a4878e70d45540d85934510c2",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-9-staff-invitations-postgresql.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "4ff3b78bd01b5b08f3e12ac96a3a35ebcb3033cce11ba6456be98389f5bb17cc",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/stage-9-staff-invitations-postgresql.test.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "94aeda0c095446a0d38dbcbc670811a9923be30a4878e70d45540d85934510c2",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tooling/ci/stage-10/stage10-runtime-api-postgres.mjs",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "a1c8c89870338b3117f5b0776bb00b6df07f063e41b2de30bfacd5b24b76c360",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/ci/stage-10/stage10-runtime-api-postgres.mjs",
+      "rule": "secret-assignment",
+      "lineSha256": "a1c8c89870338b3117f5b0776bb00b6df07f063e41b2de30bfacd5b24b76c360",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/ci/stage-10/stage10-runtime-browser-shell.mjs",
+      "rule": "email-address",
+      "lineSha256": "f2d6bba9325175bfb0534d9f8b91e025433513bb5cc0200f9c6dfdfb809df073",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Reserved example domain (RFC 2606/6761) used as a synthetic fixture."
+    },
+    {
+      "path": "tooling/ci/stage-10/test-historical-archive-screen.mjs",
+      "rule": "email-address",
+      "lineSha256": "8b806afdc3cb6929ca8c077ec94b997e362e59b7976e94bdf3f143af64912db1",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Reserved example domain (RFC 2606/6761) used as a synthetic fixture."
+    },
+    {
+      "path": "tooling/ci/stage-10/test-historical-archive-screen.mjs",
+      "rule": "email-address",
+      "lineSha256": "e0c8047f37fedca2b0b2d050a6236550530784bb34eb3c7695f1420c719b7d5d",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Reserved example domain (RFC 2606/6761) used as a synthetic fixture."
+    },
+    {
+      "path": "tooling/ci/stage-10/test-pipeline.mjs",
+      "rule": "email-address",
+      "lineSha256": "7b08d750545b25dbebd4312ad61e48797bf93ca70369be228153b0a1ef29e3ff",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Reserved example domain (RFC 2606/6761) used as a synthetic fixture."
+    },
+    {
+      "path": "tooling/ci/stage-8/controlled-worker.mjs",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "e32fa01035ec1a1e03d2822855ed2b35bec33a28fa31be1ad9be07c1b9faffbb",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
+    },
+    {
+      "path": "tooling/ci/stage-8/controlled-worker.mjs",
+      "rule": "secret-assignment",
+      "lineSha256": "e32fa01035ec1a1e03d2822855ed2b35bec33a28fa31be1ad9be07c1b9faffbb",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
+    },
+    {
+      "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "59a9e7127d5cdb362b5f074d98b819db8830811b698db076ca604700566d42c3",
+      "category": "REVIEWED_NON_SENSITIVE",
+      "rationale": "Structural/runtime logic; flagged line contains no literal secret or actual personal data."
+    },
+    {
+      "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "e32fa01035ec1a1e03d2822855ed2b35bec33a28fa31be1ad9be07c1b9faffbb",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
+    },
+    {
+      "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+      "rule": "secret-assignment",
+      "lineSha256": "59a9e7127d5cdb362b5f074d98b819db8830811b698db076ca604700566d42c3",
+      "category": "REVIEWED_NON_SENSITIVE",
+      "rationale": "Structural/runtime logic; flagged line contains no literal secret or actual personal data."
+    },
+    {
+      "path": "tooling/ci/stage-8/runtime-acceptance.mjs",
+      "rule": "secret-assignment",
+      "lineSha256": "e32fa01035ec1a1e03d2822855ed2b35bec33a28fa31be1ad9be07c1b9faffbb",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
+    },
+    {
+      "path": "tooling/ci/test-scan-current-source.mjs",
+      "rule": "email-address",
+      "lineSha256": "336b85335f74f2618ddb9fb746127a0c810471f910f65524d45ac17b608eb4ff",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Scanner self-test fixture uses a reserved .invalid example address; no real-person data."
+    },
+    {
+      "path": "tooling/ci/test-scan-current-source.mjs",
+      "rule": "email-address",
+      "lineSha256": "ff12403a5eeb308453441312df46f24e4a48d32b07ff75f92f9d26544725401f",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Scanner self-test fixture uses a reserved .invalid example address; no real-person data."
+    },
+    {
+      "path": "tooling/deployment/stage10-backup-encryption.py",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "80c9eb8054d0d09a76717577ecab961f0adf689a232d226b6973cdcd5eef46f1",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/stage10-backup-encryption.py",
+      "rule": "secret-assignment",
+      "lineSha256": "80c9eb8054d0d09a76717577ecab961f0adf689a232d226b6973cdcd5eef46f1",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/stage10-backup-key-provision.py",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "2fa8e58df794edaecc6f0b5771df1efb278df1893d04b8cb8b2b620ee1ba5517",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/stage10-backup-key-provision.py",
+      "rule": "secret-assignment",
+      "lineSha256": "2fa8e58df794edaecc6f0b5771df1efb278df1893d04b8cb8b2b620ee1ba5517",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/stage10-development-keystore.py",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "8d7a511e1f0d8452b33f076386b6a0c066a09c6e827b041e447965606e6356d2",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/stage10-development-keystore.py",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "f93e7862dd6baad387857b504d9255eb400247dcfc0096f7e6fb0af3ccf8511f",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/stage10-development-keystore.py",
+      "rule": "secret-assignment",
+      "lineSha256": "8d7a511e1f0d8452b33f076386b6a0c066a09c6e827b041e447965606e6356d2",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/stage10-development-keystore.py",
+      "rule": "secret-assignment",
+      "lineSha256": "f93e7862dd6baad387857b504d9255eb400247dcfc0096f7e6fb0af3ccf8511f",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/stage10-qualification-resource.py",
+      "rule": "email-address",
+      "lineSha256": "6128d8fd31263e68efd874bb8927dfe7a8f70da756c02a4630a11366989280a7",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "systemd user unit name (user@UID.service), not an email address."
+    },
+    {
+      "path": "tooling/deployment/test-stage10-backup-encryption.py",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "048f59f809eff837f52341e40a990828d8ac8d2dbe30d9ead8994b1b9ace1b7f",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/test-stage10-backup-encryption.py",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "96d10f0384803b6a37837294c47f004f7925f7c1af5efcea8f30e0f154ab855b",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/test-stage10-backup-encryption.py",
+      "rule": "secret-assignment",
+      "lineSha256": "048f59f809eff837f52341e40a990828d8ac8d2dbe30d9ead8994b1b9ace1b7f",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/test-stage10-backup-encryption.py",
+      "rule": "secret-assignment",
+      "lineSha256": "96d10f0384803b6a37837294c47f004f7925f7c1af5efcea8f30e0f154ab855b",
+      "category": "RUNTIME_GENERATED_OR_SEALED_SECRET",
+      "rationale": "Value is generated at runtime or read from a sealed credential; no literal secret in source."
+    },
+    {
+      "path": "tooling/deployment/test-stage10-evidence-retention.mjs",
+      "rule": "email-address",
+      "lineSha256": "782bdd905bbaa105a762add4c20ef61770477eb3c9942820036dbbd6c83e59c6",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Reserved example domain (RFC 2606/6761) used as a synthetic fixture."
+    },
+    {
+      "path": "tooling/deployment/test-stage10-qualification-resource.py",
+      "rule": "email-address",
+      "lineSha256": "5deddaaf1225dacd88359b7233973d3e216ea12811ee056680b650f05c6031f5",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "systemd user unit name (user@UID.service), not an email address."
+    },
+    {
+      "path": "tooling/testing/playwright/stage9-staff-invitations.spec.ts",
+      "rule": "credential-url-query",
+      "lineSha256": "c1da80e525f5fd83c486593fc0cf2e6a93b914833884ea850b049801d33e4f60",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tooling/testing/playwright/stage9-staff-invitations.spec.ts",
+      "rule": "email-address",
+      "lineSha256": "8363d92540d6bd21509c4351a90fe678459406e0554b8a2e93857c4af4a8797d",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tooling/testing/playwright/stage9-staff-invitations.spec.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "20bd47b24c59c7df861f7ba4549c83ad146e3c593a5fd75569a7064ff7ec2701",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tooling/testing/playwright/stage9-staff-invitations.spec.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "53b47ae7799b1daf130b4f460dd3a2f635a67a0676e42734cf5d7a5dbebd563a",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tooling/testing/playwright/stage9-staff-invitations.spec.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "d2586def18b7dc9f801750ab1e8fd0134024853d7e0a8076176fe49d802af613",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    }
+  ]
+}

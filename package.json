@@ -9,8 +9,8 @@
   "packageManager": "pnpm@11.21.0",
   "scripts": {
     "protected-baseline:check": "node tooling/ci/stage-9-successor-baseline.mjs",
-    "format": "node tooling/ci/format-stage-2.mjs --write && node tooling/ci/stage-9-successor-baseline.mjs",
-    "format:check": "node tooling/ci/format-stage-2.mjs --check && node tooling/ci/stage-9-successor-baseline.mjs",
+    "format": "node tooling/ci/format-stage-2.mjs --write",
+    "format:check": "node tooling/ci/format-stage-2.mjs --check",
     "stage9:successor-baseline:verify": "node tooling/ci/stage-9-successor-baseline.mjs",
     "test:stage9:successor-baseline": "node --test tooling/ci/test-stage9-successor-baseline.mjs",
     "lint": "eslint apps packages tooling tests migrations *.ts *.mjs",
@@ -29,6 +29,7 @@
     "auth:schema:verify": "tsx tooling/auth/verify-better-auth-schema-drift.ts",
     "test:stage3:postgres": "node tooling/database/run-stage-3-disposable.mjs",
     "test:stage4:postgres": "node tooling/database/run-stage-4-disposable.mjs",
+    "test:postgres": "node tooling/database/run-postgres-integration.mjs",
     "stage3:aggregate": "node tooling/database/run-stage-3-aggregate.mjs",
     "stage3:verify": "node tooling/database/run-stage-3-aggregate.mjs",
     "stage3:corrections:verify": "tsx tooling/database/verify-stage-3-corrections.ts",
@@ -119,8 +120,13 @@
     "security:scan:bundles": "node tooling/ci/test-browser-bundle-scan.mjs && node tooling/ci/scan-browser-bundles.mjs",
     "security:scan:stage4": "node tooling/ci/scan-source-secrets.mjs --stage4-final",
     "security:scan": "pnpm security:scan:source && pnpm security:scan:bundles",
-    "ci:verify": "node tooling/ci/verify-stage-6.mjs",
-    "evidence:stage2": "node tooling/ci/capture-stage-2-evidence.mjs"
+    "ci:verify": "node tooling/ci/verify-current.mjs",
+    "evidence:stage2": "node tooling/ci/capture-stage-2-evidence.mjs",
+    "ci:verify:historical-stage6": "node tooling/ci/verify-stage-6.mjs",
+    "verify:accepted-adrs": "node tooling/ci/verify-accepted-adrs.mjs",
+    "security:scan:current-source": "node tooling/ci/scan-current-source.mjs",
+    "test:security:current-source": "node --test tooling/ci/test-scan-current-source.mjs",
+    "ci:verify:historical-stage5": "node tooling/ci/verify.mjs"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "9.1.0",

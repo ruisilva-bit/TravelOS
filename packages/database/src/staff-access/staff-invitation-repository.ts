@@ -1,5 +1,5 @@
 import {
-  M1StaffAuthorizationError,
+  StaffAuthorizationError,
   STAFF_INVITATION_PERMISSION_REQUIREMENTS,
   STAFF_INVITATION_RECENT_MFA_MAXIMUM_AGE_MS,
   STAFF_INVITATION_STATUSES,
@@ -27,7 +27,7 @@ import { sql, type Kysely } from "kysely";
 import {
   assertStaffAuthorizationInTransaction,
   mapPostgresMutationError,
-} from "../trip-operations/m1-operational-slice-repository.js";
+} from "../trip-operations/operational-slice-repository.js";
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
 import { createUuidV7 } from "../uuidv7.js";
 
@@ -150,7 +150,7 @@ const authorizeManagement = async (
   input: ManagementAuthorization,
 ): Promise<void> => {
   if (input.authorization.session.staffPrincipalId !== input.actorStaffPrincipalId) {
-    throw new M1StaffAuthorizationError("FORBIDDEN");
+    throw new StaffAuthorizationError("FORBIDDEN");
   }
   await assertStaffAuthorizationInTransaction(
     database,

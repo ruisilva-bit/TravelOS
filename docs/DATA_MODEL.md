@@ -50,7 +50,7 @@ Rules:
 | `organization` | `agency`, `organization_unit`, `team`, `team_member`, `branding_draft` | Agency Organization |
 | `staff_access` | auth-library-prefixed staff tables, `staff_membership`, `role`, `role_permission`, `role_assignment`, `permission_registry_version`, `staff_invitation` | Staff Access |
 | `crm` | `person`, `customer`, `customer_person`, `traveller_group`, `traveller_group_member`, contact/address tables | CRM |
-| `sales` | `lead`, `travel_request`, `opportunity`, `quote`, `quote_version`, `proposal_alternative`, `sale` | Sales |
+| `sales` | `lead`, `lead_idempotency`, `travel_request`, `opportunity`, `quote`, `quote_version`, `proposal_alternative`, `sale` | Sales |
 | `trip_ops` | `trip`, `trip_traveller`, `itinerary_item`, family detail tables, `journey_group`, `reservation`, `reservation_item_link` | Trip Operations |
 | `presentation` | `publication`, one-to-one `publication_payload`, `current_publication`, `publication_event`, `agency_profile_publication` | Customer Presentation |
 | `portal_access` | auth-library-prefixed Portal tables, `trip_access_grant`, authorization epoch | Portal Access |
@@ -58,9 +58,9 @@ Rules:
 | `documents` | `storage_object`, `document`, `document_version`, typed association tables, `document_grant` | Documents |
 | `work_service` | `task`, `case`, assignment/state history | Work & Service |
 | `communications` | `conversation`, `message`, `delivery_request` | Communications |
-| `activity` | `activity_entry` | Activity |
-| `audit` | `audit_event`, `staff_invitation_event` | Audit |
-| `integration` | `provider_config`, `provider_reference`, `webhook_inbox`, `outbox_message`, `outbox_delivery` | Integrations |
+| `activity` | `activity_entry`, `lead_entry` | Activity |
+| `audit` | `audit_event`, `staff_invitation_event`, `lead_event` | Audit |
+| `integration` | `provider_config`, `provider_reference`, `webhook_inbox`, `outbox_message`, `outbox_delivery`, `lead_outbox` | Integrations |
 | `job_runtime` | `job`, `job_attempt`, `recurring_job_key` | TravelOS Job Runtime |
 
 Authentication-library tables are physically separate per realm and cannot share a session/account table.
@@ -75,6 +75,18 @@ Authentication-library tables are physically separate per realm and cannot share
 The 60-minute expiry limits token use, not how long the invitation email or digest is retained. This Stage 9 extension introduces no numeric post-terminal retention period; the existing privileged retention policy remains authoritative and must be followed before any purge.
 
 The only Stage 9 inviteable role is the code-owned Agency template `trip-operations-v1`; callers cannot choose a role ID or permission set. Acceptance locks and validates the pending invitation, creates the Better Auth Staff identity and its controlled email-verification state, inserts the active Agency membership and fixed role assignment, consumes the invitation, and appends the immutable audit event in one transaction. Any failure rolls back the complete operation. The issuer-approved email binding is not independent proof of mailbox ownership. No session is issued by enrolment, and Staff authorization context remains unavailable until TOTP MFA is enabled and verified. Portal roles have no access to invitation or invitation-audit data.
+
+### M2 slice 1 Sales Lead
+
+| Record/data | Owner and classification | Portal eligibility | Retention, audit and access |
+|---|---|---|---|
+| `sales.lead` (`id`, `agencyId`, `source`, `contactGivenName`, `contactFamilyName`, `contactEmail`, `contactPhone`, `internalNote`, `state`, `qualifiedCustomerId`, `disqualificationReason`, `lockVersion`, `createdAt`, `updatedAt`, `closedAt`) | Sales. Contact fields are `CONFIDENTIAL_PERSONAL`; `internalNote` is `INTERNAL_ONLY`; `source`, `state`, reason, identifiers, version and timestamps are internal operational data. | None. No Portal contract, source field or override exists; the Portal runtime has no schema or table privilege on `sales`. | Retained after qualification and follows the CRM retention/privacy-deletion policy; privacy deletion of a Lead is a later slice and there is no blanket soft delete. Qualify and disqualify are audited. The Admin runtime has `SELECT`, `INSERT`, `UPDATE` (no `DELETE`/`TRUNCATE`); a trigger rejects any update of a closed Lead, any lock-version step other than +1 and any change of identity or creation time. Access: Agency-scoped cursor listing by `(agencyId, state, createdAt DESC, id DESC)` and point reads by `(agencyId, id)`. |
+| `sales.lead_idempotency` | Sales. Agency, Staff principal, command (`lead.create`, `lead.qualify`, `lead.disqualify`), caller key and a SHA-256 request hash; no contact data. | None. | Immutable. Read by the exact primary key `(agencyId, staffPrincipalId, command, idempotencyKey)`; retention follows the Lead it references. |
+| `audit.lead_event` | Audit. Agency, Lead, actor, action (`LEAD_QUALIFIED`/`LEAD_DISQUALIFIED`), lock-version step, the linked Customer ID or the categorical reason; never contact data or the note. | None. | Append-only with mutation and truncation rejected for every role; at most one closure event per Lead. Retained under the privileged Audit retention policy and reconciled with the Lead on privacy deletion. |
+| `activity.lead_entry` | Activity. Agency, Lead, actor, entry type and instant; a human-readable line is rendered from these identifiers, never stored with contact data. | None. | Append-only; written synchronously with the audit event because the Stage 8 `ACTIVITY_V1` projection is Trip-scoped. Read by `(agencyId, leadId, occurredAt)`. |
+| `integration.lead_outbox` | Integrations. Message ID, Agency, Lead, audit reference, `LeadQualified`/`LeadDisqualified`, schema version 1 and the new lock version only. | None. | Immutable, inserted in the business transaction; no delivery consumer exists yet (delivery is deferred, like the earlier publication outboxes). |
+
+`sales.lead` references its Customer through the composite same-Agency key `(qualifiedCustomerId, agencyId)` with `ON DELETE RESTRICT`; the history tables reference the Lead, the actor membership and the Customer the same way. Check constraints bind `state` to `qualifiedCustomerId`, `disqualificationReason` and `closedAt` (`QUALIFIED` iff a Customer, `DISQUALIFIED` iff a reason, `OPEN` iff no `closedAt`) and bound every text field (names 1–200, email at most 320, phone at most 40 using digits, spaces and `+()-`, note at most 4000). `lockVersion` starts at 1 for this table, as for the other M1 aggregates.
 
 ## 5. Core relationship model
 

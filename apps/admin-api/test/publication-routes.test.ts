@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import {
   asOpaqueId,
   StalePublicationCandidateError,
-  type M1StaffTripOperations,
-  type M1StaffTripPublicationOperations,
+  type StaffTripOperations,
+  type StaffTripPublicationOperations,
 } from "@travelos/backend-core";
 import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
-import { registerAdminM1Routes, type AdminM1ExpressApplication } from "../src/m1-routes.js";
+import { registerAdminRoutes, type AdminExpressApplication } from "../src/admin-routes.js";
 
 const policy: AuthSurfacePolicy = {
   canonicalOrigin: "https://admin.example.test",
@@ -20,18 +20,18 @@ const projection = {
   items: [],
 };
 
-const makeHarness = (publicationOperations: M1StaffTripPublicationOperations) => {
-  type Handler = Parameters<AdminM1ExpressApplication["get"]>[1];
+const makeHarness = (publicationOperations: StaffTripPublicationOperations) => {
+  type Handler = Parameters<AdminExpressApplication["get"]>[1];
   const handlers = new Map<string, Handler>();
-  const application: AdminM1ExpressApplication = {
+  const application: AdminExpressApplication = {
     get: (path, handler) => handlers.set(`GET ${path}`, handler),
     post: (path, handler) => handlers.set(`POST ${path}`, handler),
     patch: () => undefined,
   };
-  registerAdminM1Routes(application, {
+  registerAdminRoutes(application, {
     policy,
-    m1Operations: {} as M1StaffTripOperations,
-    m1PublicationOperations: publicationOperations,
+    tripOperations: {} as StaffTripOperations,
+    publicationOperations: publicationOperations,
   });
   const invoke = async (
     key: string,

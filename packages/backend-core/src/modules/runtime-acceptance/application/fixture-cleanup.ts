@@ -2,16 +2,16 @@ import type { StaffAuthorizationOperationProof } from "../../../staff-access/aut
 import type { StaffPermissionId } from "../../../staff-access/permission-registry.js";
 import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
 import type { RuntimeAcceptanceFixtureRunState } from "../domain/fixture-run-state.js";
-import type { M1StaffTripPublicationOperations } from "../../customer-presentation/application/staff-publication-operations.js";
-import type { M1StaffTripAccessOperations } from "../../portal-access/application/staff-trip-access-operations.js";
+import type { StaffTripPublicationOperations } from "../../customer-presentation/application/staff-publication-operations.js";
+import type { StaffTripAccessOperations } from "../../portal-access/application/staff-trip-access-operations.js";
 import {
-  authorizeM1Operation,
-  type M1StaffAuthorizationDependencies,
-  type M1StaffTripOperations,
-} from "../../trip-operations/application/m1-staff-operations.js";
-import { M1InputValidationError } from "../../trip-operations/application/m1-trip-slice.js";
+  authorizeOperation,
+  type StaffAuthorizationDependencies,
+  type StaffTripOperations,
+} from "../../trip-operations/application/staff-trip-operations.js";
+import { InputValidationError } from "../../trip-operations/application/trip-slice.js";
 
-export const M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS = Object.freeze([
+export const RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS = Object.freeze([
   "runtime_acceptance.fixture.manage",
   "trip.access.manage",
   "trip.edit",
@@ -74,20 +74,17 @@ export interface RuntimeAcceptanceFixtureCleanupRepository {
   ): Promise<RuntimeAcceptanceCleanupReceipt | null>;
 }
 
-export interface M1RuntimeAcceptanceFixtureOperationsDependencies extends M1StaffAuthorizationDependencies {
+export interface RuntimeAcceptanceFixtureOperationsDependencies extends StaffAuthorizationDependencies {
   readonly repository: RuntimeAcceptanceFixtureCleanupRepository;
-  readonly tripOperations: Pick<M1StaffTripOperations, "readTripSlice" | "cancelTrip">;
+  readonly tripOperations: Pick<StaffTripOperations, "readTripSlice" | "cancelTrip">;
   readonly tripAccessOperations: Pick<
-    M1StaffTripAccessOperations,
+    StaffTripAccessOperations,
     "revokeTripAccessGrant" | "retireFixturePortalPrincipal"
   >;
-  readonly publicationOperations: Pick<
-    M1StaffTripPublicationOperations,
-    "withdrawActivePublication"
-  >;
+  readonly publicationOperations: Pick<StaffTripPublicationOperations, "withdrawActivePublication">;
 }
 
-export interface M1RuntimeAcceptanceFixtureOperations {
+export interface RuntimeAcceptanceFixtureOperations {
   cleanupFixture(
     cookieHeader: unknown,
     fixtureRunId: unknown,
@@ -95,7 +92,7 @@ export interface M1RuntimeAcceptanceFixtureOperations {
   ): Promise<RuntimeAcceptanceCleanupReceipt>;
 }
 
-export class M1RuntimeAcceptanceFixtureNotFoundError extends Error {
+export class RuntimeAcceptanceFixtureNotFoundError extends Error {
   readonly code = "NOT_FOUND" as const;
 
   constructor() {
@@ -111,7 +108,7 @@ const CLEANUP_REASON = "RUNTIME_ACCEPTANCE_CLEANUP" as const;
 const RECENT_MFA_MAXIMUM_AGE_MS = 5 * 60 * 1_000;
 
 const invalidInput = (): never => {
-  throw new M1InputValidationError("Invalid runtime acceptance fixture cleanup request");
+  throw new InputValidationError("Invalid runtime acceptance fixture cleanup request");
 };
 
 const parseCleanupRequest = (value: unknown): { readonly idempotencyKey: string } => {
@@ -236,18 +233,18 @@ const receiptFromPlan = (
   errorCode,
 });
 
-export const createM1RuntimeAcceptanceFixtureOperations = (
-  dependencies: M1RuntimeAcceptanceFixtureOperationsDependencies,
-): M1RuntimeAcceptanceFixtureOperations => {
-  const operations: M1RuntimeAcceptanceFixtureOperations = {
+export const createRuntimeAcceptanceFixtureOperations = (
+  dependencies: RuntimeAcceptanceFixtureOperationsDependencies,
+): RuntimeAcceptanceFixtureOperations => {
+  const operations: RuntimeAcceptanceFixtureOperations = {
     async cleanupFixture(cookieHeader, fixtureRunIdValue, inputValue) {
       const fixtureRunId = parseFixtureRunId(fixtureRunIdValue);
       const request = parseCleanupRequest(inputValue);
-      const authorization = await authorizeM1Operation(
+      const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
-        M1_RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
+        RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
         RECENT_MFA_MAXIMUM_AGE_MS,
       );
       const agencyId = asOpaqueId(authorization.session.agencyId);
@@ -258,7 +255,7 @@ export const createM1RuntimeAcceptanceFixtureOperations = (
         idempotencyKey: request.idempotencyKey,
       };
       const started = await dependencies.repository.beginCleanup(command, authorization);
-      if (started === null) throw new M1RuntimeAcceptanceFixtureNotFoundError();
+      if (started === null) throw new RuntimeAcceptanceFixtureNotFoundError();
       if (started.status === "CLEANED") return started.receipt;
 
       const plan = started.plan;

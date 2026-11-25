@@ -16,9 +16,13 @@ import {
   AdminStaffInvitationMetadataV1Schema,
   AdminStaffInvitationOneTimeV1ResponseSchema,
 } from "@travelos/contracts/admin";
-import { hostHeaderMatchesExpectedHost, type AuthSurfacePolicy } from "@travelos/auth-adapters";
+import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
 
 import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
+import {
+  headersFor,
+  surfaceRejectionStatus as boundarySurfaceRejectionStatus,
+} from "./request-boundary.js";
 import {
   trustedStaffInvitationClientKey,
   type StaffInvitationRateLimiter,
@@ -61,50 +65,16 @@ export interface AdminStaffInvitationRouteOptions {
   readonly rateLimiter: StaffInvitationRateLimiter;
 }
 
-const headersFor = (request: IncomingHttpRequest): Headers => {
-  const headers = new Headers();
-  for (const [name, value] of Object.entries(request.headers)) {
-    if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      headers.set(name, value.join(name.toLowerCase() === "cookie" ? "; " : ", "));
-    } else {
-      headers.set(name, value);
-    }
-  }
-  return headers;
-};
-
-const requestUrlFor = (request: IncomingHttpRequest, policy: AuthSurfacePolicy): URL | null => {
-  try {
-    const canonicalOrigin = new URL(policy.canonicalOrigin);
-    const target = new URL(request.originalUrl ?? request.url, canonicalOrigin);
-    return target.origin === canonicalOrigin.origin ? target : null;
-  } catch {
-    return null;
-  }
-};
-
 const surfaceRejectionStatus = (
   request: IncomingHttpRequest,
   policy: AuthSurfacePolicy,
   requireOrigin: boolean,
-): 400 | 403 | 404 | null => {
-  const target = requestUrlFor(request, policy);
-  if (target === null) return 404;
-  const headers = headersFor(request);
-  if (!hostHeaderMatchesExpectedHost(headers.get("host"), policy.expectedHost)) return 404;
-
-  const forwardedHost = headers.get("x-forwarded-host");
-  if (
-    headers.has("authorization") ||
-    (forwardedHost !== null && !hostHeaderMatchesExpectedHost(forwardedHost, policy.expectedHost))
-  ) {
-    return 403;
-  }
-  if (requireOrigin && headers.get("origin") !== policy.canonicalOrigin) return 403;
-  if (requireOrigin && target.search !== "") return 400;
-  return null;
-};
+): 400 | 403 | 404 | null =>
+  boundarySurfaceRejectionStatus(request, policy, {
+    requireRoutableUrl: true,
+    requireCanonicalOrigin: requireOrigin,
+    rejectQueryString: requireOrigin,
+  });
 
 const badRequest = (response: OutgoingHttpResponse): void => {
   response.status(400).json({ error: "invalid_request" });

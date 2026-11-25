@@ -1,4 +1,4 @@
-export const PERMISSION_REGISTRY_VERSION = 6 as const;
+export const PERMISSION_REGISTRY_VERSION = 7 as const;
 
 export type AuthorizationScopeKind = "AGENCY" | "ORGANIZATION_UNIT";
 export type ResourceAccessLevel = "OWN" | "TEAM" | "ALL";
@@ -10,7 +10,7 @@ export interface PermissionDefinition {
 }
 
 /**
- * Stage 5 owns the first product capabilities used by the M1 Admin API.
+ * Stage 5 owns the first product capabilities used by the Admin API.
  * Product permissions are added by their owning stage, never inferred from role labels.
  */
 export const STAGE_5_PERMISSION_REGISTRY = [
@@ -136,13 +136,28 @@ export const STAGE_7_PERMISSION_REGISTRY = [
   },
 ] as const satisfies readonly PermissionDefinition[];
 
-/** Compatibility export retained for Stage 4 consumers; Stage 7 owns the current registry. */
+/** M2 slice 1 adds the Sales Lead capabilities; qualification additionally needs `customer.edit`. */
+export const M2_PERMISSION_REGISTRY = [
+  ...STAGE_7_PERMISSION_REGISTRY,
+  {
+    id: "sales.view",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+  {
+    id: "sales.edit",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+] as const satisfies readonly PermissionDefinition[];
+
+/** Compatibility export retained for Stage 4 consumers; the M2 registry is current. */
 export const STAGE_4_PERMISSION_REGISTRY = STAGE_5_PERMISSION_REGISTRY;
 
-export type StaffPermissionId = (typeof STAGE_7_PERMISSION_REGISTRY)[number]["id"];
+export type StaffPermissionId = (typeof M2_PERMISSION_REGISTRY)[number]["id"];
 
 const permissionDefinitions = new Map<string, PermissionDefinition>(
-  STAGE_7_PERMISSION_REGISTRY.map((definition) => [definition.id, definition]),
+  M2_PERMISSION_REGISTRY.map((definition) => [definition.id, definition]),
 );
 
 export const isStaffPermissionId = (value: string): value is StaffPermissionId =>
@@ -157,8 +172,9 @@ export const permissionDefinitionFor = (permissionId: StaffPermissionId): Permis
 };
 
 export const OWNER_ROLE_TEMPLATE_KEY = "agency-owner-v1" as const;
-export const OWNER_ROLE_PERMISSION_IDS: readonly StaffPermissionId[] =
-  STAGE_7_PERMISSION_REGISTRY.map(({ id }) => id);
+export const OWNER_ROLE_PERMISSION_IDS: readonly StaffPermissionId[] = M2_PERMISSION_REGISTRY.map(
+  ({ id }) => id,
+);
 
 export const TRIP_OPERATIONS_ROLE_TEMPLATE_KEY = "trip-operations-v1" as const;
 export const TRIP_OPERATIONS_ROLE_PERMISSION_IDS = Object.freeze([

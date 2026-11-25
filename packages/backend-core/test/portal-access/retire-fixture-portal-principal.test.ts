@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { asOpaqueId } from "../../src/shared-kernel/opaque-id.js";
-import type { M1StaffAuthorizationError } from "../../src/modules/trip-operations/application/m1-staff-operations.js";
-import { createM1StaffTripAccessOperations } from "../../src/modules/portal-access/application/staff-trip-access-operations.js";
+import type { StaffAuthorizationError } from "../../src/modules/trip-operations/application/staff-trip-operations.js";
+import { createStaffTripAccessOperations } from "../../src/modules/portal-access/application/staff-trip-access-operations.js";
 import type { StaffPermissionId } from "../../src/staff-access/permission-registry.js";
 
 const agencyId = asOpaqueId("abcdef12-3456-7abc-8def-000000000001");
@@ -46,7 +46,7 @@ const makeContext = ({
       ) => result,
     ),
   };
-  const operations = createM1StaffTripAccessOperations({
+  const operations = createStaffTripAccessOperations({
     repository: repository as never,
     authorizationRepository: {
       getStaffAuthorizationSnapshot: vi.fn(async () => ({
@@ -83,13 +83,13 @@ describe("registered runtime-acceptance Portal principal retirement", () => {
     const missingPermission = makeContext({ permissions: ["trip.access.manage"] });
     await expect(
       retireFrom(missingPermission.operations)("staff-cookie", fixtureRunId, principalId),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<M1StaffAuthorizationError>);
+    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<StaffAuthorizationError>);
     expect(missingPermission.repository.retireFixturePortalPrincipal).not.toHaveBeenCalled();
 
     const staleMfa = makeContext({ recentMfaVerifiedAtEpochMs: nowEpochMs - 301_000 });
     await expect(
       retireFrom(staleMfa.operations)("staff-cookie", fixtureRunId, principalId),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<M1StaffAuthorizationError>);
+    ).rejects.toMatchObject({ code: "FORBIDDEN" } satisfies Partial<StaffAuthorizationError>);
     expect(staleMfa.repository.retireFixturePortalPrincipal).not.toHaveBeenCalled();
   });
 

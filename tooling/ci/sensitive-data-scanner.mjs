@@ -138,11 +138,15 @@ const collectAssignmentFindings = (text, file) => {
     const assignmentKey = normalizedAssignmentKey(assignment.key);
     // React DOM's property table uses this exact public alias, not credential material.
     const safeStaticDomPropertyAlias = assignmentKey === "accesskey" && value === "accessKey";
+    // Fetch API RequestCredentials mode (`fetch(url, { credentials: "same-origin" })`), a public
+    // enum value rather than credential material; "include"/"omit" are below the length floor.
+    const safeFetchCredentialsMode = assignmentKey === "credentials" && value === "same-origin";
     if (
       !SUSPICIOUS_ASSIGNMENT_KEYS.has(assignmentKey) ||
       value.length < 8 ||
       isSafeReference(value, !assignment.quoted) ||
-      safeStaticDomPropertyAlias
+      safeStaticDomPropertyAlias ||
+      safeFetchCredentialsMode
     ) {
       continue;
     }

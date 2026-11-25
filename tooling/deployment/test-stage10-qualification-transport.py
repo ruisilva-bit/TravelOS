@@ -414,6 +414,54 @@ class TransportTests(unittest.TestCase):
         self.assertIn('symlink', kinds)
         self.assertNotIn('hardlink', kinds)
 
+    def _build_hardlink_tree(self):
+        (self.source / 'a').mkdir(mode=0o700)
+        (self.source / 'b').mkdir(mode=0o700)
+        (self.source / 'a/x.txt').write_bytes(b'pnpm-store-content')
+        (self.source / 'a/x.txt').chmod(0o600)
+        os.link(self.source / 'a/x.txt', self.source / 'b/y.txt')
+        (self.source / 'regular.txt').write_bytes(b'independent')
+        (self.source / 'regular.txt').chmod(0o600)
+        (self.source / 'sym').symlink_to('regular.txt')
+
+    def test_hardlink_roundtrip_preserves_inode_and_keeps_regular_file_unlinked(self):
+        self._build_hardlink_tree()
+        receipt = transport.pack(self.source, self.archive)
+        destination = self.root / 'extracted'
+        transport.unpack(self.archive, receipt, destination)
+        x, y = destination / 'a/x.txt', destination / 'b/y.txt'
+        self.assertEqual(os.stat(x).st_ino, os.stat(y).st_ino)
+        self.assertEqual(os.stat(x).st_nlink, 2)
+        self.assertEqual(x.read_bytes(), b'pnpm-store-content')
+        self.assertEqual(y.read_bytes(), b'pnpm-store-content')
+        # A regular file with identical content must remain an independent inode.
+        regular = destination / 'regular.txt'
+        self.assertNotEqual(os.stat(regular).st_ino, os.stat(x).st_ino)
+        self.assertEqual(os.stat(regular).st_nlink, 1)
+        self.assertEqual(regular.read_bytes(), b'independent')
+        self.assertEqual(os.readlink(destination / 'sym'), 'regular.txt')
+        self.assertEqual(transport.inventory(destination), receipt['files'])
+
+    def test_inventory_reports_one_hardlink_row_targeting_first_occurrence(self):
+        self._build_hardlink_tree()
+        rows = transport.inventory(self.source)
+        hardlinks = [row for row in rows if row['kind'] == 'hardlink']
+        self.assertEqual(hardlinks, [{'path': 'b/y.txt', 'kind': 'hardlink',
+                                      'target': 'a/x.txt', 'mode': 0o600}])
+        content_rows = [row['path'] for row in rows if row.get('sha256') and
+                        row['path'] in ('a/x.txt', 'b/y.txt')]
+        self.assertEqual(content_rows, ['a/x.txt'])
+
+    def test_tampered_hardlink_target_in_receipt_fails_closed(self):
+        self._build_hardlink_tree()
+        receipt = transport.pack(self.source, self.archive)
+        receipt['files'] = [dict(row, target='regular.txt') if row['kind'] == 'hardlink' else row
+                            for row in receipt['files']]
+        destination = self.root / 'extracted'
+        with self.assertRaises(ValueError):
+            transport.unpack(self.archive, receipt, destination)
+        self.assertFalse(destination.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

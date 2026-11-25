@@ -20,6 +20,8 @@ import type { AdminTripsState, AdminWorkspaceState } from "./workspace-view.js";
 type AdminRoute =
   | { readonly kind: "overview" }
   | { readonly kind: "trips" }
+  | { readonly kind: "leads" }
+  | { readonly kind: "lead-detail"; readonly leadId: string }
   | { readonly kind: "staff-invitations" }
   | { readonly kind: "staff-invitation-accept" }
   | { readonly kind: "detail"; readonly tripId: string }
@@ -28,22 +30,31 @@ type AdminRoute =
 type SessionState = "checking" | "anonymous" | "authenticated" | "denied" | "error";
 type AuthenticationStage = "password" | "mfa" | "mfa-setup";
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+
 const readRoute = (): AdminRoute => {
   const rawPath = window.location.hash.slice(1).split("?", 1)[0] || "/";
   if (rawPath === "/") return { kind: "overview" };
   if (rawPath === "/trips") return { kind: "trips" };
+  if (rawPath === "/leads") return { kind: "leads" };
   if (rawPath === "/staff/invitations") return { kind: "staff-invitations" };
   if (rawPath === "/staff/invitations/accept") return { kind: "staff-invitation-accept" };
+
+  const leadMatch = /^\/leads\/([^/]+)$/u.exec(rawPath);
+  if (leadMatch?.[1]) {
+    try {
+      const leadId = decodeURIComponent(leadMatch[1]);
+      return UUID_PATTERN.test(leadId) ? { kind: "lead-detail", leadId } : { kind: "invalid" };
+    } catch {
+      return { kind: "invalid" };
+    }
+  }
 
   const match = /^\/trips\/([^/]+)$/u.exec(rawPath);
   if (!match?.[1]) return { kind: "invalid" };
   try {
     const tripId = decodeURIComponent(match[1]);
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
-      tripId,
-    )
-      ? { kind: "detail", tripId }
-      : { kind: "invalid" };
+    return UUID_PATTERN.test(tripId) ? { kind: "detail", tripId } : { kind: "invalid" };
   } catch {
     return { kind: "invalid" };
   }
@@ -104,6 +115,8 @@ export function AdminRoot() {
       session !== "authenticated" ||
       route.kind === "detail" ||
       route.kind === "invalid" ||
+      route.kind === "leads" ||
+      route.kind === "lead-detail" ||
       route.kind === "staff-invitations" ||
       route.kind === "staff-invitation-accept"
     )
@@ -430,6 +443,7 @@ export function AdminRoot() {
   return (
     <AdminWorkspaceView
       page={page}
+      leadId={route.kind === "lead-detail" ? route.leadId : null}
       canInviteStaff={staffContext?.canInviteStaff === true}
       trips={trips}
       workspace={workspace}
