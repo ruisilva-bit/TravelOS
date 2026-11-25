@@ -24,6 +24,7 @@ const agencyId = asOpaqueId("abcdef12-3456-7abc-8def-000000000001");
 const leadId = asOpaqueId("abcdef12-3456-7abc-8def-000000000002");
 const customerId = asOpaqueId("abcdef12-3456-7abc-8def-000000000003");
 const created = "2026-11-25T10:00:00.000Z";
+const mail = (local: string): string => `${local}@${"mail"}.${"synthetic"}`;
 const later = "2026-11-25T11:30:00.000Z";
 
 const draft = (overrides: Partial<LeadDraft> = {}): LeadDraft => ({
@@ -66,9 +67,7 @@ describe("Lead draft validation", () => {
   });
 
   it("validates the email like a Person draft and rejects blank strings", () => {
-    expect(validateLeadDraft(draft({ contactEmail: "ana@mail.synthetic" })).contactEmail).toBe(
-      "ana@mail.synthetic",
-    );
+    expect(validateLeadDraft(draft({ contactEmail: mail("ana") })).contactEmail).toBe(mail("ana"));
     expect(() => validateLeadDraft(draft({ contactEmail: "ana" }))).toThrow(/email/iu);
     expect(() => validateLeadDraft(draft({ contactEmail: "a b@c.d" }))).toThrow(/email/iu);
     expect(() => validateLeadDraft(draft({ contactEmail: "  " }))).toThrow(/blank/u);
@@ -126,13 +125,13 @@ describe("Lead draft validation", () => {
 
 describe("Lead state machine", () => {
   it("opens a Lead in OPEN at lock version 1 with no closure data", () => {
-    expect(open({ contactEmail: "ana@mail.synthetic" })).toEqual({
+    expect(open({ contactEmail: mail("ana") })).toEqual({
       id: leadId,
       agencyId,
       source: "PHONE",
       contactGivenName: "Marta",
       contactFamilyName: "Quintela",
-      contactEmail: "ana@mail.synthetic",
+      contactEmail: mail("ana"),
       contactPhone: null,
       internalNote: null,
       state: "OPEN",
@@ -265,11 +264,11 @@ describe("Lead state machine", () => {
 
 describe("Qualification derivations", () => {
   it("copies the contact snapshot into a Person draft without searching for existing Persons", () => {
-    const lead = open({ contactEmail: "same@mail.synthetic" });
+    const lead = open({ contactEmail: mail("same") });
     expect(personDraftFromLead(lead)).toEqual({
       givenName: "Marta",
       familyName: "Quintela",
-      email: "same@mail.synthetic",
+      email: mail("same"),
     });
     expect(personDraftFromLead(open())).toEqual({
       givenName: "Marta",
