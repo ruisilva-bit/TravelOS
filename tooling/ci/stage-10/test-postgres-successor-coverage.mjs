@@ -53,8 +53,11 @@ test("exported accepted blobs qualify without git and reject changed or absent b
     const prior = process.env.TRAVELOS_STAGE10_ACCEPTED_BLOBS;
     try {
       process.env.TRAVELOS_STAGE10_ACCEPTED_BLOBS = scratch;
-      assert.deepEqual(await postgresCoverage(root), ordinary,
-        "remote harness must resolve accepted bytes without git history");
+      assert.deepEqual(
+        await postgresCoverage(root),
+        ordinary,
+        "remote harness must resolve accepted bytes without git history",
+      );
       process.env.TRAVELOS_STAGE10_ACCEPTED_BLOBS = "relative/untrusted";
       await assert.rejects(postgresCoverage(root), /accepted blob path/u);
     } finally {
@@ -63,7 +66,10 @@ test("exported accepted blobs qualify without git and reject changed or absent b
     }
     const first = ordinary.sources.find((item) => item.acceptedPredecessorBytes).path;
     await writeFile(path.join(scratch, first), "changed");
-    await assert.rejects(postgresCoverage(root, { acceptedBlobs: scratch }), /Historical PostgreSQL/u);
+    await assert.rejects(
+      postgresCoverage(root, { acceptedBlobs: scratch }),
+      /Historical PostgreSQL/u,
+    );
     await rm(path.join(scratch, first));
     await assert.rejects(postgresCoverage(root, { acceptedBlobs: scratch }));
   } finally {

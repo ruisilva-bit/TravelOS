@@ -3,7 +3,9 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-const runner = fileURLToPath(new URL("../../database/run-stage-10-postgres-disposable.mjs", import.meta.url));
+const runner = fileURLToPath(
+  new URL("../../database/run-stage-10-postgres-disposable.mjs", import.meta.url),
+);
 test("native CT runner uses fixed PG18 binaries without apt preparation or wildcard bind", async () => {
   const code = await readFile(runner, "utf8");
   assert.match(code, /TRAVELOS_STAGE10_NATIVE_PG_BIN/u);

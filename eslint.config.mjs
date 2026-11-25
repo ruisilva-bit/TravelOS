@@ -9,6 +9,12 @@ const nodeGlobals = {
   process: "readonly",
   setTimeout: "readonly",
   clearTimeout: "readonly",
+  setInterval: "readonly",
+  clearInterval: "readonly",
+  URL: "readonly",
+  URLSearchParams: "readonly",
+  AbortController: "readonly",
+  structuredClone: "readonly",
 };
 
 export default tseslint.config(
