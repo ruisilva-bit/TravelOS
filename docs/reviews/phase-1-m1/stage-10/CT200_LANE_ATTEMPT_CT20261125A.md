@@ -154,3 +154,92 @@ this attempt and not an environmental fault.
    `--cleanup` only with the retained `executionSha256`.
 4. Signing/custody, deploy to `/opt/travelos`, rollback and backup/restore need
    Rui's explicit approval. Stage 11 follows after that.
+
+---
+
+# Follow-up: `attempt-ct20261126a` (2026-11-26) — socket fix verified, CPU budget blocker
+
+**Outcome: FAIL_PRESERVE.** The disposable PostgreSQL started and the Stage 10 Vitest lane
+**executed**. One inherited test timed out. **0 of 95 assertions were recorded as passed**:
+`assertionResults` is empty because the suite failed. Not a Stage GO. No test was waived.
+
+## Fixes applied (branch `claude/stage10-ct200-20261125`)
+
+- `tooling/database/run-stage-10-postgres-disposable.mjs`: the socket now lives in its own
+  short private root, `mkdtemp("/tmp/travelos-s10-sock-")` (about 42 bytes). The 107-byte
+  limit is asserted before `initdb`, and the root is included in `disposableRootsAbsent`.
+  The `test-postgres-cleanup-exit.mjs` fixture now reads the real
+  `unix_socket_directories` value and removes any retained root.
+- `tooling/deployment/stage10-qualification-package.py`:
+  - The accepted-pin regex now also matches Prettier-wrapped pairs. Since `503d701`, every
+    harness build failed with `STAGE10_ACCEPTED_SET_REJECTED`.
+  - `node_modules` symlinks are preserved again, matching the package test and the v9
+    harness, which had 1,508 symlinks.
+- `tooling/ci/bootstrap-toolchain.sh`: the pinned Node is on `PATH` before `corepack` runs.
+- Runner node tests, with `TMPDIR` set: 17 pass, 1 skip. The 1 failure is pre-existing
+  on `main` and environmental (`test-postgres-browser-adapter`: no local Playwright
+  Chromium under `~/.cache`). The package test now passes 4/4.
+
+## Harness v10: why it is not built from `main`
+
+The packager requires `tests/integration/stage-6-publication-postgresql.test.ts` and
+`stage-7-postgresql.test.ts` to equal the accepted gen11 bytes. On `main` they were changed
+afterwards (for example `cd7e041`). So harness v10 was built from a worktree at `2c479ee`,
+whose key files equal harness v9, plus only the socket fix (`0dece07` on local branch
+`claude/stage10-harness-v10-src`), after `pnpm build`.
+
+Compared with v9: the same 26,976 paths except 6 cache entries. Content differs only in the
+runner and its fixture, plus three packaging-tooling files that the lane does not use.
+
+- `harness.tar`: `b28ebac955cb58270f50489923568c16cd6ef0ecc9828d8ae36c0a6bec118f28`
+  (300,093,440 B).
+- Bundle v3 `manifest.json`: `e64551d61f34d01a70283defdc89510eba04c56d2c1c81082ce0705f0273e40b`.
+  Runtime `3bce4ef9…`, artifact, browser and predecessor are unchanged.
+
+## Lane run
+
+The run was launched detached (`setsid nohup`), so this time it completed with its unit
+logs.
+
+- Unit: 11 min 7 s wall, 5 min 20 s CPU, **memory peak 1.8G of 2G**, swap 0.
+- Vitest: 4 files and 46 tests collected. The first Stage 7 test,
+  `authenticates the acceptance runner against a real DEVELOPMENT Staff MFA realm`,
+  **timed out at 360000 ms**, and the remaining tests in that file did not run. `testExitCode` was 1.
+- `remote-outcome.json` (`7f3dd239…`):
+
+```json
+{"cleanup": {"clusterStartAttempted": true, "clusterStopped": true, "disposableRootsAbsent": true, "stopExitCode": null},
+ "executionSha256": "14b68c593570883276a9bdd81d0f99cf81f92be234a51f4475d7c5a8ea28c67a", "primaryExit": 1,
+ "resource": {"coreLimits": [0, 0], "cpuMax": "100000 100000", "memoryMaxBytes": 2147483648, "memorySwapMaxBytes": 0,
+              "pidsMax": 128, "scope": "SYNTHETIC_RESOURCE_PREFLIGHT_ONLY", "uid": 1000},
+ "result": "FAIL_PRESERVE", "scope": "CT200_DIAGNOSTIC_NOT_CANONICAL"}
+```
+
+## Diagnosis: CPU budget
+
+The timed-out test runs `tooling/ci/stage-10/rehearse-acceptance.mjs`, which calls the
+packaged `deployment/verify-artifact.mjs` **three times** (lines 106, 161 and 246). It also
+starts the services, migrates and runs the MFA flow, all inside the accepted test's
+**fixed 360 s timeout**. That test is pinned to the gen11 bytes and cannot be edited.
+
+The packaged verifier alone was timed in separate diagnostic units with the same limits
+(`CPUQuota=100%`, `MemoryMax=2G`, `TasksMax=128`), reading the preserved runtime without
+changing it. Both runs returned `rc=0 PACKAGE_CHECKS_PASSED_NOT_RELEASE_QUALIFIED`:
+
+| Run | Wall time | CPU time |
+|---|---|---|
+| 1 | 89.5 s | 64 s |
+| 2 | 64.4 s | 63.8 s |
+
+The verifier is CPU-bound, so three calls use roughly 190–270 s of the 360 s on one CPU.
+CT200 has 4 CPUs.
+
+## Decision needed (not done)
+
+Raising the bounded unit's `CPUQuota` (for example to 300%) and checking the `MemoryMax`,
+`RuntimeMaxSec` and child/parent timeouts in `stage10-qualification-remote.py` is a change
+to the reviewed runner resource policy. That requires explicit approval.
+
+Disk is at about 91% (1.8G free). A new attempt needs about 2.5G, and the preserved
+FAIL attempts (`4d11458a01` about 2.6G, `ct20261125a` about 1.4G, `ct20261126a` about 2.4G)
+may only be removed or archived by operator decision.

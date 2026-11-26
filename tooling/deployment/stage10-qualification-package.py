@@ -89,7 +89,8 @@ def export_accepted(root, output):
     """Export each pinned historical source byte, never remote git history."""
     root, output = Path(root), Path(output)
     text = (root / 'tooling/ci/stage-10/postgres-successor-coverage.mjs').read_text()
-    pairs = re.findall(r'^  "([^\"]+)": "([0-9a-f]{64})",$', text, re.M)
+    # Prettier may wrap a long key/value pair onto two lines; both layouts are pins.
+    pairs = re.findall(r'^  "([^\"]+)":\s*"([0-9a-f]{64})",$', text, re.M)
     if len(pairs) != 7:
         raise ValueError('STAGE10_ACCEPTED_SET_REJECTED')
     require_new_attempt(output)
