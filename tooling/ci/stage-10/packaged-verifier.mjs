@@ -1,6 +1,7 @@
 // Copied to deployment/verify-artifact.mjs. Authenticate the archive and
 // verifier before executing it; a payload-written pin is not independent trust.
 import assert from "node:assert/strict";
+import { realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 import { PREDECESSOR } from "../provenance/source/tooling/ci/stage-10/constants.mjs";
@@ -82,8 +83,11 @@ export async function verifyArtifact(options) {
   return result;
 }
 
+// import.meta.url is the realpath; deployments invoke this through the `current`
+// release symlink, so resolve argv[1] too or the CLI would silently exit 0 unchecked.
 const direct =
-  process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+  process.argv[1] &&
+  pathToFileURL(realpathSync(path.resolve(process.argv[1]))).href === import.meta.url;
 if (direct) {
   try {
     const result = await verifyArtifact(parseVerifierArguments(process.argv.slice(2)));

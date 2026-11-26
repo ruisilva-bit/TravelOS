@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -44,6 +44,21 @@ try {
   assert.equal(cli.status, 1);
   assert.equal(cli.stdout, "");
   assert.equal(JSON.parse(cli.stderr).code, "STAGE10_PACKAGE_CHECKS_FAILED");
+  // Service paths run the verifier through the active-release symlink; it must still execute.
+  const current = path.join(path.dirname(fixture), `${path.basename(fixture)}-current`);
+  await symlink(fixture, current);
+  try {
+    const viaSymlink = spawnSync(
+      process.execPath,
+      [path.join(current, "deployment/verify-artifact.mjs"), "--install"],
+      { encoding: "utf8", timeout: 10000 },
+    );
+    assert.equal(viaSymlink.status, 1, "Symlinked CLI must not exit 0 without verifying");
+    assert.equal(viaSymlink.stdout, "");
+    assert.equal(JSON.parse(viaSymlink.stderr).code, "STAGE10_PACKAGE_CHECKS_FAILED");
+  } finally {
+    await rm(current, { force: true });
+  }
   console.log(
     "PASS: import has no execution side effects; legacy installation calls and missing independent pins remain rejected; no artifact qualification inferred",
   );
