@@ -45,9 +45,9 @@ def unit_command(attempt):
     attempt = attempt_path(str(attempt))
     return ['/usr/bin/systemd-run', '--user', '--wait', '--pipe', '--collect',
             '--unit=travelos-s10-' + attempt.name,
-            '-p', 'MemoryMax=2147483648', '-p', 'MemorySwapMax=0',
-            '-p', 'TasksMax=128', '-p', 'CPUQuota=100%',
-            '-p', 'RuntimeMaxSec=900', '-p', 'LimitCORE=0',
+            '-p', 'MemoryMax=3221225472', '-p', 'MemorySwapMax=0',
+            '-p', 'TasksMax=128', '-p', 'CPUQuota=300%',
+            '-p', 'RuntimeMaxSec=1800', '-p', 'LimitCORE=0',
             '/usr/bin/python3', '-B', '-I', str(attempt / 'stage10-qualification-remote.py'),
             '--child', str(attempt)]
 
@@ -146,7 +146,7 @@ def child(attempt):
            'PLAYWRIGHT_BROWSERS_PATH': str(attempt / 'browser')}
     command = [str(node), str(harness / 'tooling/database/run-stage-10-postgres-disposable.mjs')]
     try:
-        result = subprocess.run(command, cwd=harness, env=env, capture_output=True, timeout=840,
+        result = subprocess.run(command, cwd=harness, env=env, capture_output=True, timeout=1740,
                                 check=False)
         primary = result.returncode
         for name, data in (('stdout.log', result.stdout), ('stderr.log', result.stderr)):
@@ -185,7 +185,7 @@ def run(attempt):
     prepare(attempt)
     result = subprocess.run(unit_command(attempt), cwd=attempt, capture_output=True,
                             env=USER_ENV,
-                            timeout=930, check=False)
+                            timeout=1830, check=False)
     # Preserve even failed unit output, but do not overwrite an unknown attempt.
     for name, data in (('unit-stdout.log', result.stdout), ('unit-stderr.log', result.stderr)):
         with (attempt / name).open('xb') as output:

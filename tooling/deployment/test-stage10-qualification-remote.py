@@ -21,7 +21,7 @@ class RemoteTests(unittest.TestCase):
         args = remote.unit_command(attempt)
         self.assertIn('--unit=travelos-s10-attempt-abc', args)
         self.assertIn('MemorySwapMax=0', args)
-        self.assertIn('RuntimeMaxSec=900', args)
+        self.assertIn('RuntimeMaxSec=1800', args)
         self.assertEqual(args[-6:-3], ['/usr/bin/python3', '-B', '-I'])
         self.assertNotIn('sudo', ' '.join(args))
         for invalid in ['/tmp/attempt-abc', str(attempt) + '/..', str(attempt).replace('abc', 'x')]:

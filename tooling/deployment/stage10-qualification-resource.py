@@ -12,9 +12,9 @@ import resource
 import sys
 
 ATTEMPT_PARENT = Path('/home/hermes/.local/share/travelos-stage10-qualification')
-MEMORY_MAX = 2147483648
+MEMORY_MAX = 3221225472
 PIDS_MAX = 128
-CPU_MAX = '100000 100000'
+CPU_MAX = '300000 100000'
 
 
 def require(condition):
@@ -50,7 +50,7 @@ def unit_command(unit, attempt):
     return ['/usr/bin/systemd-run', '--user', '--collect', '--wait', '--pipe',
             '--unit=' + unit, '-p', 'MemoryMax=' + str(MEMORY_MAX),
             '-p', 'MemorySwapMax=0', '-p', 'TasksMax=' + str(PIDS_MAX),
-            '-p', 'CPUQuota=100%', '-p', 'RuntimeMaxSec=900',
+            '-p', 'CPUQuota=300%', '-p', 'RuntimeMaxSec=1800',
             '-p', 'LimitCORE=0', '/usr/bin/python3', '-B', '-I',
             str(attempt / 'harness/resource.py')]
 

@@ -18,9 +18,9 @@ class ResourceBoundaryTests(unittest.TestCase):
         self.root = Path(temporary.name) / 'user.slice/user-1000.slice/user@1000.service/app.slice/travelos-s10-attempt-abc.service'
         self.root.mkdir(parents=True)
         for name, value in {
-            'memory.max': '2147483648\n', 'memory.swap.max': '0\n',
+            'memory.max': '3221225472\n', 'memory.swap.max': '0\n',
             'memory.swap.current': '0\n', 'pids.max': '128\n',
-            'cpu.max': '100000 100000\n',
+            'cpu.max': '300000 100000\n',
         }.items():
             (self.root / name).write_text(value)
 
@@ -29,10 +29,10 @@ class ResourceBoundaryTests(unittest.TestCase):
 
     def test_accepts_exact_effective_cgroup_limits(self):
         observed = self.check()
-        self.assertEqual(observed['memoryMaxBytes'], 2147483648)
+        self.assertEqual(observed['memoryMaxBytes'], 3221225472)
         self.assertEqual(observed['memorySwapMaxBytes'], 0)
         self.assertEqual(observed['pidsMax'], 128)
-        self.assertEqual(observed['cpuMax'], '100000 100000')
+        self.assertEqual(observed['cpuMax'], '300000 100000')
 
     def test_rejects_wrong_uid_or_unbounded_resource(self):
         with self.assertRaises(ValueError):
