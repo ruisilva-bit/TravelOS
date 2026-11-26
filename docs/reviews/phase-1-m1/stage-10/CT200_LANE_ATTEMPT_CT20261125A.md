@@ -241,5 +241,5 @@ Raising the bounded unit's `CPUQuota` (for example to 300%) and checking the `Me
 to the reviewed runner resource policy. That requires explicit approval.
 
 Disk is at about 91% (1.8G free). A new attempt needs about 2.5G, and the preserved
-FAIL attempts (`4d11458a01` about 2.6G, `ct20261125a` about 1.4G, `ct20261126a` about 2.4G)
+FAIL attempts (`4d11458a01` about 2.6G, `ct20261125a` about 2.3G, `ct20261126a` about 2.3G)
 may only be removed or archived by operator decision.
