@@ -243,3 +243,74 @@ to the reviewed runner resource policy. That requires explicit approval.
 Disk is at about 91% (1.8G free). A new attempt needs about 2.5G, and the preserved
 FAIL attempts (`4d11458a01` about 2.6G, `ct20261125a` about 2.3G, `ct20261126a` about 2.3G)
 may only be removed or archived by operator decision.
+
+---
+
+# Follow-up: `attempt-ct20261126b` (2026-11-26): CPU fix verified, packaged-verifier defect
+
+The operator approved the resource change. The unit now runs with `CPUQuota=300%`,
+`MemoryMax=3 GiB`, swap 0, `TasksMax=128` and `RuntimeMaxSec=1800`, with child and parent
+timeouts of 1740 s and 1830 s. The in-child cgroup readback asserts these exact values
+(commit `1171443`).
+
+The operator also approved removing anything the app does not need. The receipts and logs
+of `4d11458a01`, `ct20261125a` and `ct20261126a` were archived on CT200 under
+`~/.local/share/travelos-stage10-archive/`, and the attempts were then removed. Disk went
+from 91% to 58%.
+
+The new attempt reused the verified ct20261126a input bytes, moved by rename, with the new
+`remote.py` and `resource.py`. Its `manifest.json` is
+`4a8b714c2fb378a77fdaae5129f4c533ceffc94af35a0b345e169a3f16d7126a`.
+
+**Outcome: FAIL_PRESERVE.** 0 of 95 recorded.
+
+- Unit: 5 min 51 s wall, 5 min 3 s CPU, memory peak 2.1G of 3G.
+- The Stage 7 Staff MFA test no longer times out: it finished in 139.7 s, against
+  368 s before. It now **fails** with
+  `Stage 10 packaged rehearsal failed (preflight): SAFE_REHEARSAL_FAILURE`.
+- `remote-outcome.json`: `primaryExit 1`, `executionSha256 8ef57397…e395`,
+  `cpuMax "300000 100000"`, `memoryMaxBytes 3221225472`. The cluster was stopped and the
+  disposable roots are absent.
+
+## Root cause (reproduced): the packaged verifier passes silently through a symlink
+
+In the `preflight` phase, `rehearse-acceptance.mjs` runs
+`current/deployment/verify-artifact.mjs`, where `current` is a symlink to the release,
+matching how services resolve the active release.
+
+`packaged-verifier.mjs`, copied into the sealed artifact as
+`deployment/verify-artifact.mjs`, only runs its CLI when
+`pathToFileURL(path.resolve(argv[1])) === import.meta.url`. Node reports
+`import.meta.url` as the **realpath**, so through the symlink the guard is false. The
+process then **exits 0 with empty stdout, having verified nothing**, and `JSON.parse("")`
+throws. The rehearsal redacts that error to `SAFE_REHEARSAL_FAILURE`.
+
+The packaged verifier from the preserved runtime was called both ways:
+
+| Invocation path | Exit code | Time | stdout |
+|---|---|---|---|
+| Through a `current` symlink | 0 | 90 ms | empty |
+| Through the real path | 0 | — | `PACKAGE_CHECKS_PASSED_NOT_RELEASE_QUALIFIED` |
+
+This is a **defect in the sealed artifact gen01**. It is also security-relevant, because a
+verifier that exits 0 without checking is fail-open. The rehearsal caught it because it
+parses the report.
+
+**Source fix** (commit `8274356`): the guard now applies `realpathSync` to `argv[1]`.
+`test-packaged-verifier-import.mjs` gained a symlink probe, which fails against the old
+verifier (`Symlinked CLI must not exit 0 without verifying`) and passes with the fix.
+`pnpm ci:verify` passes all 20 gates on the branch.
+
+## Blocker: a new artifact is required (decision needed)
+
+The verifier ships inside `artifact.tar.gz` (gen01, `257498ad…`), so the lane cannot pass
+until the artifact is rebuilt with the fix.
+
+`tooling/ci/stage-10/build-artifact.mjs` deliberately refuses (`assertPipelineReady`:
+pending gates and integrations). gen01 itself came from an untracked mutable rehearsal
+script (`.hermes/state/t_9fbc40f6-run31-mutable-package-corrected.mjs`), which is not in git
+or on CT200. Producing gen02 therefore needs an explicit decision on how to build a
+mutable DEVELOPMENT rehearsal artifact without the readiness brake. That brake must not
+simply be removed (see `tooling/ci/stage-10/README.md`).
+
+Until then, no signing, custody, deployment, rollback, backup/restore or Stage 11 action.
