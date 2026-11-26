@@ -48,7 +48,15 @@ try {
 const packageRoot = await mkdtemp(path.join(os.tmpdir(), "travelos-stage6-"));
 const workRoot = await mkdtemp(path.join(os.tmpdir(), "travelos-stage10-full-pg-"));
 const dataDirectory = path.join(workRoot, "data");
-const socketDirectory = path.join(workRoot, "socket");
+// PostgreSQL rejects Unix socket paths longer than 107 bytes (sun_path). The CT200
+// attempt TMPDIR alone exceeds that, so the socket gets its own short private
+// (0700) root under a fixed base; it is removed and verified with the others.
+const socketRoot = await mkdtemp("/tmp/travelos-s10-sock-");
+const socketDirectory = socketRoot;
+assert.ok(
+  Buffer.byteLength(path.join(socketDirectory, ".s.PGSQL.65535")) <= 107,
+  "Disposable PostgreSQL socket path exceeds 107 bytes",
+);
 const postgresLog = path.join(workRoot, "postgres.log");
 const nativeBin = process.env.TRAVELOS_STAGE10_NATIVE_PG_BIN;
 if (nativeBin !== undefined)
@@ -366,7 +374,7 @@ try {
   };
   const disposableRootsAbsent = clusterStopped
     ? await Promise.all(
-        [workRoot, packageRoot].map(async (root) => {
+        [workRoot, packageRoot, socketRoot].map(async (root) => {
           try {
             await rm(root, { recursive: true, force: true });
             return await rootAbsent(root);

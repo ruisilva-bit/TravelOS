@@ -66,10 +66,10 @@ def copy_harness(root, output, directories=SOURCE_DIRS):
         if source.is_dir():
             shutil.copytree(source, output / name, symlinks=True,
                             ignore=lambda _path, names: [n for n in names if n in SKIP])
-    # Copy node_modules as real files. pnpm's internal symlinks point to sibling
-    # stores that may not be copied atomically; real files avoid dangling links
-    # and keep the harness inventory deterministic.
-    shutil.copytree(root / 'node_modules', output / 'node_modules', symlinks=False,
+    # Preserve pnpm's relative symlinks (as the delivered v9 harness did) instead
+    # of dereferencing them into duplicate store copies. contained_links() below
+    # rejects any dangling or escaping link, and the transport re-verifies them.
+    shutil.copytree(root / 'node_modules', output / 'node_modules', symlinks=True,
                     ignore=lambda _path, names: [n for n in names if n in {'.vite-temp', '__pycache__'}])
     contained_links(output)
     check_dependency_tree(output)

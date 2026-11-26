@@ -21,17 +21,21 @@ for (const fault of [
     const work = await mkdtemp(path.join(process.env.TMPDIR, "pg-cleanup-exit-"));
     const evidence = await mkdtemp(path.join(root, ".hermes/state/pg-cleanup-exit-"));
     t.after(async () => {
+      // Faults such as `remove` deliberately retain the runner's short /tmp socket root.
+      const socket = await readFile(path.join(work, "socket-path"), "utf8").catch(() => "");
+      if (/^\/tmp\/travelos-s10-sock-[A-Za-z0-9]{6}$/u.test(socket))
+        await rm(socket, { recursive: true, force: true });
       await rm(work, { recursive: true, force: true });
       await rm(evidence, { recursive: true, force: true });
     });
     const bootstrap = path.join(work, "bootstrap.mjs");
     await mkdir(path.join(work, "scratch"));
     const sources = {
-      "node:child_process": `let ownedData;export const spawnSync=(command,args)=>{if(args.includes('--pgdata'))ownedData=args[args.indexOf('--pgdata')+1];return {status:${fault === "test-fail-stop-throw" ? "args.includes('run')?2:0" : "0"},stdout:args.includes('--tuples-only')?'180006|on|127.0.0.1|23456|'+(${JSON.stringify(fault)}==='foreign-port'?'/foreign-cluster':ownedData)+'|'+ownedData.replace(/data$/,'socket')+'\\n':'',stderr:''}};`,
+      "node:child_process": `let ownedData;export const spawnSync=(command,args)=>{if(args.includes('--pgdata'))ownedData=args[args.indexOf('--pgdata')+1];return {status:${fault === "test-fail-stop-throw" ? "args.includes('run')?2:0" : "0"},stdout:args.includes('--tuples-only')?'180006|on|127.0.0.1|23456|'+(${JSON.stringify(fault)}==='foreign-port'?'/foreign-cluster':ownedData)+'|'+globalThis.__travelosSocket+'\\n':'',stderr:''}};`,
       "node:net": `export default {createServer:()=>({once(){},listen(o,cb){cb()},address:()=>({port:23456}),close(cb){cb()}}),createConnection:()=>{const s={destroy(){},once(event,cb){if(event==='error')queueMicrotask(()=>cb());return s},setTimeout(){}};return s}};`,
       "node:fs/promises": `import * as real from 'node:fs/promises';
         export const {lstat,mkdir,mkdtemp,writeFile}=real;
-        export const appendFile=async()=>{};
+        export const appendFile=async(file,text)=>{const m=/unix_socket_directories = '([^']*)'/.exec(String(text));if(m){globalThis.__travelosSocket=m[1];await real.writeFile(${JSON.stringify(path.join(work, "socket-path"))},m[1])}};
         export const rm=async(...args)=>{if(${JSON.stringify(fault)}==='remove')throw Error('SYNTHETIC_REMOVAL_FAILURE');if(${JSON.stringify(fault)}==='remove-silent')return;return real.rm(...args)};
         export const readFile=async(file,...args)=>{
           if(String(file).endsWith('postmaster.pid'))throw Object.assign(Error('absent'),{code:'ENOENT'});
