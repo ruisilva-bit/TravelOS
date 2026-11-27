@@ -1,7 +1,19 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
-import { TravelOSMark } from "@travelos/design-system";
+import {
+  Button,
+  ButtonLink,
+  PageHeader,
+  SectionHeading,
+  StateMessage,
+  StatusPill,
+  Table,
+  TextArea,
+  TextField,
+  TravelOSMark,
+} from "@travelos/design-system";
+import type { StatusTone, TableColumn, TableProps } from "@travelos/design-system";
 
 import { AdminApiError } from "./api.js";
 import {
@@ -12,8 +24,6 @@ import {
   reissueAdminStaffInvitation,
 } from "./staff-invitation-api.js";
 import type { AdminStaffInvitationMetadataV1 } from "@travelos/contracts/admin";
-
-import "./staff-invitations.css";
 
 type InvitationPageState =
   | { readonly kind: "loading" }
@@ -35,11 +45,11 @@ const invitationStatusLabel: Record<AdminStaffInvitationMetadataV1["status"], st
   EXPIRED: "Expirado",
 };
 
-const invitationStatusTone = (status: AdminStaffInvitationMetadataV1["status"]): string => {
-  if (status === "CONSUMED") return " state-pill--positive";
-  if (status === "REVOKED") return " state-pill--negative";
-  if (status === "PENDING" || status === "EXPIRED") return " state-pill--warning";
-  return "";
+const invitationStatusTone = (status: AdminStaffInvitationMetadataV1["status"]): StatusTone => {
+  if (status === "CONSUMED") return "success";
+  if (status === "REVOKED") return "danger";
+  if (status === "PENDING" || status === "EXPIRED") return "warning";
+  return "neutral";
 };
 
 const invitationDateFormatter = new Intl.DateTimeFormat("pt-PT", {
@@ -63,70 +73,80 @@ const invitationErrorMessage = (error: unknown, loading = false): string => {
     : "Não foi possível concluir a operação do convite. Tente novamente.";
 };
 
-function InvitationRows({
+function InvitationTable({
   items,
+  loading,
   busy,
   onReissue,
   onRevoke,
+  pagination,
 }: {
   readonly items: readonly AdminStaffInvitationMetadataV1[];
+  readonly loading: boolean;
   readonly busy: boolean;
   readonly onReissue: (invitation: AdminStaffInvitationMetadataV1) => void;
   readonly onRevoke: (invitation: AdminStaffInvitationMetadataV1) => void;
+  readonly pagination?: TableProps<AdminStaffInvitationMetadataV1>["pagination"];
 }) {
+  const columns: readonly TableColumn<AdminStaffInvitationMetadataV1>[] = [
+    {
+      key: "email",
+      header: "Email",
+      cell: (invitation) => (
+        <strong className="staff-invitation-email">{invitation.targetEmail}</strong>
+      ),
+    },
+    {
+      key: "status",
+      header: "Estado",
+      cell: (invitation) => (
+        <StatusPill tone={invitationStatusTone(invitation.status)}>
+          {invitationStatusLabel[invitation.status]}
+        </StatusPill>
+      ),
+    },
+    {
+      key: "created",
+      header: "Criado",
+      cell: (invitation) => (
+        <time dateTime={invitation.createdAt}>{formatInvitationDate(invitation.createdAt)}</time>
+      ),
+    },
+    {
+      key: "expires",
+      header: "Expira",
+      cell: (invitation) => (
+        <time dateTime={invitation.expiresAt}>{formatInvitationDate(invitation.expiresAt)}</time>
+      ),
+    },
+    {
+      key: "actions",
+      header: <span className="sr-only">Ações</span>,
+      align: "right",
+      cell: (invitation) =>
+        invitation.status === "PENDING" ? (
+          <span className="staff-invitation-actions">
+            <Button variant="ghost" onClick={() => onReissue(invitation)} disabled={busy}>
+              Reemitir token
+            </Button>
+            <Button variant="ghost" onClick={() => onRevoke(invitation)} disabled={busy}>
+              Revogar convite
+            </Button>
+          </span>
+        ) : null,
+    },
+  ];
   return (
-    <ul className="staff-invitation-list" aria-label="Convites de equipa">
-      {items.map((invitation) => (
-        <li className="staff-invitation-row" key={invitation.invitationId}>
-          <div className="staff-invitation-row__identity">
-            <strong>{invitation.targetEmail}</strong>
-            <span
-              className={`state-pill staff-invitation-row__status${invitationStatusTone(invitation.status)}`}
-            >
-              {invitationStatusLabel[invitation.status]}
-            </span>
-          </div>
-          <dl className="staff-invitation-row__dates">
-            <div>
-              <dt>Criado</dt>
-              <dd>
-                <time dateTime={invitation.createdAt}>
-                  {formatInvitationDate(invitation.createdAt)}
-                </time>
-              </dd>
-            </div>
-            <div>
-              <dt>Expira</dt>
-              <dd>
-                <time dateTime={invitation.expiresAt}>
-                  {formatInvitationDate(invitation.expiresAt)}
-                </time>
-              </dd>
-            </div>
-          </dl>
-          {invitation.status === "PENDING" ? (
-            <div className="staff-invitation-row__actions">
-              <button
-                className="button button--quiet"
-                type="button"
-                onClick={() => onReissue(invitation)}
-                disabled={busy}
-              >
-                Reemitir token
-              </button>
-              <button
-                className="button button--quiet"
-                type="button"
-                onClick={() => onRevoke(invitation)}
-                disabled={busy}
-              >
-                Revogar convite
-              </button>
-            </div>
-          ) : null}
-        </li>
-      ))}
-    </ul>
+    <Table
+      caption="Convites de equipa"
+      columns={columns}
+      rows={items}
+      getRowKey={(invitation) => invitation.invitationId}
+      loading={loading}
+      loadingLabel="A carregar os convites…"
+      empty={<StateMessage>Ainda não existem convites de equipa.</StateMessage>}
+      pagination={pagination}
+    />
   );
 }
 
@@ -265,12 +285,11 @@ export function StaffInvitationsView({
 
   return (
     <section className="staff-invitations" aria-labelledby="staff-invitations-title">
-      <header className="page-heading">
-        <div>
-          <h1 id="staff-invitations-title">Convites de equipa</h1>
-          <p>Convide colaboradores para o espaço de operações da agência.</p>
-        </div>
-      </header>
+      <PageHeader
+        id="staff-invitations-title"
+        title="Convites de equipa"
+        description="Convide colaboradores para o espaço de operações da agência."
+      />
       <p className="staff-invitations__policy">Trip Operations · utilização única · 60 minutos</p>
 
       {handoff ? (
@@ -282,18 +301,16 @@ export function StaffInvitationsView({
               email.
             </p>
           </div>
-          <div className="field">
-            <label htmlFor="staff-invitation-token">Token de utilização única</label>
-            <textarea
-              id="staff-invitation-token"
-              className="staff-invitation-handoff__token"
-              rows={2}
-              readOnly
-              spellCheck={false}
-              autoComplete="off"
-              value={handoff.token}
-            />
-          </div>
+          <TextArea
+            id="staff-invitation-token"
+            label="Token de utilização única"
+            className="staff-invitation-handoff__token"
+            rows={2}
+            readOnly
+            spellCheck={false}
+            autoComplete="off"
+            value={handoff.token}
+          />
           <p className="staff-invitation-handoff__expiry">
             Convite para <strong>{handoff.invitation.targetEmail}</strong> · expira em{" "}
             <time dateTime={handoff.invitation.expiresAt}>
@@ -301,12 +318,12 @@ export function StaffInvitationsView({
             </time>
           </p>
           <div className="staff-invitation-handoff__actions">
-            <a className="button button--secondary" href="#/staff/invitations/accept">
+            <ButtonLink variant="secondary" href="#/staff/invitations/accept">
               Abrir aceitação do convite
-            </a>
-            <button className="button button--quiet" type="button" onClick={() => setHandoff(null)}>
+            </ButtonLink>
+            <Button variant="ghost" onClick={() => setHandoff(null)}>
               Fechar e apagar o token
-            </button>
+            </Button>
           </div>
         </section>
       ) : null}
@@ -326,82 +343,69 @@ export function StaffInvitationsView({
           </p>
         </div>
         <div className="staff-invitations__form-controls">
-          <div className="field">
-            <label htmlFor="staff-invitation-email">Email profissional</label>
-            <input
-              id="staff-invitation-email"
-              name="targetEmail"
-              type="email"
-              autoComplete="email"
-              required
-              maxLength={320}
-              value={targetEmail}
-              onChange={(event) => setTargetEmail(event.currentTarget.value)}
-              disabled={issuing}
-            />
-          </div>
-          <button className="button button--primary" type="submit" disabled={issuing}>
+          <TextField
+            id="staff-invitation-email"
+            label="Email profissional"
+            name="targetEmail"
+            type="email"
+            autoComplete="email"
+            required
+            maxLength={320}
+            value={targetEmail}
+            onChange={(event) => setTargetEmail(event.currentTarget.value)}
+            disabled={issuing}
+          />
+          <Button variant="primary" type="submit" loading={issuing}>
             {issuing ? "A emitir…" : "Emitir convite"}
-          </button>
+          </Button>
         </div>
         {actionError ? (
-          <p className="admin-form__message" role="alert">
+          <StateMessage tone="error" role="alert">
             {actionError}
-          </p>
+          </StateMessage>
         ) : null}
       </form>
 
       <section aria-labelledby="staff-invitation-list-title" aria-busy={page.kind === "loading"}>
-        <div className="section-heading">
-          <h2 id="staff-invitation-list-title">Convites</h2>
-        </div>
-        {page.kind === "loading" ? (
-          <p className="state-message" role="status" aria-live="polite">
-            A carregar os convites…
-          </p>
-        ) : page.kind === "error" ? (
-          <div className="state-message state-message--error" role="alert">
-            <p>{page.message}</p>
-            <button
-              className="button button--secondary"
-              type="button"
-              onClick={() => setReloadKey((key) => key + 1)}
-            >
-              Tentar novamente
-            </button>
-          </div>
-        ) : page.items.length === 0 ? (
-          <p className="state-message">Ainda não existem convites de equipa.</p>
+        <SectionHeading id="staff-invitation-list-title" title="Convites" />
+        {page.kind === "error" ? (
+          <StateMessage
+            tone="error"
+            role="alert"
+            action={
+              <Button onClick={() => setReloadKey((key) => key + 1)}>Tentar novamente</Button>
+            }
+          >
+            {page.message}
+          </StateMessage>
         ) : (
           <>
-            <InvitationRows
-              items={page.items}
+            <InvitationTable
+              items={page.kind === "ready" ? page.items : []}
+              loading={page.kind === "loading"}
               busy={issuing || mutatingInvitationId !== null}
               onReissue={(invitation) => void handleReissue(invitation)}
               onRevoke={(invitation) => void handleRevoke(invitation)}
+              pagination={
+                page.kind === "ready"
+                  ? {
+                      hasMore: page.nextCursor !== null,
+                      onLoadMore: () => void loadMore(),
+                      loadingMore: page.loadingMore,
+                      loadMoreLabel: "Carregar mais convites",
+                    }
+                  : undefined
+              }
             />
-            {actionError ? (
-              <p className="state-message state-message--error" role="alert">
+            {page.kind === "ready" && page.items.length > 0 && actionError ? (
+              <StateMessage tone="error" role="alert">
                 {actionError}
-              </p>
+              </StateMessage>
             ) : null}
-            {page.loadMoreError ? (
-              <div className="state-message state-message--error" role="alert">
-                <p>{page.loadMoreError}</p>
-              </div>
-            ) : null}
-            {page.nextCursor !== null ? (
-              <div className="state-message__actions">
-                <button
-                  className="button button--secondary"
-                  type="button"
-                  onClick={() => void loadMore()}
-                  disabled={page.loadingMore}
-                  aria-busy={page.loadingMore}
-                >
-                  {page.loadingMore ? "A carregar…" : "Carregar mais convites"}
-                </button>
-              </div>
+            {page.kind === "ready" && page.loadMoreError ? (
+              <StateMessage tone="error" role="alert">
+                {page.loadMoreError}
+              </StateMessage>
             ) : null}
           </>
         )}
@@ -449,9 +453,9 @@ export function StaffInvitationAcceptView() {
               A conta de equipa foi criada. Configure a autenticação de dois fatores ao iniciar
               sessão.
             </p>
-            <a className="button button--primary" href="#/">
+            <ButtonLink variant="primary" href="#/">
               Iniciar sessão
-            </a>
+            </ButtonLink>
           </>
         ) : (
           <>
@@ -467,51 +471,48 @@ export function StaffInvitationAcceptView() {
               aria-busy={busy}
               onSubmit={(event) => void submit(event)}
             >
-              <div className="field">
-                <label htmlFor="staff-invitation-accept-token">Código do convite</label>
-                <input
-                  id="staff-invitation-accept-token"
-                  name="token"
-                  type="text"
-                  autoComplete="off"
-                  spellCheck={false}
-                  required
-                  value={token}
-                  onChange={(event) => setToken(event.currentTarget.value)}
-                  disabled={busy}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="staff-invitation-accept-name">Nome completo</label>
-                <input
-                  id="staff-invitation-accept-name"
-                  name="name"
-                  type="text"
-                  autoComplete="name"
-                  maxLength={255}
-                  required
-                  value={name}
-                  onChange={(event) => setName(event.currentTarget.value)}
-                  disabled={busy}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="staff-invitation-accept-password">Criar palavra-passe</label>
-                <input
-                  id="staff-invitation-accept-password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  maxLength={1024}
-                  required
-                  value={password}
-                  onChange={(event) => setPassword(event.currentTarget.value)}
-                  disabled={busy}
-                />
-              </div>
-              <button className="button button--primary" type="submit" disabled={busy}>
+              <TextField
+                id="staff-invitation-accept-token"
+                label="Código do convite"
+
+                name="token"
+                type="text"
+                autoComplete="off"
+                spellCheck={false}
+                required
+                value={token}
+                onChange={(event) => setToken(event.currentTarget.value)}
+                disabled={busy}
+              />
+              <TextField
+                id="staff-invitation-accept-name"
+                label="Nome completo"
+
+                name="name"
+                type="text"
+                autoComplete="name"
+                maxLength={255}
+                required
+                value={name}
+                onChange={(event) => setName(event.currentTarget.value)}
+                disabled={busy}
+              />
+              <TextField
+                id="staff-invitation-accept-password"
+                label="Criar palavra-passe"
+
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                maxLength={1024}
+                required
+                value={password}
+                onChange={(event) => setPassword(event.currentTarget.value)}
+                disabled={busy}
+              />
+              <Button variant="primary" type="submit" loading={busy}>
                 {busy ? "A validar convite…" : "Aceitar convite"}
-              </button>
+              </Button>
             </form>
             <p className="auth-message" role="alert">
               {error}

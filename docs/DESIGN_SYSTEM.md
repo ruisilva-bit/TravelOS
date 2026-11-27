@@ -1,171 +1,66 @@
-# TravelOS Design System Foundation
+# TravelOS Design System
 
-**Status:** Accepted — Phase 0 foundation
+Internal back-office for one Portuguese travel agency, used all day by 1–5 people. Code lives in
+`packages/design-system` (components + `src/styles.css` tokens); screens live in `apps/admin-web`.
 
-## 1. Experience principles
+## 1. Principles
 
-TravelOS should feel modern, calm, contextual, fast and trustworthy. Linear, Stripe, Attio and Notion are quality references for hierarchy and interaction, not templates.
+- **Calm.** Neutral surfaces, one brand colour, colour only for state. No decoration that does not help a decision.
+- **Dense but readable.** 14px body text, 36px controls, tables for lists. Dense is for scanning, not cramming: one primary action per view.
+- **Fast.** Everything works from the keyboard. Forms keep what was typed after an error. Lists load more in place; no full-page spinners.
+- **Honest.** Show real states (loading, empty, error, conflict). Never show a stale value as current. Destructive actions are explicit.
+- **Staff only.** Never render INTERNAL_ONLY data into anything customer-facing; hiding with CSS is not enforcement (see AGENTS.md).
+- **Accessible by default (WCAG 2.2 AA).** Visible focus, labelled controls, 4.5:1 text, 3:1 controls, meaning never by colour alone, reflow at 320px, reduced motion respected.
 
-- Show the next useful action and current responsibility before ornamental dashboards.
-- Prefer progressive disclosure over enormous forms, sidebars and card grids.
-- Preserve context when moving through Customer → Request → Quote → Trip.
-- Make dangerous/public actions deliberate without making ordinary work slow.
-- Use language from the domain model; never expose database/provider jargon.
-- Design hierarchy in grayscale first; brand colour does not carry structure.
-- Accessibility and narrow-mobile behaviour are acceptance criteria, not polish.
+## 2. Tokens (`styles.css`, CSS custom properties)
 
-## 2. Separate product surfaces
+Components read **semantic** tokens only, never raw hex. A dark theme is a second value set for the same names (no component change); it is not built yet.
 
-### Admin
+| Group | Tokens |
+| --- | --- |
+| Surface | `--surface-canvas` (app background), `-raised` (cards, sheet), `-soft` (table header, hover), `-active` (selected nav), `-scrim` |
+| Text | `--text-primary`, `--text-muted`, `--text-on-action`, `--text-link` |
+| Line | `--border-subtle`, `--border-rule` (row dividers), `--control-border` (4.4:1), `--focus-ring` |
+| Action | `--action-primary` (teal #1b6c80, 6.0:1 on white), `-hover`, `--action-negative`, `-hover` |
+| Status | `--status-{neutral,info,success,warning,danger}-{fg,bg}`, every pair at least 6:1 |
+| Type | IBM Plex Sans stack; `--font-size-xs 12`, `sm 13`, `md 14` (body), `lg 16`, `xl 22` (page title). Weights 400/500/600 only. Numbers in tables use tabular figures |
+| Space | 4px base: `--space-1..16` = 4, 8, 12, 16, 24, 32, 48, 64 |
+| Shape | `--radius-sm 6`, `-medium 12`, `-lg 16`; `--shadow-overlay` only for dialog, toast, mobile menu; `--control-height 36`, `--touch-target 44` |
 
-- desktop-efficient and keyboard-friendly, with responsive tablet/mobile fallback;
-- information-dense where operations require it, but not cramped;
-- global command/search entry, contextual secondary navigation and clear ownership/status;
-- tables only where comparison matters; details use sections and inline actions;
-- sensitive finance/document information requires explicit permission and is not rendered then hidden with CSS.
+## 3. Components (import from `@travelos/design-system`)
 
-### Customer share link (planned)
+| Component | Use it for / rules |
+| --- | --- |
+| `Button`, `ButtonLink` | `primary` once per view; `secondary` default; `danger` for destructive confirm only; `ghost` for low-emphasis row actions. `loading` keeps the label, shows a spinner and blocks repeats. Use `ButtonLink` when it navigates |
+| `TextField`, `TextArea`, `Select`, `DateField` | Always a visible label (placeholder is an example, not a label). `hint` for format help, `error` for validation; both are wired to `aria-describedby`. `DateField` value is `YYYY-MM-DD` |
+| `MoneyField` | Amount is a **decimal string** (`"1234.50"`) plus ISO currency code, never a JS number. EUR/USD/GBP allow 2 decimals, JPY 0. Helpers: `formatMoney`, `isValidMoneyAmount`, `normalizeMoneyInput` |
+| `Table` | Lists of records: `columns`, `rows`, `empty`, `loading`, optional `pagination` ("Carregar mais"). First column is the link to the record. Scrolls inside its own container on narrow screens |
+| `StatusPill` | One short word for a state, with a tone: neutral, info, success, warning, danger. Map domain states to tones in the screen, not in the component |
+| `Card`, `SectionHeading` | Group related content; do not nest cards |
+| `PageHeader` | One per page: title (h1), description, `status` pill, `actions`, optional `back` link |
+| `EmptyState`, `StateMessage` | `EmptyState` for no data, denied, not found, errors that replace content; `StateMessage` for inline loading/error/success (use `role="alert"` for failures, `status` for the rest) |
+| `Dialog` | Confirmation only. Traps focus, Esc closes, focus returns to the opener. Danger tone focuses Cancel first. Prefer undo or inline confirmation for reversible actions |
+| `ToastProvider`, `useToast` | Short confirmation after an action ("Guardado."). Polite live region; errors stay until dismissed. Never the only place an error appears |
+| `Tabs` | Switch views of one record. Arrow keys, Home and End move between tabs |
+| `WorkspaceFrame` | Shell: sidebar on desktop, top bar and menu at 768px and below; skip link; `aria-current` on the active item |
 
-Customers have no login (ADR-016). A later read-only share link shows one frozen trip snapshot:
+New screen-specific styling goes in `apps/admin-web/src/screens.css` using tokens. If two screens need the same thing, promote it here.
 
-- mobile-first single-column journey narrative with resilient touch targets;
-- current published Trip/itinerary, not a mirrored Admin UI;
-- simple language and clear last-publication time;
-- no customer-visible internal status, supplier cost, margin, staff identity or operational note.
+## 4. Navigation and routes
 
-## 3. Information architecture
+Hoje `#/` · Clientes `#/clientes` · Leads `#/leads` · Orçamentos `#/orcamentos` · Viagens `#/viagens` (alias `#/trips`) · Tarefas `#/tarefas` · Equipa `#/equipa` (alias `#/staff/invitations`, only with permission). Sections without a screen show `EmptyState` "Em breve". Hash routing, no router library.
 
-### Admin initial navigation
+## 5. Writing guide (European Portuguese, pt-PT)
 
-Keep top-level areas bounded: Home/Attention, CRM, Sales, Trips, Work/Service, Finance (permission-gated), Documents, and Settings. Contextual entity work remains inside a Customer/Opportunity/Trip workspace rather than duplicating every submodule in navigation.
+- **Tone:** direct, polite, short. Use the formal "você" form implicitly (imperative "Guarde", not "Guarda"). No exclamation marks, no jargon from the database or API.
+- **Buttons are verbs:** "Guardar lead", "Criar viagem", "Tentar novamente". Progress: "A guardar…" (pt-PT gerund form "A + infinitivo", not "Guardando").
+- **Errors say what happened and what to do:** "Não foi possível guardar. Tente novamente." Never blame the person; never show codes.
+- **Empty states explain the next step:** "Ainda não existem viagens." plus an action when one exists.
+- **Dates:** `27/11/2026` in tables; `27 de novembro de 2026` in prose; times 24h `14:30`; always say the time zone when it matters. Machine value is ISO (`<time dateTime>`).
+- **Money:** `1 234,56 €` (non-breaking space as thousands separator, comma decimal, symbol after a non-breaking space). Currency code other than EUR when ambiguous.
+- **Phone:** `+351 912 345 678`. **Names:** given name then family name, as typed.
+- Use "Staff" only where the UI already does; prefer "equipa". Say "viagem", "orçamento", "cliente", "lead" consistently; do not mix "reserva" and "booking".
 
-## 4. Token architecture
+## 6. Done means
 
-Use semantic CSS custom properties consumed through Tailwind:
-
-- primitive scales: neutral/brand/success/warning/danger/info shades;
-- semantic surfaces/text/border/focus/action/status tokens;
-- typography scale and max readable measure;
-- spacing scale based on 4, 8, 12, 16, 24, 32, 48, 64;
-- radius, border and a restrained elevation scale;
-- motion duration/easing with reduced-motion alternatives;
-- density modes for Admin only where tested.
-
-Components use semantic tokens (`--surface-raised`, `--text-muted`, `--action-primary`) rather than raw brand shades. Agency branding may configure approved brand/logo/accent tokens with automatic contrast validation. Error/success and security states cannot be rebranded into ambiguity.
-
-Dark mode is deferred until the light system and accessibility are complete; token design must not prevent it.
-
-## 5. Component ownership
-
-TravelOS owns copied/generated component source in `packages/design-system`. shadcn/ui may accelerate accessible source primitives, and Radix primitives may supply difficult behaviour, but neither is the product design system.
-
-Required primitives include:
-
-- button/link/icon button;
-- input/select/combobox/date-time/currency controls;
-- dialog/sheet/popover/tooltip/menu with correct focus;
-- table/list/filter/pagination;
-- status badge and permission-safe redaction;
-- toast/inline feedback;
-- skeleton/loading/empty/error/offline/stale/conflict states;
-- timeline;
-- itinerary family card/segment primitives;
-- publication status/preview comparison;
-- secure document row/download state.
-
-Avoid a component wrapper that adds no information hiding. Components document accessibility, variants, content rules and responsive behaviour.
-
-## 6. Publishing UX contract
-
-Publication is the most important product affordance.
-
-- Admin always distinguishes **Workspace changed**, **Previewing revision N**, **Published vN**, **Not yet published** and **Stale preview**.
-- Preview has a persistent, unmistakable “Preview — not visible to customer” banner and no publish side effect.
-- Publish is a separate primary action available only with permission/recent MFA.
-- The confirmation identifies current published version, candidate revision and customer-visible change summary; it never claims that Preview saved/released anything.
-- If revision/hash is stale, publishing stops and asks staff to regenerate/review preview. No silent rebase.
-- After publish, UI reports immutable version/time/actor and asynchronous notification state separately.
-- Internal-only fields are absent from preview DOM/network data—not blurred or labelled hidden.
-
-## 7. Itinerary UX
-
-- Items remain independently editable/reorderable and identifiable by family.
-- Flight legs are individual segments; grouping may visually connect them.
-- Reservations are shown as related booking records, not nested “the same object.” One reservation can link across item cards.
-- Local time and zone/airport context are primary; UTC is not customer UI.
-- Warnings flag ambiguous/nonexistent DST local times before save/publish.
-- Operational details and Customer Presentation fields are separated in Admin editing.
-- Visibility control explains inheritance and permanently locked INTERNAL_ONLY status without offering an override.
-
-## 8. Forms, errors and concurrency
-
-- Label every control; placeholders are examples, not labels.
-- Preserve typed input after safe validation errors and focus the first invalid field.
-- Currency controls accept decimal text but convert/validate exact minor units; never JS float calculations.
-- Optimistic conflicts show what became stale and provide reload/reapply choices; never last-write-wins silently.
-- Destructive/revoking actions require explicit confirmation proportional to consequence.
-- Permission denied, not found and cross-scope cases avoid existence leakage while giving staff useful safe guidance.
-- Async job states distinguish queued, processing, retrying, failed and completed.
-
-## 9. Accessibility baseline
-
-Target WCAG 2.2 AA:
-
-- complete keyboard operation, visible focus and logical focus order;
-- skip links/landmarks/headings and accessible names;
-- focus trapping/restoration for overlays;
-- status changes announced through appropriate live regions without noise;
-- 4.5:1 normal text and 3:1 large/UI graphical contrast minimums;
-- no information conveyed only by colour, position or animation;
-- touch targets at least 44×44 CSS pixels on customer-facing critical actions;
-- zoom/reflow at 400%, narrow 320px layouts and text-size increase;
-- prefers-reduced-motion and no essential timed interactions;
-- itinerary/financial tables have list/card alternatives where mobile/accessibility demands it;
-- dates/times/currencies have locale-aware visible text and unambiguous machine values.
-
-Automated axe checks are necessary but manual keyboard/screen-reader review is required for critical flows.
-
-## 10. Responsive and performance budgets
-
-- Customer-facing views are designed at narrow mobile first, then enhanced.
-- Admin supports core approve/publish/customer-service actions on narrow mobile but may provide richer desktop comparison surfaces.
-- Avoid horizontal page scrolling; data grids may have explicit contained overflow with fixed context.
-- Static app shell and route/code splitting keep initial JS bounded; define measured budgets during M1 and fail CI on material regression.
-- Images use responsive dimensions, lazy loading and safe provider/proxy policy.
-- Loading skeletons preserve layout; stale/offline states never present an old draft as current published truth.
-
-## 11. White-label rules
-
-Allowed runtime configuration:
-
-- Agency display name, approved logo/favicon assets;
-- constrained brand accent palette passing contrast checks;
-- contact details and welcome content via published Agency Profile;
-- locale/time-zone defaults.
-
-A custom domain becomes usable only after declarative ownership/TLS verification and exact inclusion in the instance manifest. Unknown hosts receive no Agency-branded page or distinguishable tenant-existence response; the UI never tries to select an Agency from an arbitrary browser host.
-
-Not configurable:
-
-- security/permission wording that would mislead;
-- publication/preview status semantics;
-- error/success meaning and accessible focus styles;
-- layout/component source;
-- arbitrary CSS/JavaScript/HTML;
-- customer-specific routes or code.
-
-White-label assets are versioned/scanned/published, not read from mutable settings directly by customer-facing views.
-
-## 12. Design acceptance
-
-Before a component/flow is “done”:
-
-- use real representative/sensitive-safe content lengths and all states;
-- pass desktop, 320px and representative mobile viewport;
-- pass keyboard, focus, contrast, screen-reader labels and reduced-motion checks;
-- prove hidden/forbidden data is absent from DOM/network;
-- prove Preview/Published/stale states cannot be confused;
-- have no unexpected console/network errors;
-- use design-system tokens/components rather than local arbitrary values.
-
-Phase 0 defines this foundation only; no UI assets/components are implemented.
+Works by keyboard only; labels and live regions read correctly; checked at 1280px and 390px; every state of the data (loading, empty, error, denied) designed; uses tokens and shared components rather than local styles.

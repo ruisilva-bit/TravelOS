@@ -309,7 +309,7 @@ describe("Admin Web", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
 
-    expect(await screen.findByRole("heading", { name: "Visão geral" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Hoje" })).toBeInTheDocument();
     expect(await screen.findByText("Rota do Pico")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "TravelOS, início" })).toHaveLength(2);
     expect(mocks.staffAuthClient.twoFactor.verifyTotp).toHaveBeenCalledWith({ code: "123456" });
@@ -372,7 +372,7 @@ describe("Admin Web", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
 
-    expect(await screen.findByRole("heading", { name: "Visão geral" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Hoje" })).toBeInTheDocument();
     expect(mocks.staffAuthClient.twoFactor.verifyBackupCode).toHaveBeenCalledWith({
       code: "synthetic-recovery-code",
     });
@@ -424,7 +424,7 @@ describe("Admin Web", () => {
 
     render(<AdminRoot />);
 
-    expect(await screen.findByRole("heading", { name: "Visão geral" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Hoje" })).toBeInTheDocument();
     expect(
       await screen.findByText("Não foi possível validar os dados recebidos."),
     ).toBeInTheDocument();
@@ -526,7 +526,7 @@ describe("Admin Web", () => {
         trip: { title: "Viagem de teste", startDate: "2027-06-04", endDate: "2027-06-11" },
       }),
     );
-    expect(window.location.hash).toBe(`#/trips/${tripId}`);
+    expect(window.location.hash).toBe(`#/viagens/${tripId}`);
   });
 
   it("edits the Trip and Accommodation, previews the exact revision, shares it once and revokes the link", async () => {
@@ -726,10 +726,7 @@ describe("Admin Web", () => {
     render(<AdminRoot />);
 
     expect(await screen.findByRole("heading", { name: "Convites de equipa" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Convites de equipa" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    expect(screen.getByRole("link", { name: "Equipa" })).toHaveAttribute("aria-current", "page");
     expect(mocks.fetch).toHaveBeenCalledWith(
       "/api/admin/staff/invitations?limit=25",
       expect.objectContaining({ method: "GET", credentials: "same-origin", cache: "no-store" }),
@@ -772,6 +769,87 @@ describe("Admin Web", () => {
     window.history.replaceState({}, "", "/#/leads/not-a-uuid");
     render(<AdminRoot />);
     expect(await screen.findByRole("heading", { name: "Endereço inválido" })).toBeInTheDocument();
+  });
+
+  it("shows the new navigation and an Em breve page for sections without a screen", async () => {
+    window.history.replaceState({}, "", "/#/clientes");
+    mocks.fetch.mockImplementation(async (input: unknown) => {
+      const path = pathOf(input);
+      if (path === "/api/staff/session-context") return jsonResponse(staffContext);
+      throw new Error(`Unexpected Admin API request: ${path}`);
+    });
+
+    render(<AdminRoot />);
+
+    expect(await screen.findByRole("heading", { name: "Em breve" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Clientes", level: 1 })).toBeInTheDocument();
+    const navigation = screen.getByRole("navigation", { name: "Navegação principal" });
+    expect(
+      Array.from(navigation.querySelectorAll("a")).map((link) => [
+        link.textContent,
+        link.getAttribute("href"),
+      ]),
+    ).toEqual([
+      ["Hoje", "#/"],
+      ["Clientes", "#/clientes"],
+      ["Leads", "#/leads"],
+      ["Orçamentos", "#/orcamentos"],
+      ["Viagens", "#/viagens"],
+      ["Tarefas", "#/tarefas"],
+    ]);
+    expect(screen.getByRole("link", { name: "Clientes" })).toHaveAttribute("aria-current", "page");
+    expect(mocks.fetch).not.toHaveBeenCalledWith("/api/admin/trips?limit=25", expect.anything());
+  });
+
+  it.each([
+    ["/#/orcamentos", "Orçamentos"],
+    ["/#/tarefas", "Tarefas"],
+  ])("routes %s to an Em breve page", async (hash, title) => {
+    window.history.replaceState({}, "", hash);
+    mocks.fetch.mockImplementation(async (input: unknown) => {
+      const path = pathOf(input);
+      if (path === "/api/staff/session-context") return jsonResponse(staffContext);
+      throw new Error(`Unexpected Admin API request: ${path}`);
+    });
+
+    render(<AdminRoot />);
+
+    expect(await screen.findByRole("heading", { name: title, level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Em breve" })).toBeInTheDocument();
+  });
+
+  it("serves Viagens on both the Portuguese and the legacy path", async () => {
+    mocks.fetch.mockImplementation(async (input: unknown) => {
+      const path = pathOf(input);
+      if (path === "/api/staff/session-context") return jsonResponse(staffContext);
+      if (path === "/api/admin/trips?limit=25")
+        return jsonResponse({ items: [], nextCursor: null });
+      throw new Error(`Unexpected Admin API request: ${path}`);
+    });
+    for (const hash of ["/#/viagens", "/#/trips"]) {
+      window.history.replaceState({}, "", hash);
+      render(<AdminRoot />);
+      expect(await screen.findByRole("heading", { name: "Viagens", level: 1 })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Viagens" })).toHaveAttribute("aria-current", "page");
+      cleanup();
+    }
+  });
+
+  it("serves the invitations screen on /equipa and shows the Equipa entry only with permission", async () => {
+    window.history.replaceState({}, "", "/#/equipa");
+    mocks.fetch.mockImplementation(async (input: unknown) => {
+      const path = pathOf(input);
+      if (path === "/api/staff/session-context")
+        return jsonResponse({ ...staffContext, canInviteStaff: true });
+      if (path === "/api/admin/staff/invitations?limit=25")
+        return jsonResponse({ items: [], nextCursor: null });
+      throw new Error(`Unexpected Admin API request: ${path}`);
+    });
+
+    render(<AdminRoot />);
+
+    expect(await screen.findByRole("heading", { name: "Convites de equipa" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Equipa" })).toHaveAttribute("href", "#/equipa");
   });
 
   it("denies direct invitation navigation when the server UI hint is absent", async () => {
@@ -873,7 +951,7 @@ describe("Admin Web", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Validar e continuar" }));
 
-    expect(await screen.findByRole("heading", { name: "Visão geral" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Hoje" })).toBeInTheDocument();
     expect(mocks.staffAuthClient.twoFactor.verifyTotp).toHaveBeenCalledWith({ code: "123456" });
     expect(mocks.fetch).toHaveBeenCalledWith(
       "/api/admin/trips?limit=25",
@@ -918,7 +996,7 @@ describe("Admin Web", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Não foi possível validar o código. Tente novamente.",
     );
-    expect(screen.queryByRole("heading", { name: "Visão geral" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Hoje" })).not.toBeInTheDocument();
     expect(mocks.fetch).not.toHaveBeenCalledWith("/api/admin/trips?limit=25", expect.anything());
     expect(sessionRequests).toBe(1);
   });

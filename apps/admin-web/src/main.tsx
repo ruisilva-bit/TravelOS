@@ -1,4 +1,5 @@
 import "@travelos/design-system/styles.css";
+import "./screens.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 

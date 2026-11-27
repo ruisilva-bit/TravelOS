@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 import { TravelOSMark } from "./travelos-mark.js";
 
@@ -80,6 +80,11 @@ export function WorkspaceFrame({
   const navigationId = useId();
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const mobileNavigationToggle = useRef<HTMLButtonElement | null>(null);
+  // Hash routing owns "#/…": the skip link must not navigate, only move focus.
+  const skipToContent = (event: MouseEvent<HTMLAnchorElement>): void => {
+    event.preventDefault();
+    document.getElementById("workspace-content")?.focus();
+  };
   const closeNavigation = (): void => setMobileNavigationOpen(false);
 
   useEffect(() => {
@@ -95,9 +100,11 @@ export function WorkspaceFrame({
 
   return (
     <div className="workspace-shell">
+      <a className="workspace-skip-link" href="#workspace-content" onClick={skipToContent}>
+        Saltar para o conteúdo
+      </a>
       <aside className="workspace-sidebar">
         <Brand realm={realm} />
-        <p className="workspace-sidebar__scope">Operações</p>
         <Navigation items={navigation} activeHref={activeHref} onNavigate={closeNavigation} />
         <footer className="workspace-sidebar__footer">Sessão {realm} ativa</footer>
       </aside>
@@ -108,7 +115,7 @@ export function WorkspaceFrame({
           <div className="workspace-topbar__actions">
             {headerActions}
             <button
-              className="button button--quiet workspace-mobile-toggle"
+              className="ds-button ds-button--ghost workspace-mobile-toggle"
               type="button"
               aria-controls={navigationId}
               aria-expanded={mobileNavigationOpen}
@@ -128,7 +135,7 @@ export function WorkspaceFrame({
             />
           ) : null}
         </header>
-        <main className="workspace-sheet">
+        <main className="workspace-sheet" id="workspace-content" tabIndex={-1}>
           <div className="workspace-main">{children}</div>
         </main>
       </div>

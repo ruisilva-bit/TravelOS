@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import type { FormEvent, InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type { FormEvent } from "react";
+
+import {
+  Button,
+  DateField,
+  SectionHeading,
+  Select,
+  StateMessage,
+  StatusPill,
+  Table,
+  TextArea,
+  TextField,
+} from "@travelos/design-system";
 
 import { TRAVELOS_CANONICAL_TIMEZONE_NAMES } from "@travelos/contracts/admin";
 import {
@@ -26,33 +38,6 @@ type FlightDraft = Parameters<typeof createAdminFlight>[1]["flight"];
 type AccommodationDraft = Parameters<typeof createAdminAccommodation>[1]["accommodation"];
 type FlightItem = AdminWorkflowWorkspace["flights"][number];
 type AccommodationItem = AdminWorkflowWorkspace["accommodations"][number];
-
-type InputFieldProps = {
-  readonly id: string;
-  readonly label: string;
-} & InputHTMLAttributes<HTMLInputElement>;
-type TextAreaFieldProps = {
-  readonly id: string;
-  readonly label: string;
-} & TextareaHTMLAttributes<HTMLTextAreaElement>;
-
-function InputField({ id, label, ...inputProps }: InputFieldProps) {
-  return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <input id={id} {...inputProps} />
-    </div>
-  );
-}
-
-function TextAreaField({ id, label, ...inputProps }: TextAreaFieldProps) {
-  return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <textarea id={id} {...inputProps} />
-    </div>
-  );
-}
 
 const textValue = (formData: FormData, name: string): string => {
   const value = formData.get(name);
@@ -128,8 +113,8 @@ export function TripCreateForm({ onCreated, onAuthenticationRequired }: TripCrea
   return (
     <section className="admin-create-trip" aria-labelledby="admin-create-trip-heading">
       <div className="admin-workflow__actions">
-        <button
-          className="button button--primary"
+        <Button
+          variant="primary"
           type="button"
           aria-expanded={open}
           aria-controls="admin-create-trip-form"
@@ -139,7 +124,7 @@ export function TripCreateForm({ onCreated, onAuthenticationRequired }: TripCrea
           }}
         >
           {open ? "Cancelar criação" : "Nova viagem"}
-        </button>
+        </Button>
       </div>
       {open ? (
         <form
@@ -155,7 +140,7 @@ export function TripCreateForm({ onCreated, onAuthenticationRequired }: TripCrea
             </p>
           </div>
           <div className="admin-form__grid">
-            <InputField
+            <TextField
               id="admin-create-customer"
               name="customer.displayName"
               label="Cliente"
@@ -163,7 +148,7 @@ export function TripCreateForm({ onCreated, onAuthenticationRequired }: TripCrea
               maxLength={300}
               autoComplete="organization"
             />
-            <InputField
+            <TextField
               id="admin-create-traveller-given-name"
               name="primaryTraveller.givenName"
               label="Nome próprio do viajante principal"
@@ -171,7 +156,7 @@ export function TripCreateForm({ onCreated, onAuthenticationRequired }: TripCrea
               maxLength={200}
               autoComplete="given-name"
             />
-            <InputField
+            <TextField
               id="admin-create-traveller-family-name"
               name="primaryTraveller.familyName"
               label="Apelido do viajante principal"
@@ -179,39 +164,37 @@ export function TripCreateForm({ onCreated, onAuthenticationRequired }: TripCrea
               maxLength={200}
               autoComplete="family-name"
             />
-            <InputField
+            <TextField
               id="admin-create-trip-title"
               name="trip.title"
               label="Nome da viagem"
               required
               maxLength={300}
             />
-            <InputField
+            <DateField
               id="admin-create-trip-start"
               name="trip.startDate"
               label="Data de início"
-              type="date"
               required
             />
-            <InputField
+            <DateField
               id="admin-create-trip-end"
               name="trip.endDate"
               label="Data de fim"
-              type="date"
               required
             />
           </div>
           {errorMessage ? (
-            <p className="admin-form__message" role="alert">
+            <StateMessage tone="error" role="alert">
               {errorMessage}
-            </p>
+            </StateMessage>
           ) : null}
           <div className="admin-form__actions">
-            <button className="button button--primary" type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {busy ? "A criar…" : "Criar viagem"}
-            </button>
-            <button
-              className="button button--secondary"
+            </Button>
+            <Button
+              variant="secondary"
               type="button"
               disabled={busy}
               onClick={() => {
@@ -220,7 +203,7 @@ export function TripCreateForm({ onCreated, onAuthenticationRequired }: TripCrea
               }}
             >
               Cancelar
-            </button>
+            </Button>
           </div>
         </form>
       ) : null}
@@ -293,16 +276,15 @@ function ScheduleFields({
     <fieldset className="admin-form__fieldset">
       <legend>{label}</legend>
       <div className="admin-form__grid">
-        <InputField
+        <DateField
           id={`${prefix}-date`}
           name={`${prefix}.localDate`}
           label={`${label} — data local`}
-          type="date"
           defaultValue={value.localDate}
           required
           onChange={handleChange}
         />
-        <InputField
+        <TextField
           id={`${prefix}-time`}
           name={`${prefix}.localTime`}
           label={`${label} — hora local`}
@@ -312,7 +294,7 @@ function ScheduleFields({
           required
           onChange={handleChange}
         />
-        <InputField
+        <TextField
           id={`${prefix}-timezone`}
           name={`${prefix}.timezoneName`}
           label={`${label} — fuso horário IANA`}
@@ -323,23 +305,21 @@ function ScheduleFields({
           onChange={handleChange}
         />
         {choices && choices.length > 1 ? (
-          <div className="field">
-            <label htmlFor={`${prefix}-occurrence`}>{label} — ocorrência da hora</label>
-            <select
-              id={`${prefix}-occurrence`}
-              name={`${prefix}.occurrence`}
-              required
-              defaultValue=""
-            >
-              <option value="">Escolha a ocorrência</option>
-              {choices.map((instant, index) => (
-                <option key={instant} value={instant}>
-                  {index === 0 ? "Primeira ocorrência" : "Segunda ocorrência"} · UTC{" "}
-                  {instant.slice(11, 16)}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            id={`${prefix}-occurrence`}
+            name={`${prefix}.occurrence`}
+            label={`${label} — ocorrência da hora`}
+            required
+            defaultValue=""
+          >
+            <option value="">Escolha a ocorrência</option>
+            {choices.map((instant, index) => (
+              <option key={instant} value={instant}>
+                {index === 0 ? "Primeira ocorrência" : "Segunda ocorrência"} · UTC{" "}
+                {instant.slice(11, 16)}
+              </option>
+            ))}
+          </Select>
         ) : null}
       </div>
     </fieldset>
@@ -379,7 +359,7 @@ function TripForm({
       }}
     >
       <div className="admin-form__grid">
-        <InputField
+        <TextField
           id="admin-edit-trip-title"
           name="trip.title"
           label="Nome da viagem"
@@ -387,35 +367,28 @@ function TripForm({
           required
           maxLength={300}
         />
-        <InputField
+        <DateField
           id="admin-edit-trip-start"
           name="trip.startDate"
           label="Data de início"
-          type="date"
           defaultValue={workspace.trip.startDate}
           required
         />
-        <InputField
+        <DateField
           id="admin-edit-trip-end"
           name="trip.endDate"
           label="Data de fim"
-          type="date"
           defaultValue={workspace.trip.endDate}
           required
         />
       </div>
       <div className="admin-form__actions">
-        <button className="button button--primary" type="submit" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           {busy ? "A guardar…" : "Guardar viagem"}
-        </button>
-        <button
-          className="button button--secondary"
-          type="button"
-          onClick={onCancel}
-          disabled={busy}
-        >
+        </Button>
+        <Button variant="secondary" type="button" onClick={onCancel} disabled={busy}>
           Cancelar
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -448,7 +421,7 @@ function FlightForm({
       }}
     >
       <div className="admin-form__grid">
-        <InputField
+        <TextField
           id="flight-title"
           name="flight.title"
           label="Título do voo"
@@ -456,7 +429,7 @@ function FlightForm({
           required
           maxLength={300}
         />
-        <InputField
+        <TextField
           id="flight-carrier"
           name="flight.carrier"
           label="Transportadora"
@@ -464,7 +437,7 @@ function FlightForm({
           required
           maxLength={200}
         />
-        <InputField
+        <TextField
           id="flight-number"
           name="flight.flightNumber"
           label="Número do voo"
@@ -472,7 +445,7 @@ function FlightForm({
           required
           maxLength={50}
         />
-        <InputField
+        <TextField
           id="flight-departure-airport"
           name="flight.departureAirport"
           label="Aeroporto de partida (IATA)"
@@ -481,7 +454,7 @@ function FlightForm({
           minLength={3}
           maxLength={3}
         />
-        <InputField
+        <TextField
           id="flight-arrival-airport"
           name="flight.arrivalAirport"
           label="Aeroporto de chegada (IATA)"
@@ -491,7 +464,7 @@ function FlightForm({
           maxLength={3}
         />
       </div>
-      <TextAreaField
+      <TextArea
         id="flight-description"
         name="flight.description"
         label="Descrição do voo"
@@ -515,35 +488,35 @@ function FlightForm({
         onInputChange={onScheduleInputChange}
       />
       <div className="admin-form__grid">
-        <InputField
+        <TextField
           id="flight-terminal"
           name="flight.terminal"
           label="Terminal"
           defaultValue={item?.terminal ?? ""}
           maxLength={100}
         />
-        <InputField
+        <TextField
           id="flight-cabin"
           name="flight.cabin"
           label="Cabine"
           defaultValue={item?.cabin ?? ""}
           maxLength={100}
         />
-        <InputField
+        <TextField
           id="flight-baggage"
           name="flight.baggage"
           label="Bagagem"
           defaultValue={item?.baggage ?? ""}
           maxLength={500}
         />
-        <InputField
+        <TextField
           id="flight-seat"
           name="flight.seat"
           label="Lugar"
           defaultValue={item?.seat ?? ""}
           maxLength={50}
         />
-        <InputField
+        <TextField
           id="flight-reference"
           name="flight.customerBookingReference"
           label="Referência de reserva"
@@ -552,17 +525,12 @@ function FlightForm({
         />
       </div>
       <div className="admin-form__actions">
-        <button className="button button--primary" type="submit" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           {busy ? "A guardar…" : "Guardar voo"}
-        </button>
-        <button
-          className="button button--secondary"
-          type="button"
-          onClick={onCancel}
-          disabled={busy}
-        >
+        </Button>
+        <Button variant="secondary" type="button" onClick={onCancel} disabled={busy}>
           Cancelar
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -595,7 +563,7 @@ function AccommodationForm({
       }}
     >
       <div className="admin-form__grid">
-        <InputField
+        <TextField
           id="accommodation-title"
           name="accommodation.title"
           label="Título do alojamento"
@@ -603,7 +571,7 @@ function AccommodationForm({
           required
           maxLength={300}
         />
-        <InputField
+        <TextField
           id="accommodation-property"
           name="accommodation.propertyName"
           label="Estabelecimento"
@@ -612,7 +580,7 @@ function AccommodationForm({
           maxLength={300}
         />
       </div>
-      <TextAreaField
+      <TextArea
         id="accommodation-description"
         name="accommodation.description"
         label="Descrição do alojamento"
@@ -636,21 +604,21 @@ function AccommodationForm({
         onInputChange={onScheduleInputChange}
       />
       <div className="admin-form__grid">
-        <InputField
+        <TextField
           id="accommodation-room"
           name="accommodation.roomDescription"
           label="Quarto"
           defaultValue={item?.roomDescription ?? ""}
           maxLength={500}
         />
-        <InputField
+        <TextField
           id="accommodation-board"
           name="accommodation.boardType"
           label="Regime"
           defaultValue={item?.boardType ?? ""}
           maxLength={200}
         />
-        <InputField
+        <TextField
           id="accommodation-reference"
           name="accommodation.customerBookingReference"
           label="Referência de reserva"
@@ -659,17 +627,12 @@ function AccommodationForm({
         />
       </div>
       <div className="admin-form__actions">
-        <button className="button button--primary" type="submit" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           {busy ? "A guardar…" : "Guardar alojamento"}
-        </button>
-        <button
-          className="button button--secondary"
-          type="button"
-          onClick={onCancel}
-          disabled={busy}
-        >
+        </Button>
+        <Button variant="secondary" type="button" onClick={onCancel} disabled={busy}>
           Cancelar
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -731,6 +694,7 @@ function PreviewItems({ preview }: { readonly preview: TripPublicationPreview })
 }
 
 const SHARE_STATE_LABEL = { ACTIVE: "Ativo", EXPIRED: "Expirado", REVOKED: "Revogado" } as const;
+const SHARE_STATE_TONE = { ACTIVE: "success", EXPIRED: "warning", REVOKED: "danger" } as const;
 
 function ShareLinkList({
   links,
@@ -749,46 +713,60 @@ function ShareLinkList({
 }) {
   return (
     <section className="admin-publications" aria-labelledby="admin-share-links-title">
-      <div className="section-heading">
-        <h2 id="admin-share-links-title">Ligações partilhadas</h2>
-      </div>
-      {loading ? (
-        <p className="state-message" role="status" aria-live="polite">
-          A carregar ligações…
-        </p>
-      ) : errorMessage ? (
-        <div className="state-message state-message--error" role="alert">
-          <p>{errorMessage}</p>
-          <button className="button button--secondary" type="button" onClick={onRetry}>
-            Tentar novamente
-          </button>
-        </div>
-      ) : links?.links.length ? (
-        <ol className="admin-publication-list">
-          {links.links.map((link) => (
-            <li key={link.shareLinkId}>
-              <strong>{SHARE_STATE_LABEL[link.state]}</strong>
-              <span>
-                Criada em <time dateTime={link.createdAt}>{formatDateTimeUtc(link.createdAt)}</time>
-              </span>
-              <span>
-                Expira em <time dateTime={link.expiresAt}>{formatDateTimeUtc(link.expiresAt)}</time>
-              </span>
-              {link.state === "ACTIVE" ? (
-                <button
-                  className="button button--secondary"
-                  type="button"
-                  disabled={revokingId !== null}
-                  onClick={() => onRevoke(link.shareLinkId)}
-                >
-                  {revokingId === link.shareLinkId ? "A revogar…" : "Revogar"}
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ol>
+      <SectionHeading id="admin-share-links-title" title="Ligações partilhadas" />
+      {errorMessage ? (
+        <StateMessage
+          tone="error"
+          role="alert"
+          action={<Button onClick={onRetry}>Tentar novamente</Button>}
+        >
+          {errorMessage}
+        </StateMessage>
       ) : (
-        <p className="state-message">Ainda não existe nenhuma ligação partilhada.</p>
+        <Table
+          caption="Ligações partilhadas"
+          columns={[
+            {
+              key: "state",
+              header: "Estado",
+              cell: (link) => (
+                <StatusPill tone={SHARE_STATE_TONE[link.state]}>
+                  {SHARE_STATE_LABEL[link.state]}
+                </StatusPill>
+              ),
+            },
+            {
+              key: "created",
+              header: "Criada em",
+              cell: (link) => (
+                <time dateTime={link.createdAt}>{formatDateTimeUtc(link.createdAt)}</time>
+              ),
+            },
+            {
+              key: "expires",
+              header: "Expira em",
+              cell: (link) => (
+                <time dateTime={link.expiresAt}>{formatDateTimeUtc(link.expiresAt)}</time>
+              ),
+            },
+            {
+              key: "actions",
+              header: <span className="sr-only">Ações</span>,
+              align: "right",
+              cell: (link) =>
+                link.state === "ACTIVE" ? (
+                  <Button disabled={revokingId !== null} onClick={() => onRevoke(link.shareLinkId)}>
+                    {revokingId === link.shareLinkId ? "A revogar…" : "Revogar"}
+                  </Button>
+                ) : null,
+            },
+          ]}
+          rows={links?.links ?? []}
+          getRowKey={(link) => link.shareLinkId}
+          loading={loading}
+          loadingLabel="A carregar ligações…"
+          empty={<StateMessage>Ainda não existe nenhuma ligação partilhada.</StateMessage>}
+        />
       )}
     </section>
   );
@@ -840,7 +818,7 @@ function PublicationWorkflow({
       className="admin-publication-workflow"
       aria-labelledby="admin-publication-workflow-title"
     >
-      <div className="section-heading">
+      <div className="admin-section-intro">
         <div>
           <h2 id="admin-publication-workflow-title">Pré-visualização e partilha</h2>
           <p className="admin-form__hint">
@@ -848,19 +826,19 @@ function PublicationWorkflow({
             uma ligação revogável para o cliente.
           </p>
         </div>
-        <button
-          className="button button--secondary"
+        <Button
+          variant="secondary"
           type="button"
           onClick={onPreview}
           disabled={disabled || previewLoading || sharing}
         >
           {previewLoading ? "A preparar…" : "Pré-visualizar como cliente"}
-        </button>
+        </Button>
       </div>
       {feedback ? (
-        <p className="admin-form__message" role="alert">
+        <StateMessage tone="error" role="alert">
           {feedback}
-        </p>
+        </StateMessage>
       ) : null}
       {preview ? (
         <div className="admin-preview">
@@ -880,39 +858,30 @@ function PublicationWorkflow({
         </div>
       ) : null}
       <div className="admin-share">
-        <label>
-          Validade (dias)
-          <input
-            type="number"
-            min={1}
-            max={365}
-            inputMode="numeric"
-            placeholder="90"
-            value={expiresInDays}
-            onChange={(event) => onExpiresInDaysChange(event.target.value)}
-            disabled={disabled || sharing}
-          />
-        </label>
-        <button
-          className="button button--primary"
-          type="button"
-          onClick={onShare}
+        <TextField
+          label="Validade (dias)"
+          type="number"
+          min={1}
+          max={365}
+          inputMode="numeric"
+          placeholder="90"
+          value={expiresInDays}
+          onChange={(event) => onExpiresInDaysChange(event.target.value)}
           disabled={disabled || sharing}
-        >
+        />
+        <Button variant="primary" type="button" onClick={onShare} disabled={disabled || sharing}>
           {sharing ? "A partilhar…" : "Partilhar com o cliente"}
-        </button>
+        </Button>
       </div>
       {created ? (
-        <div className="admin-form__success" role="status" aria-live="polite">
+        <div className="admin-created-link" role="status" aria-live="polite">
           <p>
             <strong>Ligação criada.</strong> Copie-a agora: por segurança, só é mostrada uma vez.
           </p>
-          <p>
-            <input type="text" readOnly aria-label="Ligação para o cliente" value={created.url} />
-          </p>
-          <button className="button button--secondary" type="button" onClick={onCopy}>
+          <TextField label="Ligação para o cliente" type="text" readOnly value={created.url} />
+          <Button variant="secondary" type="button" onClick={onCopy}>
             Copiar link
-          </button>
+          </Button>
           {copyMessage ? <span> {copyMessage}</span> : null}
         </div>
       ) : null}
@@ -1259,39 +1228,37 @@ export function TripWorkspaceEditor({
         ))}
       </datalist>
       <section className="admin-workflow" aria-labelledby="admin-workspace-edit-title">
-        <div className="section-heading">
-          <h2 id="admin-workspace-edit-title">Editar espaço de trabalho</h2>
-        </div>
+        <SectionHeading id="admin-workspace-edit-title" title="Editar espaço de trabalho" />
         {feedback ? (
-          <p className="admin-form__message" role="alert">
+          <StateMessage tone="error" role="alert">
             {feedback}
-          </p>
+          </StateMessage>
         ) : null}
         <div className="admin-workflow__actions">
-          <button
-            className="button button--secondary"
+          <Button
+            variant="secondary"
             type="button"
             onClick={() => openEditor({ kind: "trip", itemId: null })}
             disabled={saving || sharing}
           >
             Editar viagem
-          </button>
-          <button
-            className="button button--secondary"
+          </Button>
+          <Button
+            variant="secondary"
             type="button"
             onClick={() => openEditor({ kind: "flight", itemId: null })}
             disabled={saving || sharing}
           >
             Adicionar voo
-          </button>
-          <button
-            className="button button--secondary"
+          </Button>
+          <Button
+            variant="secondary"
             type="button"
             onClick={() => openEditor({ kind: "accommodation", itemId: null })}
             disabled={saving || sharing}
           >
             Adicionar alojamento
-          </button>
+          </Button>
         </div>
         {activeEditor?.kind === "trip" ? (
           <TripForm workspace={workspace} busy={saving} onSave={saveTrip} onCancel={cancelEditor} />
@@ -1321,29 +1288,29 @@ export function TripWorkspaceEditor({
             {workspace.flights.map((item) => (
               <li key={item.id}>
                 <span>{item.title}</span>
-                <button
-                  className="button button--quiet"
+                <Button
+                  variant="ghost"
                   type="button"
                   aria-label={`Editar voo: ${item.title}`}
                   onClick={() => openEditor({ kind: "flight", itemId: item.id })}
                   disabled={saving || sharing}
                 >
                   Editar voo
-                </button>
+                </Button>
               </li>
             ))}
             {workspace.accommodations.map((item) => (
               <li key={item.id}>
                 <span>{item.title}</span>
-                <button
-                  className="button button--quiet"
+                <Button
+                  variant="ghost"
                   type="button"
                   aria-label={`Editar alojamento: ${item.title}`}
                   onClick={() => openEditor({ kind: "accommodation", itemId: item.id })}
                   disabled={saving || sharing}
                 >
                   Editar alojamento
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

@@ -1,5 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { FormEvent, InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type { FormEvent } from "react";
+
+import {
+  Button,
+  ButtonLink,
+  EmptyState,
+  PageHeader,
+  SectionHeading,
+  Select,
+  StateMessage,
+  StatusPill,
+  Table,
+  TextArea,
+  TextField,
+} from "@travelos/design-system";
+import type { StatusTone, TableColumn } from "@travelos/design-system";
 
 import {
   AdminApiError,
@@ -11,7 +26,6 @@ import {
   updateAdminLead,
 } from "./api.js";
 import { createIdempotencyKey } from "./trip-workflows.js";
-import "./leads.css";
 
 type AdminLead = Awaited<ReturnType<typeof getAdminLead>>;
 type LeadState = AdminLead["state"];
@@ -37,10 +51,10 @@ const stateLabel: Record<LeadState, string> = {
   DISQUALIFIED: "Desqualificada",
 };
 
-const stateTone: Record<LeadState, string> = {
-  OPEN: " state-pill--warning",
-  QUALIFIED: " state-pill--positive",
-  DISQUALIFIED: " state-pill--negative",
+const stateTone: Record<LeadState, StatusTone> = {
+  OPEN: "warning",
+  QUALIFIED: "success",
+  DISQUALIFIED: "danger",
 };
 
 const filterLabel: Record<LeadState, string> = {
@@ -118,33 +132,6 @@ const leadErrorMessage = (error: unknown): string => {
   }
 };
 
-type InputFieldProps = {
-  readonly id: string;
-  readonly label: string;
-} & InputHTMLAttributes<HTMLInputElement>;
-type TextAreaFieldProps = {
-  readonly id: string;
-  readonly label: string;
-} & TextareaHTMLAttributes<HTMLTextAreaElement>;
-
-function InputField({ id, label, ...inputProps }: InputFieldProps) {
-  return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <input id={id} {...inputProps} />
-    </div>
-  );
-}
-
-function TextAreaField({ id, label, ...inputProps }: TextAreaFieldProps) {
-  return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <textarea id={id} {...inputProps} />
-    </div>
-  );
-}
-
 function LeadFieldset({
   idPrefix,
   initial,
@@ -154,22 +141,20 @@ function LeadFieldset({
 }) {
   return (
     <div className="admin-form__grid">
-      <div className="field">
-        <label htmlFor={`${idPrefix}-source`}>Origem</label>
-        <select
-          id={`${idPrefix}-source`}
-          name="source"
-          required
-          defaultValue={initial?.source ?? "PHONE"}
-        >
-          {sourceOptions.map((source) => (
-            <option key={source} value={source}>
-              {sourceLabel[source]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <InputField
+      <Select
+        id={`${idPrefix}-source`}
+        name="source"
+        label="Origem"
+        required
+        defaultValue={initial?.source ?? "PHONE"}
+      >
+        {sourceOptions.map((source) => (
+          <option key={source} value={source}>
+            {sourceLabel[source]}
+          </option>
+        ))}
+      </Select>
+      <TextField
         id={`${idPrefix}-given-name`}
         name="contactGivenName"
         label="Nome próprio do contacto"
@@ -178,7 +163,7 @@ function LeadFieldset({
         autoComplete="off"
         defaultValue={initial?.contactGivenName ?? ""}
       />
-      <InputField
+      <TextField
         id={`${idPrefix}-family-name`}
         name="contactFamilyName"
         label="Apelido do contacto"
@@ -187,7 +172,7 @@ function LeadFieldset({
         autoComplete="off"
         defaultValue={initial?.contactFamilyName ?? ""}
       />
-      <InputField
+      <TextField
         id={`${idPrefix}-email`}
         name="contactEmail"
         label="Email do contacto"
@@ -196,7 +181,7 @@ function LeadFieldset({
         autoComplete="off"
         defaultValue={initial?.contactEmail ?? ""}
       />
-      <InputField
+      <TextField
         id={`${idPrefix}-phone`}
         name="contactPhone"
         label="Telefone do contacto"
@@ -207,7 +192,7 @@ function LeadFieldset({
         autoComplete="off"
         defaultValue={initial?.contactPhone ?? ""}
       />
-      <TextAreaField
+      <TextArea
         id={`${idPrefix}-note`}
         name="internalNote"
         label="Nota interna (visível só para a equipa)"
@@ -229,7 +214,7 @@ const readLeadFields = (formData: FormData): LeadFields => ({
 });
 
 function LeadStatePill({ state }: { readonly state: LeadState }) {
-  return <span className={`state-pill${stateTone[state]}`}>{stateLabel[state]}</span>;
+  return <StatusPill tone={stateTone[state]}>{stateLabel[state]}</StatusPill>;
 }
 
 function LeadCreateForm({
@@ -266,8 +251,8 @@ function LeadCreateForm({
   return (
     <section className="admin-create-trip" aria-labelledby="lead-create-heading">
       <div className="admin-workflow__actions">
-        <button
-          className="button button--primary"
+        <Button
+          variant="primary"
           type="button"
           aria-expanded={open}
           aria-controls="lead-create-form"
@@ -277,7 +262,7 @@ function LeadCreateForm({
           }}
         >
           {open ? "Cancelar" : "Novo lead"}
-        </button>
+        </Button>
       </div>
       {open ? (
         <form
@@ -295,14 +280,14 @@ function LeadCreateForm({
           </div>
           <LeadFieldset idPrefix="lead-create" initial={null} />
           {errorMessage ? (
-            <p className="admin-form__message" role="alert">
+            <StateMessage tone="error" role="alert">
               {errorMessage}
-            </p>
+            </StateMessage>
           ) : null}
           <div className="admin-form__actions">
-            <button className="button button--primary" type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {busy ? "A guardar…" : "Guardar lead"}
-            </button>
+            </Button>
           </div>
         </form>
       ) : null}
@@ -384,14 +369,35 @@ function LeadList({ onAuthenticationRequired }: { readonly onAuthenticationRequi
     }
   };
 
+  const columns: readonly TableColumn<AdminLead>[] = [
+    {
+      key: "name",
+      header: "Lead",
+      cell: (lead) => (
+        <a
+          className="ds-table__link"
+          href={`#/leads/${encodeURIComponent(lead.id)}`}
+          aria-label={`Abrir lead: ${leadName(lead)}`}
+        >
+          {leadName(lead)}
+        </a>
+      ),
+    },
+    { key: "source", header: "Origem", cell: (lead) => sourceLabel[lead.source] },
+    {
+      key: "created",
+      header: "Registado em",
+      cell: (lead) => <time dateTime={lead.createdAt}>{formatInstant(lead.createdAt)}</time>,
+    },
+    { key: "state", header: "Estado", cell: (lead) => <LeadStatePill state={lead.state} /> },
+  ];
+
   return (
     <>
-      <header className="page-heading">
-        <div>
-          <h1>Leads</h1>
-          <p>Interesses comerciais por qualificar, qualificados em clientes ou desqualificados.</p>
-        </div>
-      </header>
+      <PageHeader
+        title="Leads"
+        description="Interesses comerciais por qualificar, qualificados em clientes ou desqualificados."
+      />
       <LeadCreateForm
         onCreated={(lead) => {
           window.location.hash = `#/leads/${encodeURIComponent(lead.id)}`;
@@ -400,84 +406,63 @@ function LeadList({ onAuthenticationRequired }: { readonly onAuthenticationRequi
       />
       <div className="lead-filter" role="group" aria-label="Filtrar leads por estado">
         {filterOptions.map((option) => (
-          <button
+          <Button
             key={option}
-            className={`button ${filter === option ? "button--primary" : "button--secondary"}`}
-            type="button"
+            variant={filter === option ? "primary" : "secondary"}
             aria-pressed={filter === option}
             onClick={() => setFilter(option)}
           >
             {filterLabel[option]}
-          </button>
+          </Button>
         ))}
       </div>
       <section aria-labelledby="lead-list-heading" aria-busy={list.kind === "loading"}>
-        <div className="section-heading">
-          <h2 id="lead-list-heading">{filterLabel[filter]}</h2>
-          {list.kind === "ready" ? (
-            <span className="section-heading__meta">{list.items.length} nesta página</span>
-          ) : null}
-        </div>
-        {list.kind === "loading" ? (
-          <p className="state-message" role="status" aria-live="polite">
-            A carregar leads…
-          </p>
-        ) : list.kind === "denied" ? (
-          <p className="state-message state-message--error" role="alert">
-            Não tem permissão para consultar os leads desta agência.
-          </p>
+        <SectionHeading
+          id="lead-list-heading"
+          title={filterLabel[filter]}
+          meta={list.kind === "ready" ? `${list.items.length} nesta página` : undefined}
+        />
+        {list.kind === "denied" ? (
+          <EmptyState
+            tone="error"
+            role="alert"
+            title="Acesso não autorizado"
+            description="Não tem permissão para consultar os leads desta agência."
+          />
         ) : list.kind === "error" ? (
-          <div className="state-message state-message--error" role="alert">
-            <p>{list.message}</p>
-            <button
-              className="button button--secondary"
-              type="button"
-              onClick={() => setReloadKey((key) => key + 1)}
-            >
-              Tentar novamente
-            </button>
-          </div>
-        ) : list.items.length === 0 ? (
-          <p className="state-message">Não existem leads neste estado.</p>
+          <EmptyState
+            tone="error"
+            role="alert"
+            title="Não foi possível carregar os leads"
+            description={list.message}
+            action={
+              <Button onClick={() => setReloadKey((key) => key + 1)}>Tentar novamente</Button>
+            }
+          />
         ) : (
           <>
-            <ul className="lead-list" aria-label={`Leads: ${filterLabel[filter]}`}>
-              {list.items.map((lead) => (
-                <li className="lead-row" key={lead.id}>
-                  <div className="lead-row__identity">
-                    <a
-                      className="lead-row__title"
-                      href={`#/leads/${encodeURIComponent(lead.id)}`}
-                      aria-label={`Abrir lead: ${leadName(lead)}`}
-                    >
-                      {leadName(lead)}
-                    </a>
-                    <p className="lead-row__meta">{sourceLabel[lead.source]}</p>
-                  </div>
-                  <p className="lead-row__date">
-                    <time dateTime={lead.createdAt}>{formatInstant(lead.createdAt)}</time>
-                  </p>
-                  <LeadStatePill state={lead.state} />
-                </li>
-              ))}
-            </ul>
-            {list.loadMoreError ? (
-              <p className="admin-form__message" role="alert">
+            <Table
+              caption={`Leads: ${filterLabel[filter]}`}
+              columns={columns}
+              rows={list.kind === "ready" ? list.items : []}
+              getRowKey={(lead) => lead.id}
+              loading={list.kind === "loading"}
+              loadingLabel="A carregar leads…"
+              empty={<EmptyState title="Não existem leads neste estado." />}
+              pagination={
+                list.kind === "ready"
+                  ? {
+                      hasMore: list.nextCursor !== null,
+                      onLoadMore: () => void loadMore(),
+                      loadingMore: list.loadingMore,
+                    }
+                  : undefined
+              }
+            />
+            {list.kind === "ready" && list.loadMoreError ? (
+              <StateMessage tone="error" role="alert">
                 {list.loadMoreError}
-              </p>
-            ) : null}
-            {list.nextCursor !== null ? (
-              <div className="state-message__actions">
-                <button
-                  className="button button--secondary"
-                  type="button"
-                  onClick={() => void loadMore()}
-                  disabled={list.loadingMore}
-                  aria-busy={list.loadingMore}
-                >
-                  {list.loadingMore ? "A carregar…" : "Carregar mais"}
-                </button>
-              </div>
+              </StateMessage>
             ) : null}
           </>
         )}
@@ -603,39 +588,41 @@ function LeadDetail({
   };
 
   if (detail.kind === "loading") {
-    return (
-      <p className="state-message" role="status" aria-live="polite">
-        A carregar o lead…
-      </p>
-    );
+    return <StateMessage role="status">A carregar o lead…</StateMessage>;
   }
   if (detail.kind === "denied") {
     return (
-      <section className="state-message state-message--error" aria-labelledby="lead-denied-title">
-        <h1 id="lead-denied-title">Acesso não autorizado</h1>
-        <p>Não tem permissão para consultar este lead.</p>
-      </section>
+      <EmptyState
+        tone="error"
+        headingLevel={1}
+        title="Acesso não autorizado"
+        description="Não tem permissão para consultar este lead."
+      />
     );
   }
   if (detail.kind === "not-found") {
     return (
-      <section className="state-message" aria-labelledby="lead-not-found-title">
-        <h1 id="lead-not-found-title">Lead não encontrado</h1>
-        <p>Este lead não está disponível nesta agência.</p>
-        <a className="detail-back" href="#/leads">
-          ← Voltar aos leads
-        </a>
-      </section>
+      <EmptyState
+        headingLevel={1}
+        title="Lead não encontrado"
+        description="Este lead não está disponível nesta agência."
+        action={
+          <ButtonLink variant="secondary" href="#/leads">
+            ← Voltar aos leads
+          </ButtonLink>
+        }
+      />
     );
   }
   if (detail.kind === "error") {
     return (
-      <div className="state-message state-message--error" role="alert">
-        <p>{detail.message}</p>
-        <button className="button button--secondary" type="button" onClick={reload}>
-          Tentar novamente
-        </button>
-      </div>
+      <StateMessage
+        tone="error"
+        role="alert"
+        action={<Button onClick={reload}>Tentar novamente</Button>}
+      >
+        {detail.message}
+      </StateMessage>
     );
   }
 
@@ -697,40 +684,37 @@ function LeadDetail({
 
   return (
     <>
-      <a className="detail-back" href="#/leads">
-        ← Voltar aos leads
-      </a>
-      <header className="page-heading">
-        <div>
-          <h1>{leadName(lead)}</h1>
-          <p>Lead · os dados de contacto e a nota interna são visíveis apenas à equipa.</p>
-        </div>
-        <LeadStatePill state={lead.state} />
-      </header>
+      <PageHeader
+        back={{ href: "#/leads", label: "← Voltar aos leads" }}
+        title={leadName(lead)}
+        description="Lead · os dados de contacto e a nota interna são visíveis apenas à equipa."
+        status={<LeadStatePill state={lead.state} />}
+      />
       {success ? (
-        <p className="admin-form__success" role="status">
+        <StateMessage tone="success" role="status">
           {success}
-        </p>
+        </StateMessage>
       ) : null}
       {conflict ? (
-        <div className="state-message state-message--error" role="alert">
-          <p>{LEAD_CONFLICT_MESSAGE}</p>
-          <button className="button button--secondary" type="button" onClick={reload}>
-            Recarregar lead
-          </button>
-        </div>
+        <StateMessage
+          tone="error"
+          role="alert"
+          action={<Button onClick={reload}>Recarregar lead</Button>}
+        >
+          {LEAD_CONFLICT_MESSAGE}
+        </StateMessage>
       ) : null}
       {feedback ? (
-        <p className="admin-form__message" role="alert">
+        <StateMessage tone="error" role="alert">
           {feedback}
-        </p>
+        </StateMessage>
       ) : null}
       <LeadSummary lead={lead} />
       {isOpen ? (
         <>
           <div className="admin-workflow__actions lead-actions">
-            <button
-              className="button button--primary"
+            <Button
+              variant="primary"
               type="button"
               aria-expanded={panel === "qualify"}
               aria-controls="lead-qualify-form"
@@ -738,9 +722,9 @@ function LeadDetail({
               onClick={() => setPanel(panel === "qualify" ? "none" : "qualify")}
             >
               Qualificar
-            </button>
-            <button
-              className="button button--secondary"
+            </Button>
+            <Button
+              variant="secondary"
               type="button"
               aria-expanded={panel === "disqualify"}
               aria-controls="lead-disqualify-form"
@@ -748,7 +732,7 @@ function LeadDetail({
               onClick={() => setPanel(panel === "disqualify" ? "none" : "disqualify")}
             >
               Desqualificar
-            </button>
+            </Button>
           </div>
           {panel === "qualify" ? (
             <form
@@ -791,7 +775,7 @@ function LeadDetail({
                 </div>
               </fieldset>
               {qualifyMode === "CREATE_CUSTOMER" ? (
-                <InputField
+                <TextField
                   id="lead-qualify-display-name"
                   name="customerDisplayName"
                   label="Nome do cliente (opcional)"
@@ -800,7 +784,7 @@ function LeadDetail({
                   autoComplete="off"
                 />
               ) : (
-                <InputField
+                <TextField
                   id="lead-qualify-customer-id"
                   name="customerId"
                   label="Identificador do cliente existente"
@@ -811,9 +795,9 @@ function LeadDetail({
                 />
               )}
               <div className="admin-form__actions">
-                <button className="button button--primary" type="submit" disabled={busy}>
+                <Button variant="primary" type="submit" disabled={busy}>
                   {busy ? "A qualificar…" : "Confirmar qualificação"}
-                </button>
+                </Button>
               </div>
             </form>
           ) : null}
@@ -831,23 +815,26 @@ function LeadDetail({
                   O lead é mantido com o motivo indicado e deixa de poder ser alterado.
                 </p>
               </div>
-              <div className="field">
-                <label htmlFor="lead-disqualify-reason">Motivo</label>
-                <select id="lead-disqualify-reason" name="reason" required defaultValue="">
-                  <option value="" disabled>
-                    Selecione um motivo
+              <Select
+                id="lead-disqualify-reason"
+                name="reason"
+                label="Motivo"
+                required
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Selecione um motivo
+                </option>
+                {reasonOptions.map((reason) => (
+                  <option key={reason} value={reason}>
+                    {reasonLabel[reason]}
                   </option>
-                  {reasonOptions.map((reason) => (
-                    <option key={reason} value={reason}>
-                      {reasonLabel[reason]}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                ))}
+              </Select>
               <div className="admin-form__actions">
-                <button className="button button--primary" type="submit" disabled={busy}>
+                <Button variant="primary" type="submit" disabled={busy}>
                   {busy ? "A desqualificar…" : "Confirmar desqualificação"}
-                </button>
+                </Button>
               </div>
             </form>
           ) : null}
@@ -867,16 +854,16 @@ function LeadDetail({
             </div>
             <LeadFieldset idPrefix="lead-edit" initial={lead} />
             <div className="admin-form__actions">
-              <button className="button button--primary" type="submit" disabled={busy}>
+              <Button variant="primary" type="submit" disabled={busy}>
                 {busy ? "A guardar…" : "Guardar alterações"}
-              </button>
+              </Button>
             </div>
           </form>
         </>
       ) : (
-        <p className="state-message">
+        <StateMessage>
           Este lead está {stateLabel[lead.state].toLowerCase()} e já não pode ser alterado.
-        </p>
+        </StateMessage>
       )}
     </>
   );

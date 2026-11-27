@@ -1,4 +1,15 @@
-import { WorkspaceFrame } from "@travelos/design-system";
+import {
+  Button,
+  ButtonLink,
+  EmptyState,
+  PageHeader,
+  SectionHeading,
+  StateMessage,
+  StatusPill,
+  Table,
+  WorkspaceFrame,
+} from "@travelos/design-system";
+import type { StatusTone, TableColumn } from "@travelos/design-system";
 import type { getAdminTripWorkspace, listAdminTrips } from "./api.js";
 import { LeadsView } from "./leads-view.js";
 import { StaffInvitationsView } from "./staff-invitations-view.js";
@@ -28,7 +39,16 @@ export type AdminWorkspaceState =
   | { readonly kind: "ready"; readonly workspace: AdminWorkspace };
 
 interface AdminWorkspaceViewProps {
-  readonly page: "overview" | "trips" | "leads" | "lead-detail" | "staff-invitations" | "detail";
+  readonly page:
+    | "overview"
+    | "trips"
+    | "leads"
+    | "lead-detail"
+    | "staff-invitations"
+    | "detail"
+    | "customers"
+    | "quotes"
+    | "tasks";
   readonly leadId: string | null;
   readonly canInviteStaff: boolean;
   readonly trips: AdminTripsState;
@@ -65,12 +85,38 @@ const tripStateLabel: Record<AdminTrip["state"], string> = {
   CANCELLED: "Cancelada",
 };
 
-const tripStateTone = (state: AdminTrip["state"]): string => {
-  if (state === "CONFIRMED" || state === "IN_OPERATION") return " state-pill--positive";
-  if (state === "CANCELLED") return " state-pill--negative";
-  if (state === "DRAFT") return " state-pill--warning";
-  return "";
+const tripStateTone = (state: AdminTrip["state"]): StatusTone => {
+  if (state === "CONFIRMED" || state === "IN_OPERATION") return "success";
+  if (state === "CANCELLED") return "danger";
+  if (state === "DRAFT") return "warning";
+  return "neutral";
 };
+
+const tripColumns: readonly TableColumn<AdminTrip>[] = [
+  {
+    key: "title",
+    header: "Viagem",
+    cell: (trip) => (
+      <a
+        className="ds-table__link"
+        href={`#/viagens/${encodeURIComponent(trip.id)}`}
+        aria-label={`Abrir viagem: ${trip.title}`}
+      >
+        {trip.title}
+      </a>
+    ),
+  },
+  {
+    key: "dates",
+    header: "Datas",
+    cell: (trip) => formatDateRange(trip.startDate, trip.endDate),
+  },
+  {
+    key: "state",
+    header: "Estado",
+    cell: (trip) => <TripStatePill state={trip.state} />,
+  },
+];
 
 function TripsList({
   state,
@@ -83,92 +129,67 @@ function TripsList({
   readonly onLoadMore: () => void;
   readonly showAll: boolean;
 }) {
-  if (state.kind === "loading") {
-    return (
-      <p className="state-message" role="status" aria-live="polite">
-        A carregar viagens…
-      </p>
-    );
-  }
-
   if (state.kind === "denied") {
     return (
-      <section className="state-message state-message--error" aria-labelledby="trips-denied-title">
-        <h1 id="trips-denied-title">Acesso não autorizado</h1>
-        <p>Não tem permissão para consultar as viagens desta agência.</p>
-      </section>
+      <EmptyState
+        tone="error"
+        headingLevel={1}
+        title="Acesso não autorizado"
+        description="Não tem permissão para consultar as viagens desta agência."
+      />
     );
   }
 
   if (state.kind === "error") {
     return (
-      <div className="state-message state-message--error" role="alert">
-        <p>{state.message}</p>
-        <div className="state-message__actions">
-          <button className="button button--secondary" type="button" onClick={onRetry}>
-            Tentar novamente
-          </button>
-        </div>
-      </div>
+      <StateMessage
+        tone="error"
+        role="alert"
+        action={<Button onClick={onRetry}>Tentar novamente</Button>}
+      >
+        {state.message}
+      </StateMessage>
     );
   }
 
-  const items = showAll ? state.items : state.items.slice(0, 5);
-  if (items.length === 0) {
-    return <p className="state-message">Ainda não existem viagens para apresentar.</p>;
-  }
-
+  const ready = state.kind === "ready";
+  const items = ready ? (showAll ? state.items : state.items.slice(0, 5)) : [];
   return (
     <>
-      <ul className="trip-list" aria-label="Viagens">
-        {items.map((trip) => (
-          <li className="trip-row" key={trip.id}>
-            <div className="trip-row__identity">
-              <a
-                className="trip-row__title"
-                href={`#/trips/${encodeURIComponent(trip.id)}`}
-                aria-label={`Abrir viagem: ${trip.title}`}
-              >
-                {trip.title}
-              </a>
-            </div>
-            <p className="trip-row__date">{formatDateRange(trip.startDate, trip.endDate)}</p>
-            <span className={`state-pill trip-row__state${tripStateTone(trip.state)}`}>
-              {tripStateLabel[trip.state]}
-            </span>
-            <span className="trip-row__action" aria-hidden="true">
-              →
-            </span>
-          </li>
-        ))}
-      </ul>
-      {showAll && state.loadMoreError ? (
-        <div className="state-message state-message--error" role="alert">
-          <p>{state.loadMoreError}</p>
-          <button className="button button--secondary" type="button" onClick={onLoadMore}>
-            Tentar novamente
-          </button>
-        </div>
-      ) : null}
-      {showAll && state.nextCursor !== null ? (
-        <div className="state-message__actions">
-          <button
-            className="button button--secondary"
-            type="button"
-            onClick={onLoadMore}
-            disabled={state.loadingMore}
-            aria-busy={state.loadingMore}
-          >
-            {state.loadingMore ? "A carregar…" : "Carregar mais viagens"}
-          </button>
-        </div>
+      <Table
+        caption="Viagens"
+        columns={tripColumns}
+        rows={items}
+        getRowKey={(trip) => trip.id}
+        loading={state.kind === "loading"}
+        loadingLabel="A carregar viagens…"
+        empty={<StateMessage>Ainda não existem viagens para apresentar.</StateMessage>}
+        pagination={
+          ready && showAll
+            ? {
+                hasMore: state.nextCursor !== null,
+                onLoadMore,
+                loadingMore: state.loadingMore,
+                loadMoreLabel: "Carregar mais viagens",
+              }
+            : undefined
+        }
+      />
+      {ready && showAll && state.loadMoreError ? (
+        <StateMessage
+          tone="error"
+          role="alert"
+          action={<Button onClick={onLoadMore}>Tentar novamente</Button>}
+        >
+          {state.loadMoreError}
+        </StateMessage>
       ) : null}
     </>
   );
 }
 
 function TripStatePill({ state }: { readonly state: AdminTrip["state"] }) {
-  return <span className={`state-pill${tripStateTone(state)}`}>{tripStateLabel[state]}</span>;
+  return <StatusPill tone={tripStateTone(state)}>{tripStateLabel[state]}</StatusPill>;
 }
 
 function DetailError({
@@ -179,35 +200,35 @@ function DetailError({
   readonly onRetry: () => void;
 }) {
   if (state.kind === "loading") {
-    return (
-      <p className="state-message" role="status" aria-live="polite">
-        A carregar o itinerário…
-      </p>
-    );
+    return <StateMessage role="status">A carregar o itinerário…</StateMessage>;
   }
   if (state.kind === "denied") {
     return (
-      <section className="state-message state-message--error" aria-labelledby="trip-denied-title">
-        <h1 id="trip-denied-title">Acesso não autorizado</h1>
-        <p>Não tem permissão para consultar esta viagem.</p>
-      </section>
+      <EmptyState
+        tone="error"
+        headingLevel={1}
+        title="Acesso não autorizado"
+        description="Não tem permissão para consultar esta viagem."
+      />
     );
   }
   if (state.kind === "not-found") {
     return (
-      <section className="state-message" aria-labelledby="trip-not-found-title">
-        <h1 id="trip-not-found-title">Viagem não encontrada</h1>
-        <p>Esta viagem não está disponível neste espaço de operações.</p>
-      </section>
+      <EmptyState
+        headingLevel={1}
+        title="Viagem não encontrada"
+        description="Esta viagem não está disponível neste espaço de operações."
+      />
     );
   }
   return (
-    <div className="state-message state-message--error" role="alert">
-      <p>{state.message}</p>
-      <button className="button button--secondary" type="button" onClick={onRetry}>
-        Tentar novamente
-      </button>
-    </div>
+    <StateMessage
+      tone="error"
+      role="alert"
+      action={<Button onClick={onRetry}>Tentar novamente</Button>}
+    >
+      {state.message}
+    </StateMessage>
   );
 }
 
@@ -317,16 +338,12 @@ function TripDetail({
 
   return (
     <>
-      <a className="detail-back" href="#/trips">
-        ← Voltar às viagens
-      </a>
-      <header className="page-heading">
-        <div>
-          <h1>{trip.title}</h1>
-          <p>Itinerário de trabalho · Os dados apresentados pertencem ao espaço de operações.</p>
-        </div>
-        <TripStatePill state={trip.state} />
-      </header>
+      <PageHeader
+        back={{ href: "#/viagens", label: "← Voltar às viagens" }}
+        title={trip.title}
+        description="Itinerário de trabalho · Os dados apresentados pertencem ao espaço de operações."
+        status={<TripStatePill state={trip.state} />}
+      />
       <div className="trip-detail-summary">
         <span className="trip-detail-summary__date">
           {formatDateRange(trip.startDate, trip.endDate)}
@@ -336,11 +353,9 @@ function TripDetail({
         </span>
       </div>
       <section aria-labelledby="admin-itinerary-heading">
-        <div className="section-heading">
-          <h2 id="admin-itinerary-heading">Itinerário</h2>
-        </div>
+        <SectionHeading id="admin-itinerary-heading" title="Itinerário" />
         {events.length === 0 ? (
-          <p className="state-message">Ainda não existem serviços neste itinerário.</p>
+          <StateMessage>Ainda não existem serviços neste itinerário.</StateMessage>
         ) : (
           <ol className="itinerary-list">
             {events.map((event) => (
@@ -388,49 +403,43 @@ export function AdminWorkspaceView({
     page === "overview"
       ? "#/"
       : page === "staff-invitations"
-        ? "#/staff/invitations"
+        ? "#/equipa"
         : page === "leads" || page === "lead-detail"
           ? "#/leads"
-          : "#/trips";
-  const headerContext =
-    page === "overview"
-      ? "Visão geral"
-      : page === "trips"
-        ? "Viagens"
-        : page === "leads"
-          ? "Leads"
-          : page === "lead-detail"
-            ? "Detalhe do lead"
-            : page === "staff-invitations"
-              ? "Convites de equipa"
-              : "Detalhe da viagem";
+          : page === "customers"
+            ? "#/clientes"
+            : page === "quotes"
+              ? "#/orcamentos"
+              : page === "tasks"
+                ? "#/tarefas"
+                : "#/viagens";
+  const navigation = [
+    { href: "#/", label: "Hoje" },
+    { href: "#/clientes", label: "Clientes" },
+    { href: "#/leads", label: "Leads" },
+    { href: "#/orcamentos", label: "Orçamentos" },
+    { href: "#/viagens", label: "Viagens" },
+    { href: "#/tarefas", label: "Tarefas" },
+    ...(canInviteStaff ? [{ href: "#/equipa", label: "Equipa" }] : []),
+  ];
+  const headerContext = navigation.find((item) => item.href === activeHref)?.label ?? "";
 
   return (
     <WorkspaceFrame
       realm="Staff"
-      headerContext={headerContext}
-      navigation={[
-        { href: "#/", label: "Visão geral" },
-        { href: "#/trips", label: "Viagens" },
-        { href: "#/leads", label: "Leads" },
-        ...(canInviteStaff ? [{ href: "#/staff/invitations", label: "Convites de equipa" }] : []),
-      ]}
+      headerContext={page === "detail" ? "Detalhe da viagem" : headerContext}
+      navigation={navigation}
       activeHref={activeHref}
       headerActions={
-        <button
-          className="button button--quiet"
-          type="button"
-          onClick={onSignOut}
-          disabled={signingOut}
-        >
+        <Button variant="ghost" onClick={onSignOut} loading={signingOut}>
           {signingOut ? "A terminar…" : "Terminar sessão"}
-        </button>
+        </Button>
       }
     >
       {signOutError ? (
-        <p className="state-message state-message--error" role="alert">
+        <StateMessage tone="error" role="alert">
           {signOutError}
-        </p>
+        </StateMessage>
       ) : null}
       {page === "leads" || page === "lead-detail" ? (
         <LeadsView
@@ -446,23 +455,36 @@ export function AdminWorkspaceView({
         />
       ) : page === "staff-invitations" ? (
         <StaffInvitationsView onAuthenticationRequired={onAuthenticationRequired} />
+      ) : page === "customers" || page === "quotes" || page === "tasks" ? (
+        <>
+          <PageHeader title={headerContext} />
+          <EmptyState
+            title="Em breve"
+            description="Esta secção ainda está em preparação. Por agora, trabalhe a partir de Leads e Viagens."
+            action={
+              <ButtonLink variant="secondary" href="#/viagens">
+                Ver viagens
+              </ButtonLink>
+            }
+          />
+        </>
       ) : (
         <>
-          <header className="page-heading">
-            <div>
-              <h1>{page === "overview" ? "Visão geral" : "Viagens"}</h1>
-              <p>
-                {page === "overview"
-                  ? "Viagens disponíveis no espaço de operações da agência."
-                  : "Consulte as viagens disponíveis para a equipa."}
-              </p>
-            </div>
-            {page === "overview" ? (
-              <a className="button button--secondary" href="#/trips">
-                Ver viagens
-              </a>
-            ) : null}
-          </header>
+          <PageHeader
+            title={page === "overview" ? "Hoje" : "Viagens"}
+            description={
+              page === "overview"
+                ? "Viagens recentes e o que a equipa tem em mãos."
+                : "Consulte as viagens disponíveis para a equipa."
+            }
+            actions={
+              page === "overview" ? (
+                <ButtonLink variant="secondary" href="#/viagens">
+                  Ver viagens
+                </ButtonLink>
+              ) : undefined
+            }
+          />
           {page === "trips" ? (
             <TripCreateForm
               onCreated={onTripCreated}
@@ -473,14 +495,11 @@ export function AdminWorkspaceView({
             <TripsList state={trips} onRetry={onRetryTrips} onLoadMore={onLoadMore} showAll />
           ) : (
             <section aria-labelledby="admin-trips-heading" aria-busy={trips.kind === "loading"}>
-              <div className="section-heading">
-                <h2 id="admin-trips-heading">
-                  {page === "overview" ? "Viagens recentes" : "Todas as viagens"}
-                </h2>
-                {trips.kind === "ready" ? (
-                  <span className="section-heading__meta">{trips.items.length} nesta página</span>
-                ) : null}
-              </div>
+              <SectionHeading
+                id="admin-trips-heading"
+                title={page === "overview" ? "Viagens recentes" : "Todas as viagens"}
+                meta={trips.kind === "ready" ? `${trips.items.length} nesta página` : undefined}
+              />
               <TripsList
                 state={trips}
                 onRetry={onRetryTrips}
