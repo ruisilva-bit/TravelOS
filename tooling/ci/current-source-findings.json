@@ -185,6 +185,27 @@
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
+      "path": "packages/backend-core/test/crm/crm-domain.test.ts",
+      "rule": "email-address",
+      "lineSha256": "4b8a12fe0726c3ace9bfd79d475adbde0d8064a4f528c09f3592e00424af7685",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture uses a reserved example.test address; no real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/crm/crm-domain.test.ts",
+      "rule": "email-address",
+      "lineSha256": "4c2274f2cb2b1409a93d7c63b927742855a99fe9811d4c84a3169c1ad904f0cc",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture uses a reserved example.test address; no real-person data."
+    },
+    {
+      "path": "packages/backend-core/test/crm/crm-domain.test.ts",
+      "rule": "email-address",
+      "lineSha256": "6f1abfa069f6a0a060d4afd491690f1a5a1f908ae43ff2ae816913fbc9647420",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture uses a reserved example.test address; no real-person data."
+    },
+    {
       "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
       "rule": "email-address",
       "lineSha256": "35a6d69da5828c4ff93f80cecb13471262e5a6e6987b744397f84483d15b8a45",
