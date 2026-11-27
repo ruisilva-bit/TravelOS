@@ -50,9 +50,8 @@ const dependencyUniverse = await discoverProductionDependencyUniverse({
   sourceDiscovery,
 });
 const expectedNonTypeScriptAssetDependencies = [
-  "apps/admin-web/src/leads-view.tsx\0./leads.css",
+  "apps/admin-web/src/main.tsx\0./screens.css",
   "apps/admin-web/src/main.tsx\0@travelos/design-system/styles.css",
-  "apps/admin-web/src/staff-invitations-view.tsx\0./staff-invitations.css",
 ];
 const actualNonTypeScriptAssetDependencies = dependencyUniverse.nonTypeScriptAssetDependencies
   .map(({ file, specifier }) => `${file}\0${specifier}`)

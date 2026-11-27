@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 
-import { TravelOSMark } from "@travelos/design-system";
+import { Button, TextArea, TextField, TravelOSMark } from "@travelos/design-system";
 
 export type StaffMfaMethod = "totp" | "backup";
 
@@ -39,35 +39,33 @@ export function StaffLoginView({ busy, error, onSubmit }: StaffLoginViewProps) {
           aria-busy={busy}
           onSubmit={(event) => void submit(event)}
         >
-          <div className="field">
-            <label htmlFor="staff-email">Email profissional</label>
-            <input
-              id="staff-email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.currentTarget.value)}
-              disabled={busy}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="staff-password">Palavra-passe</label>
-            <input
-              id="staff-password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.currentTarget.value)}
-              disabled={busy}
-            />
-          </div>
-          <button className="button button--primary" type="submit" disabled={busy}>
+          <TextField
+            id="staff-email"
+            label="Email profissional"
+
+            name="email"
+            type="email"
+            autoComplete="username"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.currentTarget.value)}
+            disabled={busy}
+          />
+          <TextField
+            id="staff-password"
+            label="Palavra-passe"
+
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.currentTarget.value)}
+            disabled={busy}
+          />
+          <Button variant="primary" type="submit" loading={busy}>
             {busy ? "A autenticar…" : "Entrar"}
-          </button>
+          </Button>
         </form>
         <p className="auth-message" role="alert">
           {error}
@@ -120,25 +118,22 @@ export function StaffMfaView({ busy, error, onVerify }: StaffMfaViewProps) {
           aria-busy={busy}
           onSubmit={(event) => void submit(event)}
         >
-          <div className="field">
-            <label htmlFor="staff-mfa-code">
-              {method === "totp" ? "Código de autenticação" : "Código de recuperação"}
-            </label>
-            <input
-              id="staff-mfa-code"
-              name="code"
-              type="text"
-              inputMode={method === "totp" ? "numeric" : "text"}
-              autoComplete={method === "totp" ? "one-time-code" : "off"}
-              required
-              value={code}
-              onChange={(event) => setCode(event.currentTarget.value)}
-              disabled={busy}
-            />
-          </div>
-          <button className="button button--primary" type="submit" disabled={busy}>
+          <TextField
+            id="staff-mfa-code"
+            label={method === "totp" ? "Código de autenticação" : "Código de recuperação"}
+
+            name="code"
+            type="text"
+            inputMode={method === "totp" ? "numeric" : "text"}
+            autoComplete={method === "totp" ? "one-time-code" : "off"}
+            required
+            value={code}
+            onChange={(event) => setCode(event.currentTarget.value)}
+            disabled={busy}
+          />
+          <Button variant="primary" type="submit" loading={busy}>
             {busy ? "A validar…" : "Confirmar"}
-          </button>
+          </Button>
           <button
             className="auth-form__switch"
             type="button"
@@ -238,22 +233,21 @@ export function StaffMfaSetupView({
             aria-busy={busy}
             onSubmit={(event) => void enable(event)}
           >
-            <div className="field">
-              <label htmlFor="staff-mfa-setup-password">Palavra-passe atual</label>
-              <input
-                id="staff-mfa-setup-password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.currentTarget.value)}
-                disabled={busy}
-              />
-            </div>
-            <button className="button button--primary" type="submit" disabled={busy}>
+            <TextField
+              id="staff-mfa-setup-password"
+              label="Palavra-passe atual"
+
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.currentTarget.value)}
+              disabled={busy}
+            />
+            <Button variant="primary" type="submit" loading={busy}>
               {busy ? "A preparar…" : "Ativar autenticação"}
-            </button>
+            </Button>
           </form>
         ) : null}
         {stage === "recovery" && enrollment ? (
@@ -262,18 +256,16 @@ export function StaffMfaSetupView({
             <p className="auth-card__intro">
               Guarde estes códigos num local seguro. Cada código só pode ser utilizado uma vez.
             </p>
-            <div className="field">
-              <label htmlFor="staff-mfa-setup-uri">URI de configuração TOTP</label>
-              <textarea
-                id="staff-mfa-setup-uri"
-                className="staff-mfa-setup__uri"
-                rows={3}
-                readOnly
-                spellCheck={false}
-                autoComplete="off"
-                value={enrollment.totpURI}
-              />
-            </div>
+            <TextArea
+              id="staff-mfa-setup-uri"
+              label="URI de configuração TOTP"
+              className="staff-mfa-setup__uri"
+              rows={3}
+              readOnly
+              spellCheck={false}
+              autoComplete="off"
+              value={enrollment.totpURI}
+            />
             <ul className="staff-mfa-setup__codes" aria-label="Códigos de recuperação">
               {enrollment.backupCodes.map((recoveryCode) => (
                 <li key={recoveryCode}>
@@ -290,14 +282,13 @@ export function StaffMfaSetupView({
               />
               <span>Guardei os códigos de recuperação num local seguro</span>
             </label>
-            <button
-              className="button button--primary"
-              type="button"
+            <Button
+              variant="primary"
               onClick={continueToTotp}
               disabled={!recoveryCodesSaved || busy}
             >
               Continuar
-            </button>
+            </Button>
           </div>
         ) : null}
         {stage === "verify" ? (
@@ -309,23 +300,22 @@ export function StaffMfaSetupView({
             aria-busy={busy}
             onSubmit={(event) => void verifyTotp(event)}
           >
-            <div className="field">
-              <label htmlFor="staff-mfa-setup-code">Código da aplicação de autenticação</label>
-              <input
-                id="staff-mfa-setup-code"
-                name="code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                required
-                value={code}
-                onChange={(event) => setCode(event.currentTarget.value)}
-                disabled={busy}
-              />
-            </div>
-            <button className="button button--primary" type="submit" disabled={busy}>
+            <TextField
+              id="staff-mfa-setup-code"
+              label="Código da aplicação de autenticação"
+
+              name="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              value={code}
+              onChange={(event) => setCode(event.currentTarget.value)}
+              disabled={busy}
+            />
+            <Button variant="primary" type="submit" loading={busy}>
               {busy ? "A validar…" : "Validar e continuar"}
-            </button>
+            </Button>
           </form>
         ) : null}
         <p className="auth-message" role="alert">
@@ -353,11 +343,7 @@ export function StaffAccessGate({ title, message, action }: StaffAccessGateProps
         </a>
         <h1 id="staff-gate-title">{title}</h1>
         <p className="auth-card__intro">{message}</p>
-        {action ? (
-          <button className="button button--secondary" type="button" onClick={action.onClick}>
-            {action.label}
-          </button>
-        ) : null}
+        {action ? <Button onClick={action.onClick}>{action.label}</Button> : null}
       </section>
     </main>
   );

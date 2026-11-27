@@ -24,6 +24,9 @@ type AdminRoute =
   | { readonly kind: "lead-detail"; readonly leadId: string }
   | { readonly kind: "staff-invitations" }
   | { readonly kind: "staff-invitation-accept" }
+  | { readonly kind: "customers" }
+  | { readonly kind: "quotes" }
+  | { readonly kind: "tasks" }
   | { readonly kind: "detail"; readonly tripId: string }
   | { readonly kind: "invalid" };
 
@@ -35,9 +38,15 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 const readRoute = (): AdminRoute => {
   const rawPath = window.location.hash.slice(1).split("?", 1)[0] || "/";
   if (rawPath === "/") return { kind: "overview" };
-  if (rawPath === "/trips") return { kind: "trips" };
+  // Portuguese paths are canonical; the English trip and staff paths remain as aliases.
+  if (rawPath === "/viagens" || rawPath === "/trips") return { kind: "trips" };
   if (rawPath === "/leads") return { kind: "leads" };
-  if (rawPath === "/staff/invitations") return { kind: "staff-invitations" };
+  if (rawPath === "/clientes") return { kind: "customers" };
+  if (rawPath === "/orcamentos") return { kind: "quotes" };
+  if (rawPath === "/tarefas") return { kind: "tasks" };
+  if (rawPath === "/equipa" || rawPath === "/staff/invitations") {
+    return { kind: "staff-invitations" };
+  }
   if (rawPath === "/staff/invitations/accept") return { kind: "staff-invitation-accept" };
 
   const leadMatch = /^\/leads\/([^/]+)$/u.exec(rawPath);
@@ -50,7 +59,7 @@ const readRoute = (): AdminRoute => {
     }
   }
 
-  const match = /^\/trips\/([^/]+)$/u.exec(rawPath);
+  const match = /^\/(?:viagens|trips)\/([^/]+)$/u.exec(rawPath);
   if (!match?.[1]) return { kind: "invalid" };
   try {
     const tripId = decodeURIComponent(match[1]);
@@ -118,7 +127,10 @@ export function AdminRoot() {
       route.kind === "leads" ||
       route.kind === "lead-detail" ||
       route.kind === "staff-invitations" ||
-      route.kind === "staff-invitation-accept"
+      route.kind === "staff-invitation-accept" ||
+      route.kind === "customers" ||
+      route.kind === "quotes" ||
+      route.kind === "tasks"
     )
       return;
 
@@ -358,7 +370,7 @@ export function AdminRoot() {
     createdWorkspace: Awaited<ReturnType<typeof getAdminTripWorkspace>>,
   ): void => {
     setWorkspace({ kind: "ready", workspace: createdWorkspace });
-    window.location.hash = `#/trips/${encodeURIComponent(createdWorkspace.trip.id)}`;
+    window.location.hash = `#/viagens/${encodeURIComponent(createdWorkspace.trip.id)}`;
   };
 
   const handleWorkspaceUpdated = (
@@ -423,7 +435,7 @@ export function AdminRoot() {
         action={{
           label: "Ver viagens",
           onClick: () => {
-            window.location.hash = "#/trips";
+            window.location.hash = "#/viagens";
           },
         }}
       />
