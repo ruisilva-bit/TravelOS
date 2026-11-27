@@ -1,3 +1,4 @@
+import { registerAdminCrmRoutes } from "./crm-routes.js";
 import { registerAdminItineraryRoutes } from "./itinerary-routes.js";
 import { registerAdminLeadRoutes } from "./lead-routes.js";
 import type { AdminExpressApplication, AdminRouteOptions } from "./admin-route-http.js";
@@ -17,4 +18,5 @@ export const registerAdminRoutes = (
   registerAdminPublicationRoutes(application, options);
   registerAdminShareLinkRoutes(application, options);
   registerAdminLeadRoutes(application, options);
+  registerAdminCrmRoutes(application, options);
 };

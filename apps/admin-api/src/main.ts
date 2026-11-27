@@ -21,6 +21,7 @@ import {
   createPostgresStaffShareLinkOperations,
   createPostgresStaffTripPreviewOperations,
   createShareTokenCrypto,
+  createPostgresStaffCrmOperations,
   createPostgresStaffLeadOperations,
   createPostgresStaffTripOperations,
   createPostgresStaffTripWorkspaceOperations,
@@ -125,6 +126,7 @@ const createAdminAuthOptions = async (
       windowMs: 60_000,
     });
     const leadOperations = createPostgresStaffLeadOperations(persistence, sessionResolver);
+    const crmOperations = createPostgresStaffCrmOperations(persistence, sessionResolver);
     const staffInvitationOperations = createStaffInvitationOperations({
       repository: createPostgresStaffInvitationRepository(persistence),
       authorizationRepository: staffAccessRepository,
@@ -160,6 +162,7 @@ const createAdminAuthOptions = async (
           previewOperations,
           shareLinkOperations,
           leadOperations,
+          crmOperations,
           staffInvitationOperations,
           staffInvitationRateLimiter,
         },

@@ -12,6 +12,7 @@ export {
   type AdminMoney,
 } from "./money.js";
 export { AdminLockVersionSchema, AdminPostgresBigintSchema } from "./lock-version.js";
+export * from "./crm/index.js";
 export * from "./customers/index.js";
 export * from "./itinerary/index.js";
 export * from "./reservations/index.js";

@@ -15,6 +15,7 @@ import type { StaffTripWorkspaceWriteOperations } from "@travelos/backend-core";
 import type { StaffTripPreviewOperations } from "@travelos/backend-core";
 import type { StaffShareLinkOperations } from "@travelos/backend-core";
 import type { StaffInvitationOperations } from "@travelos/backend-core";
+import type { StaffCrmOperations } from "@travelos/backend-core";
 import type { StaffLeadOperations } from "@travelos/backend-core";
 import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
 import type { StaffAccessRepository } from "@travelos/database";
@@ -56,6 +57,7 @@ interface ExpressLikeApplication {
   get(path: string, handler: HttpHandler): void;
   post(path: string, handler: HttpHandler): void;
   patch(path: string, handler: HttpHandler): void;
+  put(path: string, handler: HttpHandler): void;
 }
 
 interface NestHttpApplication {
@@ -73,6 +75,7 @@ export interface AdminAuthBridgeOptions {
   readonly previewOperations?: StaffTripPreviewOperations;
   readonly shareLinkOperations?: StaffShareLinkOperations;
   readonly leadOperations?: StaffLeadOperations;
+  readonly crmOperations?: StaffCrmOperations;
   readonly staffInvitationOperations?: StaffInvitationOperations;
   readonly staffInvitationRateLimiter?: StaffInvitationRateLimiter;
 }
@@ -273,6 +276,7 @@ export const registerAdminAuthBridge = (
         ? {}
         : { shareLinkOperations: options.shareLinkOperations }),
       ...(options.leadOperations === undefined ? {} : { leadOperations: options.leadOperations }),
+      ...(options.crmOperations === undefined ? {} : { crmOperations: options.crmOperations }),
     });
   }
 };

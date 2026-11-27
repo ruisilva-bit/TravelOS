@@ -1,6 +1,17 @@
 import {
   ADMIN_IDEMPOTENCY_KEY_HEADER,
   AdminIdempotencyKeySchema,
+  AdminCustomerCreateV1RequestSchema,
+  AdminCustomerDetailV1ResponseSchema,
+  AdminCustomerListV1QuerySchema,
+  AdminCustomerListV1ResponseSchema,
+  AdminCustomerRolesV1RequestSchema,
+  AdminCustomerUpdateV1RequestSchema,
+  AdminPersonCreateV1RequestSchema,
+  AdminPersonUpdateV1RequestSchema,
+  AdminPersonV1ResponseSchema,
+  AdminSearchV1QuerySchema,
+  AdminSearchV1ResponseSchema,
   AdminLeadCreateV1RequestSchema,
   AdminLeadDisqualifyV1RequestSchema,
   AdminLeadListV1QuerySchema,
@@ -24,6 +35,15 @@ import {
   AdminTripWorkspaceListV1ResponseSchema,
   AdminTripWorkspaceTripUpdateV1RequestSchema,
   AdminTripWorkspaceV1ResponseSchema,
+  type AdminCustomerCreateV1Request,
+  type AdminCustomerDetailV1Response,
+  type AdminCustomerListV1Response,
+  type AdminCustomerRolesV1Request,
+  type AdminCustomerUpdateV1Request,
+  type AdminPersonCreateV1Request,
+  type AdminPersonUpdateV1Request,
+  type AdminPersonV1Response,
+  type AdminSearchV1Response,
   type AdminLeadCreateV1Request,
   type AdminLeadDisqualifyV1Request,
   type AdminLeadListV1Response,
@@ -122,7 +142,7 @@ type SafeParseSchema<T> = {
 
 const sendJson = async <TRequest, TResponse>(
   path: string,
-  method: "POST" | "PATCH",
+  method: "POST" | "PATCH" | "PUT",
   input: unknown,
   requestSchema: SafeParseSchema<TRequest>,
   responseSchema: SafeParseSchema<TResponse>,
@@ -429,4 +449,139 @@ export const disqualifyAdminLead = (
   } catch (error) {
     return Promise.reject(error);
   }
+};
+
+const customerResourcePath = (customerId: string, resource = ""): string => {
+  const parsedId = AdminOpaqueIdSchema.safeParse(customerId);
+  if (!parsedId.success) throw new AdminApiError("INVALID_REQUEST");
+  return `/api/admin/customers/${encodeURIComponent(parsedId.data)}${resource}`;
+};
+
+const personResourcePath = (personId: string): string => {
+  const parsedId = AdminOpaqueIdSchema.safeParse(personId);
+  if (!parsedId.success) throw new AdminApiError("INVALID_REQUEST");
+  return `/api/admin/persons/${encodeURIComponent(parsedId.data)}`;
+};
+
+export const listAdminCustomers = (input: {
+  readonly limit: number;
+  readonly cursor: string | null;
+  readonly q: string | null;
+}): Promise<AdminCustomerListV1Response> => {
+  const parsed = AdminCustomerListV1QuerySchema.safeParse({
+    limit: String(input.limit),
+    cursor: input.cursor,
+    q: input.q,
+  });
+  if (!parsed.success) return Promise.reject(new AdminApiError("INVALID_REQUEST"));
+  const query = new URLSearchParams({ limit: String(parsed.data.limit) });
+  if (parsed.data.cursor !== null) query.set("cursor", parsed.data.cursor);
+  if (parsed.data.q !== null) query.set("q", parsed.data.q);
+  return getJson(`/api/admin/customers?${query.toString()}`, AdminCustomerListV1ResponseSchema);
+};
+
+export const getAdminCustomer = (customerId: string): Promise<AdminCustomerDetailV1Response> => {
+  try {
+    return getJson(customerResourcePath(customerId), AdminCustomerDetailV1ResponseSchema);
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const createAdminCustomer = (
+  input: AdminCustomerCreateV1Request,
+  idempotencyKey: string,
+): Promise<AdminCustomerDetailV1Response> => {
+  try {
+    return sendJson(
+      "/api/admin/customers",
+      "POST",
+      input,
+      AdminCustomerCreateV1RequestSchema,
+      AdminCustomerDetailV1ResponseSchema,
+      idempotencyHeaders(idempotencyKey),
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const updateAdminCustomer = (
+  customerId: string,
+  input: AdminCustomerUpdateV1Request,
+): Promise<AdminCustomerDetailV1Response> => {
+  try {
+    return sendJson(
+      customerResourcePath(customerId),
+      "PATCH",
+      input,
+      AdminCustomerUpdateV1RequestSchema,
+      AdminCustomerDetailV1ResponseSchema,
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const addAdminPerson = (
+  customerId: string,
+  input: AdminPersonCreateV1Request,
+): Promise<AdminCustomerDetailV1Response> => {
+  try {
+    return sendJson(
+      customerResourcePath(customerId, "/persons"),
+      "POST",
+      input,
+      AdminPersonCreateV1RequestSchema,
+      AdminCustomerDetailV1ResponseSchema,
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const updateAdminPerson = (
+  personId: string,
+  input: AdminPersonUpdateV1Request,
+): Promise<AdminPersonV1Response> => {
+  try {
+    return sendJson(
+      personResourcePath(personId),
+      "PATCH",
+      input,
+      AdminPersonUpdateV1RequestSchema,
+      AdminPersonV1ResponseSchema,
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const setAdminPersonRoles = (
+  customerId: string,
+  personId: string,
+  input: AdminCustomerRolesV1Request,
+): Promise<AdminCustomerDetailV1Response> => {
+  try {
+    const parsedPersonId = AdminOpaqueIdSchema.safeParse(personId);
+    if (!parsedPersonId.success) throw new AdminApiError("INVALID_REQUEST");
+    return sendJson(
+      customerResourcePath(customerId, `/persons/${encodeURIComponent(parsedPersonId.data)}/roles`),
+      "PUT",
+      input,
+      AdminCustomerRolesV1RequestSchema,
+      AdminCustomerDetailV1ResponseSchema,
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const searchAdmin = (q: string): Promise<AdminSearchV1Response> => {
+  const parsed = AdminSearchV1QuerySchema.safeParse({ q });
+  if (!parsed.success) return Promise.reject(new AdminApiError("INVALID_REQUEST"));
+  return getJson(
+    `/api/admin/search?${new URLSearchParams({ q: parsed.data.q }).toString()}`,
+    AdminSearchV1ResponseSchema,
+  );
 };

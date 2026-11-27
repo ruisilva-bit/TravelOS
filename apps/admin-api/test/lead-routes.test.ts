@@ -67,6 +67,7 @@ const makeHarness = (leadOperations: StaffLeadOperations | undefined) => {
     get: (path, handler) => handlers.set(`GET ${path}`, handler),
     post: (path, handler) => handlers.set(`POST ${path}`, handler),
     patch: (path, handler) => handlers.set(`PATCH ${path}`, handler),
+    put: (path, handler) => handlers.set(`PUT ${path}`, handler),
   };
   registerAdminRoutes(application, {
     policy,

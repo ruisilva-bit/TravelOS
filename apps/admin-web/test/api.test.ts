@@ -3,18 +3,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   AdminApiError,
+  addAdminPerson,
   createAdminAccommodation,
+  createAdminCustomer,
   createAdminFlight,
   createAdminTripWorkspace,
+  getAdminCustomer,
   getAdminPublicationPreview,
   getAdminSessionContext,
   getAdminTripWorkspace,
+  listAdminCustomers,
   listAdminShareLinks,
   revokeAdminShareLink,
   createAdminShareLink,
   listAdminTrips,
+  searchAdmin,
+  setAdminPersonRoles,
   updateAdminAccommodation,
+  updateAdminCustomer,
   updateAdminFlight,
+  updateAdminPerson,
   updateAdminTripWorkspace,
 } from "../src/api.js";
 
@@ -345,5 +353,236 @@ describe("Admin same-origin API client", () => {
       code: "INVALID_REQUEST",
     });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  describe("CRM customers, people and search", () => {
+    const customerId = "019a0101-0000-7000-8000-000000000040";
+    const personId = "019a0101-0000-7000-8000-000000000041";
+    const leadId = "019a0101-0000-7000-8000-000000000042";
+    const person = {
+      id: personId,
+      agencyId,
+      givenName: "Marta",
+      familyName: "Quintela",
+      email: "marta@example.test",
+      phone: "+351 910 000 000",
+      nationality: "PT",
+      notes: null,
+      birthDate: null,
+      passportNumber: null,
+      passportExpiry: null,
+      lockVersion: "0",
+      createdAt: "2027-01-01T12:00:00.000Z",
+      updatedAt: "2027-01-01T12:00:00.000Z",
+    };
+    const customerPerson = { ...person, roles: ["PRIMARY_CONTACT"], isPrimary: true };
+    const detail = {
+      id: customerId,
+      agencyId,
+      displayName: "Família Quintela",
+      email: null,
+      phone: null,
+      notes: null,
+      lockVersion: "1",
+      createdAt: "2027-01-01T12:00:00.000Z",
+      updatedAt: "2027-01-01T12:00:00.000Z",
+      people: [customerPerson],
+      leads: [{ id: leadId, name: "Marta Quintela", state: "OPEN" }],
+      trips: [],
+    };
+    const summary = {
+      id: customerId,
+      agencyId,
+      displayName: "Família Quintela",
+      email: null,
+      phone: null,
+      primaryContactName: "Marta Quintela",
+      lockVersion: "1",
+      updatedAt: "2027-01-01T12:00:00.000Z",
+    };
+    const customerDraft = {
+      displayName: "Família Quintela",
+      email: null,
+      phone: null,
+      notes: null,
+      primaryPerson: {
+        givenName: "Marta",
+        familyName: "Quintela",
+        email: "marta@example.test",
+        phone: null,
+        nationality: null,
+        notes: null,
+      },
+    };
+
+    it("lists customers with a bounded page, query and cursor", async () => {
+      fetchMock.mockResolvedValueOnce(response({ items: [summary], nextCursor: null }));
+      await expect(listAdminCustomers({ limit: 10, cursor: null, q: "quintela" })).resolves.toEqual(
+        { items: [summary], nextCursor: null },
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/admin/customers?limit=10&q=quintela",
+        expect.objectContaining({ method: "GET" }),
+      );
+    });
+
+    it("rejects an out-of-range list limit or a one-character query before any request", async () => {
+      await expect(listAdminCustomers({ limit: 51, cursor: null, q: null })).rejects.toMatchObject({
+        code: "INVALID_REQUEST",
+      });
+      await expect(listAdminCustomers({ limit: 10, cursor: null, q: "a" })).rejects.toMatchObject({
+        code: "INVALID_REQUEST",
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("loads a customer detail and rejects a malformed customer identifier locally", async () => {
+      fetchMock.mockResolvedValueOnce(response(detail));
+      await expect(getAdminCustomer(customerId)).resolves.toEqual(detail);
+      expect(fetchMock).toHaveBeenCalledWith(
+        `/api/admin/customers/${customerId}`,
+        expect.objectContaining({ method: "GET" }),
+      );
+      await expect(getAdminCustomer("not-an-id")).rejects.toMatchObject({
+        code: "INVALID_REQUEST",
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("creates a customer with an idempotency header and strict body", async () => {
+      fetchMock.mockResolvedValueOnce(response(detail, 201));
+      await expect(createAdminCustomer(customerDraft, "customer-key-1")).resolves.toEqual(detail);
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/admin/customers",
+        expect.objectContaining({
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "content-type": "application/json",
+            "idempotency-key": "customer-key-1",
+          },
+          body: JSON.stringify(customerDraft),
+        }),
+      );
+    });
+
+    it("rejects an invalid create body or an unusable idempotency key before contacting the API", async () => {
+      await expect(
+        createAdminCustomer({ ...customerDraft, agencyId } as never, "customer-key-1"),
+      ).rejects.toMatchObject({ code: "INVALID_REQUEST" });
+      await expect(createAdminCustomer(customerDraft, "")).rejects.toMatchObject({
+        code: "INVALID_REQUEST",
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("updates a customer with the expected lock version and maps stale writes to CONFLICT", async () => {
+      const update = {
+        expectedLockVersion: "1",
+        displayName: "Quintela",
+        email: null,
+        phone: null,
+        notes: null,
+      };
+      fetchMock.mockResolvedValueOnce(response({ ...detail, lockVersion: "2" }));
+      await expect(updateAdminCustomer(customerId, update)).resolves.toMatchObject({
+        lockVersion: "2",
+      });
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        `/api/admin/customers/${customerId}`,
+        expect.objectContaining({ method: "PATCH", body: JSON.stringify(update) }),
+      );
+      fetchMock.mockResolvedValueOnce(response({ internal_error: "private" }, 409));
+      await expect(updateAdminCustomer(customerId, update)).rejects.toMatchObject({
+        code: "CONFLICT",
+        status: 409,
+      });
+    });
+
+    it("adds a person, updates a person with optional sensitive fields and sets roles", async () => {
+      fetchMock.mockResolvedValueOnce(response(detail, 201));
+      await expect(
+        addAdminPerson(customerId, {
+          givenName: "Duarte",
+          familyName: "Quintela",
+          email: null,
+          phone: null,
+          nationality: "PT",
+          notes: null,
+          roles: ["TRAVELLER"],
+        }),
+      ).resolves.toEqual(detail);
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        `/api/admin/customers/${customerId}/persons`,
+        expect.objectContaining({ method: "POST" }),
+      );
+
+      fetchMock.mockResolvedValueOnce(response({ ...person, lockVersion: "1" }));
+      await expect(
+        updateAdminPerson(personId, {
+          expectedLockVersion: "0",
+          givenName: "Marta",
+          familyName: "Quintela",
+          email: null,
+          phone: null,
+          nationality: "PT",
+          notes: null,
+          passportNumber: "P123456",
+        }),
+      ).resolves.toMatchObject({ lockVersion: "1" });
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        `/api/admin/persons/${personId}`,
+        expect.objectContaining({ method: "PATCH" }),
+      );
+
+      fetchMock.mockResolvedValueOnce(response(detail));
+      await expect(
+        setAdminPersonRoles(customerId, personId, { roles: ["PAYER"], isPrimary: false }),
+      ).resolves.toEqual(detail);
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        `/api/admin/customers/${customerId}/persons/${personId}/roles`,
+        expect.objectContaining({
+          method: "PUT",
+          body: JSON.stringify({ roles: ["PAYER"], isPrimary: false }),
+        }),
+      );
+    });
+
+    it("rejects duplicate roles and unknown person fields before contacting the API", async () => {
+      await expect(
+        setAdminPersonRoles(customerId, personId, {
+          roles: ["PAYER", "PAYER"],
+          isPrimary: false,
+        }),
+      ).rejects.toMatchObject({ code: "INVALID_REQUEST" });
+      await expect(
+        addAdminPerson(customerId, {
+          givenName: "Duarte",
+          familyName: "Quintela",
+          email: null,
+          phone: null,
+          nationality: null,
+          notes: null,
+          roles: ["TRAVELLER"],
+          birthDate: "1980-01-01",
+        } as never),
+      ).rejects.toMatchObject({ code: "INVALID_REQUEST" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("searches customers, leads and trips and rejects a query outside 2 to 100 characters", async () => {
+      const result = { customers: [summary], leads: [], trips: [] };
+      fetchMock.mockResolvedValueOnce(response(result));
+      await expect(searchAdmin("qu")).resolves.toEqual(result);
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/admin/search?q=qu",
+        expect.objectContaining({ method: "GET" }),
+      );
+      await expect(searchAdmin("q")).rejects.toMatchObject({ code: "INVALID_REQUEST" });
+      await expect(searchAdmin("q".repeat(101))).rejects.toMatchObject({
+        code: "INVALID_REQUEST",
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
   });
 });

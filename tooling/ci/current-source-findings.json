@@ -157,6 +157,20 @@
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
+      "path": "apps/admin-web/test/api.test.ts",
+      "rule": "email-address",
+      "lineSha256": "d3dfee1358b5eb551a9c44d7934567cc09b1c3f84219e07a028c0e236b8fc983",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture uses a reserved example.test address; no real-person data."
+    },
+    {
+      "path": "apps/admin-web/test/api.test.ts",
+      "rule": "email-address",
+      "lineSha256": "562cbc2105e0747925a36c1c2cfd236503cc36c607a20f2b0c87dca74f659486",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture uses a reserved example.test address; no real-person data."
+    },
+    {
       "path": "apps/worker/src/main.ts",
       "rule": "high-entropy-secret-assignment",
       "lineSha256": "2b1c2aa85ca1806ce390e51fa286e97331d06e30368406f6e9a8a0d53b61fb6d",

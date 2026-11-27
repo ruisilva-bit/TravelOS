@@ -32,6 +32,7 @@ const makeHarness = (shareLinkOperations: StaffShareLinkOperations) => {
       get: (path, handler) => handlers.set(`GET ${path}`, handler),
       post: (path, handler) => handlers.set(`POST ${path}`, handler),
       patch: () => undefined,
+      put: () => undefined,
     },
     { policy, tripOperations: {} as StaffTripOperations, shareLinkOperations },
   );

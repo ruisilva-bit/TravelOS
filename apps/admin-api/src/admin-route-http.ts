@@ -13,6 +13,9 @@ import {
   LeadIdempotencyConflictError,
   LeadNotFoundError,
   LeadNotOpenError,
+  CrmIdempotencyConflictError,
+  CrmNotFoundError,
+  type StaffCrmOperations,
   type StaffLeadOperations,
   type StaffTripWorkspaceWriteOperations,
   type StaffTripOperations,
@@ -54,6 +57,7 @@ export interface AdminExpressApplication {
   get(path: string, handler: HttpHandler): void;
   post(path: string, handler: HttpHandler): void;
   patch(path: string, handler: HttpHandler): void;
+  put(path: string, handler: HttpHandler): void;
 }
 
 export interface AdminRouteOptions {
@@ -64,6 +68,7 @@ export interface AdminRouteOptions {
   readonly previewOperations?: StaffTripPreviewOperations;
   readonly shareLinkOperations?: StaffShareLinkOperations;
   readonly leadOperations?: StaffLeadOperations;
+  readonly crmOperations?: StaffCrmOperations;
 }
 
 /** Admin route policy: URL, Host, Authorization, X-Forwarded-Host and (when required) Origin. */
@@ -126,6 +131,14 @@ export const runHandler = (
       return;
     }
     if (error instanceof LeadNotFoundError) {
+      response.status(404).end();
+      return;
+    }
+    if (error instanceof CrmIdempotencyConflictError) {
+      send(response, 409, { error: error.code });
+      return;
+    }
+    if (error instanceof CrmNotFoundError) {
       response.status(404).end();
       return;
     }

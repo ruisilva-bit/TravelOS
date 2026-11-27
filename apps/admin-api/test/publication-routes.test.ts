@@ -26,6 +26,7 @@ const makeHarness = (previewOperations: StaffTripPreviewOperations) => {
     get: (path, handler) => handlers.set(`GET ${path}`, handler),
     post: (path, handler) => handlers.set(`POST ${path}`, handler),
     patch: () => undefined,
+    put: () => undefined,
   };
   registerAdminRoutes(application, {
     policy,
