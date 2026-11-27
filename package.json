@@ -27,6 +27,8 @@
     "db:migrations:verify": "tsx tooling/database/verify-migration-checksums.ts",
     "auth:bootstrap-first-owner": "tsx tooling/auth/bootstrap-first-owner.ts",
     "auth:schema:verify": "tsx tooling/auth/verify-better-auth-schema-drift.ts",
+    "deploy": "bash scripts/deploy.sh",
+    "backup": "bash scripts/backup.sh",
     "check": "node tooling/ci/verify-current.mjs"
   },
   "dependencies": {

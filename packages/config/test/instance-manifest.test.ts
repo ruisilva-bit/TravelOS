@@ -139,3 +139,14 @@ describe("development instance manifest", () => {
     expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(/Host allowlist must match/);
   });
 });
+
+describe("CT200 production-shaped example manifest", () => {
+  it("validates with the config package", () => {
+    const path = fileURLToPath(
+      new URL("../../../deploy/manifests/travelos.example.json", import.meta.url),
+    );
+    const manifest = parseDevelopmentInstanceManifest(JSON.parse(readFileSync(path, "utf8")));
+    expect(manifest.hosts.admin).toBe("travelos.lan");
+    expect(manifest.runtime.listeners.adminApi.host).toBe("127.0.0.1");
+  });
+});

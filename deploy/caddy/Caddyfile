@@ -1,0 +1,21 @@
+# TravelOS on CT200: LAN-only. Install as /etc/caddy/Caddyfile.
+# The host name must equal "hosts.admin" in /etc/travelos/travelos.json (the API rejects other
+# Host headers). Caddy keeps the Host header when proxying.
+#
+# Cloudflare Tunnel (optional, later, needs the owner's go-ahead): route ONLY the path /v/*
+# to http://127.0.0.1:3101. Never route the admin site, /api/* or the SPA through the tunnel.
+http://travelos.lan {
+	# Customer share links and the staff API go to admin-api. These come BEFORE the SPA fallback.
+	handle /v/* {
+		reverse_proxy 127.0.0.1:3101
+	}
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3101
+	}
+	# Everything else: the built admin web app, with SPA fallback to index.html.
+	handle {
+		root * /srv/travelos/apps/admin-web/dist
+		try_files {path} /index.html
+		file_server
+	}
+}

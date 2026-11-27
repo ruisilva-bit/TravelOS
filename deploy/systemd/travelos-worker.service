@@ -1,0 +1,26 @@
+[Unit]
+Description=TravelOS background worker
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+User=travelos
+Group=travelos
+WorkingDirectory=/srv/travelos
+ExecStart=/srv/travelos-toolchain/node-v24.19.0-linux-x64/bin/node apps/worker/dist/main.js --manifest /etc/travelos/travelos.json
+Restart=on-failure
+RestartSec=3
+LoadCredential=worker-db:/etc/travelos/credentials/worker-db
+# The worker writes its health/metrics files into RUNTIME_DIRECTORY (/run/travelos-worker).
+RuntimeDirectory=travelos-worker
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
