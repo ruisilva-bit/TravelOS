@@ -423,114 +423,107 @@
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "email-address",
-      "lineSha256": "4453be6769caa845c04ba27b28389f6b0ddbbf2c060e9efce1465c32ed008ce0",
+      "lineSha256": "252b36bfd0f612f0f24713924d8ae818be1b1f9cb8dc9ae92c155b182e0e12c7",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "email-address",
       "lineSha256": "4ea615fd5fe27602fb12bdefe91b9655b943b68f62e2018d482413392d8cadbf",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "email-address",
-      "lineSha256": "97da54221af4c4a78b0f489ec23b98ee841d52a5015b45f1b07c2888b2262dad",
+      "lineSha256": "5c948192945281e9f5d491e05723dcd9514c144ae6afc4159325b00e1189743a",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "email-address",
-      "lineSha256": "9d7c1ecb8c8173138335ae27554d5e71797a012862ac2c6a04b2ac272345f000",
+      "lineSha256": "a5e5001f183555585990d5c2040213e4df94b55dd848693cc8dfd532b61683a7",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "email-address",
-      "lineSha256": "a3277fc241e32e1e922d2c610b4b317d3eae4a307ef11bd05c87f5dc10c4df71",
+      "lineSha256": "ebae2ea74736ac16ee3d06c2b8d89b1210447fd070a1b1858c06e214d988e107",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-4-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "email-address",
-      "lineSha256": "faacd833e8fa5401f4cc7acdda059d6568a66e10368c51d2a0837fa4219709af",
+      "lineSha256": "ebae2ea74736ac16ee3d06c2b8d89b1210447fd070a1b1858c06e214d988e107",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-7-postgresql.test.ts",
-      "rule": "high-entropy-secret-assignment",
-      "lineSha256": "94aeda0c095446a0d38dbcbc670811a9923be30a4878e70d45540d85934510c2",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "tests/integration/stage-7-postgresql.test.ts",
-      "rule": "high-entropy-secret-assignment",
-      "lineSha256": "dd7da91da2a95c7e4ccbc999f3d73547b25875139515f980743fe83eb4967bfc",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "tests/integration/stage-7-postgresql.test.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "94aeda0c095446a0d38dbcbc670811a9923be30a4878e70d45540d85934510c2",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "tests/integration/stage-7-postgresql.test.ts",
-      "rule": "secret-assignment",
-      "lineSha256": "dd7da91da2a95c7e4ccbc999f3d73547b25875139515f980743fe83eb4967bfc",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "tests/integration/stage-8-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "email-address",
-      "lineSha256": "26d651fa80b108523a54397e04d75d7eff5822d6de93ebb2ad338c26bb593dad",
+      "lineSha256": "ef5bfae6ac1ed03961fdbf3a6fa4d87f9c9c81ef488af3a932b5f0dfd63ebd59",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-8-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "email-address",
-      "lineSha256": "ba1c400e3a8dbce6b766e48256905aad6938f0375fd4e86873a3aa7787082364",
+      "lineSha256": "ef5bfae6ac1ed03961fdbf3a6fa4d87f9c9c81ef488af3a932b5f0dfd63ebd59",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-9-staff-invitations-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
+      "rule": "email-address",
+      "lineSha256": "ef5bfae6ac1ed03961fdbf3a6fa4d87f9c9c81ef488af3a932b5f0dfd63ebd59",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/staff-auth.test.ts",
+      "rule": "email-address",
+      "lineSha256": "ef5bfae6ac1ed03961fdbf3a6fa4d87f9c9c81ef488af3a932b5f0dfd63ebd59",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "high-entropy-secret-assignment",
       "lineSha256": "4ff3b78bd01b5b08f3e12ac96a3a35ebcb3033cce11ba6456be98389f5bb17cc",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-9-staff-invitations-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "high-entropy-secret-assignment",
       "lineSha256": "94aeda0c095446a0d38dbcbc670811a9923be30a4878e70d45540d85934510c2",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-9-staff-invitations-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "secret-assignment",
       "lineSha256": "4ff3b78bd01b5b08f3e12ac96a3a35ebcb3033cce11ba6456be98389f5bb17cc",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/stage-9-staff-invitations-postgresql.test.ts",
+      "path": "tests/integration/staff-auth.test.ts",
       "rule": "secret-assignment",
       "lineSha256": "94aeda0c095446a0d38dbcbc670811a9923be30a4878e70d45540d85934510c2",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
+    },
+    {
+      "path": "tests/integration/worker.test.ts",
+      "rule": "email-address",
+      "lineSha256": "492b814b53dbe6fefa47ec4cbc10d9a299ccbcc6888d4c6756fb8a4c4b0ed902",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },

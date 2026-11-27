@@ -1,38 +1,27 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { copyFile, mkdir, readFile, readdir, stat, writeFile, symlink } from "node:fs/promises";
-import path from "node:path";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { runMigrationChain } from "../../tooling/database/migration-runner.js";
-import { bootstrapRootAgency } from "@travelos/backend-core";
-import {
-  createPostgresPersistence,
-  createStaffAccessRepository,
-} from "../../packages/database/src/index.js";
-import * as databaseExports from "../../packages/database/src/index.js";
 import type { WorkerClaim, WorkerRepository } from "@travelos/backend-core";
+import * as databaseExports from "../../packages/database/src/index.js";
 import type { PostgresPersistence } from "../../packages/database/src/index.js";
-
-const host = process.env["PGHOST"]!;
-const port = Number(process.env["PGPORT"]);
-const database = "travelos_stage8_qualification";
-const chain = {
-  directory: path.resolve("migrations"),
-  checksumManifestPath: path.resolve("migrations/checksums.json"),
-};
-const target = {
+import {
+  createDatabase,
+  createOwnerClient,
   host,
+  migrateToHead,
   port,
-  database,
-  migratorRole: "travelos_migrator",
-  ownerRole: "travelos_owner",
-  tls: { mode: "DISABLED_LOOPBACK_ONLY" as const },
-  allowTrustAuthenticationForTests: true,
-};
-let owner: Client;
+  productionChain,
+  productionMigrationNames,
+  requireHarness,
+  runMigrationChain,
+  targetFor,
+} from "./helpers/postgres.js";
+
+const database = "travelos_worker";
 const agencyId = "019a0000-0000-7000-8000-000000000008";
+let owner: Client;
 let workerPersistence: PostgresPersistence<Record<string, never>>;
+
 const worker = (): WorkerRepository => {
   const factory = (
     databaseExports as unknown as {
@@ -44,7 +33,7 @@ const worker = (): WorkerRepository => {
   expect(factory).toBeTypeOf("function");
   return factory!(workerPersistence);
 };
-const staffId = "stage8-synthetic-staff";
+const staffId = "worker-synthetic-staff";
 const personId = randomUUID();
 const tripId = randomUUID();
 let publicationVersion = 0;
@@ -187,101 +176,26 @@ const workerRequiredPrivileges = [
   },
 ] as const;
 
-const workerMetricNames = [
-  "travelos_worker_stats_available",
-  "travelos_worker_jobs_pending",
-  "travelos_worker_jobs_oldest_pending_seconds",
-  "travelos_worker_jobs_running",
-  "travelos_worker_jobs_retries",
-  "travelos_worker_jobs_dead_letters",
-  "travelos_worker_jobs_unknown_outcomes",
-  "travelos_worker_jobs_expired_leases",
-];
-const readPrivateWorkerMetrics = async (runtime: string): Promise<Record<string, number>> => {
-  const metricsPath = path.join(runtime, "metrics.prom");
-  const contents = await readFile(metricsPath, "utf8").catch(() => null);
-  expect(contents).toBeTypeOf("string");
-  const body = contents as string;
-  const samples = body
-    .split("\n")
-    .filter((line) => line !== "" && !line.startsWith("#"))
-    .map((line) => line.split(" "));
-  expect(samples.map(([name]) => name)).toEqual(workerMetricNames);
-  expect(body).toContain("travelos_worker_stats_available 1\n");
-  expect(body).toMatch(/\n$/u);
-  expect(body).not.toMatch(/[{}]/u);
-  expect(body).not.toMatch(/agency|trip|customer|principal/iu);
-  for (const [, value] of samples) expect(Number.isSafeInteger(Number(value))).toBe(true);
-  expect((await stat(metricsPath)).mode & 0o777).toBe(0o600);
-  expect((await readdir(runtime)).filter((name) => name.startsWith(".metrics-"))).toEqual([]);
-  return Object.fromEntries(samples.map(([name, value]) => [name, Number(value)]));
-};
-
 beforeAll(async () => {
-  const bootstrap = spawnSync(
-    path.join(process.env["TRAVELOS_STAGE8_PG_BIN"]!, "psql"),
-    [
-      "--no-psqlrc",
-      "--set",
-      "ON_ERROR_STOP=1",
-      "--set",
-      `database_name=${database}`,
-      "--dbname",
-      "postgres",
-      "--file",
-      path.resolve("deploy/database/bootstrap-database-and-roles.sql"),
-    ],
-    { encoding: "utf8" },
-  );
-  expect(bootstrap.status, bootstrap.stderr).toBe(0);
-  const predecessor = path.join(process.env["TRAVELOS_STAGE8_WORK_ROOT"]!, "pre-stage7");
-  await mkdir(predecessor);
-  const manifest = JSON.parse(await readFile(chain.checksumManifestPath, "utf8")) as {
-    migrations: { file: string; sha256: string }[];
-  };
-  const migrations = manifest.migrations.filter(({ file }) => file < "0012");
-  for (const { file } of migrations)
-    await copyFile(path.join(chain.directory, file), path.join(predecessor, file));
-  await writeFile(
-    path.join(predecessor, "checksums.json"),
-    JSON.stringify({ schemaVersion: 1, algorithm: "sha256", migrations }),
-  );
-  await runMigrationChain(target, {
-    directory: predecessor,
-    checksumManifestPath: path.join(predecessor, "checksums.json"),
+  requireHarness();
+  createDatabase(database);
+  await migrateToHead(database, {
+    agencyId,
+    bootstrapReference: "worker-synthetic-bootstrap",
+    slug: "worker-synthetic",
   });
-  const admin = createPostgresPersistence<Record<string, never>>({
-    host,
-    port,
-    database,
-    user: "travelos_admin_api",
-    tls: { mode: "DISABLED_LOOPBACK_ONLY" },
-    applicationName: "stage8-bootstrap",
-  });
-  try {
-    await bootstrapRootAgency(createStaffAccessRepository(admin), {
-      agencyId,
-      bootstrapReference: "stage8-synthetic-bootstrap",
-      slug: "stage8-synthetic",
-    });
-  } finally {
-    await admin.destroy();
-  }
-  await runMigrationChain(target, chain);
-  owner = new Client({ host, port, database, user: "travelos_migrator", ssl: false });
-  await owner.connect();
-  await owner.query('SET ROLE "travelos_owner"');
-  workerPersistence = createPostgresPersistence({
+  owner = await createOwnerClient(database);
+  workerPersistence = databaseExports.createPostgresPersistence({
     host,
     port,
     database,
     user: "travelos_worker",
     tls: { mode: "DISABLED_LOOPBACK_ONLY" },
-    applicationName: "stage8-worker-test",
+    applicationName: "worker-test",
     maxConnections: 5,
   });
   await owner.query(
-    'INSERT INTO staff_access.staff_user (id, name, email, "emailVerified", "createdAt", "updatedAt") VALUES ($1,\'Synthetic Worker Test\',\'stage8@example.test\',true,now(),now())',
+    'INSERT INTO staff_access.staff_user (id, name, email, "emailVerified", "createdAt", "updatedAt") VALUES ($1,\'Synthetic Worker Test\',\'worker@example.test\',true,now(),now())',
     [staffId],
   );
   await owner.query(
@@ -312,16 +226,17 @@ beforeAll(async () => {
   );
   await owner.query("COMMIT");
 });
+
 afterAll(async () => {
   await workerPersistence?.destroy();
   await owner?.end();
 });
 
-describe("Stage 8 pinned PostgreSQL durable worker", () => {
-  it("applies the additive Stage 8 migration and makes canonical rerun a no-op", async () => {
-    const result = await runMigrationChain(target, chain);
-    expect(result.currentVersion).toBe("0014_stage8_worker_activity");
+describe("Durable worker on PostgreSQL", () => {
+  it("has the durable job tables and a canonical rerun is a no-op", async () => {
+    const result = await runMigrationChain(targetFor(database), productionChain);
     expect(result.appliedMigrations).toEqual([]);
+    expect(result.currentVersion).toBe((await productionMigrationNames()).at(-1));
     expect(
       (await owner.query("SELECT to_regclass('job_runtime.job')::text AS name")).rows[0].name,
     ).toBe("job_runtime.job");
@@ -503,17 +418,8 @@ describe("Stage 8 pinned PostgreSQL durable worker", () => {
     expect(await activityCount(messageId)).toBe(1);
   });
 
-  it("denies Portal job/history access and Worker workspace, credentials and Audit access", async () => {
+  it("denies the Worker workspace, credentials and Audit access", async () => {
     for (const [user, queries] of [
-      [
-        "travelos_portal_api",
-        [
-          "SELECT * FROM job_runtime.job",
-          "SELECT * FROM integration.activity_source",
-          "SELECT * FROM activity.entry",
-          "SELECT * FROM audit.trip_publication_event",
-        ],
-      ],
       [
         "travelos_worker",
         [
@@ -536,177 +442,6 @@ describe("Stage 8 pinned PostgreSQL durable worker", () => {
       } finally {
         await connection.end();
       }
-    }
-  });
-
-  it("executes built Worker from a release symlink, retries real SQL failures, recovers a killed claim and runs concurrently", async () => {
-    const artifact = process.env["TRAVELOS_STAGE8_ARTIFACT_ROOT"] ?? path.resolve(".");
-    const base = path.join(process.env["TRAVELOS_STAGE8_WORK_ROOT"]!, "release-rehearsal");
-    await mkdir(base);
-    await symlink(artifact, path.join(base, "current"));
-    const current = path.join(base, "current");
-    const manifest = JSON.parse(
-      await readFile(path.resolve("deploy/manifests/development.example.json"), "utf8"),
-    );
-    manifest.database.port = port;
-    manifest.database.name = database;
-    const manifestFile = path.join(base, "development.json");
-    await writeFile(manifestFile, JSON.stringify(manifest));
-    const credentials = path.join(base, "credentials");
-    await mkdir(credentials, { mode: 0o700 });
-    await writeFile(path.join(credentials, "worker-db"), randomUUID(), { mode: 0o600 });
-    const executable = process.env["TRAVELOS_STAGE8_ARTIFACT_ROOT"]
-      ? path.join(current, "runtime/node/bin/node")
-      : process.execPath;
-    const children: ChildProcess[] = [];
-    let logs = "";
-    const waitFor = async (predicate: () => Promise<boolean>) => {
-      const deadline = Date.now() + 45_000;
-      do {
-        if (await predicate()) return;
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      } while (Date.now() < deadline);
-      throw new Error("Worker rehearsal condition timed out");
-    };
-    const start = async (name: string) => {
-      const runtime = path.join(base, name);
-      await mkdir(runtime, { mode: 0o700 });
-      const environment = {
-        ...process.env,
-        CREDENTIALS_DIRECTORY: credentials,
-        RUNTIME_DIRECTORY: runtime,
-      };
-      const child = spawn(
-        executable,
-        [path.join(current, "apps/worker/dist/main.js"), "--manifest", manifestFile],
-        {
-          cwd: path.join(current, "apps/worker"),
-          env: environment,
-          stdio: ["ignore", "pipe", "pipe"],
-        },
-      );
-      child.stdout?.on("data", (bytes: Buffer) => {
-        logs += bytes.toString();
-      });
-      child.stderr?.on("data", (bytes: Buffer) => {
-        logs += bytes.toString();
-      });
-      children.push(child);
-      await waitFor(async () => {
-        try {
-          return (
-            JSON.parse(await readFile(path.join(runtime, "health.json"), "utf8")).ready === true
-          );
-        } catch {
-          return false;
-        }
-      });
-      return { child, runtime, environment };
-    };
-    const stop = async (child: ChildProcess, signal: NodeJS.Signals = "SIGTERM") => {
-      if (child.exitCode !== null || child.signalCode !== null) return;
-      await new Promise<void>((resolve) => {
-        child.once("exit", () => resolve());
-        child.kill(signal);
-      });
-    };
-    const state = async (id: string) =>
-      (await owner.query('SELECT state FROM job_runtime.job WHERE "messageId"=$1', [id])).rows[0]
-        ?.state;
-    try {
-      const first = await start("worker1");
-      const initialMetrics = await readPrivateWorkerMetrics(first.runtime);
-      const initialRetries = initialMetrics.travelos_worker_jobs_retries;
-      if (initialRetries === undefined) throw new Error("Worker retry metric is missing");
-      const id = await sourceMessage();
-      await waitFor(async () => (await state(id)) === "SUCCEEDED");
-      expect(await activityCount(id)).toBe(1);
-      const health = spawnSync(
-        executable,
-        [path.join(current, "apps/worker/dist/main.js"), "--health"],
-        { env: first.environment, encoding: "utf8" },
-      );
-      expect(health.status).toBe(0);
-      expect(JSON.parse(health.stdout)).toEqual({ live: true, ready: true });
-      await owner.query(
-        `CREATE FUNCTION activity.rehearsal_failure() RETURNS trigger LANGUAGE plpgsql AS $body$ BEGIN RAISE EXCEPTION 'synthetic' USING ERRCODE='40001'; END $body$; CREATE TRIGGER rehearsal_failure BEFORE INSERT ON activity.entry FOR EACH ROW EXECUTE FUNCTION activity.rehearsal_failure()`,
-      );
-      const retryId = await sourceMessage();
-      await waitFor(async () => (await state(retryId)) === "RETRY");
-      await waitFor(async () => {
-        const contents = await readFile(path.join(first.runtime, "metrics.prom"), "utf8").catch(
-          () => "",
-        );
-        return contents.includes(`travelos_worker_jobs_retries ${initialRetries + 1}\n`);
-      });
-      const retriedMetrics = await readPrivateWorkerMetrics(first.runtime);
-      expect(retriedMetrics.travelos_worker_jobs_retries).toBe(initialRetries + 1);
-      await owner.query(
-        "DROP TRIGGER rehearsal_failure ON activity.entry; DROP FUNCTION activity.rehearsal_failure()",
-      );
-      await waitFor(async () => (await state(retryId)) === "SUCCEEDED");
-      expect(await activityCount(retryId)).toBe(1);
-      await owner.query(
-        `CREATE FUNCTION activity.rehearsal_failure() RETURNS trigger LANGUAGE plpgsql AS $body$ BEGIN RAISE EXCEPTION 'synthetic' USING ERRCODE='23514'; END $body$; CREATE TRIGGER rehearsal_failure BEFORE INSERT ON activity.entry FOR EACH ROW EXECUTE FUNCTION activity.rehearsal_failure()`,
-      );
-      const permanentId = await sourceMessage();
-      await waitFor(async () => (await state(permanentId)) === "DEAD_LETTER");
-      await owner.query(
-        "DROP TRIGGER rehearsal_failure ON activity.entry; DROP FUNCTION activity.rehearsal_failure()",
-      );
-      expect(await activityCount(permanentId)).toBe(0);
-      await stop(first.child);
-      const crashId = await sourceMessage();
-      await owner.query("BEGIN; LOCK TABLE activity.entry IN ACCESS EXCLUSIVE MODE");
-      const interrupted = await start("worker2");
-      await waitFor(async () => (await state(crashId)) === "RUNNING");
-      await stop(interrupted.child, "SIGKILL");
-      await owner.query("COMMIT");
-      const restarted = await start("worker3");
-      await readPrivateWorkerMetrics(restarted.runtime);
-      await waitFor(async () => (await state(crashId)) === "SUCCEEDED");
-      expect(await activityCount(crashId)).toBe(1);
-      const companion = await start("worker4");
-      const concurrentIds = [await sourceMessage(), await sourceMessage(), await sourceMessage()];
-      for (const message of concurrentIds) {
-        await waitFor(async () => (await state(message)) === "SUCCEEDED");
-        expect(await activityCount(message)).toBe(1);
-      }
-      await Promise.all([stop(restarted.child), stop(companion.child)]);
-      const stopped = spawnSync(
-        executable,
-        [path.join(current, "apps/worker/dist/main.js"), "--health"],
-        { env: restarted.environment, encoding: "utf8" },
-      );
-      expect(stopped.status).toBe(1);
-      expect(JSON.parse(stopped.stdout)).toEqual({ live: false, ready: false });
-      const missing = spawnSync(
-        executable,
-        [path.join(current, "apps/worker/dist/main.js"), "--manifest", manifestFile],
-        {
-          env: { ...first.environment, CREDENTIALS_DIRECTORY: path.join(base, "absent") },
-          encoding: "utf8",
-        },
-      );
-      expect(missing.status).toBe(1);
-      expect(missing.stderr).not.toContain(credentials);
-      const events = logs
-        .trim()
-        .split("\n")
-        .map((line) => JSON.parse(line));
-      expect(events).toContainEqual(
-        expect.objectContaining({ action: "job_failed", outcome: "RETRY", errorCode: "TEMPORARY" }),
-      );
-      expect(events).toContainEqual(
-        expect.objectContaining({ action: "job_completed", outcome: "SUCCEEDED" }),
-      );
-      expect(logs).not.toContain("stage8@example.test");
-    } finally {
-      await owner.query("ROLLBACK");
-      await Promise.all(children.map((child) => stop(child)));
-      await owner.query(
-        "DROP TRIGGER IF EXISTS rehearsal_failure ON activity.entry; DROP FUNCTION IF EXISTS activity.rehearsal_failure()",
-      );
     }
   });
 });

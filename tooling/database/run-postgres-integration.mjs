@@ -1,15 +1,4 @@
-import {
-  appendFile,
-  chmod,
-  chown,
-  cp,
-  mkdir,
-  mkdtemp,
-  readdir,
-  readFile,
-  rm,
-  writeFile,
-} from "node:fs/promises";
+import { appendFile, chmod, chown, mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -19,7 +8,7 @@ import { fileURLToPath, URL } from "node:url";
 import { disposableRootPrefix, provisionPostgresql } from "./provision-postgresql-18.mjs";
 
 // Unified disposable PostgreSQL 18.6 runner for every tests/integration/*.test.ts file.
-// Each file gets its own fresh loopback-only cluster (as the historical per-stage runners did);
+// Each file gets its own fresh loopback-only cluster;
 // nothing is written into the repository except gitignored package build output.
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const lockPath = path.join(repositoryRoot, "tooling/database/postgresql-18.6-packages.lock.json");
@@ -100,28 +89,6 @@ const portClosed = (port) =>
     socket.once("error", () => finish(true));
     socket.setTimeout(1_000, () => finish(true));
   });
-
-// Stage 3/4/5/7/8/9 suites are pinned to their own migration head; they receive the checksummed prefix
-// of the authoritative chain ending at that head (see vitest.postgres.config.ts).
-const prefixChainLengths = {
-  "stage-3-postgresql.test.ts": 3,
-  "stage-4-postgresql.test.ts": 6,
-  "stage-5-postgresql.test.ts": 10,
-  "stage-7-postgresql.test.ts": 16,
-  "stage-8-postgresql.test.ts": 16,
-  "stage-9-staff-invitations-postgresql.test.ts": 16,
-};
-const writePrefixChain = async (directory, length) => {
-  const source = path.join(repositoryRoot, "migrations");
-  const manifest = JSON.parse(await readFile(path.join(source, "checksums.json"), "utf8"));
-  const kept = manifest.migrations.slice(0, length);
-  await mkdir(directory, { recursive: true });
-  for (const { file } of kept) await cp(path.join(source, file), path.join(directory, file));
-  await writeFile(
-    path.join(directory, "checksums.json"),
-    `${JSON.stringify({ ...manifest, migrations: kept }, null, 2)}\n`,
-  );
-};
 
 const runFile = async (file, extraEnvironment) => {
   const workRoot = await mkdtemp(path.join(os.tmpdir(), `${disposableRootPrefix}work-`));
@@ -210,32 +177,11 @@ const runFile = async (file, extraEnvironment) => {
     }
     entry.postgresVersion = "18.6";
 
-    const environment = { ...runtimeEnvironment };
-    for (const stage of ["3", "4", "5", "6", "7", "8"]) {
-      environment[`TRAVELOS_STAGE${stage}_PG_BIN`] = postgresBin;
-      environment[`TRAVELOS_STAGE${stage}_WORK_ROOT`] = workRoot;
-    }
-    // Stage 3 requires the PostgreSQL binaries to live below its work root and writes its own
-    // synthetic output files there; everything is removed with the run root.
-    environment["TRAVELOS_STAGE3_WORK_ROOT"] = runRoot;
-    environment["TRAVELOS_STAGE3_EVIDENCE_DIR"] = path.join(runRoot, "stage3-output");
-    for (const inherited of [
-      "TRAVELOS_STAGE7_ARTIFACT_ROOT",
-      "TRAVELOS_STAGE8_ARTIFACT_ROOT",
-      "TRAVELOS_STAGE7_EVIDENCE_DIR",
-    ]) {
-      delete environment[inherited];
-    }
-    if (prefixChainLengths[file] !== undefined) {
-      environment["TRAVELOS_POSTGRES_PREFIX_CHAIN_DIR"] = path.join(workRoot, "prefix-chain");
-      await writePrefixChain(
-        environment["TRAVELOS_POSTGRES_PREFIX_CHAIN_DIR"],
-        prefixChainLengths[file],
-      );
-    }
-    if (file === "stage-3-postgresql.test.ts") {
-      environment["TRAVELOS_POSTGRES_NO_SOURCE_ALIASES"] = "1";
-    }
+    const environment = {
+      ...runtimeEnvironment,
+      TRAVELOS_PG_BIN: postgresBin,
+      TRAVELOS_PG_WORK_ROOT: workRoot,
+    };
     Object.assign(environment, extraEnvironment);
     const integration = run(
       vitestBin,
@@ -345,45 +291,8 @@ try {
     }
     requirePass(`build ${filter}`, build);
   }
-  // Stage 6 runs its packaged-migrator regression against an extracted artifact root that holds
-  // only the standalone migrator package (built by the repository's own packaging script).
-  const stage6ArtifactRoot = path.join(runRoot, "stage6-artifact");
-  if (selected.includes("stage-6-publication-postgresql.test.ts")) {
-    await mkdir(stage6ArtifactRoot, { recursive: true });
-    requirePass(
-      "@travelos/migrator build",
-      run(corepack, ["pnpm", "--filter", "@travelos/migrator...", "build"], buildEnvironment),
-    );
-    // Same packaging as tooling/ci/test-stage6-migrator-package.mjs minus its historical
-    // migration-head assertion (which that script pins to 0011).
-    const migratorTarget = path.join(stage6ArtifactRoot, "migrator");
-    requirePass(
-      "standalone migrator package",
-      run(
-        corepack,
-        [
-          "pnpm",
-          "--config.inject-workspace-packages=true",
-          "--filter",
-          "@travelos/migrator",
-          "deploy",
-          "--prod",
-          migratorTarget,
-        ],
-        { ...buildEnvironment, CI: "true", NODE_ENV: "development" },
-      ),
-    );
-    await cp(path.join(repositoryRoot, "migrations"), path.join(migratorTarget, "migrations"), {
-      recursive: true,
-      errorOnExist: true,
-    });
-  }
   for (const file of selected) {
-    const extraEnvironment =
-      file === "stage-6-publication-postgresql.test.ts"
-        ? { TRAVELOS_STAGE8_ARTIFACT_ROOT: stage6ArtifactRoot }
-        : {};
-    const entry = await runFile(file, extraEnvironment);
+    const entry = await runFile(file, {});
     files.push(entry);
   }
   summary.result =

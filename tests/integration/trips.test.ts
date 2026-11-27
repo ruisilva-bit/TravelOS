@@ -1,634 +1,92 @@
 import { createHash } from "node:crypto";
-import { copyFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
-import { spawnSync } from "node:child_process";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { Client, type QueryResultRow } from "pg";
+import { Client } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { STAFF_AUTH_BASE_PATH, type AuthRealm } from "../../packages/auth-adapters/src/index.js";
 import {
   asOpaqueId,
-  bootstrapRootAgency,
-  createStaffTripOperations,
   createMoney,
+  createScheduledLocalDateTime,
+  createStaffTripOperations,
+  createStaffTripWorkspaceOperations,
+  TripNotFoundError,
+  type CreateTripSliceInput,
+  type StaffTripWorkspaceWriteOperations,
   StaffAuthorizationError,
   OptimisticConflictError,
-  PERMISSION_REGISTRY_VERSION,
   TRAVELOS_CANONICAL_TIMEZONE_NAMES,
   type StaffAuthorizationOperationProof,
-  type StaffPermissionId,
-  type StaffSessionAuthorizationProof,
   type TripSlice,
 } from "../../packages/backend-core/src/index.js";
 import {
   createTripSlice as createTripSliceWithAuthorization,
   readTripSlice as readTripSliceWithAuthorization,
-  updateAccommodation as updateAccommodationWithAuthorization,
-  updateInternalSupplierNote as updateInternalSupplierNoteWithAuthorization,
-  type CreateTripSliceInput,
 } from "../../packages/backend-core/src/modules/trip-operations/application/trip-slice.js";
 import {
-  createPostgresPersistence,
-  createStaffAccessRepository,
   createUuidV7 as randomUUID,
   mapPostgresMutationError,
   type PostgresPersistence,
 } from "../../packages/database/src/index.js";
+import * as databaseModule from "../../packages/database/src/index.js";
+import { createStaffAccessRepository } from "../../packages/database/src/index.js";
+import { createPostgresPersistence } from "../../packages/database/src/postgres/postgres-persistence.js";
+import { createPostgresStaffTripWorkspaceRepository } from "../../packages/database/src/trip-operations/staff-trip-workspace-repository.js";
 import { createOperationalSliceRepository } from "../../packages/database/src/trip-operations/operational-slice-repository.js";
-import {
-  inspectMigrationStatus,
-  runMigrationChain,
-  type MigrationChain,
-  type MigrationTarget,
-} from "../../tooling/database/migration-runner.js";
 import { createAdminApi } from "../../apps/admin-api/src/app.js";
-
-const repositoryRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
-const host = process.env["PGHOST"] ?? "";
-const port = Number.parseInt(process.env["PGPORT"] ?? "", 10);
-const postgresBin = process.env["TRAVELOS_STAGE5_PG_BIN"] ?? "";
-const databaseName = "travelos_stage5_qualification";
-const agencyId = asOpaqueId("00000000-0000-7000-8000-000000000001");
-
-const syntheticEmail = ["rui", "example.test"].join(String.fromCharCode(64));
-
-const productionChain: MigrationChain = {
-  directory: path.join(repositoryRoot, "migrations"),
-  checksumManifestPath: path.join(repositoryRoot, "migrations/checksums.json"),
-};
-
-const createPredecessorMigrationChain = async (): Promise<MigrationChain> => {
-  const manifest = JSON.parse(await readFile(productionChain.checksumManifestPath, "utf8")) as {
-    readonly schemaVersion: number;
-    readonly algorithm: string;
-    readonly migrations: readonly { readonly file: string; readonly sha256: string }[];
-  };
-  const currentStage5ChainIndex = manifest.migrations.findIndex(
-    ({ file }) => file === "0009_stage5_revision_and_lock_version_hardening.cjs",
-  );
-  const predecessorMigrations =
-    currentStage5ChainIndex < 0 ? [] : manifest.migrations.slice(0, currentStage5ChainIndex);
-  if (
-    predecessorMigrations.length !== 8 ||
-    predecessorMigrations.at(-1)?.file !== "0008_stage5_cardinality_only.cjs"
-  ) {
-    throw new Error("The Stage 5 predecessor migration chain must end at migration 0008");
-  }
-  const workRoot = process.env["TRAVELOS_STAGE5_WORK_ROOT"];
-  if (workRoot === undefined || !path.resolve(workRoot).startsWith(`${os.tmpdir()}${path.sep}`)) {
-    throw new Error("Stage 5 predecessor migrations must stay inside the disposable work root");
-  }
-  const directory = await mkdtemp(path.join(workRoot, "predecessor-migrations-"));
-  predecessorMigrationDirectory = directory;
-  for (const migration of predecessorMigrations) {
-    await copyFile(
-      path.join(productionChain.directory, migration.file),
-      path.join(directory, migration.file),
-    );
-  }
-  const checksumManifestPath = path.join(directory, "checksums.json");
-  await writeFile(
-    checksumManifestPath,
-    `${JSON.stringify({ ...manifest, migrations: predecessorMigrations }, null, 2)}\n`,
-  );
-  return { directory, checksumManifestPath };
-};
-
-const migrationTarget: MigrationTarget = {
+import {
+  createOwnerClient,
+  createStaff,
   host,
   port,
-  database: databaseName,
-  migratorRole: "travelos_migrator",
-  ownerRole: "travelos_owner",
-  tls: { mode: "DISABLED_LOOPBACK_ONLY" },
-  allowTrustAuthenticationForTests: true,
-};
-
-let persistence: PostgresPersistence<Record<string, never>> | null = null;
-let repository: ReturnType<typeof createOperationalSliceRepository>;
-let staffAccessRepository: ReturnType<typeof createStaffAccessRepository>;
-let slice: TripSlice;
-let upgradedSlice: TripSlice | null = null;
-let predecessorMigrationDirectory: string | null = null;
-const staffSessions = new Map<string, StaffSessionAuthorizationProof>();
-
-const READ_PERMISSION_IDS = [
-  "customer.view",
-  "traveller.view_sensitive",
-  "trip.view",
-  "reservation.view",
-  "finance.view_costs",
-] as const satisfies readonly StaffPermissionId[];
-const CREATE_PERMISSION_IDS = [
-  ...READ_PERMISSION_IDS,
-  "customer.edit",
-  "traveller.edit",
-  "trip.edit",
-  "reservation.edit",
-  "finance.manage_costs",
-] as const satisfies readonly StaffPermissionId[];
-const ACCOMMODATION_PERMISSION_IDS = [
-  ...READ_PERMISSION_IDS,
-  "trip.edit",
-] as const satisfies readonly StaffPermissionId[];
-const INTERNAL_NOTE_PERMISSION_IDS = [
-  ...READ_PERMISSION_IDS,
-  "finance.manage_costs",
-] as const satisfies readonly StaffPermissionId[];
-
-const authorizationFor = (
-  requestedAgencyId: string,
-  requiredPermissionIds: readonly StaffPermissionId[],
-): StaffAuthorizationOperationProof => {
-  const session = staffSessions.get(requestedAgencyId);
-  if (session === undefined) {
-    throw new Error(
-      `No disposable staff authorization fixture exists for Agency ${requestedAgencyId}`,
-    );
-  }
-  return { session, requiredPermissionIds, nowEpochMs: Date.now() };
-};
-
-const createTripSlice = (
-  targetRepository: ReturnType<typeof createOperationalSliceRepository>,
-  input: CreateTripSliceInput,
-) =>
-  createTripSliceWithAuthorization(
-    targetRepository,
-    input,
-    authorizationFor(input.agencyId, CREATE_PERMISSION_IDS),
-  );
-
-const readTripSlice = (
-  targetRepository: ReturnType<typeof createOperationalSliceRepository>,
-  targetAgencyId: CreateTripSliceInput["agencyId"],
-  tripId: CreateTripSliceInput["agencyId"],
-) =>
-  readTripSliceWithAuthorization(
-    targetRepository,
-    targetAgencyId,
-    tripId,
-    authorizationFor(targetAgencyId, READ_PERMISSION_IDS),
-  );
-
-const updateAccommodation = (
-  targetRepository: ReturnType<typeof createOperationalSliceRepository>,
-  input: Parameters<typeof updateAccommodationWithAuthorization>[1],
-) =>
-  updateAccommodationWithAuthorization(
-    targetRepository,
-    input,
-    authorizationFor(input.agencyId, ACCOMMODATION_PERMISSION_IDS),
-  );
-
-const updateInternalSupplierNote = (
-  targetRepository: ReturnType<typeof createOperationalSliceRepository>,
-  input: Parameters<typeof updateInternalSupplierNoteWithAuthorization>[1],
-) =>
-  updateInternalSupplierNoteWithAuthorization(
-    targetRepository,
-    input,
-    authorizationFor(input.agencyId, INTERNAL_NOTE_PERMISSION_IDS),
-  );
-
-const primaryFlight = (value: TripSlice): TripSlice["flights"][number] => {
-  const item = value.flights[0];
-  if (item === undefined) throw new Error("Qualification Trip has no Flight");
-  return item;
-};
-
-const primaryAccommodation = (value: TripSlice): TripSlice["accommodations"][number] => {
-  const item = value.accommodations[0];
-  if (item === undefined) throw new Error("Qualification Trip has no Accommodation");
-  return item;
-};
-
-const primaryReservation = (value: TripSlice): TripSlice["reservations"][number] => {
-  const item = value.reservations[0];
-  if (item === undefined) throw new Error("Qualification Trip has no Reservation");
-  return item;
-};
-
-const primarySupplierCost = (value: TripSlice): TripSlice["supplierCosts"][number] => {
-  const item = value.supplierCosts[0];
-  if (item === undefined) throw new Error("Qualification Trip has no supplier cost");
-  return item;
-};
-
-const clientFor = async (user: string, database = databaseName): Promise<Client> => {
-  const client = new Client({
-    host,
-    port,
-    database,
-    user,
-    application_name: `travelos-stage5-${user}`,
-    connectionTimeoutMillis: 5_000,
-    ssl: false,
-  });
-  await client.connect();
-  return client;
-};
-
-const queryAs = async <Row extends QueryResultRow>(
-  user: string,
-  statement: string,
-): Promise<readonly Row[]> => {
-  const client = await clientFor(user);
-  try {
-    return (await client.query<Row>(statement)).rows;
-  } finally {
-    await client.end();
-  }
-};
-
-const queryAsOwner = async <Row extends QueryResultRow>(
-  statement: string,
-): Promise<readonly Row[]> => {
-  const client = await clientFor("travelos_migrator");
-  try {
-    await client.query('SET ROLE "travelos_owner"');
-    await client.query("SET search_path TO pg_catalog");
-    return (await client.query<Row>(statement)).rows;
-  } finally {
-    await client.query("RESET ROLE").catch(() => undefined);
-    await client.end();
-  }
-};
-
-const queryErrorCode = async (work: () => Promise<unknown>): Promise<string | null> => {
-  try {
-    await work();
-    return null;
-  } catch (error) {
-    return typeof error === "object" && error !== null && "code" in error
-      ? String((error as { readonly code?: unknown }).code ?? "")
-      : null;
-  }
-};
-
-const queryErrorConstraint = async (work: () => Promise<unknown>): Promise<string | null> => {
-  try {
-    await work();
-    return null;
-  } catch (error) {
-    return typeof error === "object" && error !== null && "constraint" in error
-      ? String((error as { readonly constraint?: unknown }).constraint ?? "")
-      : null;
-  }
-};
-
-const withOwnerTransaction = async <Result>(
-  work: (client: Client) => Promise<Result>,
-): Promise<Result> => {
-  const client = await clientFor("travelos_migrator");
-  try {
-    await client.query('SET ROLE "travelos_owner"');
-    await client.query("BEGIN");
-    const result = await work(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    await client.query("ROLLBACK").catch(() => undefined);
-    throw error;
-  } finally {
-    await client.end();
-  }
-};
-
-const primaryStaffFixture = {
-  staffPrincipalId: `stage5-authorization-${randomUUID()}`,
-  roleId: randomUUID(),
-  membershipId: randomUUID(),
-  assignmentId: randomUUID(),
-  sessionId: `stage5-session-${randomUUID()}`,
-  email: `stage5-authorization-${randomUUID()}@example.test`,
-};
-
-const seedPrimaryStaffAuthorization = async (): Promise<StaffSessionAuthorizationProof> => {
-  await withOwnerTransaction(async (client) => {
-    await client.query(
-      `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified", "twoFactorEnabled")
-       VALUES ($1, 'Stage 5 Authorization Fixture', $2, true, true)`,
-      [primaryStaffFixture.staffPrincipalId, primaryStaffFixture.email],
-    );
-    await client.query(
-      `INSERT INTO "staff_access"."staff_membership" ("id", "agencyId", "staffPrincipalId", "state")
-       VALUES ($1::uuid, $2::uuid, $3, 'ACTIVE')`,
-      [primaryStaffFixture.membershipId, agencyId, primaryStaffFixture.staffPrincipalId],
-    );
-    await client.query(
-      `INSERT INTO "staff_access"."staff_session" ("id", "expiresAt", "token", "updatedAt", "userId")
-       VALUES ($1, now() + interval '1 hour', $2, now(), $3)`,
-      [
-        primaryStaffFixture.sessionId,
-        `token-${randomUUID()}`,
-        primaryStaffFixture.staffPrincipalId,
-      ],
-    );
-    await client.query(
-      `INSERT INTO "staff_access"."role" ("id", "agencyId", "displayName")
-       VALUES ($1::uuid, $2::uuid, 'Stage 5 Authorization Fixture')`,
-      [primaryStaffFixture.roleId, agencyId],
-    );
-    await client.query(
-      `INSERT INTO "staff_access"."role_permission" ("roleId", "permissionId", "scopeKind", "accessLevel")
-       SELECT $1::uuid, permission_id, 'AGENCY', 'ALL'
-         FROM unnest($2::text[]) AS permission_id`,
-      [primaryStaffFixture.roleId, [...CREATE_PERMISSION_IDS]],
-    );
-    await client.query(
-      `INSERT INTO "staff_access"."role_assignment"
-         ("id", "agencyId", "membershipId", "roleId", "scopeKind", "organizationUnitId", "active")
-       VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'AGENCY', NULL, true)`,
-      [
-        primaryStaffFixture.assignmentId,
-        agencyId,
-        primaryStaffFixture.membershipId,
-        primaryStaffFixture.roleId,
-      ],
-    );
-    await client.query(
-      `INSERT INTO "staff_access"."staff_session_context"
-         ("sessionId", "staffPrincipalId", "agencyId", "authorizationEpoch", "recentMfaVerifiedAt")
-       SELECT $1, membership."staffPrincipalId", membership."agencyId", membership."authorizationEpoch", NULL
-         FROM "staff_access"."staff_membership" AS membership
-        WHERE membership."id" = $2::uuid`,
-      [primaryStaffFixture.sessionId, primaryStaffFixture.membershipId],
-    );
-  });
-
-  const snapshot = await staffAccessRepository.getStaffAuthorizationSnapshot(
-    primaryStaffFixture.staffPrincipalId,
-    agencyId,
-  );
-  if (snapshot === null) throw new Error("The Stage 5 authorization fixture was not readable");
-  const session: StaffSessionAuthorizationProof = {
-    sessionId: primaryStaffFixture.sessionId,
-    staffPrincipalId: primaryStaffFixture.staffPrincipalId,
-    agencyId,
-    authorizationEpoch: snapshot.authorizationEpoch,
-    expiresAtEpochMs: Date.now() + 60 * 60 * 1_000,
-    recentMfaVerifiedAtEpochMs: null,
-  };
-  staffSessions.set(agencyId, session);
-  return session;
-};
-
-const baseInput = (): CreateTripSliceInput => ({
+  registrySessionResolver,
+  type StaffSessionRegistry,
+} from "./helpers/postgres.js";
+import {
   agencyId,
-  person: { givenName: "Rui", familyName: "Silva", email: syntheticEmail },
-  customer: { displayName: "Silva Travel" },
-  customerPersonRole: "PRIMARY_CONTACT",
-  trip: {
-    title: "Stage 5 qualification",
-    startDate: "2026-09-25",
-    endDate: "2026-09-28",
-    state: "DRAFT",
-  },
-  travellerRole: "PRIMARY_TRAVELLER",
-  flight: {
-    title: "Outbound flight",
-    description: "Synthetic outbound flight",
-    carrier: "Example Air",
-    flightNumber: "EA100",
-    departureAirport: "LIS",
-    arrivalAirport: "OPO",
-    departure: {
-      localDate: "2026-09-25",
-      localTime: "09:00",
-      timezoneName: "Europe/Lisbon",
-      instant: "2026-09-25T08:00:00Z",
-    },
-    arrival: {
-      localDate: "2026-09-25",
-      localTime: "10:00",
-      timezoneName: "Europe/Lisbon",
-      instant: "2026-09-25T09:00:00Z",
-    },
-    terminal: null,
-    cabin: "ECONOMY",
-    baggage: "1 checked bag",
-    seat: null,
-    customerBookingReference: "BOOK-1",
-  },
-  accommodation: {
-    title: "Porto hotel",
-    description: "Synthetic accommodation",
-    propertyName: "Example Hotel",
-    checkIn: {
-      localDate: "2026-09-25",
-      localTime: "15:00",
-      timezoneName: "Europe/Lisbon",
-      instant: "2026-09-25T14:00:00Z",
-    },
-    checkOut: {
-      localDate: "2026-09-28",
-      localTime: "11:00",
-      timezoneName: "Europe/Lisbon",
-      instant: "2026-09-28T10:00:00Z",
-    },
-    roomDescription: "Double room",
-    boardType: "BREAKFAST",
-    customerBookingReference: "HOTEL-1",
-  },
-  reservation: {
-    supplierName: "Example Supplier",
-    supplierReference: `SUP-${randomUUID()}`,
-    customerBookingReference: "CUST-1",
-    state: "CONFIRMED",
-  },
-  supplierCost: {
-    amount: createMoney("12345", "EUR", 2),
-    internalNote: "Synthetic supplier net cost",
-  },
-});
+  baseInput,
+  clientFor,
+  CREATE_PERMISSION_IDS,
+  createTripSlice,
+  insertTripWithPrimary,
+  localPartsForInstant,
+  ownerRoleId,
+  persistence,
+  primaryAccommodation,
+  primaryFlight,
+  primaryReservation,
+  primaryStaffFixture,
+  primarySupplierCost,
+  queryAs,
+  queryAsOwner,
+  queryErrorCode,
+  queryErrorConstraint,
+  READ_PERMISSION_IDS,
+  readTripSlice,
+  repository,
+  setupTripFixtures,
+  sqlLiteral,
+  staffAccessRepository,
+  staffSessions,
+  teardownTripFixtures,
+  updateAccommodation,
+  updateInternalSupplierNote,
+  withOwnerTransaction,
+  authorizationFor,
+} from "./helpers/trip-fixtures.js";
 
-const sqlLiteral = (value: string): string => `'${value.replaceAll("'", "''")}'`;
-
-const localPartsForInstant = (instant: string, timezoneName: string): string => {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: timezoneName,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(instant));
-  const values = new Map(parts.map((part) => [part.type, part.value]));
-  return `${values.get("year")}-${values.get("month")}-${values.get("day")}T${values.get("hour")}:${values.get("minute")}:${values.get("second")}`;
-};
-
-const insertTripWithPrimary = async ({
-  tripId,
-  personId,
-  travellerId,
-  title,
-}: {
-  readonly tripId: string;
-  readonly personId: string;
-  readonly travellerId: string;
-  readonly title: string;
-}): Promise<void> => {
-  const customerId = randomUUID();
-  await withOwnerTransaction(async (client) => {
-    await client.query(
-      `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName")
-       VALUES ('${personId}'::uuid, '${agencyId}'::uuid, '${title} Primary', 'Traveller')`,
-    );
-    await client.query(
-      `INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
-       VALUES ('${tripId}'::uuid, '${agencyId}'::uuid, '${title}', '2026-09-25', '2026-09-28', 'DRAFT')`,
-    );
-    await client.query(
-      `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
-       VALUES ('${travellerId}'::uuid, '${agencyId}'::uuid, '${tripId}'::uuid, '${personId}'::uuid, 'PRIMARY_TRAVELLER')`,
-    );
-    await client.query(
-      `INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
-       VALUES ('${customerId}'::uuid, '${agencyId}'::uuid, '${title} Customer')`,
-    );
-    await client.query(
-      `INSERT INTO "crm"."customer_person" ("agencyId", "customerId", "personId", "role", "isPrimary")
-       VALUES ('${agencyId}'::uuid, '${customerId}'::uuid, '${personId}'::uuid, 'PRIMARY_CONTACT', true)`,
-    );
-  });
-};
-
-const bootstrapDatabase = (): void => {
-  const result = spawnSync(
-    path.join(postgresBin, "psql"),
-    [
-      "--no-psqlrc",
-      "--set",
-      "ON_ERROR_STOP=1",
-      "--set",
-      `database_name=${databaseName}`,
-      "--dbname",
-      "postgres",
-      "--file",
-      path.join(repositoryRoot, "deploy/database/bootstrap-database-and-roles.sql"),
-    ],
-    {
-      cwd: repositoryRoot,
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        PGHOST: host,
-        PGPORT: String(port),
-        PGDATABASE: "postgres",
-        PGUSER: "postgres",
-        PGSSLMODE: "disable",
-      },
-    },
-  );
-  if (result.status !== 0) throw new Error(`Stage 5 bootstrap failed: ${result.stderr}`);
-};
+let slice: TripSlice;
 
 beforeAll(async () => {
-  if (!/^127\.0\.0\.1$/.test(host) || !Number.isInteger(port) || postgresBin.length === 0) {
-    throw new Error("Stage 5 disposable PostgreSQL environment is incomplete");
-  }
-  bootstrapDatabase();
-  const predecessorChain = await createPredecessorMigrationChain();
-  const predecessorMigration = await runMigrationChain(migrationTarget, predecessorChain);
-  expect(predecessorMigration.result).toBe("PASS");
-  persistence = createPostgresPersistence<Record<string, never>>({
-    host,
-    port,
-    database: databaseName,
-    user: "travelos_admin_api",
-    tls: { mode: "DISABLED_LOOPBACK_ONLY" },
-    applicationName: "travelos-stage5-qualification",
-    maxConnections: 5,
-  });
-  staffAccessRepository = createStaffAccessRepository(persistence);
-  repository = createOperationalSliceRepository(persistence);
-
-  const upgradeBootstrap = await bootstrapRootAgency(staffAccessRepository, {
-    agencyId,
-    bootstrapReference: "stage5-upgrade-qualification",
-    slug: "stage5-upgrade-qualification",
-  });
-  expect(upgradeBootstrap.created).toBe(true);
-  await seedPrimaryStaffAuthorization();
-  const upgradeInput = baseInput();
-  const predecessorSlice = await createTripSlice(repository, {
-    ...upgradeInput,
-    agencyId,
-    trip: { ...upgradeInput.trip, title: "Stage 5 migration predecessor fixture" },
-  });
-  expect([
-    predecessorSlice.person.lockVersion,
-    predecessorSlice.customer.lockVersion,
-    predecessorSlice.trip.lockVersion,
-    primaryFlight(predecessorSlice).lockVersion,
-    primaryAccommodation(predecessorSlice).lockVersion,
-    primaryReservation(predecessorSlice).lockVersion,
-    primarySupplierCost(predecessorSlice).lockVersion,
-  ]).toEqual([1n, 1n, 1n, 1n, 1n, 1n, 1n]);
-
-  const migration = await runMigrationChain(migrationTarget, productionChain);
-  expect(migration.result).toBe("PASS");
-  const converted = await readTripSlice(repository, agencyId, predecessorSlice.trip.id);
-  if (converted === null) throw new Error("The Stage 5 predecessor fixture disappeared on upgrade");
-  upgradedSlice = converted;
+  await setupTripFixtures("travelos_trips");
 });
 
 afterAll(async () => {
-  try {
-    await persistence?.destroy();
-  } finally {
-    if (predecessorMigrationDirectory !== null) {
-      await rm(predecessorMigrationDirectory, { recursive: true, force: true });
-    }
-  }
+  await teardownTripFixtures();
 });
 
-describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () => {
-  it("applies the new migration head and preserves the predecessor isolation boundary", async () => {
-    const status = await inspectMigrationStatus(migrationTarget, productionChain);
-    expect(status.currentVersion).toBe("0010_stage5_temporal_persistence_parity");
-    const bootstrapInput = {
-      agencyId,
-      bootstrapReference: "stage5-upgrade-qualification",
-      slug: "stage5-upgrade-qualification",
-    };
-    const firstBootstrap = await bootstrapRootAgency(staffAccessRepository, bootstrapInput);
-    expect(firstBootstrap.created).toBe(false);
-    expect(firstBootstrap.permissionRegistryVersion).toBe(PERMISSION_REGISTRY_VERSION);
-    const rerunBootstrap = await bootstrapRootAgency(staffAccessRepository, bootstrapInput);
-    expect(rerunBootstrap.created).toBe(false);
-    expect(rerunBootstrap.ownerRoleId).toBe(firstBootstrap.ownerRoleId);
-    expect(rerunBootstrap.permissionRegistryVersion).toBe(PERMISSION_REGISTRY_VERSION);
-    expect(
-      await queryErrorCode(() => queryAs("travelos_portal_api", 'SELECT * FROM "trip_ops"."trip"')),
-    ).toBe("42501");
-    expect(
-      await queryErrorCode(() =>
-        queryAs("travelos_admin_api", 'SELECT * FROM "portal_access"."portal_user"'),
-      ),
-    ).toBe("42501");
-  });
-
-  it("converts populated Stage 5 roots to zero-based PostgreSQL bigint lock versions", async () => {
-    const migratedSlice = upgradedSlice;
-    if (migratedSlice === null) throw new Error("The predecessor fixture was not migrated");
-    expect([
-      migratedSlice.person.lockVersion,
-      migratedSlice.customer.lockVersion,
-      migratedSlice.trip.lockVersion,
-      primaryFlight(migratedSlice).lockVersion,
-      primaryAccommodation(migratedSlice).lockVersion,
-      primaryReservation(migratedSlice).lockVersion,
-      primarySupplierCost(migratedSlice).lockVersion,
-    ]).toEqual([0n, 0n, 0n, 0n, 0n, 0n, 0n]);
-    expect(migratedSlice.trip.workspaceRevision).toBe(1n);
-
+describe.sequential("Trip workspace persistence", () => {
+  it("uses PostgreSQL bigint lock versions on every mutable root", async () => {
     const columns = await queryAsOwner<{
       readonly schemaName: string;
       readonly tableName: string;
@@ -694,13 +152,13 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const staffPrincipalId = randomUUID();
     const rootMembershipId = randomUUID();
     const secondMembershipId = randomUUID();
-    const rootSessionId = `stage5-root-session-${randomUUID()}`;
-    const secondSessionId = `stage5-second-session-${randomUUID()}`;
+    const rootSessionId = `trips-root-session-${randomUUID()}`;
+    const secondSessionId = `trips-second-session-${randomUUID()}`;
     const rootRoleId = randomUUID();
     const secondRoleId = randomUUID();
     const rootAssignmentId = randomUUID();
     const secondAssignmentId = randomUUID();
-    const syntheticEmailAddress = `stage5-multi-agency-${staffPrincipalId}@example.test`;
+    const syntheticEmailAddress = `trips-multi-agency-${staffPrincipalId}@example.test`;
     let syntheticTopologyCreated = false;
 
     try {
@@ -710,12 +168,12 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         await client.query(
           `INSERT INTO "organization"."agency" ("id", "bootstrapReference", "slug")
            VALUES ($1::uuid, $2, $3)`,
-          [secondAgencyId, `stage5-multi-agency-${secondAgencyId}`, `stage5-${secondAgencyId}`],
+          [secondAgencyId, `trips-multi-agency-${secondAgencyId}`, `trips-${secondAgencyId}`],
         );
         await client.query(
           `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified", "twoFactorEnabled")
            VALUES ($1, $2, $3, true, true)`,
-          [staffPrincipalId, "Stage 5 Multi-Agency Fixture", syntheticEmailAddress],
+          [staffPrincipalId, "Trips Multi-Agency Fixture", syntheticEmailAddress],
         );
         await client.query(
           `INSERT INTO "staff_access"."staff_membership" ("id", "agencyId", "staffPrincipalId", "state")
@@ -736,8 +194,8 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         );
         await client.query(
           `INSERT INTO "staff_access"."role" ("id", "agencyId", "displayName")
-           VALUES ($1::uuid, $2::uuid, 'Stage 5 Root Qualification'),
-                  ($3::uuid, $4::uuid, 'Stage 5 Second Agency Qualification')`,
+           VALUES ($1::uuid, $2::uuid, 'Trips Root Qualification'),
+                  ($3::uuid, $4::uuid, 'Trips Second Agency Qualification')`,
           [rootRoleId, agencyId, secondRoleId, secondAgencyId],
         );
         await client.query(
@@ -896,7 +354,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const revokingRepository: Parameters<typeof createStaffTripOperations>[0]["repository"] = {
       async createTripWorkspace() {
         throw new Error(
-          "Unexpected minimal Trip workspace creation in the Stage 5 authorization test",
+          "Unexpected minimal Trip workspace creation in the Trips authorization test",
         );
       },
       createTripSlice: repository.createTripSlice,
@@ -924,14 +382,14 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
       authorizationRepository: staffAccessRepository,
       sessionResolver: {
         resolveStaffSession: async (cookieHeader) =>
-          cookieHeader === "stage5-authorization-session" ? session : null,
+          cookieHeader === "trips-authorization-session" ? session : null,
       },
     });
 
     let fixtureRestorationFailure: Error | undefined;
     try {
       await expect(
-        operations.updateAccommodation("stage5-authorization-session", {
+        operations.updateAccommodation("trips-authorization-session", {
           agencyId,
           tripId: before.trip.id,
           itemId: currentAccommodation.id,
@@ -1236,346 +694,6 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     expect(committed.trip.workspaceRevision).toBe(seeded.trip.workspaceRevision + 1n);
   });
 
-  it("enforces exactly one primary traveller at commit and during replacement", async () => {
-    const emptyTripId = randomUUID();
-    expect(
-      await queryErrorConstraint(() =>
-        queryAsOwner(
-          `INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
-           VALUES ('${emptyTripId}'::uuid, '${agencyId}'::uuid, 'Invalid empty trip', '2026-09-25', '2026-09-28', 'DRAFT')`,
-        ),
-      ),
-    ).toBe("trip_primary_traveller_exactly_one");
-
-    const replacementTripId = randomUUID();
-    const originalPersonId = randomUUID();
-    const originalTravellerId = randomUUID();
-    await insertTripWithPrimary({
-      tripId: replacementTripId,
-      personId: originalPersonId,
-      travellerId: originalTravellerId,
-      title: "Primary replacement",
-    });
-    const competingPersonId = randomUUID();
-    const competingTravellerId = randomUUID();
-    await queryAsOwner(
-      `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName")
-       VALUES ('${competingPersonId}'::uuid, '${agencyId}'::uuid, 'Competing', 'Traveller')`,
-    );
-    expect(
-      await queryErrorConstraint(() =>
-        queryAsOwner(
-          `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
-           VALUES ('${competingTravellerId}'::uuid, '${agencyId}'::uuid, '${replacementTripId}'::uuid, '${competingPersonId}'::uuid, 'PRIMARY_TRAVELLER')`,
-        ),
-      ),
-    ).toBe("trip_primary_traveller_idx");
-
-    expect(
-      await queryErrorConstraint(() =>
-        queryAsOwner(
-          `DELETE FROM "trip_ops"."trip_traveller"
-            WHERE "id" = '${originalTravellerId}'::uuid`,
-        ),
-      ),
-    ).toBe("trip_primary_traveller_exactly_one");
-
-    const reparentTargetTripId = randomUUID();
-    await insertTripWithPrimary({
-      tripId: reparentTargetTripId,
-      personId: randomUUID(),
-      travellerId: randomUUID(),
-      title: "Reparent target",
-    });
-    expect(
-      await queryErrorConstraint(() =>
-        queryAsOwner(
-          `UPDATE "trip_ops"."trip_traveller"
-              SET "tripId" = '${reparentTargetTripId}'::uuid
-            WHERE "id" = '${originalTravellerId}'::uuid`,
-        ),
-      ),
-    ).toBe("trip_primary_traveller_idx");
-
-    const replacementPersonId = randomUUID();
-    const replacementTravellerId = randomUUID();
-    const replacementCustomerId = randomUUID();
-    await withOwnerTransaction(async (client) => {
-      await client.query(
-        `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName")
-         VALUES ('${replacementPersonId}'::uuid, '${agencyId}'::uuid, 'Replacement', 'Traveller')`,
-      );
-      await client.query(
-        `INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
-         VALUES ('${replacementCustomerId}'::uuid, '${agencyId}'::uuid, 'Replacement Customer')`,
-      );
-      await client.query(
-        `INSERT INTO "crm"."customer_person" ("agencyId", "customerId", "personId", "role", "isPrimary")
-         VALUES ('${agencyId}'::uuid, '${replacementCustomerId}'::uuid, '${replacementPersonId}'::uuid, 'PRIMARY_CONTACT', true)`,
-      );
-      await client.query(
-        `DELETE FROM "trip_ops"."trip_traveller"
-          WHERE "id" = '${originalTravellerId}'::uuid`,
-      );
-      await client.query(
-        `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
-         VALUES ('${replacementTravellerId}'::uuid, '${agencyId}'::uuid, '${replacementTripId}'::uuid, '${replacementPersonId}'::uuid, 'PRIMARY_TRAVELLER')`,
-      );
-    });
-    const replacementRows = await queryAsOwner<{ readonly id: string; readonly role: string }>(
-      `SELECT "id"::text AS "id", "role"
-         FROM "trip_ops"."trip_traveller"
-        WHERE "agencyId" = '${agencyId}'::uuid AND "tripId" = '${replacementTripId}'::uuid
-          AND "role" = 'PRIMARY_TRAVELLER'`,
-    );
-    expect(replacementRows).toEqual([{ id: replacementTravellerId, role: "PRIMARY_TRAVELLER" }]);
-  });
-
-  it("enforces primary traveller CustomerPerson continuity and permits child-before-parent repair", async () => {
-    const invalidTripId = randomUUID();
-    const invalidPersonId = randomUUID();
-    const invalidTravellerId = randomUUID();
-    expect(
-      await queryErrorConstraint(() =>
-        withOwnerTransaction(async (client) => {
-          await client.query(
-            `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName")
-             VALUES ('${invalidPersonId}'::uuid, '${agencyId}'::uuid, 'Continuity', 'Invalid')`,
-          );
-          await client.query(
-            `INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
-             VALUES ('${invalidTripId}'::uuid, '${agencyId}'::uuid, 'Invalid continuity', '2026-09-25', '2026-09-28', 'DRAFT')`,
-          );
-          await client.query(
-            `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
-             VALUES ('${invalidTravellerId}'::uuid, '${agencyId}'::uuid, '${invalidTripId}'::uuid, '${invalidPersonId}'::uuid, 'PRIMARY_TRAVELLER')`,
-          );
-        }),
-      ),
-    ).toBe("trip_primary_traveller_customer_continuity");
-
-    const childFirstTripId = randomUUID();
-    const childFirstPersonId = randomUUID();
-    const childFirstTravellerId = randomUUID();
-    const childFirstCustomerId = randomUUID();
-    await withOwnerTransaction(async (client) => {
-      await client.query(
-        `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName")
-         VALUES ('${childFirstPersonId}'::uuid, '${agencyId}'::uuid, 'Child', 'First')`,
-      );
-      await client.query("SET CONSTRAINTS ALL DEFERRED");
-      await client.query(
-        `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
-         VALUES ('${childFirstTravellerId}'::uuid, '${agencyId}'::uuid, '${childFirstTripId}'::uuid, '${childFirstPersonId}'::uuid, 'PRIMARY_TRAVELLER')`,
-      );
-      await client.query(
-        `INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
-         VALUES ('${childFirstTripId}'::uuid, '${agencyId}'::uuid, 'Child-first trip', '2026-09-25', '2026-09-28', 'DRAFT')`,
-      );
-      await client.query(
-        `INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
-         VALUES ('${childFirstCustomerId}'::uuid, '${agencyId}'::uuid, 'Child-first customer')`,
-      );
-      await client.query(
-        `INSERT INTO "crm"."customer_person" ("agencyId", "customerId", "personId", "role", "isPrimary")
-         VALUES ('${agencyId}'::uuid, '${childFirstCustomerId}'::uuid, '${childFirstPersonId}'::uuid, 'PRIMARY_CONTACT', true)`,
-      );
-    });
-    const childFirstRevision = await queryAsOwner<{ readonly revision: string }>(
-      `SELECT "workspaceRevision"::text AS "revision"
-         FROM "trip_ops"."trip"
-        WHERE "id" = '${childFirstTripId}'::uuid`,
-    );
-    expect(childFirstRevision).toEqual([{ revision: "1" }]);
-
-    const repairedTripId = randomUUID();
-    const repairedPersonId = randomUUID();
-    const repairedTravellerId = randomUUID();
-    const repairedCustomerId = randomUUID();
-    await withOwnerTransaction(async (client) => {
-      await client.query(
-        `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName")
-         VALUES ('${repairedPersonId}'::uuid, '${agencyId}'::uuid, 'Continuity', 'Repaired')`,
-      );
-      await client.query(
-        `INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
-         VALUES ('${repairedTripId}'::uuid, '${agencyId}'::uuid, 'Repaired continuity', '2026-09-25', '2026-09-28', 'DRAFT')`,
-      );
-      await client.query(
-        `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
-         VALUES ('${repairedTravellerId}'::uuid, '${agencyId}'::uuid, '${repairedTripId}'::uuid, '${repairedPersonId}'::uuid, 'PRIMARY_TRAVELLER')`,
-      );
-      await client.query(
-        `INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
-         VALUES ('${repairedCustomerId}'::uuid, '${agencyId}'::uuid, 'Repaired continuity customer')`,
-      );
-      await client.query(
-        `INSERT INTO "crm"."customer_person" ("agencyId", "customerId", "personId", "role", "isPrimary")
-         VALUES ('${agencyId}'::uuid, '${repairedCustomerId}'::uuid, '${repairedPersonId}'::uuid, 'PRIMARY_CONTACT', true)`,
-      );
-    });
-    const continuityTrip = await queryAsOwner<{ readonly id: string }>(
-      `SELECT "id"::text AS "id"
-         FROM "trip_ops"."trip_traveller"
-        WHERE "id" = '${repairedTravellerId}'::uuid
-          AND "role" = 'PRIMARY_TRAVELLER'`,
-    );
-    expect(continuityTrip).toEqual([{ id: repairedTravellerId }]);
-
-    const deletionTripId = randomUUID();
-    const deletionPersonId = randomUUID();
-    await insertTripWithPrimary({
-      tripId: deletionTripId,
-      personId: deletionPersonId,
-      travellerId: randomUUID(),
-      title: "Continuity deletion",
-    });
-    expect(
-      await queryErrorConstraint(() =>
-        queryAsOwner(
-          `DELETE FROM "crm"."customer_person"
-            WHERE "agencyId" = '${agencyId}'::uuid
-              AND "personId" = '${deletionPersonId}'::uuid
-              AND "isPrimary" = true`,
-        ),
-      ),
-    ).toBe("trip_primary_traveller_customer_continuity");
-  });
-
-  it("qualifies deferred primary reparenting for rejection and repaired commit", async () => {
-    const rejectedSourceTripId = randomUUID();
-    const rejectedSourcePersonId = randomUUID();
-    const rejectedSourceTravellerId = randomUUID();
-    const rejectedTargetTripId = randomUUID();
-    const rejectedTargetTravellerId = randomUUID();
-    await insertTripWithPrimary({
-      tripId: rejectedSourceTripId,
-      personId: rejectedSourcePersonId,
-      travellerId: rejectedSourceTravellerId,
-      title: "Reparent rejected source",
-    });
-    await insertTripWithPrimary({
-      tripId: rejectedTargetTripId,
-      personId: randomUUID(),
-      travellerId: rejectedTargetTravellerId,
-      title: "Reparent rejected target",
-    });
-    expect(
-      await queryErrorConstraint(() =>
-        withOwnerTransaction(async (client) => {
-          await client.query(
-            `DELETE FROM "trip_ops"."trip_traveller"
-              WHERE "id" = '${rejectedTargetTravellerId}'::uuid`,
-          );
-          await client.query(
-            `UPDATE "trip_ops"."trip_traveller"
-                SET "tripId" = '${rejectedTargetTripId}'::uuid
-              WHERE "id" = '${rejectedSourceTravellerId}'::uuid`,
-          );
-        }),
-      ),
-    ).toBe("trip_primary_traveller_exactly_one");
-
-    const sourceTripId = randomUUID();
-    const sourcePersonId = randomUUID();
-    const sourceTravellerId = randomUUID();
-    const targetTripId = randomUUID();
-    const targetTravellerId = randomUUID();
-    const replacementPersonId = randomUUID();
-    const replacementCustomerId = randomUUID();
-    await insertTripWithPrimary({
-      tripId: sourceTripId,
-      personId: sourcePersonId,
-      travellerId: sourceTravellerId,
-      title: "Reparent repaired source",
-    });
-    await insertTripWithPrimary({
-      tripId: targetTripId,
-      personId: randomUUID(),
-      travellerId: targetTravellerId,
-      title: "Reparent repaired target",
-    });
-    await queryAsOwner(
-      `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName")
-       VALUES ('${replacementPersonId}'::uuid, '${agencyId}'::uuid, 'Replacement', 'Primary')`,
-    );
-    await queryAsOwner(
-      `INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
-       VALUES ('${replacementCustomerId}'::uuid, '${agencyId}'::uuid, 'Replacement Customer')`,
-    );
-    await queryAsOwner(
-      `INSERT INTO "crm"."customer_person" ("agencyId", "customerId", "personId", "role", "isPrimary")
-       VALUES ('${agencyId}'::uuid, '${replacementCustomerId}'::uuid, '${replacementPersonId}'::uuid, 'PRIMARY_CONTACT', true)`,
-    );
-    await withOwnerTransaction(async (client) => {
-      await client.query(
-        `DELETE FROM "trip_ops"."trip_traveller"
-          WHERE "id" = '${targetTravellerId}'::uuid`,
-      );
-      await client.query(
-        `UPDATE "trip_ops"."trip_traveller"
-            SET "tripId" = '${targetTripId}'::uuid, "role" = 'TRAVELLER'
-          WHERE "id" = '${sourceTravellerId}'::uuid`,
-      );
-      await client.query(
-        `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
-         VALUES ('${randomUUID()}'::uuid, '${agencyId}'::uuid, '${sourceTripId}'::uuid, '${replacementPersonId}'::uuid, 'PRIMARY_TRAVELLER')`,
-      );
-      await client.query(
-        `UPDATE "trip_ops"."trip_traveller"
-            SET "role" = 'PRIMARY_TRAVELLER'
-          WHERE "id" = '${sourceTravellerId}'::uuid`,
-      );
-    });
-    const repairedRows = await queryAsOwner<{
-      readonly tripId: string;
-      readonly role: string;
-      readonly personId: string;
-    }>(
-      `SELECT "tripId"::text AS "tripId", "role", "personId"::text AS "personId"
-         FROM "trip_ops"."trip_traveller"
-        WHERE "agencyId" = '${agencyId}'::uuid
-          AND "tripId" IN ('${sourceTripId}'::uuid, '${targetTripId}'::uuid)
-          AND "role" = 'PRIMARY_TRAVELLER'
-        ORDER BY "tripId"`,
-    );
-    expect(repairedRows).toEqual(
-      [
-        { tripId: sourceTripId, role: "PRIMARY_TRAVELLER", personId: replacementPersonId },
-        { tripId: targetTripId, role: "PRIMARY_TRAVELLER", personId: sourcePersonId },
-      ].sort((left, right) => left.tripId.localeCompare(right.tripId)),
-    );
-  });
-
-  it("keeps the designated primary continuity rows when valid secondary rows exist", async () => {
-    const secondaryPersonId = randomUUID();
-    const secondaryCustomerId = randomUUID();
-    const secondaryTravellerId = randomUUID();
-    await queryAsOwner(
-      `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName")
-       VALUES ('${secondaryPersonId}'::uuid, '${agencyId}'::uuid, 'Secondary', 'Traveller')`,
-    );
-    await queryAsOwner(
-      `INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
-       VALUES ('${secondaryCustomerId}'::uuid, '${agencyId}'::uuid, 'Secondary Customer')`,
-    );
-    await queryAsOwner(
-      `INSERT INTO "crm"."customer_person" ("agencyId", "customerId", "personId", "role", "isPrimary")
-       VALUES ('${agencyId}'::uuid, '${secondaryCustomerId}'::uuid, '${secondaryPersonId}'::uuid, 'PAYER', false)`,
-    );
-    await queryAsOwner(
-      `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
-       VALUES ('${secondaryTravellerId}'::uuid, '${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${secondaryPersonId}'::uuid, 'TRAVELLER')`,
-    );
-    const projected = await readTripSlice(repository, agencyId, slice.trip.id);
-    expect(projected).not.toBeNull();
-    expect(projected?.person.id).toBe(slice.person.id);
-    expect(projected?.customer.id).toBe(slice.customer.id);
-    expect(projected?.customerPerson.isPrimary).toBe(true);
-    expect(projected?.traveller.id).toBe(slice.traveller.id);
-    expect(projected?.traveller.role).toBe("PRIMARY_TRAVELLER");
-  });
-
   it("increments workspace revision for projected Person, Customer and CustomerPerson changes", async () => {
     const projectionInput = baseInput();
     const projectedSlice = await createTripSlice(repository, {
@@ -1658,12 +776,12 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const accommodationCall =
       `SELECT "trip_ops"."cas_update_accommodation_presentation"(` +
       `'${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${primaryAccommodation(slice).id}'::uuid, ` +
-      `0::bigint, 'forbidden portal edit', 'forbidden')`;
+      `0::bigint, 'forbidden worker edit', 'forbidden')`;
     const supplierCostCall =
       `SELECT "trip_ops"."cas_update_supplier_cost_internal_note"(` +
       `'${agencyId}'::uuid, '${slice.trip.id}'::uuid, '${primaryReservation(slice).id}'::uuid, ` +
-      `0::bigint, 'forbidden portal edit')`;
-    for (const role of ["travelos_portal_api", "travelos_worker"] as const) {
+      `0::bigint, 'forbidden worker edit')`;
+    for (const role of ["travelos_worker"] as const) {
       for (const statement of [accommodationCall, supplierCostCall]) {
         expect(await queryErrorCode(() => queryAs(role, statement))).toBe("42501");
       }
@@ -2085,11 +1203,11 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         destroy: activePersistence.destroy.bind(activePersistence),
       };
       const deadlockRepository = createOperationalSliceRepository(observedPersistence);
-      const expectedHost = "admin-stage5-deadlock.example.test";
+      const expectedHost = "admin-trips-deadlock.example.test";
       const deadlockRealm: AuthRealm = {
         kind: "STAFF",
         basePath: STAFF_AUTH_BASE_PATH,
-        cookieName: "travelos-stage5-deadlock-session",
+        cookieName: "travelos-trips-deadlock-session",
         secureTransportRequired: false,
         async handle() {
           return new Response(null, { status: 404 });
@@ -2125,7 +1243,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         .patch(`/api/admin/reservations/${reservation.id}/internal-note`)
         .set("Host", expectedHost)
         .set("Origin", `http://${expectedHost}`)
-        .set("Cookie", "travelos-stage5-deadlock-session=opaque")
+        .set("Cookie", "travelos-trips-deadlock-session=opaque")
         .send({
           agencyId,
           tripId: current.trip.id,
@@ -2213,11 +1331,11 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         "The stale supplier-cost HTTP qualification requires a Staff session fixture",
       );
     }
-    const expectedHost = "admin-stage5-stale-cost.example.test";
+    const expectedHost = "admin-trips-stale-cost.example.test";
     const staleCostRealm: AuthRealm = {
       kind: "STAFF",
       basePath: STAFF_AUTH_BASE_PATH,
-      cookieName: "travelos-stage5-stale-cost-session",
+      cookieName: "travelos-trips-stale-cost-session",
       secureTransportRequired: false,
       async handle() {
         return new Response(null, { status: 404 });
@@ -2253,7 +1371,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         .patch(`/api/admin/reservations/${primaryReservation(current).id}/internal-note`)
         .set("Host", expectedHost)
         .set("Origin", `http://${expectedHost}`)
-        .set("Cookie", "travelos-stage5-stale-cost-session=opaque")
+        .set("Cookie", "travelos-trips-stale-cost-session=opaque")
         .send({
           agencyId,
           tripId: current.trip.id,
@@ -2821,7 +1939,7 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
     const secondInput = baseInput();
     const secondSlice = await createTripSlice(repository, {
       ...secondInput,
-      trip: { ...secondInput.trip, title: "Second Stage 5 qualification trip" },
+      trip: { ...secondInput.trip, title: "Second Trips qualification trip" },
     });
     expect(
       await queryErrorConstraint(() =>
@@ -3002,17 +2120,6 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
         ),
       ),
     ).toBe("P0001");
-    const floatColumns = await queryAsOwner<{ readonly dataType: string }>(`
-      SELECT format_type(attribute.atttypid, attribute.atttypmod) AS "dataType"
-        FROM pg_catalog.pg_attribute AS attribute
-        JOIN pg_catalog.pg_class AS relation ON relation.oid = attribute.attrelid
-        JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
-       WHERE namespace.nspname IN ('crm', 'trip_ops', 'finance')
-         AND relation.relname IN ('person', 'customer', 'customer_person', 'trip', 'trip_traveller', 'itinerary_item', 'flight_item_detail', 'accommodation_item_detail', 'reservation', 'reservation_item_link', 'supplier_cost_line')
-         AND attribute.attnum > 0 AND NOT attribute.attisdropped
-         AND format_type(attribute.atttypid, attribute.atttypmod) IN ('real', 'double precision')
-    `);
-    expect(floatColumns).toHaveLength(0);
   });
 
   it("denies reads without a current Agency membership", async () => {
@@ -3041,4 +2148,903 @@ describe.sequential("TravelOS Stage 5 disposable PostgreSQL qualification", () =
   });
 });
 
-export const stage5QualificationFingerprint = createHash("sha256").update("stage5").digest("hex");
+const workspaceDatabase = "travelos_trips";
+const withOwnerLogin = async <Result>(
+  database: string,
+  work: (client: Client) => Promise<Result>,
+): Promise<Result> => {
+  const client = await createOwnerClient(database);
+  try {
+    return await work(client);
+  } finally {
+    await client.end();
+  }
+};
+
+/** A fabricated Owner session (full capabilities, recent MFA) resolved through the registry. */
+const createWorkspaceHarness = async () => {
+  const sessions: StaffSessionRegistry = new Map();
+  const owner = await createOwnerClient(workspaceDatabase);
+  try {
+    const staff = await createStaff(owner, sessions, "workspace", [], {
+      agencyId,
+      roleId: ownerRoleId,
+      recentMfa: true,
+    });
+    return {
+      cookie: staff.cookie,
+      sessionId: staff.sessionId,
+      principalId: staff.principalId,
+      resolver: registrySessionResolver(sessions),
+    };
+  } finally {
+    await owner.end();
+  }
+};
+
+const workspaceDraft = (title: string): CreateTripSliceInput => ({
+  agencyId: asOpaqueId(agencyId),
+  person: {
+    givenName: "Synthetic",
+    familyName: "Cleanup Traveller",
+    email: `workspace-workspace-${randomUUID()}@example.test`,
+  },
+  customer: { displayName: "Workspace Customer" },
+  customerPersonRole: "PRIMARY_CONTACT",
+  trip: { title, startDate: "2027-10-12", endDate: "2027-10-15", state: "DRAFT" },
+  travellerRole: "PRIMARY_TRAVELLER",
+  flight: {
+    title: "Outbound flight",
+    description: "Synthetic flight description",
+    carrier: "Example Air",
+    flightNumber: "EA100",
+    departureAirport: "LIS",
+    arrivalAirport: "OPO",
+    departure: createScheduledLocalDateTime({
+      localDate: "2027-10-12",
+      localTime: "09:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2027-10-12T08:00:00Z",
+    }),
+    arrival: createScheduledLocalDateTime({
+      localDate: "2027-10-12",
+      localTime: "10:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2027-10-12T09:00:00Z",
+    }),
+    terminal: null,
+    cabin: "ECONOMY",
+    baggage: "One cabin bag",
+    seat: null,
+    customerBookingReference: "SYNTH-FLIGHT-1",
+  },
+  accommodation: {
+    title: "Synthetic hotel",
+    description: "Synthetic accommodation description",
+    propertyName: "Example Hotel",
+    checkIn: createScheduledLocalDateTime({
+      localDate: "2027-10-12",
+      localTime: "15:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2027-10-12T14:00:00Z",
+    }),
+    checkOut: createScheduledLocalDateTime({
+      localDate: "2027-10-15",
+      localTime: "11:00",
+      timezoneName: "Europe/Lisbon",
+      instant: "2027-10-15T10:00:00Z",
+    }),
+    roomDescription: "Double room",
+    boardType: "BREAKFAST",
+    customerBookingReference: "SYNTH-HOTEL-1",
+  },
+  reservation: {
+    supplierName: "Synthetic Supplier",
+    supplierReference: `SUP-${randomUUID()}`,
+    customerBookingReference: "SYNTH-RES-1",
+    state: "CONFIRMED",
+  },
+  supplierCost: {
+    amount: createMoney("12345", "EUR", 2),
+    internalNote: "Synthetic workspace qualification note",
+  },
+});
+
+describe.sequential("Trip workspace create and edit flows", () => {
+  it("creates_an_authorized_minimal_trip_workspace_with_an_empty_itinerary", async () => {
+    const { cookie, resolver } = await createWorkspaceHarness();
+    if (persistence === null) {
+      throw new Error("Workspace Staff persistence fixture was not initialized");
+    }
+    const operations = databaseModule.createPostgresStaffTripOperations(persistence, resolver);
+    const marker = randomUUID();
+    const requestBody = {
+      customer: { displayName: `Workspace synthetic customer ${marker}` },
+      primaryTraveller: { givenName: "Workspace", familyName: `Synthetic-${marker}` },
+      trip: {
+        title: `Workspace synthetic trip ${marker}`,
+        startDate: "2026-12-01",
+        endDate: "2026-12-05",
+      },
+    };
+
+    const trip = await operations.createTripWorkspace(cookie, requestBody);
+
+    expect(trip).toMatchObject({
+      agencyId: asOpaqueId(agencyId),
+      title: requestBody.trip.title,
+      startDate: requestBody.trip.startDate,
+      endDate: requestBody.trip.endDate,
+      state: "DRAFT",
+      workspaceRevision: 1n,
+      lockVersion: 0n,
+    });
+    const persisted = await withOwnerLogin(workspaceDatabase, (client) =>
+      client.query(
+        `SELECT trip."agencyId"::text AS "agencyId", trip."title", trip."state",
+                trip."workspaceRevision"::text AS "workspaceRevision",
+                trip."lockVersion"::text AS "lockVersion", customer."displayName",
+                person."givenName", person."familyName", customer_person."role" AS "customerPersonRole",
+                customer_person."isPrimary" AS "customerPersonPrimary", traveller."role" AS "travellerRole",
+                (SELECT count(*)::text FROM "trip_ops"."itinerary_item" AS item
+                  WHERE item."agencyId" = trip."agencyId" AND item."tripId" = trip."id") AS "itemCount",
+                (SELECT count(*)::text FROM "trip_ops"."reservation" AS reservation
+                  WHERE reservation."agencyId" = trip."agencyId" AND reservation."tripId" = trip."id") AS "reservationCount",
+                (SELECT count(*)::text FROM "finance"."supplier_cost_line" AS cost
+                  WHERE cost."agencyId" = trip."agencyId" AND cost."tripId" = trip."id") AS "supplierCostCount"
+           FROM "trip_ops"."trip" AS trip
+           JOIN "trip_ops"."trip_traveller" AS traveller
+             ON traveller."agencyId" = trip."agencyId" AND traveller."tripId" = trip."id"
+            AND traveller."role" = 'PRIMARY_TRAVELLER'
+           JOIN "crm"."person" AS person
+             ON person."agencyId" = traveller."agencyId" AND person."id" = traveller."personId"
+           JOIN "crm"."customer_person" AS customer_person
+             ON customer_person."agencyId" = person."agencyId" AND customer_person."personId" = person."id"
+            AND customer_person."isPrimary" = true
+           JOIN "crm"."customer" AS customer
+             ON customer."agencyId" = customer_person."agencyId" AND customer."id" = customer_person."customerId"
+          WHERE trip."id" = $1::uuid`,
+        [trip.id],
+      ),
+    );
+    expect(persisted.rows).toEqual([
+      {
+        agencyId: agencyId,
+        title: requestBody.trip.title,
+        state: "DRAFT",
+        workspaceRevision: "1",
+        lockVersion: "0",
+        displayName: requestBody.customer.displayName,
+        givenName: "Workspace",
+        familyName: requestBody.primaryTraveller.familyName,
+        customerPersonRole: "PRIMARY_CONTACT",
+        customerPersonPrimary: true,
+        travellerRole: "PRIMARY_TRAVELLER",
+        itemCount: "0",
+        reservationCount: "0",
+        supplierCostCount: "0",
+      },
+    ]);
+  });
+
+  it("persists Flight, Accommodation and Trip edits with workspace revision and item lock CAS", async () => {
+    const { cookie, resolver } = await createWorkspaceHarness();
+    if (persistence === null) {
+      throw new Error("Workspace Staff persistence fixture was not initialized");
+    }
+    const createWriteOperations = Reflect.get(
+      databaseModule,
+      "createPostgresStaffTripWorkspaceWriteOperations",
+    );
+    expect(typeof createWriteOperations).toBe("function");
+    if (typeof createWriteOperations !== "function") {
+      throw new Error("PostgreSQL Staff workspace write operations are not exported");
+    }
+    const writeOperations = Reflect.apply(createWriteOperations, undefined, [
+      persistence,
+      resolver,
+    ]) as StaffTripWorkspaceWriteOperations;
+    const tripOperations = databaseModule.createPostgresStaffTripOperations(persistence, resolver);
+    const marker = randomUUID();
+    const trip = await tripOperations.createTripWorkspace(cookie, {
+      customer: { displayName: `Workspace CAS customer ${marker}` },
+      primaryTraveller: { givenName: "Workspace", familyName: `CAS-${marker}` },
+      trip: {
+        title: `Workspace CAS trip ${marker}`,
+        startDate: "2027-10-12",
+        endDate: "2027-10-15",
+      },
+    });
+    const drafts = workspaceDraft(`Workspace CAS draft ${marker}`);
+
+    const withFlight = await writeOperations.createFlight(cookie, trip.id, {
+      expectedWorkspaceRevision: 1n,
+      flight: drafts.flight,
+    });
+    expect(withFlight).toMatchObject({
+      trip: { id: trip.id, workspaceRevision: 2n, lockVersion: 0n },
+      flights: [
+        {
+          title: drafts.flight.title,
+          flightNumber: drafts.flight.flightNumber,
+          state: "DRAFT",
+          sortOrder: 1,
+          lockVersion: 0n,
+        },
+      ],
+      accommodations: [],
+    });
+    const withAccommodation = await writeOperations.createAccommodation(cookie, trip.id, {
+      expectedWorkspaceRevision: 2n,
+      accommodation: drafts.accommodation,
+    });
+    expect(withAccommodation).toMatchObject({
+      trip: { id: trip.id, workspaceRevision: 3n, lockVersion: 0n },
+      accommodations: [
+        {
+          title: drafts.accommodation.title,
+          propertyName: drafts.accommodation.propertyName,
+          state: "DRAFT",
+          sortOrder: 2,
+          lockVersion: 0n,
+        },
+      ],
+    });
+    const flight = withAccommodation.flights[0];
+    const accommodation = withAccommodation.accommodations[0];
+    expect(flight).toBeDefined();
+    expect(accommodation).toBeDefined();
+    if (!flight || !accommodation) throw new Error("Created itinerary items were not returned");
+
+    const editedFlight = {
+      ...drafts.flight,
+      title: "Updated outbound flight",
+      description: "Updated synthetic flight details",
+      flightNumber: "EA101",
+    };
+    const withEditedFlight = await writeOperations.updateFlight(cookie, trip.id, flight.id, {
+      expectedWorkspaceRevision: 3n,
+      expectedLockVersion: 0n,
+      flight: editedFlight,
+    });
+    expect(withEditedFlight).toMatchObject({
+      trip: { workspaceRevision: 4n, lockVersion: 0n },
+      flights: [
+        { id: flight.id, title: "Updated outbound flight", flightNumber: "EA101", lockVersion: 1n },
+      ],
+    });
+
+    const editedAccommodation = {
+      ...drafts.accommodation,
+      title: "Updated hotel stay",
+      description: "Updated synthetic accommodation details",
+      propertyName: "Updated Example Hotel",
+    };
+    const withEditedAccommodation = await writeOperations.updateAccommodation(
+      cookie,
+      trip.id,
+      accommodation.id,
+      {
+        expectedWorkspaceRevision: 4n,
+        expectedLockVersion: 0n,
+        accommodation: editedAccommodation,
+      },
+    );
+    expect(withEditedAccommodation).toMatchObject({
+      trip: { workspaceRevision: 5n, lockVersion: 0n },
+      accommodations: [
+        {
+          id: accommodation.id,
+          title: "Updated hotel stay",
+          propertyName: "Updated Example Hotel",
+          lockVersion: 1n,
+        },
+      ],
+    });
+
+    const withEditedTrip = await writeOperations.updateTrip(cookie, trip.id, {
+      expectedWorkspaceRevision: 5n,
+      expectedLockVersion: 0n,
+      trip: {
+        title: "Updated Workspace CAS trip",
+        startDate: "2027-10-12",
+        endDate: "2027-10-16",
+      },
+    });
+    expect(withEditedTrip.trip).toMatchObject({
+      title: "Updated Workspace CAS trip",
+      startDate: "2027-10-12",
+      endDate: "2027-10-16",
+      workspaceRevision: 6n,
+      lockVersion: 1n,
+    });
+
+    await expect(
+      writeOperations.updateAccommodation(cookie, trip.id, accommodation.id, {
+        expectedWorkspaceRevision: 5n,
+        expectedLockVersion: 1n,
+        accommodation: drafts.accommodation,
+      }),
+    ).rejects.toBeInstanceOf(OptimisticConflictError);
+    await expect(
+      writeOperations.updateAccommodation(cookie, trip.id, accommodation.id, {
+        expectedWorkspaceRevision: 6n,
+        expectedLockVersion: 0n,
+        accommodation: drafts.accommodation,
+      }),
+    ).rejects.toBeInstanceOf(OptimisticConflictError);
+
+    const persisted = await withOwnerLogin(workspaceDatabase, (client) =>
+      client.query(
+        `SELECT trip."title" AS "tripTitle", trip."workspaceRevision"::text AS "workspaceRevision",
+                trip."lockVersion"::text AS "tripLockVersion", flight."sortOrder" AS "flightOrder",
+                flight."customerTitle" AS "flightTitle", flight."lockVersion"::text AS "flightLockVersion",
+                flight_detail."flightNumber", accommodation."sortOrder" AS "accommodationOrder",
+                accommodation."customerTitle" AS "accommodationTitle",
+                accommodation."lockVersion"::text AS "accommodationLockVersion",
+                accommodation_detail."propertyName"
+           FROM "trip_ops"."trip" AS trip
+           JOIN "trip_ops"."itinerary_item" AS flight
+             ON flight."agencyId" = trip."agencyId" AND flight."tripId" = trip."id"
+            AND flight."family" = 'FLIGHT'
+           JOIN "trip_ops"."flight_item_detail" AS flight_detail
+             ON flight_detail."agencyId" = flight."agencyId" AND flight_detail."tripId" = flight."tripId"
+            AND flight_detail."itemId" = flight."id"
+           JOIN "trip_ops"."itinerary_item" AS accommodation
+             ON accommodation."agencyId" = trip."agencyId" AND accommodation."tripId" = trip."id"
+            AND accommodation."family" = 'ACCOMMODATION'
+           JOIN "trip_ops"."accommodation_item_detail" AS accommodation_detail
+             ON accommodation_detail."agencyId" = accommodation."agencyId"
+            AND accommodation_detail."tripId" = accommodation."tripId"
+            AND accommodation_detail."itemId" = accommodation."id"
+          WHERE trip."id" = $1::uuid`,
+        [trip.id],
+      ),
+    );
+    expect(persisted.rows).toEqual([
+      {
+        tripTitle: "Updated Workspace CAS trip",
+        workspaceRevision: "6",
+        tripLockVersion: "1",
+        flightOrder: 1,
+        flightTitle: "Updated outbound flight",
+        flightLockVersion: "1",
+        flightNumber: "EA101",
+        accommodationOrder: 2,
+        accommodationTitle: "Updated hotel stay",
+        accommodationLockVersion: "1",
+        propertyName: "Updated Example Hotel",
+      },
+    ]);
+  });
+
+  it("does not update an itinerary item through a different Trip scope", async () => {
+    const { cookie, resolver } = await createWorkspaceHarness();
+    if (persistence === null) {
+      throw new Error("Workspace Staff persistence fixture was not initialized");
+    }
+    const createWriteOperations = Reflect.get(
+      databaseModule,
+      "createPostgresStaffTripWorkspaceWriteOperations",
+    );
+    expect(typeof createWriteOperations).toBe("function");
+    if (typeof createWriteOperations !== "function") {
+      throw new Error("PostgreSQL Staff workspace write operations are not exported");
+    }
+    const writeOperations = Reflect.apply(createWriteOperations, undefined, [
+      persistence,
+      resolver,
+    ]) as StaffTripWorkspaceWriteOperations;
+    const tripOperations = databaseModule.createPostgresStaffTripOperations(persistence, resolver);
+    const marker = randomUUID();
+    const sourceTrip = await tripOperations.createTripWorkspace(cookie, {
+      customer: { displayName: `Workspace scope source ${marker}` },
+      primaryTraveller: { givenName: "Workspace", familyName: `ScopeSource-${marker}` },
+      trip: {
+        title: `Workspace scope source ${marker}`,
+        startDate: "2027-10-12",
+        endDate: "2027-10-15",
+      },
+    });
+    const targetTrip = await tripOperations.createTripWorkspace(cookie, {
+      customer: { displayName: `Workspace scope target ${marker}` },
+      primaryTraveller: { givenName: "Workspace", familyName: `ScopeTarget-${marker}` },
+      trip: {
+        title: `Workspace scope target ${marker}`,
+        startDate: "2027-10-12",
+        endDate: "2027-10-15",
+      },
+    });
+    const drafts = workspaceDraft(`Workspace scope draft ${marker}`);
+    const sourceWorkspace = await writeOperations.createFlight(cookie, sourceTrip.id, {
+      expectedWorkspaceRevision: 1n,
+      flight: drafts.flight,
+    });
+    const flight = sourceWorkspace.flights[0];
+    expect(flight).toBeDefined();
+    if (!flight) throw new Error("Created source Flight was not returned");
+
+    await expect(
+      writeOperations.updateFlight(cookie, targetTrip.id, flight.id, {
+        expectedWorkspaceRevision: 1n,
+        expectedLockVersion: 0n,
+        flight: { ...drafts.flight, title: "Cross-Trip update must be rejected" },
+      }),
+    ).rejects.toBeInstanceOf(TripNotFoundError);
+
+    const persisted = await withOwnerLogin(workspaceDatabase, (client) =>
+      client.query(
+        `SELECT trip."id"::text AS "tripId",
+                trip."workspaceRevision"::text AS "workspaceRevision",
+                item."customerTitle" AS "flightTitle",
+                item."lockVersion"::text AS "flightLockVersion"
+           FROM "trip_ops"."trip" AS trip
+           LEFT JOIN "trip_ops"."itinerary_item" AS item
+             ON item."agencyId" = trip."agencyId" AND item."tripId" = trip."id"
+            AND item."family" = 'FLIGHT'
+          WHERE trip."id" = ANY($1::uuid[])
+          ORDER BY trip."id"::text`,
+        [[sourceTrip.id, targetTrip.id]],
+      ),
+    );
+    const sourceRow = persisted.rows.find((row) => row["tripId"] === sourceTrip.id);
+    const targetRow = persisted.rows.find((row) => row["tripId"] === targetTrip.id);
+    expect(sourceRow).toMatchObject({
+      workspaceRevision: "2",
+      flightTitle: drafts.flight.title,
+      flightLockVersion: "0",
+    });
+    expect(targetRow).toMatchObject({
+      workspaceRevision: "1",
+      flightTitle: null,
+      flightLockVersion: null,
+    });
+  });
+
+  it("rolls back a Flight itinerary row when detail insertion fails", async () => {
+    const { cookie, resolver } = await createWorkspaceHarness();
+    if (persistence === null) {
+      throw new Error("Workspace Staff persistence fixture was not initialized");
+    }
+    const createWriteOperations = Reflect.get(
+      databaseModule,
+      "createPostgresStaffTripWorkspaceWriteOperations",
+    );
+    expect(typeof createWriteOperations).toBe("function");
+    if (typeof createWriteOperations !== "function") {
+      throw new Error("PostgreSQL Staff workspace write operations are not exported");
+    }
+    const writeOperations = Reflect.apply(createWriteOperations, undefined, [
+      persistence,
+      resolver,
+    ]) as StaffTripWorkspaceWriteOperations;
+    const tripOperations = databaseModule.createPostgresStaffTripOperations(persistence, resolver);
+    const marker = randomUUID();
+    const trip = await tripOperations.createTripWorkspace(cookie, {
+      customer: { displayName: `Workspace atomic Flight customer ${marker}` },
+      primaryTraveller: { givenName: "Workspace", familyName: `AtomicFlight-${marker}` },
+      trip: {
+        title: `Workspace atomic Flight ${marker}`,
+        startDate: "2027-10-12",
+        endDate: "2027-10-15",
+      },
+    });
+    const drafts = workspaceDraft(`Workspace atomic Flight draft ${marker}`);
+    await withOwnerLogin(workspaceDatabase, (client) =>
+      client.query(`
+        CREATE OR REPLACE FUNCTION "trip_ops"."workspace_test_reject_flight_detail_insert"()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $workspace_failure$
+        BEGIN
+          IF NEW."flightNumber" = 'EA999' THEN
+            RAISE EXCEPTION 'Workspace test injected Flight detail failure'
+              USING ERRCODE = 'P0001';
+          END IF;
+          RETURN NEW;
+        END
+        $workspace_failure$;
+        CREATE TRIGGER "workspace_test_reject_flight_detail_insert"
+          BEFORE INSERT ON "trip_ops"."flight_item_detail"
+          FOR EACH ROW EXECUTE FUNCTION "trip_ops"."workspace_test_reject_flight_detail_insert"();
+      `),
+    );
+    try {
+      await expect(
+        writeOperations.createFlight(cookie, trip.id, {
+          expectedWorkspaceRevision: 1n,
+          flight: { ...drafts.flight, flightNumber: "EA999" },
+        }),
+      ).rejects.toThrow("Workspace test injected Flight detail failure");
+    } finally {
+      await withOwnerLogin(workspaceDatabase, (client) =>
+        client.query(`
+          DROP TRIGGER IF EXISTS "workspace_test_reject_flight_detail_insert"
+            ON "trip_ops"."flight_item_detail";
+          DROP FUNCTION IF EXISTS "trip_ops"."workspace_test_reject_flight_detail_insert"();
+        `),
+      );
+    }
+    const persisted = await withOwnerLogin(workspaceDatabase, (client) =>
+      client.query(
+        `SELECT trip."workspaceRevision"::text AS "workspaceRevision",
+                (SELECT count(*)::text
+                   FROM "trip_ops"."itinerary_item" AS item
+                  WHERE item."agencyId" = trip."agencyId" AND item."tripId" = trip."id") AS "itemCount",
+                (SELECT count(*)::text
+                   FROM "trip_ops"."flight_item_detail" AS detail
+                  WHERE detail."agencyId" = trip."agencyId" AND detail."tripId" = trip."id") AS "flightDetailCount"
+           FROM "trip_ops"."trip" AS trip
+          WHERE trip."id" = $1::uuid`,
+        [trip.id],
+      ),
+    );
+    expect(persisted.rows).toEqual([
+      { workspaceRevision: "1", itemCount: "0", flightDetailCount: "0" },
+    ]);
+  });
+
+  it("rolls_back_customer_person_and_trip_when_primary_traveller_creation_fails", async () => {
+    const { cookie, resolver } = await createWorkspaceHarness();
+    if (persistence === null) {
+      throw new Error("Workspace Staff persistence fixture was not initialized");
+    }
+    const operations = databaseModule.createPostgresStaffTripOperations(persistence, resolver);
+    const marker = randomUUID();
+    const requestBody = {
+      customer: { displayName: `Workspace rollback customer ${marker}` },
+      primaryTraveller: { givenName: "Workspace", familyName: `Rollback-${marker}` },
+      trip: {
+        title: `Workspace atomic rollback ${marker}`,
+        startDate: "2026-12-01",
+        endDate: "2026-12-05",
+      },
+    };
+    await withOwnerLogin(workspaceDatabase, async (client) => {
+      await client.query(`
+        CREATE OR REPLACE FUNCTION "trip_ops"."workspace_test_reject_primary_traveller"()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $workspace_failure$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM "trip_ops"."trip" AS trip
+             WHERE trip."id" = NEW."tripId"
+               AND trip."title" LIKE 'Workspace atomic rollback %'
+          ) THEN
+            RAISE EXCEPTION 'Workspace test injected primary traveller failure'
+              USING ERRCODE = 'P0001';
+          END IF;
+          RETURN NEW;
+        END
+        $workspace_failure$;
+        CREATE TRIGGER "workspace_test_reject_primary_traveller"
+          BEFORE INSERT ON "trip_ops"."trip_traveller"
+          FOR EACH ROW EXECUTE FUNCTION "trip_ops"."workspace_test_reject_primary_traveller"();
+      `);
+    });
+    try {
+      await expect(operations.createTripWorkspace(cookie, requestBody)).rejects.toThrow(
+        "Workspace test injected primary traveller failure",
+      );
+    } finally {
+      await withOwnerLogin(workspaceDatabase, async (client) => {
+        await client.query(`
+          DROP TRIGGER IF EXISTS "workspace_test_reject_primary_traveller"
+            ON "trip_ops"."trip_traveller";
+          DROP FUNCTION IF EXISTS "trip_ops"."workspace_test_reject_primary_traveller"();
+        `);
+      });
+    }
+    const persisted = await withOwnerLogin(workspaceDatabase, (client) =>
+      client.query(
+        `SELECT
+           (SELECT count(*)::text FROM "crm"."person" WHERE "familyName" = $1) AS "personCount",
+           (SELECT count(*)::text FROM "crm"."customer" WHERE "displayName" = $2) AS "customerCount",
+           (SELECT count(*)::text FROM "trip_ops"."trip" WHERE "title" = $3) AS "tripCount"`,
+        [
+          requestBody.primaryTraveller.familyName,
+          requestBody.customer.displayName,
+          requestBody.trip.title,
+        ],
+      ),
+    );
+    expect(persisted.rows).toEqual([{ personCount: "0", customerCount: "0", tripCount: "0" }]);
+  });
+
+  it("workspace_list_and_detail_recheck_trip_view_and_agency_without_customer_or_cost_reads", async () => {
+    const {
+      cookie,
+      sessionId,
+      resolver,
+      principalId: staffPrincipalId,
+    } = await createWorkspaceHarness();
+    const restrictedPersonId = randomUUID();
+    const tripId = randomUUID();
+    const tripTravellerId = randomUUID();
+    const flightId = randomUUID();
+    const accommodationId = randomUUID();
+    const roleName = `workspace_workspace_${randomUUID().replaceAll("-", "")}`;
+    if (!/^workspace_workspace_[0-9a-f]{32}$/u.test(roleName)) {
+      throw new Error("Workspace restricted workspace role name is invalid");
+    }
+    const quotedRole = `"${roleName}"`;
+    let restrictedPersistence: PostgresPersistence<Record<string, never>> | null = null;
+    let roleCreated = false;
+
+    const createRestrictedRole = async (): Promise<void> => {
+      const client = new Client({
+        host,
+        port,
+        database: workspaceDatabase,
+        user: "postgres",
+        ssl: false,
+      });
+      await client.connect();
+      try {
+        await client.query(
+          `CREATE ROLE ${quotedRole} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOREPLICATION NOBYPASSRLS`,
+        );
+        roleCreated = true;
+        await client.query(`GRANT CONNECT ON DATABASE "${workspaceDatabase}" TO ${quotedRole}`);
+        await client.query(
+          `GRANT USAGE ON SCHEMA "staff_access", "trip_ops", "crm", "finance" TO ${quotedRole}`,
+        );
+        await client.query(
+          `GRANT SELECT ON TABLE
+             "staff_access"."staff_session",
+             "staff_access"."staff_session_context",
+             "staff_access"."staff_membership",
+             "staff_access"."role_assignment",
+             "staff_access"."role_permission",
+             "trip_ops"."trip",
+             "trip_ops"."itinerary_item",
+             "trip_ops"."flight_item_detail",
+             "trip_ops"."accommodation_item_detail"
+           TO ${quotedRole}`,
+        );
+        await client.query(
+          `GRANT UPDATE ON TABLE
+             "staff_access"."staff_session",
+             "staff_access"."staff_session_context",
+             "staff_access"."staff_membership"
+           TO ${quotedRole}`,
+        );
+      } finally {
+        await client.end();
+      }
+    };
+
+    try {
+      await withOwnerLogin(workspaceDatabase, async (client) => {
+        await client.query("BEGIN");
+        try {
+          await client.query(
+            `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName")
+             VALUES ($1::uuid, $2::uuid, 'Synthetic', 'Restricted')`,
+            [restrictedPersonId, agencyId],
+          );
+          const restrictedCustomerId = randomUUID();
+          await client.query(
+            `INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
+             VALUES ($1::uuid, $2::uuid, 'Workspace restricted customer')`,
+            [restrictedCustomerId, agencyId],
+          );
+          await client.query(
+            `INSERT INTO "crm"."customer_person" ("agencyId", "customerId", "personId", "role", "isPrimary")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, 'PRIMARY_CONTACT', true)`,
+            [agencyId, restrictedCustomerId, restrictedPersonId],
+          );
+          await client.query(
+            `INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
+             VALUES ($1::uuid, $2::uuid, 'Workspace restricted workspace Trip', '2026-12-01', '2026-12-02', 'DRAFT')`,
+            [tripId, agencyId],
+          );
+          await client.query(
+            `INSERT INTO "trip_ops"."trip_traveller" ("id", "agencyId", "tripId", "personId", "role")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'PRIMARY_TRAVELLER')`,
+            [tripTravellerId, agencyId, tripId, restrictedPersonId],
+          );
+          await client.query(
+            `INSERT INTO "trip_ops"."itinerary_item"
+               ("id", "agencyId", "tripId", "family", "state", "sortOrder", "customerTitle", "customerDescription")
+             VALUES
+               ($1::uuid, $2::uuid, $3::uuid, 'FLIGHT', 'CONFIRMED', 1, 'Synthetic flight', 'Synthetic flight details'),
+               ($4::uuid, $2::uuid, $3::uuid, 'ACCOMMODATION', 'CONFIRMED', 2, 'Synthetic stay', 'Synthetic accommodation details')`,
+            [flightId, agencyId, tripId, accommodationId],
+          );
+          await client.query(
+            `INSERT INTO "trip_ops"."flight_item_detail"
+               ("agencyId", "tripId", "itemId", "carrier", "flightNumber", "departureAirport", "arrivalAirport",
+                "departureDate", "departureTime", "departureTimezone", "departureInstant",
+                "arrivalDate", "arrivalTime", "arrivalTimezone", "arrivalInstant")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, 'Synthetic Air', 'SA101', 'LIS', 'OPO',
+                     '2026-12-01', '10:00:00', 'Europe/Lisbon', '2026-12-01T10:00:00.000Z',
+                     '2026-12-01', '12:00:00', 'Europe/Lisbon', '2026-12-01T12:00:00.000Z')`,
+            [agencyId, tripId, flightId],
+          );
+          await client.query(
+            `INSERT INTO "trip_ops"."accommodation_item_detail"
+               ("agencyId", "tripId", "itemId", "propertyName",
+                "checkInDate", "checkInTime", "checkInTimezone", "checkInInstant",
+                "checkOutDate", "checkOutTime", "checkOutTimezone", "checkOutInstant")
+             VALUES ($1::uuid, $2::uuid, $3::uuid, 'Synthetic Hotel',
+                     '2026-12-01', '15:00:00', 'Europe/Lisbon', '2026-12-01T15:00:00.000Z',
+                     '2026-12-02', '10:00:00', 'Europe/Lisbon', '2026-12-02T10:00:00.000Z')`,
+            [agencyId, tripId, accommodationId],
+          );
+          await client.query("COMMIT");
+        } catch (error) {
+          await client.query("ROLLBACK").catch(() => undefined);
+          throw error;
+        }
+      });
+      await createRestrictedRole();
+      restrictedPersistence = createPostgresPersistence<Record<string, never>>({
+        host,
+        port,
+        database: workspaceDatabase,
+        user: roleName,
+        tls: { mode: "DISABLED_LOOPBACK_ONLY" },
+        applicationName: "travelos-workspace-workspace-least-privilege-test",
+        maxConnections: 2,
+      });
+
+      const access = createStaffAccessRepository(restrictedPersistence);
+      const snapshot = await access.getStaffAuthorizationSnapshot(staffPrincipalId, agencyId);
+      expect(snapshot).not.toBeNull();
+      if (snapshot === null) return;
+      const nowEpochMs = Date.now();
+      const authorization: StaffAuthorizationOperationProof = {
+        session: {
+          sessionId,
+          staffPrincipalId,
+          agencyId,
+          authorizationEpoch: snapshot.authorizationEpoch,
+          expiresAtEpochMs: nowEpochMs + 60 * 60 * 1_000,
+          recentMfaVerifiedAtEpochMs: nowEpochMs,
+        },
+        requiredPermissionIds: ["trip.view"],
+        nowEpochMs,
+      };
+      const workspaceRepository = createPostgresStaffTripWorkspaceRepository(restrictedPersistence);
+      const page = await workspaceRepository.listTrips(agencyId, 50, null, authorization);
+      expect(page.items.some((trip) => trip.id === tripId)).toBe(true);
+      expect(page.items.every((trip) => trip.agencyId === agencyId)).toBe(true);
+      const workspace = await workspaceRepository.readTripWorkspace(
+        agencyId,
+        asOpaqueId(tripId),
+        authorization,
+      );
+      expect(workspace).toMatchObject({
+        trip: { id: tripId, agencyId, title: "Workspace restricted workspace Trip" },
+        flights: [{ id: flightId, flightNumber: "SA101" }],
+        accommodations: [{ id: accommodationId, propertyName: "Synthetic Hotel" }],
+      });
+      expect(
+        await workspaceRepository.readTripWorkspace(agencyId, randomUUID(), authorization),
+      ).toBeNull();
+      await expect(
+        workspaceRepository.readTripWorkspace(randomUUID(), tripId, authorization),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        workspaceRepository.readTripWorkspace(agencyId, asOpaqueId(tripId), {
+          ...authorization,
+          requiredPermissionIds: ["trip.access.manage"],
+        }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+      const privilegeClient = new Client({
+        host,
+        port,
+        database: workspaceDatabase,
+        user: roleName,
+        ssl: false,
+      });
+      await privilegeClient.connect();
+      try {
+        const privileges = await privilegeClient.query<{
+          readonly customer: boolean;
+          readonly person: boolean;
+          readonly customerPerson: boolean;
+          readonly traveller: boolean;
+          readonly reservation: boolean;
+          readonly cost: boolean;
+        }>(
+          `SELECT has_table_privilege(current_user, 'crm.customer', 'SELECT') AS customer,
+                  has_table_privilege(current_user, 'crm.person', 'SELECT') AS person,
+                  has_table_privilege(current_user, 'crm.customer_person', 'SELECT') AS "customerPerson",
+                  has_table_privilege(current_user, 'trip_ops.trip_traveller', 'SELECT') AS traveller,
+                  has_table_privilege(current_user, 'trip_ops.reservation', 'SELECT') AS reservation,
+                  has_table_privilege(current_user, 'finance.supplier_cost_line', 'SELECT') AS cost`,
+        );
+        expect(privileges.rows).toEqual([
+          {
+            customer: false,
+            person: false,
+            customerPerson: false,
+            traveller: false,
+            reservation: false,
+            cost: false,
+          },
+        ]);
+      } finally {
+        await privilegeClient.end();
+      }
+
+      const serializedWorkspace =
+        JSON.stringify(workspace, (_key, value) =>
+          typeof value === "bigint" ? value.toString() : value,
+        ) ?? "";
+      expect(serializedWorkspace).not.toContain("INTERNAL_ONLY");
+      expect(serializedWorkspace).not.toContain("supplierCosts");
+      const piiTrip = await databaseModule
+        .createPostgresStaffTripOperations(persistence!, resolver)
+        .createTripWorkspace(cookie, {
+          customer: { displayName: "Workspace PII Customer" },
+          primaryTraveller: { givenName: "Pii", familyName: "Traveller" },
+          trip: { title: "Workspace PII Trip", startDate: "2026-12-01", endDate: "2026-12-02" },
+        });
+      const piiBearingTrip = await workspaceRepository.readTripWorkspace(
+        agencyId,
+        asOpaqueId(piiTrip.id),
+        authorization,
+      );
+      expect(piiBearingTrip).not.toBeNull();
+      const serializedPiiBearingTrip =
+        JSON.stringify(piiBearingTrip, (_key, value) =>
+          typeof value === "bigint" ? value.toString() : value,
+        ) ?? "";
+      expect(serializedPiiBearingTrip).not.toContain("Workspace PII Customer");
+      expect(serializedPiiBearingTrip).not.toContain('"familyName":"Traveller"');
+
+      const appOperations = createStaffTripWorkspaceOperations({
+        repository: workspaceRepository,
+        authorizationRepository: access,
+        sessionResolver: resolver,
+      });
+      expect((await appOperations.readTripWorkspace(cookie, asOpaqueId(tripId)))?.trip.id).toBe(
+        tripId,
+      );
+    } finally {
+      await restrictedPersistence?.destroy();
+      await withOwnerLogin(workspaceDatabase, async (client) => {
+        await client.query("BEGIN");
+        try {
+          await client.query(
+            `DELETE FROM "trip_ops"."itinerary_item" WHERE "agencyId" = $1::uuid AND "tripId" = $2::uuid`,
+            [agencyId, tripId],
+          );
+          await client.query(
+            `DELETE FROM "trip_ops"."trip_traveller" WHERE "agencyId" = $1::uuid AND "tripId" = $2::uuid`,
+            [agencyId, tripId],
+          );
+          await client.query(
+            `DELETE FROM "trip_ops"."trip" WHERE "agencyId" = $1::uuid AND "id" = $2::uuid`,
+            [agencyId, tripId],
+          );
+          await client.query("COMMIT");
+        } catch (error) {
+          await client.query("ROLLBACK").catch(() => undefined);
+          throw error;
+        }
+      });
+      if (roleCreated) {
+        const client = new Client({
+          host,
+          port,
+          database: workspaceDatabase,
+          user: "postgres",
+          ssl: false,
+        });
+        await client.connect();
+        try {
+          await client.query(`DROP OWNED BY ${quotedRole}`);
+          await client.query(`DROP ROLE ${quotedRole}`);
+        } finally {
+          await client.end();
+        }
+      }
+    }
+  });
+});

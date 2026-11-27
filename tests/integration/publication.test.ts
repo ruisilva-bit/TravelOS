@@ -1,14 +1,9 @@
-import { copyFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { spawnSync } from "node:child_process";
-import os from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { Client, type QueryResultRow } from "pg";
+import type { Client } from "pg";
+import { type QueryResultRow } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   asOpaqueId,
-  bootstrapRootAgency,
   createStaffTripOperations,
   createMoney,
   createScheduledLocalDateTime,
@@ -22,200 +17,46 @@ import {
 import type { CreateTripSliceInput } from "@travelos/backend-core";
 import { canonicalPortalTripSnapshotV1Json } from "@travelos/backend-core";
 import { createOperationalSliceRepository } from "../../packages/database/src/trip-operations/operational-slice-repository.js";
+import type { createPostgresPersistence } from "@travelos/database";
 import {
   createPostgresStaffTripPublicationOperations,
-  createPostgresPersistence,
   createStaffAccessRepository,
   createUuidV7,
 } from "@travelos/database";
 import { PortalTripSnapshotV1Schema } from "../../packages/contracts/src/portal/index.js";
 import {
-  runMigrationChain,
-  type MigrationChain,
-  type MigrationTarget,
-} from "../../tooling/database/migration-runner.js";
+  clientFor as clientForDatabase,
+  createAdminPersistence,
+  createDatabase,
+  migrateToHead,
+  queryAs as queryAsIn,
+  queryAsOwner as queryAsOwnerIn,
+  queryErrorCode,
+  requireHarness,
+  withOwnerTransaction as withOwnerTransactionIn,
+} from "./helpers/postgres.js";
 
-const repositoryRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
-const host = process.env["PGHOST"] ?? "";
-const port = Number.parseInt(process.env["PGPORT"] ?? "", 10);
-const postgresBin = process.env["TRAVELOS_STAGE6_PG_BIN"] ?? "";
-const workRoot = process.env["TRAVELOS_STAGE6_WORK_ROOT"] ?? "";
-const databaseName = "travelos_stage6_qualification";
+const databaseName = "travelos_publication";
 const agencyId = asOpaqueId("00000000-0000-7000-8000-000000000001");
-const staffPrincipalId = `stage6-${createUuidV7()}`;
-const sessionId = `stage6-session-${createUuidV7()}`;
-const staffEmail = `stage6-${createUuidV7()}@example.test`;
-const cookie = "stage6_session=synthetic";
-
-const productionChain: MigrationChain = {
-  directory: path.join(repositoryRoot, "migrations"),
-  checksumManifestPath: path.join(repositoryRoot, "migrations/checksums.json"),
-};
-const migrationTarget: MigrationTarget = {
-  host,
-  port,
-  database: databaseName,
-  migratorRole: "travelos_migrator",
-  ownerRole: "travelos_owner",
-  tls: { mode: "DISABLED_LOOPBACK_ONLY" },
-  allowTrustAuthenticationForTests: true,
-};
+const staffPrincipalId = `publication-${createUuidV7()}`;
+const sessionId = `publication-session-${createUuidV7()}`;
+const staffEmail = `publication-${createUuidV7()}@example.test`;
+const cookie = "publication_session=synthetic";
 
 let persistence: ReturnType<typeof createPostgresPersistence<Record<string, never>>> | null = null;
 let staffOperations: StaffTripOperations;
 let publicationOperations: StaffTripPublicationOperations;
 let slice: Awaited<ReturnType<StaffTripOperations["createTripSlice"]>>;
-let predecessorMigrationDirectory: string | null = null;
 let sessionProof: StaffSessionAuthorizationProof;
 let roleId = "";
 
-const clientFor = async (user: string, database = databaseName): Promise<Client> => {
-  const client = new Client({
-    host,
-    port,
-    database,
-    user,
-    ssl: false,
-    connectionTimeoutMillis: 5_000,
-  });
-  await client.connect();
-  return client;
-};
-
-const queryAs = async <Row extends QueryResultRow>(
-  user: string,
-  statement: string,
-): Promise<readonly Row[]> => {
-  const client = await clientFor(user);
-  try {
-    return (await client.query<Row>(statement)).rows;
-  } finally {
-    await client.end();
-  }
-};
-
-const queryAsOwner = async <Row extends QueryResultRow>(
-  _loginRole: string,
-  statement: string,
-): Promise<readonly Row[]> => {
-  const client = await clientFor("travelos_migrator");
-  try {
-    await client.query('SET ROLE "travelos_owner"');
-    return (await client.query<Row>(statement)).rows;
-  } finally {
-    await client.query("RESET ROLE").catch(() => undefined);
-    await client.end();
-  }
-};
-
-const queryErrorCode = async (work: () => Promise<unknown>): Promise<string | null> => {
-  try {
-    await work();
-    return null;
-  } catch (error) {
-    return typeof error === "object" && error !== null && "code" in error
-      ? String((error as { readonly code?: unknown }).code ?? "")
-      : null;
-  }
-};
-
-const withOwnerTransaction = async <Result>(
-  work: (client: Client) => Promise<Result>,
-): Promise<Result> => {
-  const client = await clientFor("travelos_migrator");
-  try {
-    await client.query('SET ROLE "travelos_owner"');
-    await client.query("BEGIN");
-    const result = await work(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    await client.query("ROLLBACK").catch(() => undefined);
-    throw error;
-  } finally {
-    await client.end();
-  }
-};
-
-const bootstrapDatabase = (): void => {
-  const result = spawnSync(
-    path.join(postgresBin, "psql"),
-    [
-      "--no-psqlrc",
-      "--set",
-      "ON_ERROR_STOP=1",
-      "--set",
-      `database_name=${databaseName}`,
-      "--dbname",
-      "postgres",
-      "--file",
-      path.join(repositoryRoot, "deploy/database/bootstrap-database-and-roles.sql"),
-    ],
-    {
-      cwd: repositoryRoot,
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        PGHOST: host,
-        PGPORT: String(port),
-        PGDATABASE: "postgres",
-        PGUSER: "postgres",
-        PGSSLMODE: "disable",
-      },
-    },
-  );
-  if (result.status !== 0) throw new Error(`Stage 6 database bootstrap failed: ${result.stderr}`);
-};
-
-const packageStage6Migrator = (): string => {
-  const deployDirectory = path.join(workRoot, "stage6-migrator");
-  const result = spawnSync(process.execPath, ["tooling/ci/test-stage6-migrator-package.mjs"], {
-    cwd: repositoryRoot,
-    encoding: "utf8",
-    maxBuffer: 20 * 1024 * 1024,
-    env: {
-      PATH: process.env["PATH"] ?? "",
-      HOME: process.env["HOME"] ?? "",
-      CI: "true",
-      NODE_ENV: "development",
-      TRAVELOS_STAGE6_MIGRATOR_TARGET: deployDirectory,
-    },
-  });
-  if (result.status !== 0) {
-    throw new Error(
-      `Standalone Stage 6 migrator package failed: ${result.stderr || result.stdout}`,
-    );
-  }
-  return deployDirectory;
-};
-
-const stage5MigrationChain = async (): Promise<MigrationChain> => {
-  const manifest = JSON.parse(await readFile(productionChain.checksumManifestPath, "utf8")) as {
-    readonly schemaVersion: number;
-    readonly algorithm: string;
-    readonly migrations: readonly { readonly file: string; readonly sha256: string }[];
-  };
-  const stage5Migrations = manifest.migrations.filter(
-    ({ file }) => file !== "0011_stage6_trip_publication.cjs",
-  );
-  if (stage5Migrations.at(-1)?.file !== "0010_stage5_temporal_persistence_parity.cjs") {
-    throw new Error("The Stage 5 predecessor migration chain must end at 0010");
-  }
-  const directory = await mkdtemp(path.join(workRoot, "stage5-migrations-"));
-  predecessorMigrationDirectory = directory;
-  for (const migration of stage5Migrations) {
-    await copyFile(
-      path.join(productionChain.directory, migration.file),
-      path.join(directory, migration.file),
-    );
-  }
-  const checksumManifestPath = path.join(directory, "checksums.json");
-  await writeFile(
-    checksumManifestPath,
-    `${JSON.stringify({ ...manifest, migrations: stage5Migrations }, null, 2)}\n`,
-  );
-  return { directory, checksumManifestPath };
-};
+const clientFor = (user: string): Promise<Client> => clientForDatabase(user, databaseName);
+const queryAs = <Row extends QueryResultRow>(user: string, statement: string) =>
+  queryAsIn<Row>(user, statement, databaseName);
+const queryAsOwner = <Row extends QueryResultRow>(_loginRole: string, statement: string) =>
+  queryAsOwnerIn<Row>(statement, databaseName);
+const withOwnerTransaction = <Result>(work: (client: Client) => Promise<Result>) =>
+  withOwnerTransactionIn(databaseName, work);
 
 const tripInput = (): CreateTripSliceInput => ({
   agencyId,
@@ -224,10 +65,10 @@ const tripInput = (): CreateTripSliceInput => ({
     familyName: "Traveller",
     email: `traveller-${createUuidV7()}@example.test`,
   },
-  customer: { displayName: "Synthetic Stage 6 Customer" },
+  customer: { displayName: "Synthetic Publication Customer" },
   customerPersonRole: "PRIMARY_CONTACT",
   trip: {
-    title: "Stage 6 Synthetic Trip",
+    title: "Publication Synthetic Trip",
     startDate: "2026-10-12",
     endDate: "2026-10-15",
     state: "DRAFT",
@@ -295,66 +136,15 @@ const authorizationSessionResolver: StaffSessionResolver = {
 };
 
 beforeAll(async () => {
-  if (
-    !/^127\.0\.0\.1$/u.test(host) ||
-    !Number.isInteger(port) ||
-    postgresBin.length === 0 ||
-    !workRoot.startsWith(`${os.tmpdir()}${path.sep}`)
-  ) {
-    throw new Error(
-      "Stage 6 disposable PostgreSQL environment is incomplete or not loopback-bound",
-    );
-  }
-  bootstrapDatabase();
-  await runMigrationChain(migrationTarget, await stage5MigrationChain());
-  const migratorDirectory = packageStage6Migrator();
-  const migrationRun = spawnSync(
-    process.execPath,
-    [path.join(migratorDirectory, "dist/packages/migrator/src/run-migrations.js")],
-    {
-      cwd: os.tmpdir(),
-      encoding: "utf8",
-      maxBuffer: 20 * 1024 * 1024,
-      env: {
-        PATH: process.env["PATH"] ?? "",
-        TRAVELOS_DB_HOST: host,
-        TRAVELOS_DB_PORT: String(port),
-        TRAVELOS_DB_NAME: databaseName,
-        TRAVELOS_DB_MIGRATOR_ROLE: "travelos_migrator",
-        TRAVELOS_DB_OWNER_ROLE: "travelos_owner",
-        TRAVELOS_DB_TLS_POLICY: "DISABLED_LOOPBACK_ONLY",
-        TRAVELOS_ALLOW_TRUST_AUTH_FOR_TESTS: "true",
-      },
-    },
-  );
-  if (migrationRun.status !== 0) {
-    throw new Error(`Packaged Stage 6 migration runner failed: ${migrationRun.stderr}`);
-  }
-  const migration = JSON.parse(migrationRun.stdout);
-  expect(migration.result).toBe("PASS");
-  expect(migration.currentVersion).toBe("0011_stage6_trip_publication");
-  expect(migration.target.sessionRole).toBe("travelos_migrator");
-  expect(migration.target.effectiveRole).toBe("travelos_owner");
-  expect(migration.appliedMigrations).toContain("0011_stage6_trip_publication");
-  process.stdout.write(
-    `Packaged migrator identity: session_user=${migration.target.sessionRole}; current_user=${migration.target.effectiveRole}; head=${migration.currentVersion}\n`,
-  );
-
-  persistence = createPostgresPersistence<Record<string, never>>({
-    host,
-    port,
-    database: databaseName,
-    user: "travelos_admin_api",
-    tls: { mode: "DISABLED_LOOPBACK_ONLY" },
-    applicationName: "travelos-stage6-qualification",
-    maxConnections: 8,
-  });
-  const staffAccess = createStaffAccessRepository(persistence);
-  await bootstrapRootAgency(staffAccess, {
+  requireHarness();
+  createDatabase(databaseName);
+  await migrateToHead(databaseName, {
     agencyId,
-    bootstrapReference: "stage6-qualification",
-    slug: "stage6-qualification",
+    bootstrapReference: "publication-qualification",
+    slug: "publication-qualification",
   });
+  persistence = createAdminPersistence(databaseName, "travelos-publication", 8);
+  const staffAccess = createStaffAccessRepository(persistence);
 
   roleId = createUuidV7();
   const membershipId = createUuidV7();
@@ -362,7 +152,7 @@ beforeAll(async () => {
   await withOwnerTransaction(async (client) => {
     await client.query(
       `INSERT INTO "staff_access"."staff_user" ("id", "name", "email", "emailVerified", "twoFactorEnabled")
-       VALUES ($1, 'Stage 6 Synthetic Staff', $2, true, true)`,
+       VALUES ($1, 'Publication Synthetic Staff', $2, true, true)`,
       [staffPrincipalId, staffEmail],
     );
     await client.query(
@@ -377,7 +167,7 @@ beforeAll(async () => {
     );
     await client.query(
       `INSERT INTO "staff_access"."role" ("id", "agencyId", "displayName")
-       VALUES ($1::uuid, $2::uuid, 'Stage 6 Synthetic Staff')`,
+       VALUES ($1::uuid, $2::uuid, 'Publication Synthetic Staff')`,
       [roleId, agencyId],
     );
     await client.query(
@@ -402,7 +192,7 @@ beforeAll(async () => {
     agencyId,
   );
   if (authorizationSnapshot === null)
-    throw new Error("Stage 6 Staff authorization fixture missing");
+    throw new Error("Publication Staff authorization fixture missing");
   sessionProof = {
     sessionId,
     staffPrincipalId,
@@ -431,16 +221,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  try {
-    await persistence?.destroy();
-  } finally {
-    if (predecessorMigrationDirectory !== null)
-      await rm(predecessorMigrationDirectory, { recursive: true, force: true });
-  }
+  await persistence?.destroy();
 });
 
-describe.sequential("TravelOS Stage 6 disposable PostgreSQL publication qualification", () => {
-  it("upgrades the Stage 5 schema and proves Preview is read-only", async () => {
+describe.sequential("Trip publication on PostgreSQL", () => {
+  it("proves Preview is read-only", async () => {
     const before = await queryAsOwner<{
       versions: string;
       snapshots: string;
@@ -506,7 +291,7 @@ describe.sequential("TravelOS Stage 6 disposable PostgreSQL publication qualific
     const request1 = {
       expectedWorkspaceRevision: preview1.workspaceRevision.toString(),
       expectedProjectionHash: preview1.projectionHash,
-      idempotencyKey: "stage6-publish-v1",
+      idempotencyKey: "publication-publish-v1",
     };
     const v1 = await publicationOperations.publishTrip(cookie, slice.trip.id, request1);
     expect(v1.version).toBe(1);
@@ -556,7 +341,7 @@ describe.sequential("TravelOS Stage 6 disposable PostgreSQL publication qualific
     await expect(
       publicationOperations.publishTrip(cookie, slice.trip.id, {
         ...request1,
-        idempotencyKey: "stage6-stale-revision",
+        idempotencyKey: "publication-stale-revision",
       }),
     ).rejects.toMatchObject({ code: "STALE_PUBLICATION_CANDIDATE" });
     const staleCountsAfter = await queryAsOwner<{
@@ -578,7 +363,7 @@ describe.sequential("TravelOS Stage 6 disposable PostgreSQL publication qualific
       publicationOperations.publishTrip(cookie, slice.trip.id, {
         ...request1,
         expectedProjectionHash: "c".repeat(64),
-        idempotencyKey: "stage6-stale-hash",
+        idempotencyKey: "publication-stale-hash",
       }),
     ).rejects.toMatchObject({ code: "STALE_PUBLICATION_CANDIDATE" });
     const staleHashCountsAfter = await queryAsOwner<{
@@ -602,7 +387,7 @@ describe.sequential("TravelOS Stage 6 disposable PostgreSQL publication qualific
     const v2 = await publicationOperations.publishTrip(cookie, slice.trip.id, {
       expectedWorkspaceRevision: preview2.workspaceRevision.toString(),
       expectedProjectionHash: preview2.projectionHash,
-      idempotencyKey: "stage6-publish-v2",
+      idempotencyKey: "publication-publish-v2",
     });
     expect(v2.version).toBe(2);
     expect(v2.isActive).toBe(true);
@@ -642,25 +427,25 @@ describe.sequential("TravelOS Stage 6 disposable PostgreSQL publication qualific
     );
     await queryAsOwner(
       "travelos_admin_api",
-      `CREATE FUNCTION "trip_ops"."stage6_reject_publication_event"() RETURNS trigger
-         LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Stage 6 rollback probe'; END $$;
-       CREATE TRIGGER "stage6_reject_publication_event"
+      `CREATE FUNCTION "trip_ops"."publication_reject_publication_event"() RETURNS trigger
+         LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'publication rollback probe'; END $$;
+       CREATE TRIGGER "publication_reject_publication_event"
          BEFORE INSERT ON "trip_ops"."publication_event"
-         FOR EACH ROW EXECUTE FUNCTION "trip_ops"."stage6_reject_publication_event"()`,
+         FOR EACH ROW EXECUTE FUNCTION "trip_ops"."publication_reject_publication_event"()`,
     );
     try {
       await expect(
         publicationOperations.publishTrip(cookie, slice.trip.id, {
           expectedWorkspaceRevision: previewForFailedPublish.workspaceRevision.toString(),
           expectedProjectionHash: previewForFailedPublish.projectionHash,
-          idempotencyKey: "stage6-rollback-probe",
+          idempotencyKey: "publication-rollback-probe",
         }),
       ).rejects.toThrow();
     } finally {
       await queryAsOwner(
         "travelos_admin_api",
-        `DROP TRIGGER "stage6_reject_publication_event" ON "trip_ops"."publication_event";
-         DROP FUNCTION "trip_ops"."stage6_reject_publication_event"()`,
+        `DROP TRIGGER "publication_reject_publication_event" ON "trip_ops"."publication_event";
+         DROP FUNCTION "trip_ops"."publication_reject_publication_event"()`,
       );
     }
     const failureCountsAfter = await queryAsOwner<{
@@ -689,7 +474,7 @@ describe.sequential("TravelOS Stage 6 disposable PostgreSQL publication qualific
     const concurrentRequest = {
       expectedWorkspaceRevision: previewForFailedPublish.workspaceRevision.toString(),
       expectedProjectionHash: previewForFailedPublish.projectionHash,
-      idempotencyKey: "stage6-concurrent-publish-v3",
+      idempotencyKey: "publication-concurrent-publish-v3",
     };
     const blocker = await clientFor("travelos_admin_api");
     const monitor = await clientFor("postgres");
@@ -818,7 +603,7 @@ describe.sequential("TravelOS Stage 6 disposable PostgreSQL publication qualific
         publicationOperations.publishTrip(cookie, slice.trip.id, {
           expectedWorkspaceRevision: currentPreview.workspaceRevision.toString(),
           expectedProjectionHash: currentPreview.projectionHash,
-          idempotencyKey: "stage6-stale-mfa",
+          idempotencyKey: "publication-stale-mfa",
         }),
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
     } finally {

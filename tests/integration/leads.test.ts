@@ -1,14 +1,10 @@
-import { randomBytes, randomUUID } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { spawnSync } from "node:child_process";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
+import { mkdir } from "node:fs/promises";
 import { sql } from "kysely";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   asOpaqueId,
-  bootstrapRootAgency,
   InputValidationError,
   LeadIdempotencyConflictError,
   LeadNotFoundError,
@@ -20,127 +16,44 @@ import {
   type Lead,
   type LeadDraft,
   type StaffLeadOperations,
-  type StaffSessionResolver,
 } from "@travelos/backend-core";
 import {
-  createPostgresPersistence,
   createPostgresStaffLeadOperations,
-  createStaffAccessRepository,
   type PostgresPersistence,
 } from "../../packages/database/src/index.js";
 import { createUuidV7 } from "../../packages/database/src/uuidv7.js";
 import {
-  runMigrationChain,
-  type MigrationChain,
-  type MigrationTarget,
-} from "../../tooling/database/migration-runner.js";
+  createAdminPersistence,
+  createDatabase,
+  createOwnerClient,
+  createStaff,
+  host,
+  migrateToHead,
+  port,
+  registrySessionResolver,
+  requireHarness,
+  syntheticDomain,
+  workRoot,
+  type StaffFixture,
+} from "./helpers/postgres.js";
 
-const repositoryRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
-const host = process.env["PGHOST"] ?? "";
-const port = Number.parseInt(process.env["PGPORT"] ?? "", 10);
-const postgresBin = process.env["TRAVELOS_STAGE8_PG_BIN"] ?? "";
-const workRoot = process.env["TRAVELOS_STAGE8_WORK_ROOT"] ?? "";
-const freshDatabaseName = "travelos_m2_lead_fresh";
-const upgradeDatabaseName = "travelos_m2_lead_upgrade";
+const freshDatabaseName = "travelos_leads";
 const freshAgencyId = "019b0000-0000-7000-8000-000000000001";
-const upgradeAgencyId = "019b0000-0000-7000-8000-000000000002";
 const otherAgencyId = "019b0000-0000-7000-8000-000000000003";
-const migrationHead = "0017_m2_sales_lead";
-const predecessorHead = "0016_stage9_staff_invitations";
-const syntheticDomain = "synthetic.test";
-const chain: MigrationChain = {
-  directory: path.join(repositoryRoot, "migrations"),
-  checksumManifestPath: path.join(repositoryRoot, "migrations/checksums.json"),
-};
 
 type DatabaseShape = Record<string, never>;
 
-interface StaffFixture {
-  readonly cookie: string;
-  readonly principalId: string;
-}
-
 let owner: Client | undefined;
-let portal: Client | undefined;
+let worker: Client | undefined;
 let adminPersistence: PostgresPersistence<DatabaseShape> | undefined;
 let secondAdminPersistence: PostgresPersistence<DatabaseShape> | undefined;
 let operations: StaffLeadOperations | undefined;
 let secondOperations: StaffLeadOperations | undefined;
-const temporaryDirectories: string[] = [];
 let ownerRoleId = "";
-let freshRunApplied: readonly string[] = [];
-let upgradeRunApplied: readonly string[] = [];
-let upgradeOwnerPermissionsBeforeMigration: readonly string[] = [];
-let upgradeOwnerPermissionsAfterMigration: readonly string[] = [];
 const sessions = new Map<string, unknown>();
 let ownerFixture: StaffFixture | undefined;
 let otherAgencyCustomerId = "";
 let otherAgencyLeadId = "";
-
-const targetFor = (database: string): MigrationTarget => ({
-  host,
-  port,
-  database,
-  migratorRole: "travelos_migrator",
-  ownerRole: "travelos_owner",
-  tls: { mode: "DISABLED_LOOPBACK_ONLY" },
-  allowTrustAuthenticationForTests: true,
-});
-
-const createDatabase = (databaseName: string): void => {
-  const result = spawnSync(
-    path.join(postgresBin, "psql"),
-    [
-      "--no-psqlrc",
-      "--set",
-      "ON_ERROR_STOP=1",
-      "--set",
-      `database_name=${databaseName}`,
-      "--dbname",
-      "postgres",
-      "--file",
-      path.join(repositoryRoot, "deploy/database/bootstrap-database-and-roles.sql"),
-    ],
-    {
-      cwd: repositoryRoot,
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        PGHOST: host,
-        PGPORT: String(port),
-        PGUSER: "postgres",
-        PGDATABASE: "postgres",
-        PGSSLMODE: "disable",
-      },
-    },
-  );
-  if (result.status !== 0) {
-    throw new Error(
-      `Disposable database bootstrap failed: ${(result.stderr ?? "").slice(0, 2_000)}`,
-    );
-  }
-};
-
-const createOwnerClient = async (database: string): Promise<Client> => {
-  const client = new Client({ host, port, database, user: "travelos_migrator", ssl: false });
-  await client.connect();
-  await client.query('SET ROLE "travelos_owner"');
-  return client;
-};
-
-const createAdminPersistence = (
-  database: string,
-  applicationName: string,
-): PostgresPersistence<DatabaseShape> =>
-  createPostgresPersistence<DatabaseShape>({
-    host,
-    port,
-    database,
-    user: "travelos_admin_api",
-    tls: { mode: "DISABLED_LOOPBACK_ONLY" },
-    applicationName,
-    maxConnections: 4,
-  });
 
 const ownerQuery = async <Row extends Record<string, unknown>>(
   text: string,
@@ -159,80 +72,18 @@ const ownerPermissions = async (client: Client, agencyId: string): Promise<reado
     )
   ).rows.map((row) => row.permissionId);
 
-const sessionResolver: StaffSessionResolver = {
-  async resolveStaffSession(cookie) {
-    return sessions.get(cookie) ?? null;
-  },
-};
+const sessionResolver = registrySessionResolver(sessions);
 
 /** Creates a synthetic Staff principal with exactly the given permissions, via a dedicated role. */
-const createStaff = async (
+const createStaffFixture = (
   label: string,
   permissionIds: readonly string[],
   options: { readonly roleId?: string; readonly agencyId?: string } = {},
-): Promise<StaffFixture> => {
-  const agencyId = options.agencyId ?? freshAgencyId;
-  const principalId = `m2-${label}-${randomUUID()}`;
-  const sessionId = `m2-session-${randomUUID()}`;
-  const membershipId = createUuidV7();
-  let roleId = options.roleId ?? "";
-  await owner!.query(
-    'INSERT INTO staff_access.staff_user (id, name, email, "emailVerified", "createdAt", "updatedAt") VALUES ($1,$2,$3,true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)',
-    [principalId, `Synthetic ${label}`, `${principalId}@${syntheticDomain}`],
-  );
-  if (roleId === "") {
-    roleId = createUuidV7();
-    await owner!.query(
-      'INSERT INTO staff_access.role (id, "agencyId", "displayName") VALUES ($1::uuid,$2::uuid,$3)',
-      [roleId, agencyId, `M2 ${label} ${roleId}`],
-    );
-    for (const permissionId of permissionIds) {
-      await owner!.query(
-        `INSERT INTO staff_access.role_permission ("roleId", "permissionId", "scopeKind", "accessLevel")
-         VALUES ($1::uuid, $2, 'AGENCY', 'ALL')`,
-        [roleId, permissionId],
-      );
-    }
-  }
-  await owner!.query(
-    `INSERT INTO staff_access.staff_membership (id, "agencyId", "staffPrincipalId", state)
-     VALUES ($1::uuid,$2::uuid,$3,'ACTIVE')`,
-    [membershipId, agencyId, principalId],
-  );
-  await owner!.query(
-    `INSERT INTO staff_access.role_assignment (id, "agencyId", "membershipId", "roleId", "scopeKind", "active")
-     VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,'AGENCY',true)`,
-    [createUuidV7(), agencyId, membershipId, roleId],
-  );
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1_000);
-  await owner!.query(
-    'INSERT INTO staff_access.staff_session (id, "expiresAt", token, "updatedAt", "userId") VALUES ($1,$2,$3,CURRENT_TIMESTAMP,$4)',
-    [sessionId, expiresAt, randomBytes(32).toString("base64url"), principalId],
-  );
-  const epoch = (
-    await owner!.query<{ authorizationEpoch: string }>(
-      'SELECT "authorizationEpoch"::text AS "authorizationEpoch" FROM staff_access.staff_membership WHERE id = $1::uuid',
-      [membershipId],
-    )
-  ).rows[0];
-  if (epoch === undefined) throw new Error("Synthetic membership disappeared");
-  await owner!.query(
-    `INSERT INTO staff_access.staff_session_context
-       ("sessionId", "staffPrincipalId", "agencyId", "authorizationEpoch", "recentMfaVerifiedAt")
-     VALUES ($1,$2,$3::uuid,$4,NULL)`,
-    [sessionId, principalId, agencyId, epoch.authorizationEpoch],
-  );
-  const cookie = `session=${sessionId}`;
-  sessions.set(cookie, {
-    sessionId,
-    staffPrincipalId: principalId,
-    agencyId,
-    authorizationEpoch: BigInt(epoch.authorizationEpoch),
-    expiresAtEpochMs: expiresAt.getTime(),
-    recentMfaVerifiedAtEpochMs: null,
+): Promise<StaffFixture> =>
+  createStaff(owner!, sessions, label, permissionIds, {
+    agencyId: options.agencyId ?? freshAgencyId,
+    ...(options.roleId === undefined ? {} : { roleId: options.roleId }),
   });
-  return { cookie, principalId };
-};
 
 const draft = (overrides: Partial<LeadDraft> = {}): LeadDraft => ({
   source: "PHONE",
@@ -274,112 +125,34 @@ const sqlStateOf = async (work: Promise<unknown>): Promise<string | undefined> =
 };
 
 beforeAll(async () => {
-  if (!host || !Number.isInteger(port) || port < 1 || !postgresBin || !workRoot) {
-    throw new Error("M2 Lead integration requires the pinned disposable PostgreSQL harness");
-  }
+  requireHarness();
   await mkdir(workRoot, { recursive: true });
   createDatabase(freshDatabaseName);
-  createDatabase(upgradeDatabaseName);
-
-  const manifest = JSON.parse(await readFile(chain.checksumManifestPath, "utf8")) as {
-    readonly schemaVersion: 1;
-    readonly algorithm: "sha256";
-    readonly migrations: readonly { readonly file: string; readonly sha256: string }[];
-  };
-  // Stage 7 (0012) requires an established root Agency, so every database is migrated to the
-  // Stage 6 head, bootstrapped, and only then taken forward (the supported install/upgrade order).
-  const chainThrough = async (lastFile: string): Promise<MigrationChain> => {
-    const migrations = manifest.migrations.filter(({ file }) => file <= lastFile);
-    const directory = await mkdtemp(path.join(workRoot, "m2-lead-chain-"));
-    temporaryDirectories.push(directory);
-    for (const { file } of migrations) {
-      await copyFile(path.join(chain.directory, file), path.join(directory, file));
-    }
-    const checksumManifestPath = path.join(directory, "checksums.json");
-    await writeFile(
-      checksumManifestPath,
-      JSON.stringify({
-        schemaVersion: manifest.schemaVersion,
-        algorithm: manifest.algorithm,
-        migrations,
-      }),
-    );
-    return { directory, checksumManifestPath };
-  };
-  const stage6Chain = await chainThrough("0011_stage6_trip_publication.cjs");
-  const predecessorChain = await chainThrough("0016_stage9_staff_invitations.cjs");
-
-  // Upgrade database: supported prior release (0016) with an established root Agency.
-  await runMigrationChain(targetFor(upgradeDatabaseName), stage6Chain);
-  const upgradeBootstrap = createAdminPersistence(upgradeDatabaseName, "m2-lead-upgrade-bootstrap");
-  try {
-    await bootstrapRootAgency(createStaffAccessRepository(upgradeBootstrap), {
-      agencyId: upgradeAgencyId,
-      bootstrapReference: "m2-lead-upgrade",
-      slug: "m2-lead-upgrade",
-    });
-  } finally {
-    await upgradeBootstrap.destroy();
-  }
-  expect(
-    (await runMigrationChain(targetFor(upgradeDatabaseName), predecessorChain)).currentVersion,
-  ).toBe(predecessorHead);
-  const upgradeOwner = await createOwnerClient(upgradeDatabaseName);
-  try {
-    // Simulate an Owner role that predates the Sales capabilities.
-    await upgradeOwner.query(
-      `DELETE FROM staff_access.role_permission
-        WHERE "permissionId" IN ('sales.view', 'sales.edit')
-          AND "roleId" IN (SELECT id FROM staff_access.role WHERE "templateKey" = 'agency-owner-v1')`,
-    );
-    upgradeOwnerPermissionsBeforeMigration = await ownerPermissions(upgradeOwner, upgradeAgencyId);
-  } finally {
-    await upgradeOwner.end();
-  }
-  upgradeRunApplied = (await runMigrationChain(targetFor(upgradeDatabaseName), chain))
-    .appliedMigrations;
-  const upgradeOwnerAfter = await createOwnerClient(upgradeDatabaseName);
-  try {
-    upgradeOwnerPermissionsAfterMigration = await ownerPermissions(
-      upgradeOwnerAfter,
-      upgradeAgencyId,
-    );
-  } finally {
-    await upgradeOwnerAfter.end();
-  }
-
-  // Fresh database: an empty database taken through the whole chain to the current head.
-  expect((await runMigrationChain(targetFor(freshDatabaseName), stage6Chain)).currentVersion).toBe(
-    "0011_stage6_trip_publication",
-  );
-  adminPersistence = createAdminPersistence(freshDatabaseName, "m2-lead-admin-test");
-  secondAdminPersistence = createAdminPersistence(freshDatabaseName, "m2-lead-admin-second");
-  const bootstrap = await bootstrapRootAgency(createStaffAccessRepository(adminPersistence), {
+  const migrated = await migrateToHead(freshDatabaseName, {
     agencyId: freshAgencyId,
-    bootstrapReference: "m2-lead-fresh",
-    slug: "m2-lead-fresh",
+    bootstrapReference: "leads-fresh",
+    slug: "leads-fresh",
   });
-  ownerRoleId = bootstrap.ownerRoleId;
-  const freshRun = await runMigrationChain(targetFor(freshDatabaseName), chain);
-  freshRunApplied = freshRun.appliedMigrations;
-  expect(freshRun.currentVersion).toBe(migrationHead);
+  ownerRoleId = migrated.ownerRoleId;
+  adminPersistence = createAdminPersistence(freshDatabaseName, "leads-admin-test");
+  secondAdminPersistence = createAdminPersistence(freshDatabaseName, "leads-admin-second");
   owner = await createOwnerClient(freshDatabaseName);
-  portal = new Client({
+  worker = new Client({
     host,
     port,
     database: freshDatabaseName,
-    user: "travelos_portal_api",
+    user: "travelos_worker",
     ssl: false,
   });
-  await portal.connect();
+  await worker.connect();
   operations = createPostgresStaffLeadOperations(adminPersistence, sessionResolver);
   secondOperations = createPostgresStaffLeadOperations(secondAdminPersistence, sessionResolver);
-  ownerFixture = await createStaff("owner", [], { roleId: ownerRoleId });
+  ownerFixture = await createStaffFixture("owner", [], { roleId: ownerRoleId });
 
   // A second Agency exists only in this disposable database, to prove same-Agency isolation.
   await owner.query('DROP INDEX "organization"."agency_single_root_idx"');
   await owner.query(
-    `INSERT INTO organization.agency (id, "bootstrapReference", slug) VALUES ($1::uuid, 'm2-lead-other', 'm2-lead-other')`,
+    `INSERT INTO organization.agency (id, "bootstrapReference", slug) VALUES ($1::uuid, 'leads-other', 'leads-other')`,
     [otherAgencyId],
   );
   otherAgencyCustomerId = createUuidV7();
@@ -399,35 +172,12 @@ afterAll(async () => {
   await Promise.allSettled([
     ...(adminPersistence === undefined ? [] : [adminPersistence.destroy()]),
     ...(secondAdminPersistence === undefined ? [] : [secondAdminPersistence.destroy()]),
-    ...(portal === undefined ? [] : [portal.end()]),
+    ...(worker === undefined ? [] : [worker.end()]),
     ...(owner === undefined ? [] : [owner.end()]),
   ]);
-  for (const directory of temporaryDirectories) {
-    await rm(directory, { recursive: true, force: true });
-  }
 });
 
-describe("M2 slice 1 migration 0017", () => {
-  it("applies on an empty database and upgrades a 0016 database applying only 0017", async () => {
-    expect(freshRunApplied.at(-1)).toBe(migrationHead);
-    expect(freshRunApplied).toHaveLength(6);
-    expect(upgradeRunApplied).toEqual([migrationHead]);
-    const rerun = await runMigrationChain(targetFor(upgradeDatabaseName), chain);
-    expect(rerun.appliedMigrations).toEqual([]);
-    expect(rerun.currentVersion).toBe(migrationHead);
-  });
-
-  it("seeds sales.view and sales.edit into the existing Owner role on upgrade", async () => {
-    expect(upgradeOwnerPermissionsBeforeMigration).not.toContain("sales.view");
-    expect(upgradeOwnerPermissionsBeforeMigration).not.toContain("sales.edit");
-    expect(upgradeOwnerPermissionsAfterMigration).toEqual(
-      expect.arrayContaining(["sales.view", "sales.edit"]),
-    );
-    expect([...upgradeOwnerPermissionsAfterMigration].toSorted()).toEqual(
-      [...OWNER_ROLE_PERMISSION_IDS].toSorted(),
-    );
-  });
-
+describe("Lead Owner permissions", () => {
   it("gives a freshly bootstrapped Owner the Sales capabilities but not trip-operations-v1", async () => {
     const permissions = await ownerPermissions(owner!, freshAgencyId);
     expect(permissions).toEqual(expect.arrayContaining(["sales.view", "sales.edit"]));
@@ -446,7 +196,7 @@ describe("M2 slice 1 migration 0017", () => {
   });
 });
 
-describe("M2 slice 1 PostgreSQL privileges", () => {
+describe("Lead PostgreSQL privileges", () => {
   const tables = [
     "sales.lead",
     "sales.lead_idempotency",
@@ -495,8 +245,8 @@ describe("M2 slice 1 PostgreSQL privileges", () => {
     }
   });
 
-  it("denies the Portal and Worker runtimes every Sales Lead object", async () => {
-    for (const role of ["travelos_portal_api", "travelos_worker"]) {
+  it("denies the Worker runtime every Sales Lead object", async () => {
+    for (const role of ["travelos_worker"]) {
       const schema = await ownerQuery<{ usage: boolean }>(
         `SELECT has_schema_privilege($1, 'sales', 'USAGE') AS usage`,
         [role],
@@ -515,9 +265,9 @@ describe("M2 slice 1 PostgreSQL privileges", () => {
     }
   });
 
-  it("rejects a real Portal connection reading sales.lead and the Lead history", async () => {
+  it("rejects a real Worker connection reading sales.lead and the Lead history", async () => {
     for (const table of tables) {
-      expect(await sqlStateOf(portal!.query(`SELECT 1 FROM ${table} LIMIT 1`)), table).toBe(
+      expect(await sqlStateOf(worker!.query(`SELECT 1 FROM ${table} LIMIT 1`)), table).toBe(
         "42501",
       );
     }
@@ -533,7 +283,7 @@ describe("M2 slice 1 PostgreSQL privileges", () => {
   });
 });
 
-describe("M2 slice 1 table constraints", () => {
+describe("Lead table constraints", () => {
   const insertLead = async (
     columns: string,
     values: readonly unknown[],
@@ -686,7 +436,7 @@ describe("M2 slice 1 table constraints", () => {
   });
 });
 
-describe("M2 slice 1 Lead use cases", () => {
+describe("Lead use cases", () => {
   it("creates, reads and lists an OPEN Lead scoped to the session Agency", async () => {
     const created = await createLead({
       source: "REFERRAL",
@@ -944,7 +694,7 @@ describe("M2 slice 1 Lead use cases", () => {
   });
 });
 
-describe("M2 slice 1 qualification", () => {
+describe("Lead qualification", () => {
   it("creates Person, Customer and primary link from the contact snapshot atomically", async () => {
     const lead = await createLead({
       contactGivenName: "Joana",
@@ -1289,9 +1039,9 @@ describe("M2 slice 1 qualification", () => {
   });
 });
 
-describe("M2 slice 1 authorization", () => {
+describe("Lead authorization", () => {
   it("lets sales.view read but never write", async () => {
-    const viewer = await createStaff("viewer", ["sales.view"]);
+    const viewer = await createStaffFixture("viewer", ["sales.view"]);
     const lead = await createLead();
     expect((await ops().getLead(viewer.cookie, lead.id)).id).toBe(lead.id);
     expect(
@@ -1316,7 +1066,7 @@ describe("M2 slice 1 authorization", () => {
   });
 
   it("lets sales.edit write but not read, and requires customer.edit as well to qualify", async () => {
-    const editor = await createStaff("editor", ["sales.edit"]);
+    const editor = await createStaffFixture("editor", ["sales.edit"]);
     const created = await ops().createLead(editor.cookie, { lead: draft(), idempotencyKey: null });
     await expectRejection(ops().getLead(editor.cookie, created.id), StaffAuthorizationError);
     await expectRejection(
@@ -1331,7 +1081,7 @@ describe("M2 slice 1 authorization", () => {
       }),
       StaffAuthorizationError,
     );
-    const customerOnly = await createStaff("customer-only", ["customer.edit", "sales.view"]);
+    const customerOnly = await createStaffFixture("customer-only", ["customer.edit", "sales.view"]);
     await expectRejection(
       ops().qualifyLead(customerOnly.cookie, created.id, {
         expectedLockVersion: 1n,
@@ -1340,7 +1090,7 @@ describe("M2 slice 1 authorization", () => {
       }),
       StaffAuthorizationError,
     );
-    const both = await createStaff("both", ["sales.edit", "customer.edit"]);
+    const both = await createStaffFixture("both", ["sales.edit", "customer.edit"]);
     const qualified = await ops().qualifyLead(both.cookie, created.id, {
       expectedLockVersion: 1n,
       mode: { kind: "CREATE_CUSTOMER", customerDisplayName: null },
@@ -1350,7 +1100,10 @@ describe("M2 slice 1 authorization", () => {
   });
 
   it("denies the trip-operations-v1 permission set every Sales use case", async () => {
-    const tripOperations = await createStaff("trip-ops", TRIP_OPERATIONS_ROLE_PERMISSION_IDS);
+    const tripOperations = await createStaffFixture(
+      "trip-ops",
+      TRIP_OPERATIONS_ROLE_PERMISSION_IDS,
+    );
     await expectRejection(
       ops().listLeads(tripOperations.cookie, { limit: 5, cursor: null, state: null }),
       StaffAuthorizationError,
@@ -1362,7 +1115,7 @@ describe("M2 slice 1 authorization", () => {
   });
 
   it("never reads role names: a role called Owner without permissions is denied", async () => {
-    const impostor = await createStaff("Owner", []);
+    const impostor = await createStaffFixture("Owner", []);
     await expectRejection(
       ops().listLeads(impostor.cookie, { limit: 5, cursor: null, state: null }),
       StaffAuthorizationError,
@@ -1381,7 +1134,7 @@ describe("M2 slice 1 authorization", () => {
   });
 
   it("re-checks authorization inside the command transaction against a forged proof", async () => {
-    const viewer = await createStaff("forged-proof", ["sales.view"]);
+    const viewer = await createStaffFixture("forged-proof", ["sales.view"]);
     const session = sessions.get(viewer.cookie) as { agencyId: string };
     const { createPostgresLeadRepository } = await import("../../packages/database/src/index.js");
     const repository = createPostgresLeadRepository(adminPersistence!);
@@ -1405,7 +1158,7 @@ describe("M2 slice 1 authorization", () => {
   });
 });
 
-describe("M2 slice 1 input validation", () => {
+describe("Lead input validation", () => {
   it("rejects invalid contact data before any database access", async () => {
     await expectRejection(createLead({ contactEmail: "not-an-email" }), InputValidationError);
     await expectRejection(createLead({ contactPhone: "abc" }), InputValidationError);
