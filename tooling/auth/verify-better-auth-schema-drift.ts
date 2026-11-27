@@ -91,7 +91,7 @@ const generatedRealm = (kind: AuthRealmKind): unknown => {
 
 const migrationStatements = (): readonly string[] => {
   const migration = migrationRequire(
-    path.resolve("migrations/0004_authentication_realms.cjs"),
+    path.resolve("migrations/0001_baseline.cjs"),
   ) as MigrationModule;
   const statements: string[] = [];
   migration.up({ sql: (statement) => statements.push(statement) });
@@ -106,7 +106,7 @@ const tableStatement = (
   const marker = `CREATE TABLE "${schema}"."${tableName}"`;
   const statement = statements.find((candidate) => candidate.includes(marker));
   if (statement === undefined)
-    throw new Error(`Migration 0004 does not create ${schema}.${tableName}`);
+    throw new Error(`Baseline migration does not create ${schema}.${tableName}`);
   return statement;
 };
 
@@ -251,7 +251,7 @@ const assertRealmParity = (
     .filter((name): name is string => name !== undefined)
     .toSorted();
   if (JSON.stringify(expectedTableNames) !== JSON.stringify(actualTableNames)) {
-    throw new Error(`${kind} Better Auth table model names drift from migration 0004`);
+    throw new Error(`${kind} Better Auth table model names drift from the baseline migration`);
   }
   for (const [, table] of tables) {
     const modelName = requiredString(table.modelName, "modelName");

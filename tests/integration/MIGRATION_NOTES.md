@@ -4,11 +4,10 @@ Mapping from every test title in the deleted stage suites to its new home (Phase
 "dropped: stage-process" = asserted stage/migration-head/artifact/rehearsal scaffolding.
 "dropped: portal (Step 2)" = customer-portal behaviour, removed with the portal in Step 2.
 
-Step 2 status: the Portal schema, tables, Portal vitest aliases and Portal assertions are gone (migration
-`0018_drop_portal`). `database-roles.test.ts` and `helpers/role-graph.ts` still name the cluster-wide Portal
-login/runtime roles because `deploy/database/bootstrap-database-and-roles.sql` still creates them; Step 4 removes
-the roles with the squash. The publication and worker suites assert the publication/outbox tables that Step 3
-turns into share links.
+Step 2 status: the customer-facing schema, tables, vitest aliases and assertions are gone. Step 4 squashed the
+migration chain into `0001_baseline` and removed the cluster-wide customer-facing login/runtime roles from
+`deploy/database/bootstrap-database-and-roles.sql`, `database-roles.test.ts` and `helpers/role-graph.ts`. The
+publication and worker suites assert the publication/outbox tables that Step 3 turned into share links.
 
 ## stage-3-postgresql.test.ts
 - bootstraps an empty cluster and migrates the authoritative chain from zero → database-roles.test.ts

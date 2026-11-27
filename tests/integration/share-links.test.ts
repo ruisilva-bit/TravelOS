@@ -145,7 +145,6 @@ const counts = async () => ({
   versions: await count('SELECT count(*)::text AS count FROM "trip_ops"."publication_version"'),
   snapshots: await count('SELECT count(*)::text AS count FROM "trip_ops"."publication_snapshot"'),
   links: await count('SELECT count(*)::text AS count FROM "trip_ops"."share_link"'),
-  pointers: await count('SELECT count(*)::text AS count FROM "trip_ops"."publication_pointer"'),
   events: await count('SELECT count(*)::text AS count FROM "trip_ops"."publication_event"'),
   outbox: await count(
     'SELECT count(*)::text AS count FROM "integration"."trip_publication_outbox"',
@@ -276,12 +275,7 @@ describe.sequential("Share links on PostgreSQL", () => {
     ).rows[0];
     expect(row?.length).toBe(32);
     expect(row?.hashHex).toBe(hashOf(token).toString("hex"));
-    for (const table of [
-      "share_link",
-      "publication_version",
-      "publication_snapshot",
-      "publication_idempotency",
-    ]) {
+    for (const table of ["share_link", "publication_version", "publication_snapshot"]) {
       const text = (
         await owner.query<{ text: string }>(
           `SELECT t::text AS text FROM "trip_ops"."${table}" AS t`,
@@ -503,9 +497,14 @@ describe.sequential("Share links on PostgreSQL", () => {
     expect(await counts()).toEqual(before);
   });
 
-  it("does not write pointer, event or outbox rows any more", async () => {
+  it("does not write event or outbox rows, and the retired pointer and idempotency tables are gone", async () => {
+    const retired = await owner.query<{ present: string | null }>(
+      `SELECT to_regclass('trip_ops.publication_pointer')::text AS present
+       UNION ALL SELECT to_regclass('trip_ops.publication_idempotency')::text
+       UNION ALL SELECT to_regclass('audit.trip_publication_event')::text`,
+    );
+    expect(retired.rows.map((row) => row.present)).toEqual([null, null, null]);
     const totals = await counts();
-    expect(totals.pointers).toBe(0);
     expect(totals.events).toBe(0);
     expect(totals.outbox).toBe(0);
     expect(totals.versions).toBe(totals.links);

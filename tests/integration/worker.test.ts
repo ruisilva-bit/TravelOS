@@ -55,10 +55,6 @@ const sourceMessage = async (correlationId?: string): Promise<string> => {
       [eventId, agencyId, tripId, publicationId, publicationVersion, staffId],
     );
     await owner.query(
-      'INSERT INTO audit.trip_publication_event ("auditId", "agencyId", "tripId", "publicationId", "actorStaffPrincipalId", "action", "schemaVersion", "projectionHash") VALUES ($1,$2,$3,$4,$5,\'TRIP_PUBLISHED\',1,$6)',
-      [randomUUID(), agencyId, tripId, publicationId, staffId, "a".repeat(64)],
-    );
-    await owner.query(
       'INSERT INTO integration.trip_publication_outbox ("messageId", "eventId", "agencyId", "tripId", "publicationId", "version", "eventType") VALUES ($1,$2,$3,$4,$5,$6,\'TRIP_PUBLICATION_PUBLISHED\')',
       [messageId, eventId, agencyId, tripId, publicationId, publicationVersion],
     );
@@ -408,7 +404,7 @@ describe("Durable worker on PostgreSQL", () => {
     expect(
       (
         await owner.query(
-          'SELECT count(*)::int AS count FROM audit.trip_publication_event audit JOIN integration.trip_publication_outbox outbox USING ("publicationId", "agencyId", "tripId") WHERE outbox."messageId"=$1',
+          'SELECT count(*)::int AS count FROM trip_ops.publication_event event JOIN integration.trip_publication_outbox outbox USING ("eventId", "publicationId", "agencyId", "tripId") WHERE outbox."messageId"=$1',
           [messageId],
         )
       ).rows[0].count,
@@ -426,7 +422,7 @@ describe("Durable worker on PostgreSQL", () => {
           "SELECT * FROM trip_ops.trip",
           "SELECT * FROM trip_ops.publication_snapshot",
           "SELECT * FROM staff_access.staff_user",
-          "SELECT * FROM audit.trip_publication_event",
+          "SELECT * FROM audit.lead_event",
           "DELETE FROM activity.entry",
           'UPDATE activity.entry SET "schemaVersion"=1',
           "DELETE FROM job_runtime.job",

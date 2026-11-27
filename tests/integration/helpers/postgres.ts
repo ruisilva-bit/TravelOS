@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { copyFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -204,24 +204,6 @@ export const readChainManifest = async (): Promise<ChainManifest> =>
 export const productionMigrationNames = async (): Promise<readonly string[]> =>
   (await readChainManifest()).migrations.map(({ file }) => file.replace(/\.cjs$/u, ""));
 
-const writeChainPrefix = async (
-  manifest: ChainManifest,
-  length: number,
-  label: string,
-): Promise<MigrationChain> => {
-  const directory = await mkdtemp(path.join(workRoot, `${label}-`));
-  const migrations = manifest.migrations.slice(0, length);
-  for (const { file } of migrations) {
-    await copyFile(path.join(productionChain.directory, file), path.join(directory, file));
-  }
-  const checksumManifestPath = path.join(directory, "checksums.json");
-  await writeFile(
-    checksumManifestPath,
-    `${JSON.stringify({ ...manifest, migrations }, null, 2)}\n`,
-  );
-  return { directory, checksumManifestPath };
-};
-
 export interface RootAgencySeed {
   readonly agencyId: string;
   readonly bootstrapReference: string;
@@ -236,65 +218,29 @@ export interface MigratedDatabase {
 }
 
 /**
- * Migrates an empty bootstrapped database from zero to the head of the real chain.
- *
- * The supported install order is: schema chain up to the first migration that needs an established
- * root Agency, then root-Agency bootstrap, then the remainder of the chain. The split point is
- * found by the migration's own guard text, so no migration is referenced by name.
+ * Migrates an empty bootstrapped database from zero to the head of the real chain, then runs the
+ * normal root-Agency bootstrap. The baseline applies in one pass without any Agency present; the
+ * Agency, the Owner role and the Trip Operations role are created afterwards by the bootstrap.
  */
 export const migrateToHead = async (
   database: string,
   agency: RootAgencySeed,
 ): Promise<MigratedDatabase> => {
-  const manifest = await readChainManifest();
-  let splitIndex = -1;
-  for (const [index, { file }] of manifest.migrations.entries()) {
-    const source = await readFile(path.join(productionChain.directory, file), "utf8");
-    if (/established root Agency/u.test(source)) {
-      splitIndex = index;
-      break;
-    }
-  }
-  const applied: string[] = [];
-  const temporaryChains: string[] = [];
+  const head = await runMigrationChain(targetFor(database), productionChain);
+  const bootstrapPersistence = createAdminPersistence(database, "migrate-to-head-bootstrap", 2);
   try {
-    if (splitIndex > 0) {
-      const prefix = await writeChainPrefix(manifest, splitIndex, "chain-prefix");
-      temporaryChains.push(prefix.directory);
-      applied.push(...(await runMigrationChain(targetFor(database), prefix)).appliedMigrations);
-    }
-    const bootstrapPersistence = createAdminPersistence(database, "migrate-to-head-bootstrap", 2);
-    let rootAgency: Awaited<ReturnType<typeof bootstrapRootAgency>>;
-    try {
-      if (splitIndex <= 0) {
-        applied.push(
-          ...(await runMigrationChain(targetFor(database), productionChain)).appliedMigrations,
-        );
-      }
-      rootAgency = await bootstrapRootAgency(
-        createStaffAccessRepository(bootstrapPersistence),
-        agency,
-      );
-    } finally {
-      await bootstrapPersistence.destroy();
-    }
-    const head = await runMigrationChain(targetFor(database), productionChain);
-    applied.push(...head.appliedMigrations);
-    // Bootstrap again so the Owner role also carries capabilities seeded by later migrations.
-    const secondPersistence = createAdminPersistence(database, "migrate-to-head-rebootstrap", 2);
-    try {
-      await bootstrapRootAgency(createStaffAccessRepository(secondPersistence), agency);
-    } finally {
-      await secondPersistence.destroy();
-    }
+    const rootAgency = await bootstrapRootAgency(
+      createStaffAccessRepository(bootstrapPersistence),
+      agency,
+    );
     return {
-      appliedMigrations: applied,
+      appliedMigrations: head.appliedMigrations,
       currentVersion: head.currentVersion,
       rootAgency,
       ownerRoleId: rootAgency.ownerRoleId,
     };
   } finally {
-    for (const directory of temporaryChains) await rm(directory, { recursive: true, force: true });
+    await bootstrapPersistence.destroy();
   }
 };
 

@@ -24,13 +24,6 @@ export const EXPECTED_ROLE_MEMBERSHIPS = [
     set_option: true,
   },
   {
-    member: "travelos_portal_api",
-    granted_role: "travelos_portal_runtime",
-    admin_option: false,
-    inherit_option: true,
-    set_option: false,
-  },
-  {
     member: "travelos_worker",
     granted_role: "travelos_worker_runtime",
     admin_option: false,

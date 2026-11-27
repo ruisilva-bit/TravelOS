@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { readFile, readdir, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { QueryResultRow } from "pg";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -7,6 +7,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { TransactionContext } from "../../packages/backend-core/src/index.js";
 import { NestedTransactionNotSupportedError } from "../../packages/backend-core/src/index.js";
 import { createPostgresPersistence } from "../../packages/database/src/index.js";
+import { verifyMigrationChain } from "../../tooling/database/migration-runner.js";
 import {
   assertExactRoleMembershipGraph,
   extractBootstrapRoleMemberships,
@@ -26,6 +27,7 @@ import {
   postgresBin,
   productionChain,
   productionMigrationNames,
+  readChainManifest,
   queryAs as queryAsIn,
   queryAsOwner as queryAsOwnerIn,
   repositoryRoot,
@@ -39,6 +41,8 @@ import {
 const primaryDatabase = "travelos_roles_primary";
 const concurrencyDatabase = "travelos_roles_concurrency";
 const failureDatabase = "travelos_roles_failure";
+const baselineDatabase = "travelos_roles_baseline";
+const tamperedDatabase = "travelos_roles_tampered";
 const agency = {
   agencyId: "019b0000-0000-7000-8000-0000000000a1",
   bootstrapReference: "database-roles",
@@ -240,10 +244,8 @@ const runDefaultPrivilegeProbes = async (): Promise<void> => {
       "travelos_owner",
       "travelos_migrator",
       "travelos_admin_api",
-      "travelos_portal_api",
       "travelos_worker",
       "travelos_admin_runtime",
-      "travelos_portal_runtime",
       "travelos_worker_runtime",
       "pg_read_all_data",
       "pg_write_all_data",
@@ -457,7 +459,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     expect(server[0]?.listen_addresses).toBe("127.0.0.1");
 
     const names = await productionMigrationNames();
-    expect(names.length).toBeGreaterThan(0);
+    expect(names).toEqual(["0001_baseline"]);
     const initialStatus = await inspectMigrationStatus(targetFor(primaryDatabase), productionChain);
     expect(initialStatus.ledger).toEqual([]);
     const migrated = await migrateToHead(primaryDatabase, agency);
@@ -470,6 +472,63 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     expect(rerun.currentVersion).toBe(names.at(-1));
     const status = await inspectMigrationStatus(targetFor(primaryDatabase), productionChain);
     expect(status.currentVersion).toBe(names.at(-1));
+  });
+
+  it("applies the squashed baseline in one pass without any Agency; a rerun is a no-op; exactly one migration file exists", async () => {
+    const files = (await readdir(productionChain.directory)).toSorted();
+    expect(files).toEqual(["0001_baseline.cjs", "checksums.json"]);
+    expect((await readChainManifest()).migrations.map(({ file }) => file)).toEqual([
+      "0001_baseline.cjs",
+    ]);
+
+    await createDatabase(baselineDatabase);
+    const first = await runMigrationChain(targetFor(baselineDatabase), productionChain);
+    expect(first.appliedMigrations).toEqual(["0001_baseline"]);
+    expect(first.ledger.map(({ name }) => name)).toEqual(["0001_baseline"]);
+    // One pass, no root Agency needed: nothing seeds an Agency, role or Staff row.
+    const counts = await queryAs<{ agencies: string; roles: string; currencies: string }>(
+      "postgres",
+      `SELECT (SELECT count(*) FROM organization.agency)::text AS agencies,
+              (SELECT count(*) FROM staff_access.role)::text AS roles,
+              (SELECT count(*) FROM finance.currency_registry)::text AS currencies`,
+      baselineDatabase,
+    );
+    expect(counts).toEqual([{ agencies: "0", roles: "0", currencies: "4" }]);
+    const rerun = await runMigrationChain(targetFor(baselineDatabase), productionChain);
+    expect(rerun.appliedMigrations).toEqual([]);
+    expect(rerun.currentVersion).toBe("0001_baseline");
+  });
+
+  it("fails verification and applies nothing when the baseline is tampered with", async () => {
+    const manifest = await readChainManifest();
+    const directory = path.join(workRoot, "tampered-baseline-chain");
+    await mkdir(directory, { recursive: true });
+    const original = await readFile(
+      path.join(productionChain.directory, "0001_baseline.cjs"),
+      "utf8",
+    );
+    await writeFile(path.join(directory, "0001_baseline.cjs"), `${original}\n// tampered\n`);
+    const checksumManifestPath = path.join(directory, "checksums.json");
+    await writeFile(checksumManifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    const tampered: MigrationChain = { directory, checksumManifestPath };
+
+    await expect(verifyMigrationChain(tampered)).rejects.toThrow(
+      /Migration checksum mismatch for 0001_baseline\.cjs/,
+    );
+    await createDatabase(tamperedDatabase);
+    await expect(runMigrationChain(targetFor(tamperedDatabase), tampered)).rejects.toThrow(
+      /checksum mismatch/,
+    );
+    const schemas = await queryAs<{ nspname: string }>(
+      "postgres",
+      `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = 'trip_ops'`,
+      tamperedDatabase,
+    );
+    expect(schemas).toEqual([]);
+    // The untouched baseline still verifies.
+    await expect(verifyMigrationChain(productionChain)).resolves.toEqual(
+      expect.objectContaining({ result: "PASS" }),
+    );
   });
 
   it("establishes deliberate schema ownership and role membership topology", async () => {
@@ -531,7 +590,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
         WHERE rolname LIKE 'travelos_%'
         ORDER BY rolname`,
     );
-    expect(roles).toHaveLength(8);
+    expect(roles).toHaveLength(6);
     for (const role of roles) {
       expect(role.rolsuper).toBe(false);
       expect(role.rolcreatedb).toBe(false);
@@ -539,7 +598,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
       expect(role.rolreplication).toBe(false);
       expect(role.rolbypassrls).toBe(false);
       expect(role.rolinherit).toBe(
-        ["travelos_admin_api", "travelos_portal_api", "travelos_worker"].includes(role.rolname),
+        ["travelos_admin_api", "travelos_worker"].includes(role.rolname),
       );
     }
     expect(roles.find(({ rolname }) => rolname === "travelos_owner")?.rolcanlogin).toBe(false);
@@ -576,7 +635,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
       );
       const externalOwnerGraph = await queryRoleMemberships();
       expect(verifyRoleMembershipGraph(externalOwnerGraph)).toEqual(
-        expect.objectContaining({ result: "FAIL", actualCount: 5 }),
+        expect.objectContaining({ result: "FAIL", actualCount: 4 }),
       );
       expect(() => assertExactRoleMembershipGraph(externalOwnerGraph)).toThrow(
         /roles_external_owner_member->travelos_owner/,
@@ -597,7 +656,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
       );
       const externalRuntimeGraph = await queryRoleMemberships();
       expect(verifyRoleMembershipGraph(externalRuntimeGraph)).toEqual(
-        expect.objectContaining({ result: "FAIL", actualCount: 5 }),
+        expect.objectContaining({ result: "FAIL", actualCount: 4 }),
       );
       expect(() => assertExactRoleMembershipGraph(externalRuntimeGraph)).toThrow(
         /roles_external_runtime_member->travelos_worker_runtime/,
@@ -643,7 +702,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
               has_database_privilege(role_name, current_database(), 'CONNECT') AS can_connect,
               has_database_privilege(role_name, current_database(), 'TEMP') AS can_create_temp,
               has_schema_privilege(role_name, 'public', 'CREATE') AS can_create_public
-         FROM unnest(ARRAY['travelos_admin_api', 'travelos_portal_api', 'travelos_worker']) AS role_name
+         FROM unnest(ARRAY['travelos_admin_api', 'travelos_worker']) AS role_name
         ORDER BY role_name`,
     );
     expect(databasePrivileges.every(({ can_connect }) => can_connect)).toBe(true);
@@ -771,7 +830,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     await runDefaultPrivilegeProbes();
 
     const searchPaths = await Promise.all(
-      ["travelos_admin_api", "travelos_portal_api", "travelos_worker"].map(async (role) => ({
+      ["travelos_admin_api", "travelos_worker"].map(async (role) => ({
         role,
         searchPath: (await queryAs<{ search_path: string }>(role, "SHOW search_path"))[0]
           ?.search_path,
@@ -834,12 +893,42 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     }
   });
 
-  it("leaves no customer-portal schema, tables or grants after the chain head", async () => {
+  it("has no retired customer-access schema, tables, permissions or roles after the baseline", async () => {
+    // Exact sets, so any retired schema or role (including customer-facing identity realms) fails.
     const schemas = await queryAs<{ nspname: string }>(
       "postgres",
-      `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = 'portal_access'`,
+      `SELECT nspname FROM pg_catalog.pg_namespace
+        WHERE nspowner = 'travelos_owner'::regrole ORDER BY nspname`,
     );
-    expect(schemas).toEqual([]);
+    expect(schemas.map(({ nspname }) => nspname)).toEqual([
+      "activity",
+      "audit",
+      "communications",
+      "crm",
+      "documents",
+      "finance",
+      "integration",
+      "job_runtime",
+      "organization",
+      "presentation",
+      "sales",
+      "staff_access",
+      "travelos_meta",
+      "trip_ops",
+      "work_service",
+    ]);
+    const roles = await queryAs<{ rolname: string }>(
+      "postgres",
+      `SELECT rolname FROM pg_catalog.pg_roles WHERE rolname LIKE 'travelos\\_%' ORDER BY rolname`,
+    );
+    expect(roles.map(({ rolname }) => rolname)).toEqual([
+      "travelos_admin_api",
+      "travelos_admin_runtime",
+      "travelos_migrator",
+      "travelos_owner",
+      "travelos_worker",
+      "travelos_worker_runtime",
+    ]);
     const retiredRelations = await queryAs<{ relation: string }>(
       "postgres",
       `SELECT n.nspname || '.' || c.relname AS relation
@@ -847,9 +936,10 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
          JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
         WHERE c.relkind IN ('r', 'p', 'v', 'm')
           AND n.nspowner = 'travelos_owner'::regrole
-          AND (c.relname LIKE '%portal%' OR c.relname LIKE '%trip_access%'
+          AND (c.relname LIKE '%trip_access%'
                OR c.relname LIKE '%runtime_acceptance%' OR c.relname LIKE '%trip_cancellation%'
-               OR c.relname LIKE '%publication_withdrawal%')
+               OR c.relname LIKE '%publication_withdrawal%' OR c.relname LIKE '%publication_pointer%'
+               OR c.relname LIKE '%publication_idempotency%' OR c.relname = 'trip_publication_event')
         ORDER BY 1`,
     );
     expect(retiredRelations).toEqual([]);
@@ -859,39 +949,6 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
         WHERE "permissionId" IN ('trip.access.manage', 'runtime_acceptance.fixture.manage', 'trip.withdraw_publication')`,
     );
     expect(retiredPermissions).toEqual([{ count: "0" }]);
-
-    // The Portal roles may still exist cluster-wide, but hold no privilege on any application object.
-    const portalGrants = await queryAs<{ object: string }>(
-      "postgres",
-      `SELECT 'schema ' || n.nspname AS object
-         FROM pg_catalog.pg_namespace AS n
-        WHERE (n.nspowner = 'travelos_owner'::regrole OR n.nspname = 'public')
-          AND (has_schema_privilege('travelos_portal_runtime', n.oid, 'USAGE')
-               OR has_schema_privilege('travelos_portal_api', n.oid, 'USAGE')
-               OR has_schema_privilege('travelos_portal_runtime', n.oid, 'CREATE')
-               OR has_schema_privilege('travelos_portal_api', n.oid, 'CREATE'))
-       UNION ALL
-       SELECT 'relation ' || n.nspname || '.' || c.relname
-         FROM pg_catalog.pg_class AS c
-         JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
-        WHERE n.nspowner = 'travelos_owner'::regrole AND c.relkind IN ('r', 'p', 'v', 'm', 'S')
-          AND EXISTS (
-            SELECT 1
-              FROM unnest(ARRAY['travelos_portal_runtime', 'travelos_portal_api']) AS portal_role(name),
-                   unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) AS privilege(name)
-             WHERE has_table_privilege(portal_role.name, c.oid, privilege.name)
-                OR (privilege.name IN ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
-                    AND has_any_column_privilege(portal_role.name, c.oid, privilege.name))
-          )
-       UNION ALL
-       SELECT 'function ' || n.nspname || '.' || p.proname
-         FROM pg_catalog.pg_proc AS p
-         JOIN pg_catalog.pg_namespace AS n ON n.oid = p.pronamespace
-        WHERE n.nspowner = 'travelos_owner'::regrole
-          AND (has_function_privilege('travelos_portal_runtime', p.oid, 'EXECUTE')
-               OR has_function_privilege('travelos_portal_api', p.oid, 'EXECUTE'))`,
-    );
-    expect(portalGrants).toEqual([]);
   });
 
   it("keeps PUBLIC free of ACLs on every application schema, relation and function", async () => {
