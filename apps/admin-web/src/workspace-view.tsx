@@ -11,6 +11,8 @@ import {
 } from "@travelos/design-system";
 import type { StatusTone, TableColumn } from "@travelos/design-system";
 import type { getAdminTripWorkspace, listAdminTrips } from "./api.js";
+import { CustomersView } from "./customers-view.js";
+import { GlobalSearch } from "./global-search.js";
 import { LeadsView } from "./leads-view.js";
 import { StaffInvitationsView } from "./staff-invitations-view.js";
 import { TripCreateForm, TripWorkspaceEditor } from "./trip-workflows.js";
@@ -47,9 +49,11 @@ interface AdminWorkspaceViewProps {
     | "staff-invitations"
     | "detail"
     | "customers"
+    | "customer-detail"
     | "quotes"
     | "tasks";
   readonly leadId: string | null;
+  readonly customerId?: string | null;
   readonly canInviteStaff: boolean;
   readonly trips: AdminTripsState;
   readonly workspace: AdminWorkspaceState;
@@ -386,6 +390,7 @@ function TripDetail({
 export function AdminWorkspaceView({
   page,
   leadId,
+  customerId = null,
   canInviteStaff,
   trips,
   workspace,
@@ -406,7 +411,7 @@ export function AdminWorkspaceView({
         ? "#/equipa"
         : page === "leads" || page === "lead-detail"
           ? "#/leads"
-          : page === "customers"
+          : page === "customers" || page === "customer-detail"
             ? "#/clientes"
             : page === "quotes"
               ? "#/orcamentos"
@@ -431,9 +436,12 @@ export function AdminWorkspaceView({
       navigation={navigation}
       activeHref={activeHref}
       headerActions={
-        <Button variant="ghost" onClick={onSignOut} loading={signingOut}>
-          {signingOut ? "A terminar…" : "Terminar sessão"}
-        </Button>
+        <>
+          <GlobalSearch onAuthenticationRequired={onAuthenticationRequired} />
+          <Button variant="ghost" onClick={onSignOut} loading={signingOut}>
+            {signingOut ? "A terminar…" : "Terminar sessão"}
+          </Button>
+        </>
       }
     >
       {signOutError ? (
@@ -455,7 +463,12 @@ export function AdminWorkspaceView({
         />
       ) : page === "staff-invitations" ? (
         <StaffInvitationsView onAuthenticationRequired={onAuthenticationRequired} />
-      ) : page === "customers" || page === "quotes" || page === "tasks" ? (
+      ) : page === "customers" || page === "customer-detail" ? (
+        <CustomersView
+          customerId={page === "customer-detail" ? customerId : null}
+          onAuthenticationRequired={onAuthenticationRequired}
+        />
+      ) : page === "quotes" || page === "tasks" ? (
         <>
           <PageHeader title={headerContext} />
           <EmptyState

@@ -25,6 +25,7 @@ type AdminRoute =
   | { readonly kind: "staff-invitations" }
   | { readonly kind: "staff-invitation-accept" }
   | { readonly kind: "customers" }
+  | { readonly kind: "customer-detail"; readonly customerId: string }
   | { readonly kind: "quotes" }
   | { readonly kind: "tasks" }
   | { readonly kind: "detail"; readonly tripId: string }
@@ -48,6 +49,18 @@ const readRoute = (): AdminRoute => {
     return { kind: "staff-invitations" };
   }
   if (rawPath === "/staff/invitations/accept") return { kind: "staff-invitation-accept" };
+
+  const customerMatch = /^\/clientes\/([^/]+)$/u.exec(rawPath);
+  if (customerMatch?.[1]) {
+    try {
+      const customerId = decodeURIComponent(customerMatch[1]);
+      return UUID_PATTERN.test(customerId)
+        ? { kind: "customer-detail", customerId }
+        : { kind: "invalid" };
+    } catch {
+      return { kind: "invalid" };
+    }
+  }
 
   const leadMatch = /^\/leads\/([^/]+)$/u.exec(rawPath);
   if (leadMatch?.[1]) {
@@ -129,6 +142,7 @@ export function AdminRoot() {
       route.kind === "staff-invitations" ||
       route.kind === "staff-invitation-accept" ||
       route.kind === "customers" ||
+      route.kind === "customer-detail" ||
       route.kind === "quotes" ||
       route.kind === "tasks"
     )
@@ -456,6 +470,7 @@ export function AdminRoot() {
     <AdminWorkspaceView
       page={page}
       leadId={route.kind === "lead-detail" ? route.leadId : null}
+      customerId={route.kind === "customer-detail" ? route.customerId : null}
       canInviteStaff={staffContext?.canInviteStaff === true}
       trips={trips}
       workspace={workspace}

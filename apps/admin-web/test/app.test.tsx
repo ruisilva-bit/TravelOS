@@ -772,7 +772,7 @@ describe("Admin Web", () => {
   });
 
   it("shows the new navigation and an Em breve page for sections without a screen", async () => {
-    window.history.replaceState({}, "", "/#/clientes");
+    window.history.replaceState({}, "", "/#/orcamentos");
     mocks.fetch.mockImplementation(async (input: unknown) => {
       const path = pathOf(input);
       if (path === "/api/staff/session-context") return jsonResponse(staffContext);
@@ -782,7 +782,7 @@ describe("Admin Web", () => {
     render(<AdminRoot />);
 
     expect(await screen.findByRole("heading", { name: "Em breve" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Clientes", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Orçamentos", level: 1 })).toBeInTheDocument();
     const navigation = screen.getByRole("navigation", { name: "Navegação principal" });
     expect(
       Array.from(navigation.querySelectorAll("a")).map((link) => [
@@ -797,7 +797,10 @@ describe("Admin Web", () => {
       ["Viagens", "#/viagens"],
       ["Tarefas", "#/tarefas"],
     ]);
-    expect(screen.getByRole("link", { name: "Clientes" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Orçamentos" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(mocks.fetch).not.toHaveBeenCalledWith("/api/admin/trips?limit=25", expect.anything());
   });
 
