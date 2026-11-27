@@ -8,10 +8,11 @@ import {
   AdminLeadQualifyV1RequestSchema,
   AdminLeadUpdateV1RequestSchema,
   AdminLeadV1ResponseSchema,
-  AdminPublishTripV1RequestSchema,
-  AdminTripPublicationHistoryV1ResponseSchema,
+  AdminCreateShareLinkV1RequestSchema,
+  AdminShareLinkCreatedV1ResponseSchema,
+  AdminShareLinkListV1ResponseSchema,
+  AdminShareLinkRevokedV1ResponseSchema,
   AdminTripPublicationPreviewV1Schema,
-  AdminTripPublicationV1ResponseSchema,
   AdminOpaqueIdSchema,
   AdminStaffSessionContextSchema,
   AdminTripWorkspaceAccommodationCreateV1RequestSchema,
@@ -29,11 +30,11 @@ import {
   type AdminLeadQualifyV1Request,
   type AdminLeadUpdateV1Request,
   type AdminLeadV1Response,
-  type AdminPublishTripV1Request,
+  type AdminCreateShareLinkV1Request,
+  type AdminShareLinkCreatedV1Response,
+  type AdminShareLinkListV1Response,
   type AdminStaffSessionContext,
-  type AdminTripPublicationHistoryV1Response,
   type AdminTripPublicationPreviewV1,
-  type AdminTripPublicationV1Response,
   type AdminTripWorkspaceAccommodationCreateV1Request,
   type AdminTripWorkspaceAccommodationUpdateV1Request,
   type AdminTripWorkspaceCreateV1Request,
@@ -281,28 +282,43 @@ export const getAdminPublicationPreview = (
 ): Promise<AdminTripPublicationPreviewV1> =>
   getJson(tripResourcePath(tripId, "publication-preview"), AdminTripPublicationPreviewV1Schema);
 
-export const publishAdminTrip = (
+export const createAdminShareLink = (
   tripId: string,
-  input: AdminPublishTripV1Request,
-): Promise<AdminTripPublicationV1Response> =>
-  sendJson(
-    tripResourcePath(tripId, "publications"),
-    "POST",
-    input,
-    AdminPublishTripV1RequestSchema,
-    AdminTripPublicationV1ResponseSchema,
-  );
-
-export const listAdminTripPublications = (
-  tripId: string,
-  before: string | null,
-): Promise<AdminTripPublicationHistoryV1Response> => {
-  if (before !== null && !/^[1-9][0-9]*$/u.test(before)) {
-    return Promise.reject(new AdminApiError("INVALID_REQUEST"));
+  input: AdminCreateShareLinkV1Request,
+  idempotencyKey: string,
+): Promise<AdminShareLinkCreatedV1Response> => {
+  try {
+    return sendJson(
+      tripResourcePath(tripId, "share-links"),
+      "POST",
+      input,
+      AdminCreateShareLinkV1RequestSchema,
+      AdminShareLinkCreatedV1ResponseSchema,
+      idempotencyHeaders(idempotencyKey),
+    );
+  } catch (error) {
+    return Promise.reject(error);
   }
-  const path = tripResourcePath(tripId, "publications");
-  const query = before === null ? "" : `?${new URLSearchParams({ before }).toString()}`;
-  return getJson(`${path}${query}`, AdminTripPublicationHistoryV1ResponseSchema);
+};
+
+export const listAdminShareLinks = (tripId: string): Promise<AdminShareLinkListV1Response> => {
+  try {
+    return getJson(tripResourcePath(tripId, "share-links"), AdminShareLinkListV1ResponseSchema);
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const revokeAdminShareLink = async (shareLinkId: string): Promise<void> => {
+  const parsedId = AdminOpaqueIdSchema.safeParse(shareLinkId);
+  if (!parsedId.success) throw new AdminApiError("INVALID_REQUEST");
+  await sendJson(
+    `/api/admin/share-links/${encodeURIComponent(parsedId.data)}/revoke`,
+    "POST",
+    {},
+    AdminCreateShareLinkV1RequestSchema,
+    AdminShareLinkRevokedV1ResponseSchema,
+  );
 };
 
 const leadResourcePath = (leadId: string, resource = ""): string => {

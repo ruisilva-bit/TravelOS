@@ -271,8 +271,8 @@ describe("Admin Web", () => {
       }
       if (path === "/api/admin/trips?limit=25") return jsonResponse(adminList);
       if (path === `/api/admin/trips/${tripId}/workspace`) return jsonResponse(workspace);
-      if (path === `/api/admin/trips/${tripId}/publications`) {
-        return jsonResponse({ entries: [], nextCursor: null });
+      if (path === `/api/admin/trips/${tripId}/share-links`) {
+        return jsonResponse({ links: [] });
       }
       throw new Error(`Unexpected Admin API request: ${path} ${init?.method ?? ""}`);
     });
@@ -385,8 +385,7 @@ describe("Admin Web", () => {
       const path = pathOf(input);
       if (path === "/api/staff/session-context") return jsonResponse(staffContext);
       if (path === `/api/admin/trips/${tripId}/workspace`) return jsonResponse(workspace);
-      if (path === `/api/admin/trips/${tripId}/publications`)
-        return jsonResponse({ entries: [], nextCursor: null });
+      if (path === `/api/admin/trips/${tripId}/share-links`) return jsonResponse({ links: [] });
       throw new Error(`Unexpected Admin API request: ${path}`);
     });
 
@@ -482,7 +481,6 @@ describe("Admin Web", () => {
       flights: [],
       accommodations: [],
     };
-    const emptyHistory = { entries: [], nextCursor: null };
     mocks.fetch.mockImplementation(async (input: unknown, init?: RequestInit) => {
       const path = pathOf(input);
       if (path === "/api/staff/session-context") return jsonResponse(staffContext);
@@ -491,7 +489,7 @@ describe("Admin Web", () => {
       if (path === "/api/admin/trips/workspace" && init?.method === "POST")
         return jsonResponse(createdWorkspace, 201);
       if (path === `/api/admin/trips/${tripId}/workspace`) return jsonResponse(createdWorkspace);
-      if (path === `/api/admin/trips/${tripId}/publications`) return jsonResponse(emptyHistory);
+      if (path === `/api/admin/trips/${tripId}/share-links`) return jsonResponse({ links: [] });
       throw new Error(`Unexpected Admin API request: ${path} ${init?.method ?? ""}`);
     });
     window.history.replaceState({}, "", "/#/trips");
@@ -531,36 +529,26 @@ describe("Admin Web", () => {
     expect(window.location.hash).toBe(`#/trips/${tripId}`);
   });
 
-  it("edits the Trip and Accommodation, previews the exact revision, publishes it and shows history", async () => {
+  it("edits the Trip and Accommodation, previews the exact revision, shares it once and revokes the link", async () => {
     const projectionHash = "b".repeat(64);
+    const token = "T".repeat(43);
+    const shareLinkId = "019a0101-0000-7000-8000-000000000006";
     let currentWorkspace = structuredClone(workspace);
-    let history = { entries: [], nextCursor: null } as {
-      entries: Array<{
-        version: number;
-        publishedAt: string;
-        actorReference: string;
-        schemaVersion: 1;
-        projectionHash: string;
-        isActive: boolean;
-      }>;
-      nextCursor: string | null;
-    };
+    let links: Array<Record<string, unknown>> = [];
     const projection = {
       schemaVersion: 1,
-      trip: {
-        title: "Rota revista",
-        startDate: "2027-06-04",
-        endDate: "2027-06-11",
-      },
+      trip: { title: "Rota revista", startDate: "2027-06-04", endDate: "2027-06-11" },
       items: [],
     };
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     mocks.fetch.mockImplementation(async (input: unknown, init?: RequestInit) => {
       const path = pathOf(input);
       if (path === "/api/staff/session-context") return jsonResponse(staffContext);
       if (path === `/api/admin/trips/${tripId}/workspace` && init?.method === "GET")
         return jsonResponse(currentWorkspace);
-      if (path === `/api/admin/trips/${tripId}/publications` && init?.method === "GET")
-        return jsonResponse(history);
+      if (path === `/api/admin/trips/${tripId}/share-links` && init?.method === "GET")
+        return jsonResponse({ links });
       if (path === `/api/admin/trips/${tripId}/workspace` && init?.method === "PATCH") {
         const body = JSON.parse(String(init.body)) as {
           expectedLockVersion: string;
@@ -609,40 +597,32 @@ describe("Admin Web", () => {
           schemaVersion: 1,
           projection,
         });
-      if (path === `/api/admin/trips/${tripId}/publications` && init?.method === "POST") {
-        const body = JSON.parse(String(init.body)) as {
-          expectedWorkspaceRevision: string;
-          expectedProjectionHash: string;
-          idempotencyKey: string;
-        };
-        expect(body).toEqual({
-          expectedWorkspaceRevision: "5",
-          expectedProjectionHash: projectionHash,
-          idempotencyKey: expect.any(String),
-        });
-        history = {
-          entries: [
-            {
-              version: 1,
-              publishedAt: "2027-01-01T12:00:00.000Z",
-              actorReference: "staff-principal-test",
-              schemaVersion: 1,
-              projectionHash,
-              isActive: true,
-            },
-          ],
-          nextCursor: null,
-        };
+      if (path === `/api/admin/trips/${tripId}/share-links` && init?.method === "POST") {
+        expect(JSON.parse(String(init.body))).toEqual({ expiresInDays: 30 });
+        expect((init.headers as Record<string, string>)["idempotency-key"]).toEqual(
+          expect.any(String),
+        );
+        links = [
+          {
+            shareLinkId,
+            createdAt: "2027-01-01T12:00:00.000Z",
+            expiresAt: "2027-01-31T12:00:00.000Z",
+            revokedAt: null,
+            state: "ACTIVE",
+            createdBy: "staff-principal-test",
+          },
+        ];
         return jsonResponse({
-          publicationId: "019a0101-0000-7000-8000-000000000005",
-          tripId,
-          version: 1,
-          publishedAt: "2027-01-01T12:00:00.000Z",
-          schemaVersion: 1,
-          projectionHash,
-          isActive: true,
-          projection,
+          shareLinkId,
+          token,
+          url: `https://admin.example.test/v/${token}`,
+          createdAt: "2027-01-01T12:00:00.000Z",
+          expiresAt: "2027-01-31T12:00:00.000Z",
         });
+      }
+      if (path === `/api/admin/share-links/${shareLinkId}/revoke` && init?.method === "POST") {
+        links = [{ ...links[0], revokedAt: "2027-01-02T12:00:00.000Z", state: "REVOKED" }];
+        return jsonResponse({ revoked: true });
       }
       throw new Error(`Unexpected Admin API request: ${path} ${init?.method ?? ""}`);
     });
@@ -651,7 +631,8 @@ describe("Admin Web", () => {
     render(<AdminRoot />);
     await screen.findByRole("heading", { name: "Rota do Pico" });
     fireEvent.click(screen.getByRole("button", { name: "Editar viagem" }));
-    expect(screen.getByRole("button", { name: "Pré-visualizar publicação" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Pré-visualizar como cliente" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Partilhar com o cliente" })).toBeDisabled();
     fireEvent.change(screen.getByLabelText("Nome da viagem"), {
       target: { value: "Rota revista" },
     });
@@ -665,15 +646,25 @@ describe("Admin Web", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar alojamento" }));
     expect(await screen.findByRole("heading", { name: "Estadia revista" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Pré-visualizar publicação" }));
-    expect(await screen.findByText("Pré-visualização — ainda não publicada")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Publicar versão" }));
-    expect(await screen.findByText("Versão 1 publicada")).toBeInTheDocument();
-    expect(await screen.findByText("Versão 1 · Ativa")).toBeInTheDocument();
-    expect(screen.getByText("Rota revista")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pré-visualizar como cliente" }));
+    expect(await screen.findByText("Pré-visualização — o que o cliente verá")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Validade (dias)"), { target: { value: "30" } });
+    fireEvent.click(screen.getByRole("button", { name: "Partilhar com o cliente" }));
+    const urlField = await screen.findByLabelText("Ligação para o cliente");
+    expect(urlField).toHaveValue(`https://admin.example.test/v/${token}`);
+    expect(screen.getByText(/só é mostrada uma vez/u)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Copiar link" }));
+    expect(await screen.findByText(/Link copiado/u)).toBeInTheDocument();
+    expect(writeText).toHaveBeenCalledWith(`https://admin.example.test/v/${token}`);
+    expect(await screen.findByText("Ativo")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Revogar" }));
+    expect(await screen.findByText("Revogado")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Revogar" })).not.toBeInTheDocument();
   });
 
-  it("invalidates a stale publication preview after a typed conflict", async () => {
+  it("invalidates a stale preview and reloads the workspace when its revision no longer matches", async () => {
     const projectionHash = "c".repeat(64);
     let workspaceReads = 0;
     const refreshedWorkspace = {
@@ -697,38 +688,28 @@ describe("Admin Web", () => {
         workspaceReads += 1;
         return jsonResponse(workspaceReads === 1 ? workspace : refreshedWorkspace);
       }
-      if (path === `/api/admin/trips/${tripId}/publications` && init?.method === "GET")
-        return jsonResponse({ entries: [], nextCursor: null });
+      if (path === `/api/admin/trips/${tripId}/share-links` && init?.method === "GET")
+        return jsonResponse({ links: [] });
       if (path === `/api/admin/trips/${tripId}/publication-preview`)
         return jsonResponse({
-          workspaceRevision: "3",
+          workspaceRevision: "4",
           projectionHash,
           schemaVersion: 1,
           projection,
         });
-      if (path === `/api/admin/trips/${tripId}/publications` && init?.method === "POST")
-        return new Response(null, { status: 409 });
       throw new Error(`Unexpected Admin API request: ${path} ${init?.method ?? ""}`);
     });
     window.history.replaceState({}, "", `/#/trips/${tripId}`);
 
     render(<AdminRoot />);
     await screen.findByRole("heading", { name: "Rota do Pico" });
-    fireEvent.click(screen.getByRole("button", { name: "Pré-visualizar publicação" }));
-    expect(await screen.findByText("Pré-visualização — ainda não publicada")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Publicar versão" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pré-visualizar como cliente" }));
 
     expect(await screen.findByText(/A pré-visualização ficou desatualizada/u)).toBeInTheDocument();
     expect(
       await screen.findByRole("heading", { name: "Rota atualizada por outra pessoa" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Publicar versão" })).not.toBeInTheDocument();
-    expect(
-      mocks.fetch.mock.calls.filter(
-        ([input, init]) =>
-          pathOf(input) === `/api/admin/trips/${tripId}/publications` && init?.method === "POST",
-      ),
-    ).toHaveLength(1);
+    expect(screen.queryByText("Pré-visualização — o que o cliente verá")).not.toBeInTheDocument();
   });
 
   it("offers invitation management only when the Staff session context grants the UI hint", async () => {

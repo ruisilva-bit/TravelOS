@@ -73,6 +73,10 @@
     {
       "file": "0018_drop_portal.cjs",
       "sha256": "19e887f0aa93f92d173ac08a6fc0b531e1c47676834a2cb73cb9d7f017178a44"
+    },
+    {
+      "file": "0019_share_link.cjs",
+      "sha256": "08f6c323197f2ca0202edd3ad39313d6cb25b2aa4105618a44d5d30e6dfacee7"
     }
   ]
 }

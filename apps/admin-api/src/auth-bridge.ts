@@ -12,7 +12,8 @@ import {
 import type { StaffTripOperations } from "@travelos/backend-core";
 import type { StaffTripWorkspaceOperations } from "@travelos/backend-core";
 import type { StaffTripWorkspaceWriteOperations } from "@travelos/backend-core";
-import type { StaffTripPublicationOperations } from "@travelos/backend-core";
+import type { StaffTripPreviewOperations } from "@travelos/backend-core";
+import type { StaffShareLinkOperations } from "@travelos/backend-core";
 import type { StaffInvitationOperations } from "@travelos/backend-core";
 import type { StaffLeadOperations } from "@travelos/backend-core";
 import { AdminStaffSessionContextSchema } from "@travelos/contracts/admin";
@@ -69,7 +70,8 @@ export interface AdminAuthBridgeOptions {
   readonly tripOperations?: StaffTripOperations;
   readonly workspaceOperations?: StaffTripWorkspaceOperations;
   readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
-  readonly publicationOperations?: StaffTripPublicationOperations;
+  readonly previewOperations?: StaffTripPreviewOperations;
+  readonly shareLinkOperations?: StaffShareLinkOperations;
   readonly leadOperations?: StaffLeadOperations;
   readonly staffInvitationOperations?: StaffInvitationOperations;
   readonly staffInvitationRateLimiter?: StaffInvitationRateLimiter;
@@ -264,9 +266,12 @@ export const registerAdminAuthBridge = (
       ...(options.workspaceWriteOperations === undefined
         ? {}
         : { workspaceWriteOperations: options.workspaceWriteOperations }),
-      ...(options.publicationOperations === undefined
+      ...(options.previewOperations === undefined
         ? {}
-        : { publicationOperations: options.publicationOperations }),
+        : { previewOperations: options.previewOperations }),
+      ...(options.shareLinkOperations === undefined
+        ? {}
+        : { shareLinkOperations: options.shareLinkOperations }),
       ...(options.leadOperations === undefined ? {} : { leadOperations: options.leadOperations }),
     });
   }

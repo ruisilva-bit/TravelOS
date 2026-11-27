@@ -32,14 +32,18 @@ export {
   type AdminTripWorkspaceTripUpdateV1Request,
 } from "./workspace-write-v1.js";
 export {
-  AdminPublishTripV1RequestSchema,
-  AdminTripPublicationHistoryEntryV1Schema,
-  AdminTripPublicationHistoryV1ResponseSchema,
   AdminTripPublicationPreviewV1Schema,
-  AdminTripPublicationV1ResponseSchema,
-  type AdminPublishTripV1Request,
-  type AdminTripPublicationHistoryEntryV1,
-  type AdminTripPublicationHistoryV1Response,
   type AdminTripPublicationPreviewV1,
-  type AdminTripPublicationV1Response,
 } from "./publication-v1.js";
+export {
+  AdminCreateShareLinkV1RequestSchema,
+  AdminShareLinkCreatedV1ResponseSchema,
+  AdminShareLinkListV1ResponseSchema,
+  AdminShareLinkRevokedV1ResponseSchema,
+  AdminShareLinkSummaryV1Schema,
+  TripSnapshotV1Schema,
+  type AdminCreateShareLinkV1Request,
+  type AdminShareLinkCreatedV1Response,
+  type AdminShareLinkListV1Response,
+  type AdminShareLinkSummaryV1,
+} from "./share-link-v1.js";

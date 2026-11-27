@@ -5,8 +5,9 @@ import {
   TransactionConflictError,
   StaffAuthorizationError,
   StaffPublicationInputError,
+  ShareLinkInputError,
+  ShareLinkNotFoundError,
   TripNotFoundError,
-  StalePublicationCandidateError,
   IdempotencyConflictError,
   TripPublicationNotFoundError,
   LeadIdempotencyConflictError,
@@ -16,7 +17,8 @@ import {
   type StaffTripWorkspaceWriteOperations,
   type StaffTripOperations,
   type StaffTripWorkspaceOperations,
-  type StaffTripPublicationOperations,
+  type StaffTripPreviewOperations,
+  type StaffShareLinkOperations,
 } from "@travelos/backend-core";
 import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
 
@@ -29,6 +31,7 @@ export interface IncomingHttpRequest {
   readonly url: string;
   readonly headers: Record<string, string | string[] | undefined>;
   readonly body?: unknown;
+  readonly rawHeaders?: readonly string[];
   readonly params?: Readonly<Record<string, string | undefined>>;
   readonly query?: Readonly<Record<string, string | readonly string[] | undefined>>;
 }
@@ -58,7 +61,8 @@ export interface AdminRouteOptions {
   readonly tripOperations: StaffTripOperations;
   readonly workspaceOperations?: StaffTripWorkspaceOperations;
   readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
-  readonly publicationOperations?: StaffTripPublicationOperations;
+  readonly previewOperations?: StaffTripPreviewOperations;
+  readonly shareLinkOperations?: StaffShareLinkOperations;
   readonly leadOperations?: StaffLeadOperations;
 }
 
@@ -109,10 +113,6 @@ export const runHandler = (
       send(response, 409, { error: "transaction_conflict" });
       return;
     }
-    if (error instanceof StalePublicationCandidateError) {
-      send(response, 409, { error: "STALE_PUBLICATION_CANDIDATE" });
-      return;
-    }
     if (error instanceof IdempotencyConflictError) {
       send(response, 409, { error: "IDEMPOTENCY_KEY_CONFLICT" });
       return;
@@ -127,6 +127,14 @@ export const runHandler = (
     }
     if (error instanceof LeadNotFoundError) {
       response.status(404).end();
+      return;
+    }
+    if (error instanceof ShareLinkNotFoundError) {
+      response.status(404).end();
+      return;
+    }
+    if (error instanceof ShareLinkInputError) {
+      badRequest(response);
       return;
     }
     if (error instanceof TripPublicationNotFoundError) {

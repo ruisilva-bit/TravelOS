@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-13
+- **Note:** Superseded in part by ADR-017 (customers reach a snapshot through a share link, not a Portal).
 
 ## Context
 

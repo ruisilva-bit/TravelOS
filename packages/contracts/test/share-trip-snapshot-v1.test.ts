@@ -102,4 +102,20 @@ describe("TripSnapshotV1", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("rejects each INTERNAL_ONLY key at the trip, item and top level", () => {
+    for (const key of ["supplierCost", "margin", "internalNote", "supplier"]) {
+      expect(TripSnapshotV1Schema.safeParse({ ...snapshot, [key]: "x" }).success).toBe(false);
+      expect(
+        TripSnapshotV1Schema.safeParse({ ...snapshot, trip: { ...snapshot.trip, [key]: "x" } })
+          .success,
+      ).toBe(false);
+      expect(
+        TripSnapshotV1Schema.safeParse({
+          ...snapshot,
+          items: [{ ...snapshot.items[0], [key]: "x" }],
+        }).success,
+      ).toBe(false);
+    }
+  });
 });

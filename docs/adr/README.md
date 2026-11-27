@@ -7,7 +7,7 @@ All Phase 0 ADRs became **Accepted** after Product Owner acceptance, verified po
 | [ADR-001](ADR-001-modular-monolith.md) | Modular monolith with separate delivery composition roots | Accepted |
 | [ADR-002](ADR-002-dedicated-single-tenant-deployment.md) | Dedicated single-tenant deployment | Superseded by ADR-016 |
 | [ADR-003](ADR-003-independent-database-per-instance.md) | Independent PostgreSQL database per instance | Superseded by ADR-016 |
-| [ADR-004](ADR-004-immutable-publishing-snapshots.md) | Immutable allowlisted publishing snapshots | Accepted |
+| [ADR-004](ADR-004-immutable-publishing-snapshots.md) | Immutable allowlisted publishing snapshots | Accepted; Portal delivery superseded in part by ADR-017 |
 | [ADR-005](ADR-005-structured-itinerary-model.md) | Structured itinerary and separate Reservations | Accepted |
 | [ADR-006](ADR-006-provider-based-integration-architecture.md) | Provider ports and anti-corruption adapters | Accepted |
 | [ADR-007](ADR-007-separate-staff-and-portal-identity-realms.md) | Separate Staff and Portal identity realms | Accepted; Portal realm superseded by ADR-016 |
@@ -24,3 +24,4 @@ All Phase 0 ADRs became **Accepted** after Product Owner acceptance, verified po
 ## ADR rule
 
 Accepted ADRs are immutable records. To change a decision, add a new ADR with `Supersedes`, update this index and all dependent documents, and rerun relevant review/test gates.
+| [ADR-017](ADR-017-share-links.md) | Revocable, expiring, read-only share links to frozen snapshots | Accepted (2026-11-27) |

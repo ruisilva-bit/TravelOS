@@ -9,9 +9,10 @@ import {
   getAdminPublicationPreview,
   getAdminSessionContext,
   getAdminTripWorkspace,
-  listAdminTripPublications,
+  listAdminShareLinks,
+  revokeAdminShareLink,
+  createAdminShareLink,
   listAdminTrips,
-  publishAdminTrip,
   updateAdminAccommodation,
   updateAdminFlight,
   updateAdminTripWorkspace,
@@ -239,69 +240,79 @@ describe("Admin same-origin API client", () => {
     }
   });
 
-  it("loads a pure publication preview and bounded immutable publication history", async () => {
-    fetchMock
-      .mockResolvedValueOnce(
-        response({
-          workspaceRevision: "3",
-          projectionHash,
-          schemaVersion: 1,
-          projection: publicationProjection,
-        }),
-      )
-      .mockResolvedValueOnce(response({ entries: [], nextCursor: null }));
-
+  it("loads a pure publication preview", async () => {
+    fetchMock.mockResolvedValueOnce(
+      response({
+        workspaceRevision: "3",
+        projectionHash,
+        schemaVersion: 1,
+        projection: publicationProjection,
+      }),
+    );
     await expect(getAdminPublicationPreview(tripId)).resolves.toEqual({
       workspaceRevision: "3",
       projectionHash,
       schemaVersion: 1,
       projection: publicationProjection,
     });
-    await expect(listAdminTripPublications(tripId, null)).resolves.toEqual({
-      entries: [],
-      nextCursor: null,
-    });
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
+    expect(fetchMock).toHaveBeenCalledWith(
       `/api/admin/trips/${tripId}/publication-preview`,
-      expect.objectContaining({ method: "GET", credentials: "same-origin", cache: "no-store" }),
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      `/api/admin/trips/${tripId}/publications`,
       expect.objectContaining({ method: "GET", credentials: "same-origin", cache: "no-store" }),
     );
   });
 
-  it("publishes exactly the reviewed revision/hash with a stable idempotency key", async () => {
-    const request = {
-      expectedWorkspaceRevision: "3",
-      expectedProjectionHash: projectionHash,
-      idempotencyKey: "stage9-test-idempotency-key",
+  it("creates a share link with an idempotency header and lists links without any token", async () => {
+    const token = "Z".repeat(43);
+    const created = {
+      shareLinkId: "019a0101-0000-7000-8000-000000000006",
+      token,
+      url: `https://admin.example.test/v/${token}`,
+      createdAt: "2027-01-01T12:00:00.000Z",
+      expiresAt: "2027-04-01T12:00:00.000Z",
     };
-    const published = {
-      publicationId: "019a0101-0000-7000-8000-000000000005",
-      tripId,
-      version: 1,
-      publishedAt: "2027-01-01T12:00:00.000Z",
-      schemaVersion: 1,
-      projectionHash,
-      isActive: true,
-      projection: publicationProjection,
-    };
-    fetchMock.mockResolvedValue(response(published));
-
-    await expect(publishAdminTrip(tripId, request)).resolves.toEqual(published);
-    expect(fetchMock).toHaveBeenCalledWith(
-      `/api/admin/trips/${tripId}/publications`,
+    fetchMock.mockResolvedValueOnce(response(created));
+    await expect(
+      createAdminShareLink(tripId, { expiresInDays: 90 }, "share-test-key"),
+    ).resolves.toEqual(created);
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/admin/trips/${tripId}/share-links`,
       expect.objectContaining({
         method: "POST",
-        credentials: "same-origin",
-        cache: "no-store",
-        headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify(request),
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          "idempotency-key": "share-test-key",
+        },
+        body: JSON.stringify({ expiresInDays: 90 }),
       }),
     );
+
+    const summary = {
+      shareLinkId: created.shareLinkId,
+      createdAt: created.createdAt,
+      expiresAt: created.expiresAt,
+      revokedAt: null,
+      state: "ACTIVE",
+      createdBy: "staff-1",
+    };
+    fetchMock.mockResolvedValueOnce(response({ links: [summary] }));
+    await expect(listAdminShareLinks(tripId)).resolves.toEqual({ links: [summary] });
+    fetchMock.mockResolvedValueOnce(response({ links: [{ ...summary, token }] }));
+    await expect(listAdminShareLinks(tripId)).rejects.toMatchObject({ code: "INVALID_RESPONSE" });
+  });
+
+  it("revokes a share link and rejects out-of-range validity locally", async () => {
+    fetchMock.mockResolvedValueOnce(response({ revoked: true }));
+    await expect(
+      revokeAdminShareLink("019a0101-0000-7000-8000-000000000006"),
+    ).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/admin/share-links/019a0101-0000-7000-8000-000000000006/revoke",
+      expect.objectContaining({ method: "POST" }),
+    );
+    await expect(createAdminShareLink(tripId, { expiresInDays: 366 }, "k")).rejects.toMatchObject({
+      code: "INVALID_REQUEST",
+    });
   });
 
   it("maps stale write conflicts to a typed error without exposing server diagnostics", async () => {

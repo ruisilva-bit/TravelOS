@@ -6,14 +6,21 @@ import {
   createStaffInvitationToken,
   digestStaffInvitationToken,
 } from "@travelos/auth-adapters";
-import { createStaffInvitationOperations } from "@travelos/backend-core";
+import {
+  createPublicShareOperations,
+  createStaffInvitationOperations,
+  type TripSnapshotV1,
+} from "@travelos/backend-core";
 import {
   loadDevelopmentInstanceManifest,
   readSystemdCredentialText,
   type DevelopmentInstanceManifest,
 } from "@travelos/config";
 import {
-  createPostgresStaffTripPublicationOperations,
+  createPostgresPublicShareReader,
+  createPostgresStaffShareLinkOperations,
+  createPostgresStaffTripPreviewOperations,
+  createShareTokenCrypto,
   createPostgresStaffLeadOperations,
   createPostgresStaffTripOperations,
   createPostgresStaffTripWorkspaceOperations,
@@ -22,7 +29,7 @@ import {
   createStaffAccessRepository,
   createPostgresStaffInvitationRepository,
 } from "@travelos/database";
-import { AdminTripPublicationPreviewV1Schema } from "@travelos/contracts/admin";
+import { TripSnapshotV1Schema } from "@travelos/contracts/admin";
 
 import { createAdminApi, type CreateAdminApiOptions } from "./app.js";
 import { createAdminStaffSessionResolver } from "./staff-session-resolver.js";
@@ -90,13 +97,33 @@ const createAdminAuthOptions = async (
       persistence,
       sessionResolver,
     );
-    const publicationOperations = createPostgresStaffTripPublicationOperations(
+    const snapshotValidator = {
+      validate: (value: unknown) => void TripSnapshotV1Schema.parse(value),
+    };
+    const previewOperations = createPostgresStaffTripPreviewOperations(
       persistence,
       sessionResolver,
-      {
-        validate: (value) => void AdminTripPublicationPreviewV1Schema.shape.projection.parse(value),
-      },
+      snapshotValidator,
     );
+    const shareLinkOperations = createPostgresStaffShareLinkOperations(
+      persistence,
+      sessionResolver,
+      snapshotValidator,
+      policy.canonicalOrigin,
+    );
+    const publicShareOperations = createPublicShareOperations({
+      reader: createPostgresPublicShareReader(persistence),
+      crypto: createShareTokenCrypto(),
+      parseSnapshot: (value) => TripSnapshotV1Schema.parse(value) as TripSnapshotV1,
+      // Failure kind only: the token and payload never reach the log.
+      onFailure: (failure) =>
+        console.error(JSON.stringify({ event: "public_share_read_failed", failure })),
+    });
+    // 60 requests per minute per client; every request counts (complete() is never called).
+    const publicShareRateLimiter = createStaffInvitationRateLimiter({
+      maxAttempts: 60,
+      windowMs: 60_000,
+    });
     const leadOperations = createPostgresStaffLeadOperations(persistence, sessionResolver);
     const staffInvitationOperations = createStaffInvitationOperations({
       repository: createPostgresStaffInvitationRepository(persistence),
@@ -130,11 +157,13 @@ const createAdminAuthOptions = async (
           tripOperations,
           workspaceOperations,
           workspaceWriteOperations,
-          publicationOperations,
+          previewOperations,
+          shareLinkOperations,
           leadOperations,
           staffInvitationOperations,
           staffInvitationRateLimiter,
         },
+        publicShare: { operations: publicShareOperations, rateLimiter: publicShareRateLimiter },
       },
       destroy: () => persistence.destroy(),
     };
