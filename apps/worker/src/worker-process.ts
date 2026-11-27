@@ -1,5 +1,6 @@
 import {
   processWorkerClaim,
+  type WorkerHandler,
   type WorkerRepository,
   type WorkerStats,
 } from "@travelos/backend-core";
@@ -19,6 +20,8 @@ export interface WorkerProcessOptions {
   readonly owner: string;
   readonly log: (record: unknown) => void;
   readonly random?: () => number;
+  /** No consumer is registered by default; without one the process stays idle and never claims. */
+  readonly handler?: WorkerHandler;
 }
 
 export const bootstrapWorkerProcess = (options?: WorkerProcessOptions): WorkerProcess => {
@@ -33,10 +36,10 @@ export const bootstrapWorkerProcess = (options?: WorkerProcessOptions): WorkerPr
       ready = await repository.ready();
       if (!ready) throw new Error("Worker database identity not ready");
       await repository.recover();
-      await repository.dispatch();
       if (currentState !== "RUNNING") return;
-      const claim = await repository.claim(options.owner);
-      if (claim !== null)
+      const handler = options.handler;
+      const claim = handler === undefined ? null : await repository.claim(options.owner);
+      if (handler !== undefined && claim !== null)
         await runWithCorrelation(
           { correlationId: claim.correlationId, traceparent: claim.traceparent },
           async () => {
@@ -45,6 +48,7 @@ export const bootstrapWorkerProcess = (options?: WorkerProcessOptions): WorkerPr
               repository,
               claim,
               options.random ?? Math.random,
+              handler,
             );
             options.log({
               action: outcome.outcome === "SUCCEEDED" ? "job_completed" : "job_failed",

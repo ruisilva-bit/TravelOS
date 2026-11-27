@@ -52,7 +52,7 @@ Rules:
 | `crm` | `person`, `customer`, `customer_person`, `traveller_group`, `traveller_group_member`, contact/address tables | CRM |
 | `sales` | `lead`, `lead_idempotency`, `travel_request`, `opportunity`, `quote`, `quote_version`, `proposal_alternative`, `sale` | Sales |
 | `trip_ops` | `trip`, `trip_traveller`, `itinerary_item`, family detail tables, `journey_group`, `reservation`, `reservation_item_link` | Trip Operations |
-| `presentation` | `publication`, one-to-one `publication_payload`, `current_publication`, `publication_event`, `agency_profile_publication` | Customer Presentation |
+| `presentation` | `publication`, one-to-one `publication_payload`, `current_publication`, `agency_profile_publication` | Customer Presentation |
 | `finance` | `price_line`, `cost_line`, `fee`, `commission`, `payment`, `payment_allocation`, `exchange_rate` | Finance Operations |
 | `documents` | `storage_object`, `document`, `document_version`, typed association tables, `document_grant` | Documents |
 | `work_service` | `task`, `case`, assignment/state history | Work & Service |
@@ -154,7 +154,7 @@ No reservation details are copied into item internals merely for UI convenience.
 
 `current_publication` has one row per Trip and a same-Agency/Trip composite FK to Publication. Publish updates it in the same serializable transaction as insertion.
 
-`publication_event` records activation, supersession, withdrawal and privacy payload deletion. A narrowly privileged security-definer command verifies authority/legal hold, clears the current pointer if necessary, deletes only the separate payload row and appends `PRIVACY_PAYLOAD_DELETED` in one transaction. It cannot rewrite payload fields or publication metadata. Routine runtime roles cannot call it.
+Migration 0002 dropped the unused Trip publication event and outbox tables (`trip_ops.publication_event`, `integration.trip_publication_outbox`) and the worker projection that read them; share links replaced that feature.
 
 A future share link (ADR-016) reads only the frozen snapshot behind an active pointer; it cannot enumerate historical rows or read workspace schemas. The presentation adapter verifies the canonical content hash and parses the declared snapshot schema before returning a customer DTO. Payloads are never materialized into a static asset or generic cache.
 
@@ -212,7 +212,7 @@ Document privacy deletion revokes active grants and transitions the version to `
 | OutboxMessage | State machine metadata mutable; event payload immutable | Reliable post-commit delivery | Versioned integration envelope |
 | TravelOS Job | Runtime state mutable under lease CAS | Retry/schedule/execute background command | Reference IDs, not large sensitive aggregates |
 
-`outbox_message` is inserted in the business transaction. `outbox_delivery` is per consumer, so one failed consequence does not make another look undelivered. TravelOS-owned `job_runtime.job` uses state, `run_at`, bounded attempt/deadline, `lease_owner`, `lease_expires_at`, heartbeat timestamp and version; claims use database time, `FOR UPDATE SKIP LOCKED` and compare-and-swap completion. No dependency owns or mutates a parallel job schema. Every effectful handler is idempotent or reconciles a durable business key before retry. Published external events never expose internal row structures.
+`outbox_message` is inserted in the business transaction. `outbox_delivery` is per consumer, so one failed consequence does not make another look undelivered. No Trip publication outbox exists any more (removed by 0002); the generic job runtime has no registered consumer, so the worker claims nothing until one is added. TravelOS-owned `job_runtime.job` uses state, `run_at`, bounded attempt/deadline, `lease_owner`, `lease_expires_at`, heartbeat timestamp and version; claims use database time, `FOR UPDATE SKIP LOCKED` and compare-and-swap completion. No dependency owns or mutates a parallel job schema. Every effectful handler is idempotent or reconciles a durable business key before retry. Published external events never expose internal row structures.
 
 Audit runtime role can INSERT and SELECT only per policy; UPDATE/DELETE is denied and guarded. Periodic signed export checkpoints to off-instance storage provide tamper evidence against application-role compromise. Database-owner compromise remains an operational threat addressed by least privilege and off-instance backups/checkpoints, not a false “cryptographically impossible” claim.
 

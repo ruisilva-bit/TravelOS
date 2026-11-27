@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile, readdir, mkdir, writeFile } from "node:fs/promises";
+import { copyFile, readFile, readdir, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { QueryResultRow } from "pg";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -366,7 +366,7 @@ const runDefaultPrivilegeProbes = async (): Promise<void> => {
       "staff_access",
       "trip_ops",
     ],
-    travelos_worker: ["activity", "integration", "job_runtime"],
+    travelos_worker: ["integration", "job_runtime"],
     travelos_migrator: [],
   };
   for (const privilege of schemaPrivileges) {
@@ -459,7 +459,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     expect(server[0]?.listen_addresses).toBe("127.0.0.1");
 
     const names = await productionMigrationNames();
-    expect(names).toEqual(["0001_baseline"]);
+    expect(names).toEqual(["0001_baseline", "0002_drop_publication_outbox"]);
     const initialStatus = await inspectMigrationStatus(targetFor(primaryDatabase), productionChain);
     expect(initialStatus.ledger).toEqual([]);
     const migrated = await migrateToHead(primaryDatabase, agency);
@@ -474,17 +474,25 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     expect(status.currentVersion).toBe(names.at(-1));
   });
 
-  it("applies the squashed baseline in one pass without any Agency; a rerun is a no-op; exactly one migration file exists", async () => {
+  it("applies the squashed baseline and its 0002 follow-up without any Agency; a rerun is a no-op; exactly these migration files exist", async () => {
     const files = (await readdir(productionChain.directory)).toSorted();
-    expect(files).toEqual(["0001_baseline.cjs", "checksums.json"]);
+    expect(files).toEqual([
+      "0001_baseline.cjs",
+      "0002_drop_publication_outbox.cjs",
+      "checksums.json",
+    ]);
     expect((await readChainManifest()).migrations.map(({ file }) => file)).toEqual([
       "0001_baseline.cjs",
+      "0002_drop_publication_outbox.cjs",
     ]);
 
     await createDatabase(baselineDatabase);
     const first = await runMigrationChain(targetFor(baselineDatabase), productionChain);
-    expect(first.appliedMigrations).toEqual(["0001_baseline"]);
-    expect(first.ledger.map(({ name }) => name)).toEqual(["0001_baseline"]);
+    expect(first.appliedMigrations).toEqual(["0001_baseline", "0002_drop_publication_outbox"]);
+    expect(first.ledger.map(({ name }) => name)).toEqual([
+      "0001_baseline",
+      "0002_drop_publication_outbox",
+    ]);
     // One pass, no root Agency needed: nothing seeds an Agency, role or Staff row.
     const counts = await queryAs<{ agencies: string; roles: string; currencies: string }>(
       "postgres",
@@ -496,7 +504,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     expect(counts).toEqual([{ agencies: "0", roles: "0", currencies: "4" }]);
     const rerun = await runMigrationChain(targetFor(baselineDatabase), productionChain);
     expect(rerun.appliedMigrations).toEqual([]);
-    expect(rerun.currentVersion).toBe("0001_baseline");
+    expect(rerun.currentVersion).toBe("0002_drop_publication_outbox");
   });
 
   it("fails verification and applies nothing when the baseline is tampered with", async () => {
@@ -508,6 +516,10 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
       "utf8",
     );
     await writeFile(path.join(directory, "0001_baseline.cjs"), `${original}\n// tampered\n`);
+    await copyFile(
+      path.join(productionChain.directory, "0002_drop_publication_outbox.cjs"),
+      path.join(directory, "0002_drop_publication_outbox.cjs"),
+    );
     const checksumManifestPath = path.join(directory, "checksums.json");
     await writeFile(checksumManifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
     const tampered: MigrationChain = { directory, checksumManifestPath };
@@ -943,6 +955,17 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
         ORDER BY 1`,
     );
     expect(retiredRelations).toEqual([]);
+    const droppedPublicationRelations = await queryAs<{ relation: string | null }>(
+      "postgres",
+      `SELECT to_regclass('trip_ops.publication_event')::text AS relation
+       UNION ALL SELECT to_regclass('integration.trip_publication_outbox')::text
+       UNION ALL SELECT to_regclass('integration.activity_source')::text`,
+    );
+    expect(droppedPublicationRelations).toEqual([
+      { relation: null },
+      { relation: null },
+      { relation: null },
+    ]);
     const retiredPermissions = await queryAs<{ count: string }>(
       "postgres",
       `SELECT count(*)::text AS count FROM staff_access.role_permission

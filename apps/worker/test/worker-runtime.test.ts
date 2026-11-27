@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   WorkerExecutionError,
   type WorkerClaim,
+  type WorkerHandler,
   type WorkerRepository,
   type WorkerStats,
 } from "@travelos/backend-core";
@@ -26,12 +27,11 @@ const lease: WorkerClaim = {
   correlationId: "01900000-0000-7000-8000-000000000004",
   traceparent: null,
 };
-const fixture = (effect: () => Promise<boolean>) => {
+const fixture = () => {
   let queued = true;
   const failures: { code: string; delay: number }[] = [];
   const repository: WorkerRepository = {
     ready: async () => true,
-    dispatch: async () => 0,
     recover: async () => 0,
     claim: async () => {
       if (!queued) return null;
@@ -39,7 +39,10 @@ const fixture = (effect: () => Promise<boolean>) => {
       return lease;
     },
     heartbeat: async (current) => ({ ...current, version: "2" }),
-    projectAndComplete: effect,
+    complete: async (current, handler) => {
+      await handler(current);
+      return true;
+    },
     fail: async (_claim, code, delay) => {
       failures.push({ code, delay });
       return true;
@@ -48,29 +51,29 @@ const fixture = (effect: () => Promise<boolean>) => {
   };
   return { repository, failures };
 };
-const start = (repository: WorkerRepository) =>
+const start = (repository: WorkerRepository, handler: WorkerHandler) =>
   (
     bootstrapWorkerProcess as unknown as (options: {
       repository: WorkerRepository;
       owner: string;
       log: (event: unknown) => void;
       random: () => number;
+      handler: WorkerHandler;
     }) => {
       state(): string;
       tick(): Promise<void>;
       diagnostics(): { live: boolean; ready: boolean; stats: WorkerStats | null };
       shutdown(): Promise<void>;
     }
-  )({ repository, owner: lease.owner, log: () => {}, random: () => 0 });
+  )({ repository, owner: lease.owner, log: () => {}, random: () => 0, handler });
 
 describe("Stage 8 real worker lifecycle", () => {
-  it("runs real port work and reports independent readiness and metrics", async () => {
+  it("runs registered work and reports independent readiness and metrics", async () => {
     let executed = 0;
-    const { repository } = fixture(async () => {
+    const { repository } = fixture();
+    const process = start(repository, async () => {
       executed += 1;
-      return true;
     });
-    const process = start(repository);
     expect(process.tick).toBeTypeOf("function");
     expect(process.diagnostics().ready).toBe(false);
     await process.tick();
@@ -82,15 +85,40 @@ describe("Stage 8 real worker lifecycle", () => {
     expect(process.diagnostics().live).toBe(false);
   });
 
+  it("stays idle and never claims when no consumer is registered", async () => {
+    const { repository, failures } = fixture();
+    let claimed = 0;
+    repository.claim = async () => {
+      claimed += 1;
+      return lease;
+    };
+    const process = (
+      bootstrapWorkerProcess as unknown as (options: {
+        repository: WorkerRepository;
+        owner: string;
+        log: (event: unknown) => void;
+      }) => {
+        tick(): Promise<void>;
+        diagnostics(): { live: boolean; ready: boolean; stats: WorkerStats | null };
+        shutdown(): Promise<void>;
+      }
+    )({ repository, owner: lease.owner, log: () => {} });
+    await process.tick();
+    expect(claimed).toBe(0);
+    expect(failures).toEqual([]);
+    expect(process.diagnostics().ready).toBe(true);
+    await process.shutdown();
+  });
+
   it.each([
     [new WorkerExecutionError("TEMPORARY"), "TEMPORARY"],
     [new WorkerExecutionError("PERMANENT"), "PERMANENT"],
     [new Error("private raw provider error"), "UNKNOWN_OUTCOME"],
   ])("uses typed failure disposition without unsafe replay", async (error, expected) => {
-    const { repository, failures } = fixture(async () => {
+    const { repository, failures } = fixture();
+    const process = start(repository, async () => {
       throw error;
     });
-    const process = start(repository);
     await process.tick();
     expect(failures).toEqual([{ code: expected, delay: expected === "TEMPORARY" ? 1000 : 0 }]);
     await process.shutdown();
@@ -105,12 +133,11 @@ describe("Stage 8 real worker lifecycle", () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const { repository } = fixture(async () => {
+    const { repository } = fixture();
+    const process = start(repository, async () => {
       entered();
       await gate;
-      return true;
     });
-    const process = start(repository);
     const work = process.tick();
     await enteredPromise;
     let stopped = false;
@@ -127,12 +154,11 @@ describe("Stage 8 real worker lifecycle", () => {
 
   it("fails readiness without claiming when DB identity is wrong", async () => {
     let executed = false;
-    const { repository } = fixture(async () => {
-      executed = true;
-      return true;
-    });
+    const { repository } = fixture();
     repository.ready = async () => false;
-    const process = start(repository);
+    const process = start(repository, async () => {
+      executed = true;
+    });
     await expect(process.tick()).rejects.toThrow();
     expect(executed).toBe(false);
     expect(process.diagnostics().ready).toBe(false);

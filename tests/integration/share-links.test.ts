@@ -145,10 +145,6 @@ const counts = async () => ({
   versions: await count('SELECT count(*)::text AS count FROM "trip_ops"."publication_version"'),
   snapshots: await count('SELECT count(*)::text AS count FROM "trip_ops"."publication_snapshot"'),
   links: await count('SELECT count(*)::text AS count FROM "trip_ops"."share_link"'),
-  events: await count('SELECT count(*)::text AS count FROM "trip_ops"."publication_event"'),
-  outbox: await count(
-    'SELECT count(*)::text AS count FROM "integration"."trip_publication_outbox"',
-  ),
   lockGeneration: await count(
     'SELECT COALESCE(sum("generation"), 0)::text AS count FROM "trip_ops"."publication_lock"',
   ),
@@ -497,16 +493,17 @@ describe.sequential("Share links on PostgreSQL", () => {
     expect(await counts()).toEqual(before);
   });
 
-  it("does not write event or outbox rows, and the retired pointer and idempotency tables are gone", async () => {
+  it("does not write publication event or outbox rows, and the retired tables are gone", async () => {
     const retired = await owner.query<{ present: string | null }>(
       `SELECT to_regclass('trip_ops.publication_pointer')::text AS present
        UNION ALL SELECT to_regclass('trip_ops.publication_idempotency')::text
-       UNION ALL SELECT to_regclass('audit.trip_publication_event')::text`,
+       UNION ALL SELECT to_regclass('audit.trip_publication_event')::text
+       UNION ALL SELECT to_regclass('trip_ops.publication_event')::text
+       UNION ALL SELECT to_regclass('integration.trip_publication_outbox')::text
+       UNION ALL SELECT to_regclass('integration.activity_source')::text`,
     );
-    expect(retired.rows.map((row) => row.present)).toEqual([null, null, null]);
+    expect(retired.rows.map((row) => row.present)).toEqual([null, null, null, null, null, null]);
     const totals = await counts();
-    expect(totals.events).toBe(0);
-    expect(totals.outbox).toBe(0);
     expect(totals.versions).toBe(totals.links);
   });
 

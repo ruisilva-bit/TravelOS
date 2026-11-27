@@ -2,6 +2,7 @@ import {
   WorkerExecutionError,
   type WorkerClaim,
   type WorkerErrorCode,
+  type WorkerHandler,
   type WorkerRepository,
   type WorkerStats,
 } from "@travelos/backend-core";
@@ -93,19 +94,14 @@ export const createWorkerRepository = (
     async ready() {
       const result = await persistence.withConnection((database) =>
         sql<{ ready: boolean }>`WITH required_schemas(schema_name) AS (
-          VALUES ('job_runtime'), ('integration'), ('activity')
+          VALUES ('job_runtime'), ('integration')
         ), required_table_privileges(schema_name, relation_name, privilege) AS (
           VALUES
             ('job_runtime', 'job', 'SELECT'),
-            ('job_runtime', 'job', 'INSERT'),
             ('job_runtime', 'attempt', 'SELECT'),
             ('job_runtime', 'attempt', 'INSERT'),
             ('integration', 'outbox_delivery', 'SELECT'),
-            ('integration', 'outbox_delivery', 'INSERT'),
-            ('integration', 'activity_source', 'SELECT'),
-            ('integration', 'event_context', 'SELECT'),
-            ('activity', 'entry', 'SELECT'),
-            ('activity', 'entry', 'INSERT')
+            ('integration', 'event_context', 'SELECT')
         ), required_column_privileges(schema_name, relation_name, column_name, privilege) AS (
           VALUES
             ('job_runtime', 'job', 'state', 'UPDATE'),
@@ -171,24 +167,6 @@ export const createWorkerRepository = (
       );
       return result.rows[0]?.ready === true;
     },
-    dispatch: () =>
-      transaction(async (database) => {
-        const result = await sql`WITH candidates AS (
-        SELECT source."agencyId", source."messageId", source."publicationMessageId"
-        FROM "integration"."activity_source" AS source
-        WHERE NOT EXISTS (SELECT 1 FROM "integration"."outbox_delivery" AS delivery
-          WHERE delivery."agencyId"=source."agencyId" AND delivery."messageId"=source."messageId" AND delivery."consumer"='ACTIVITY_V1')
-        ORDER BY source."occurredAt", source."messageId" LIMIT 100
-      ), inserted AS (
-        INSERT INTO "integration"."outbox_delivery" ("agencyId", "messageId", "consumer", "publicationMessageId", "state")
-        SELECT "agencyId", "messageId", 'ACTIVITY_V1', "publicationMessageId", 'PENDING' FROM candidates
-        ON CONFLICT ("agencyId", "messageId", "consumer") DO NOTHING RETURNING "agencyId", "messageId", "consumer"
-      ) INSERT INTO "job_runtime"."job" ("agencyId", "messageId", "consumer", "state")
-        SELECT "agencyId", "messageId", "consumer", 'PENDING' FROM inserted RETURNING "messageId"`.execute(
-          database,
-        );
-        return result.rows.length;
-      }),
     claim: (owner) =>
       transaction(async (database) => {
         // Serialize only the task-cap check, not execution; claims still skip locked jobs.
@@ -229,28 +207,15 @@ export const createWorkerRepository = (
               traceparent: claim.traceparent,
             });
       }),
-    projectAndComplete: (claim) =>
+    complete: (claim, handler: WorkerHandler) =>
       transaction(async (database) => {
         const locked =
           await sql`SELECT "messageId" FROM "job_runtime"."job" WHERE ${activeClaim(claim)} FOR UPDATE`.execute(
             database,
           );
         if (locked.rows.length === 0) return false;
-        const source = await sql`INSERT INTO "activity"."entry"
-        ("agencyId", "messageId", "consumer", "tripId", "publicationId", "actorStaffPrincipalId", "eventType", "schemaVersion", "occurredAt")
-        SELECT "agencyId", "messageId", 'ACTIVITY_V1', "tripId", "publicationId", "actorStaffPrincipalId", "eventType", 1, "occurredAt"
-        FROM "integration"."activity_source" WHERE "agencyId"=${claim.agencyId}::uuid AND "messageId"=${claim.messageId}::uuid
-        ON CONFLICT ("agencyId", "messageId", "consumer") DO NOTHING RETURNING "messageId"`.execute(
-          database,
-        );
-        if (source.rows.length === 0) {
-          const prior =
-            await sql`SELECT "messageId" FROM "activity"."entry" WHERE "agencyId"=${claim.agencyId}::uuid AND "messageId"=${claim.messageId}::uuid AND "consumer"='ACTIVITY_V1'`.execute(
-              database,
-            );
-          if (prior.rows.length === 0) throw new WorkerExecutionError("PERMANENT");
-        }
-        // Recheck DB time after projection; expiry rolls back the whole effect.
+        await handler(claim);
+        // Recheck DB time after the handler; expiry rolls back the whole effect.
         if (!(await finish(database, claim, "SUCCEEDED", null, 0)))
           throw new WorkerExecutionError("TEMPORARY");
         return true;

@@ -44,13 +44,15 @@ export interface WorkerStats {
   readonly oldestPendingSeconds: number;
 }
 
+/** A consumer's work for one claimed job. It runs inside the completion transaction; throw to fail. */
+export type WorkerHandler = (claim: WorkerClaim) => Promise<void>;
+
 export interface WorkerRepository {
   ready(): Promise<boolean>;
-  dispatch(): Promise<number>;
   recover(): Promise<number>;
   claim(owner: string): Promise<WorkerClaim | null>;
   heartbeat(claim: WorkerClaim): Promise<WorkerClaim | null>;
-  projectAndComplete(claim: WorkerClaim): Promise<boolean>;
+  complete(claim: WorkerClaim, handler: WorkerHandler): Promise<boolean>;
   fail(claim: WorkerClaim, code: WorkerErrorCode, retryDelayMs: number): Promise<boolean>;
   inspect(): Promise<WorkerStats>;
 }
@@ -64,11 +66,12 @@ export const processWorkerClaim = async (
   repository: WorkerRepository,
   initial: WorkerClaim,
   random: () => number,
+  handler: WorkerHandler,
 ): Promise<WorkerOutcome> => {
   const claim = await repository.heartbeat(initial);
   if (claim === null) return { outcome: "LEASE_LOST", errorCode: "LEASE_LOST" };
   try {
-    return (await repository.projectAndComplete(claim))
+    return (await repository.complete(claim, handler))
       ? { outcome: "SUCCEEDED", errorCode: null }
       : { outcome: "LEASE_LOST", errorCode: "LEASE_LOST" };
   } catch (error) {

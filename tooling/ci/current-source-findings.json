@@ -514,13 +514,6 @@
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "tests/integration/worker.test.ts",
-      "rule": "email-address",
-      "lineSha256": "492b814b53dbe6fefa47ec4cbc10d9a299ccbcc6888d4c6756fb8a4c4b0ed902",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
       "path": "tooling/ci/test-scan-current-source.mjs",
       "rule": "email-address",
       "lineSha256": "336b85335f74f2618ddb9fb746127a0c810471f910f65524d45ac17b608eb4ff",

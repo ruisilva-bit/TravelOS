@@ -7,6 +7,7 @@ export {
   type WorkerErrorCode,
   type WorkerRepository,
   type WorkerStats,
+  type WorkerHandler,
   type WorkerOutcome,
 } from "./modules/job-runtime/worker.js";
 export {
