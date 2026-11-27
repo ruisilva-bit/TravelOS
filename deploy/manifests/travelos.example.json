@@ -13,11 +13,11 @@
     "postgresqlMajor": 18
   },
   "hosts": {
-    "admin": "travelos.lan"
+    "admin": "travelos-dev"
   },
   "hostAllowlist": [
     {
-      "host": "travelos.lan",
+      "host": "travelos-dev",
       "surface": "ADMIN"
     }
   ],

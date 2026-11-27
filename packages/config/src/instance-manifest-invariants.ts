@@ -18,7 +18,8 @@ export const instanceManifestInvariantRegistry = {
     {
       id: "TOS-CONFIG-SCHEMA-003",
       path: "hosts.*,hostAllowlist[*].host",
-      summary: "Host values use the exact normalized lowercase FQDN grammar.",
+      summary:
+        "Host values use the exact normalized lowercase hostname grammar (FQDN or single-label LAN name).",
     },
     {
       id: "TOS-CONFIG-SCHEMA-004",

@@ -4,7 +4,7 @@
 #
 # Cloudflare Tunnel (optional, later, needs the owner's go-ahead): route ONLY the path /v/*
 # to http://127.0.0.1:3101. Never route the admin site, /api/* or the SPA through the tunnel.
-http://travelos.lan {
+http://travelos-dev {
 	# Customer share links and the staff API go to admin-api. These come BEFORE the SPA fallback.
 	handle /v/* {
 		reverse_proxy 127.0.0.1:3101
@@ -23,5 +23,5 @@ http://travelos.lan {
 # Requests by IP (e.g. http://192.168.1.33) get redirected to the canonical name: the app only
 # accepts its manifest host, so login would fail on any other address.
 http:// {
-	redir http://travelos.lan{uri} 302
+	redir http://travelos-dev{uri} 302
 }

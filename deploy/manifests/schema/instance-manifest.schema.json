@@ -70,7 +70,7 @@
         "admin": {
           "type": "string",
           "maxLength": 253,
-          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         }
       },
       "required": [
@@ -88,7 +88,7 @@
           "host": {
             "type": "string",
             "maxLength": 253,
-            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
           },
           "surface": {
             "type": "string",
@@ -332,7 +332,7 @@
       {
         "id": "TOS-CONFIG-SCHEMA-003",
         "path": "hosts.*,hostAllowlist[*].host",
-        "summary": "Host values use the exact normalized lowercase FQDN grammar."
+        "summary": "Host values use the exact normalized lowercase hostname grammar (FQDN or single-label LAN name)."
       },
       {
         "id": "TOS-CONFIG-SCHEMA-004",

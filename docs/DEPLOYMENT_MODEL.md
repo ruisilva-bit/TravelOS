@@ -50,17 +50,17 @@ The admin app and API are reachable on the LAN only. Nothing is public.
    `systemctl daemon-reload && systemctl enable travelos-api travelos-worker travelos-backup.timer && systemctl enable --now caddy`;
    `systemctl start travelos-backup.timer`. Let `postgres` read the dumps for the restore drill: `usermod -aG travelos postgres`.
    If Caddy was already running with another config, `systemctl restart caddy` (use `restart`, not `reload`, if the old config had `admin off`).
-   Add the LAN name to `/etc/hosts` on CT200 too (`127.0.0.1 travelos.lan`) so local checks work.
+   The LAN name is `travelos-dev`; CT200 itself resolves it locally (add `127.0.0.1 travelos-dev` to `/etc/hosts` only if it does not).
 9. First deploy, as `travelos`: `cd /srv/travelos && scripts/deploy.sh` (or `scripts/deploy.sh origin/<branch>` while `main` does not
-   have the code yet). It builds, migrates, starts the services and checks health. Check through Caddy: `curl -si http://travelos.lan/`
-   (admin HTML), `curl -si http://travelos.lan/v/<43 x A>` (404 share page); the API's `/health/live` is only served on
-   `127.0.0.1:3101` (with `-H 'Host: travelos.lan'`), Caddy does not proxy it.
+   have the code yet). It builds, migrates, starts the services and checks health. Check through Caddy: `curl -si http://travelos-dev/`
+   (admin HTML), `curl -si http://travelos-dev/v/<43 x A>` (404 share page); the API's `/health/live` is only served on
+   `127.0.0.1:3101` (with `-H 'Host: travelos-dev'`), Caddy does not proxy it.
 10. Create the first Owner, as `travelos`, in an interactive terminal (it needs a real TTY; two steps, each prompts):
     `cd /srv/travelos && export PATH=/srv/travelos-toolchain/node-v24.19.0-linux-x64/bin:$PATH CREDENTIALS_DIRECTORY=/etc/travelos/credentials`,
     then `pnpm auth:bootstrap-first-owner issue-first-owner --manifest /etc/travelos/travelos.json` (asks for the Owner email, prints a
     one-time token; optional `--expires-in-minutes N`) and
     `pnpm auth:bootstrap-first-owner enroll-first-owner --manifest /etc/travelos/travelos.json` (asks email, display name, the token, a password).
-    Make sure the LAN name (e.g. `travelos.lan`) resolves to CT200 on your router or in each machine's hosts file.
+    The LAN name `travelos-dev` is resolved to CT200 by the router DNS, so other computers need no hosts-file entry; open `http://travelos-dev`.
 
 ## Routine deploy
 

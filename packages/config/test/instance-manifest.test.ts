@@ -125,12 +125,25 @@ describe("development instance manifest", () => {
       "https://admin.travelos.test",
       "admin.travelos.test:443",
       "Admin.travelos.test",
+      "Travelos-Dev",
+      "travelos-dev.",
+      "-x",
+      "a:80",
+      "*.x",
+      "http://x",
     ]) {
       const candidate = copyManifest();
       const hosts = candidate["hosts"] as Record<string, unknown>;
       hosts["admin"] = host;
       expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow();
     }
+  });
+
+  it("accepts a single-label LAN hostname", () => {
+    const candidate = copyManifest();
+    (candidate["hosts"] as Record<string, unknown>)["admin"] = "travelos-dev";
+    candidate["hostAllowlist"] = [{ host: "travelos-dev", surface: "ADMIN" }];
+    expect(parseDevelopmentInstanceManifest(candidate).hosts.admin).toBe("travelos-dev");
   });
 
   it("rejects a host allowlist that does not match the surface hosts", () => {
@@ -146,7 +159,7 @@ describe("CT200 production-shaped example manifest", () => {
       new URL("../../../deploy/manifests/travelos.example.json", import.meta.url),
     );
     const manifest = parseDevelopmentInstanceManifest(JSON.parse(readFileSync(path, "utf8")));
-    expect(manifest.hosts.admin).toBe("travelos.lan");
+    expect(manifest.hosts.admin).toBe("travelos-dev");
     expect(manifest.runtime.listeners.adminApi.host).toBe("127.0.0.1");
   });
 });

@@ -41,8 +41,8 @@ const FqdnSchema = z
   .string()
   .max(253)
   .regex(
-    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/,
-    "Host must be an exact normalized lowercase FQDN without scheme, port, wildcard, or trailing dot",
+    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/,
+    "Host must be an exact normalized lowercase hostname (FQDN or single-label LAN name) without scheme, port, wildcard, or trailing dot",
   );
 
 const HostSurfaceSchema = z
