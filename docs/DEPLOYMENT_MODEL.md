@@ -19,10 +19,16 @@ The admin app and API are reachable on the LAN only. Nothing is public.
 1. `useradd --system --create-home --home-dir /home/travelos --shell /bin/bash travelos`;
    `install -d -o travelos -g travelos /srv/travelos /srv/travelos-toolchain /var/backups/travelos`.
 2. `apt install git curl rsync caddy postgresql-18`; clone the repo: `sudo -u travelos git clone <repo-url> /srv/travelos`.
+   (If the source is a checkout in someone's home directory, `travelos` cannot read it, and `deploy.sh` runs `git fetch origin`:
+   make a readable stand-in first, `git clone --bare <path> /srv/travelos-origin.git && chown -R travelos: /srv/travelos-origin.git`,
+   clone from that, and later `git remote set-url origin <real-url>`.)
 3. Create the database and roles: `sudo -u postgres psql -v database_name=travelos_prod -f /srv/travelos/deploy/database/bootstrap-database-and-roles.sql`.
    Then set a password for each login role (`ALTER ROLE travelos_admin_api PASSWORD '...'`, same for
    `travelos_worker` and `travelos_migrator`) and add a backup login:
-   `CREATE ROLE travelos_backup LOGIN PASSWORD '...'; GRANT pg_read_all_data TO travelos_backup;`
+   `CREATE ROLE travelos_backup LOGIN PASSWORD '...'; GRANT pg_read_all_data TO travelos_backup; GRANT CONNECT ON DATABASE travelos_prod TO travelos_backup;`
+   (the bootstrap revokes `PUBLIC`, so the explicit `CONNECT` is required; if the role exists from an older install,
+   `ALTER ROLE travelos_backup LOGIN NOREPLICATION INHERIT` instead of `CREATE ROLE`). Avoid `/ + =` in passwords
+   (`openssl rand -base64 32 | tr -d '\n=/+'`).
 4. Secrets: `install -d -m 750 -o root -g travelos /etc/travelos /etc/travelos/credentials`. Write each password
    (one line, no extra text) into `admin-api-db`, `worker-db`, `migrator-db`; put a long random string
    (`openssl rand -base64 48`) into `staff-auth-realm`. Then `chmod 640` and `chgrp travelos` every file.
@@ -33,17 +39,27 @@ The admin app and API are reachable on the LAN only. Nothing is public.
    `TRAVELOS_DB_MIGRATOR_ROLE=travelos_migrator`, `TRAVELOS_DB_OWNER_ROLE=travelos_owner`,
    `TRAVELOS_DB_PASSWORD_FILE=/etc/travelos/credentials/migrator-db`;
    `/etc/travelos/backup.env` with `PGDATABASE=travelos_prod`, `PGUSER=travelos_backup`, `PGHOST=127.0.0.1`,
-   `PGPASSFILE=/etc/travelos/pgpass` (a `127.0.0.1:5432:travelos_prod:travelos_backup:<password>` line, mode 640 `root:travelos`),
+   `PGSSLMODE=disable` (loopback; the unit has no home directory for client certificates),
+   `PGPASSFILE=/etc/travelos/pgpass` (a `127.0.0.1:5432:travelos_prod:travelos_backup:<password>` line, owned by `travelos`, mode **600**:
+   libpq ignores a pgpass file with group access),
    and optionally `TRAVELOS_BACKUP_COPY_TO=user@nas:/path/`.
 7. Allow the deploy user to restart the services: `/etc/sudoers.d/travelos` containing
    `travelos ALL=(root) NOPASSWD: /usr/bin/systemctl restart travelos-api travelos-worker`.
 8. Install units and Caddy: `cp /srv/travelos/deploy/systemd/* /etc/systemd/system/`;
    `cp /srv/travelos/deploy/caddy/Caddyfile /etc/caddy/Caddyfile` (edit the host name);
    `systemctl daemon-reload && systemctl enable travelos-api travelos-worker travelos-backup.timer && systemctl enable --now caddy`;
-   `systemctl start travelos-backup.timer`.
-9. First deploy, as `travelos`: `cd /srv/travelos && scripts/deploy.sh`. It builds, migrates, starts the services and checks health.
-10. Create the first Owner, as `travelos`, in an interactive terminal:
-    `CREDENTIALS_DIRECTORY=/etc/travelos/credentials pnpm auth:bootstrap-first-owner --manifest /etc/travelos/travelos.json`.
+   `systemctl start travelos-backup.timer`. Let `postgres` read the dumps for the restore drill: `usermod -aG travelos postgres`.
+   If Caddy was already running with another config, `systemctl restart caddy` (use `restart`, not `reload`, if the old config had `admin off`).
+   Add the LAN name to `/etc/hosts` on CT200 too (`127.0.0.1 travelos.lan`) so local checks work.
+9. First deploy, as `travelos`: `cd /srv/travelos && scripts/deploy.sh` (or `scripts/deploy.sh origin/<branch>` while `main` does not
+   have the code yet). It builds, migrates, starts the services and checks health. Check through Caddy: `curl -si http://travelos.lan/`
+   (admin HTML), `curl -si http://travelos.lan/v/<43 x A>` (404 share page); the API's `/health/live` is only served on
+   `127.0.0.1:3101` (with `-H 'Host: travelos.lan'`), Caddy does not proxy it.
+10. Create the first Owner, as `travelos`, in an interactive terminal (it needs a real TTY; two steps, each prompts):
+    `cd /srv/travelos && export PATH=/srv/travelos-toolchain/node-v24.19.0-linux-x64/bin:$PATH CREDENTIALS_DIRECTORY=/etc/travelos/credentials`,
+    then `pnpm auth:bootstrap-first-owner issue-first-owner --manifest /etc/travelos/travelos.json` (asks for the Owner email, prints a
+    one-time token; optional `--expires-in-minutes N`) and
+    `pnpm auth:bootstrap-first-owner enroll-first-owner --manifest /etc/travelos/travelos.json` (asks email, display name, the token, a password).
     Make sure the LAN name (e.g. `travelos.lan`) resolves to CT200 on your router or in each machine's hosts file.
 
 ## Routine deploy
@@ -59,7 +75,7 @@ then an rsync to `TRAVELOS_BACKUP_COPY_TO` if set (a warning if not; a backup on
 Check: `systemctl list-timers travelos-backup.timer` and `journalctl -u travelos-backup -n 20`.
 
 Try a restore every few months, into a scratch database, never over the live one:
-`sudo -u postgres scripts/restore.sh /var/backups/travelos/travelos-<stamp>.dump travelos_restore_test`.
+`cd /tmp && sudo -u postgres /srv/travelos/scripts/restore.sh /var/backups/travelos/travelos-<stamp>.dump travelos_restore_test`.
 It prints row counts for `crm.customer`, `trip_ops.trip`, `staff_access.staff_membership`; compare with the live
 database, then `sudo -u postgres dropdb travelos_restore_test`. To recover for real, restore into a new name, stop
 the services, point the manifest at it (or rename databases), and start again.

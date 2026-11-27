@@ -5,6 +5,8 @@
 #      TRAVELOS_BACKUP_DIR (default /var/backups/travelos),
 #      TRAVELOS_BACKUP_COPY_TO (optional rsync target, e.g. backup@nas:/volume/travelos/)
 set -euo pipefail
+# Dumps are readable by the travelos group only (the postgres user is a member, for restore.sh).
+umask 027
 
 DB="${PGDATABASE:-travelos_prod}"
 DIR="${TRAVELOS_BACKUP_DIR:-/var/backups/travelos}"
