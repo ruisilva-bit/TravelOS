@@ -1,7 +1,0 @@
-# Stage 10 — DEVELOPMENT signing policy adjudication
-
-**Decision: ACCEPTED — policy design for CT200 DEVELOPMENT only.** This is not implementation acceptance, deployment authorization beyond the Product Owner's existing scope, a Stage 10 GO, or production approval.
-
-The Product Owner explicitly authorized a dedicated protected DEVELOPMENT signing key and preserved the production GitHub Actions OIDC rule. The independent non-author review `DEVELOPMENT_SIGNING_POLICY_REVIEW.md` recommends policy-only GO for the exact candidate SHA-256 `00375bfc355a8b6d1ee9c0e9370cd466242074693a0809958abb7da3381975a5`. Parent recomputation matched the reviewed bytes. Findings `S10-POL-001`–`S10-POL-005` are informational and require no policy-text correction; the preceding no-long-lived-key decision is expressly identified as the affected boundary, preserved as historical bytes, and superseded only for CT200 DEVELOPMENT by this decision. Production policy remains intact.
-
-No private key, signing service or credential store has been qualified by this adjudication. The independent review's named custody, negative-test, pinned trust, activation enforcement, recovery, evidence and exact-artifact gates remain mandatory. An inability to meet them fails closed. No claim of GitHub OIDC provenance for DEVELOPMENT is permissible. Production-signing readiness remains unverified. Final Stage 10 candidate and implementation require their own independent review.

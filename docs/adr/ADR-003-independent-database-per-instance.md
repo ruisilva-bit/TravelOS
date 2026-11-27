@@ -1,5 +1,7 @@
 # ADR-003: Independent PostgreSQL Database Per Instance
 
+> Superseded in part by ADR-016.
+
 - **Status:** Accepted
 - **Date:** 2026-08-13
 

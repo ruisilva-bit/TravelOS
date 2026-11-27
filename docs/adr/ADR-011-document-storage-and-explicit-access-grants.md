@@ -1,5 +1,7 @@
 # ADR-011: Document Storage and Explicit Access Grants
 
+> Superseded in part by ADR-016 (Portal document grants only).
+
 - **Status:** Accepted
 - **Date:** 2026-08-13
 

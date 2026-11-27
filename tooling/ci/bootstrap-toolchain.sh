@@ -16,6 +16,8 @@ if [[ ! -x "${NODE_ROOT}/bin/node" ]]; then
   tar -xJf "${TOOLCHAIN_ROOT}/${NODE_ARCHIVE}" -C "${TOOLCHAIN_ROOT}"
 fi
 
+# corepack's shebang needs node on PATH.
+export PATH="${NODE_ROOT}/bin:${PATH}"
 "${NODE_ROOT}/bin/corepack" enable --install-directory "${NODE_ROOT}/bin"
 "${NODE_ROOT}/bin/corepack" prepare pnpm@11.21.0 --activate
 

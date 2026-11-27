@@ -8,7 +8,7 @@
 1. `IDEA.md` — product intent and fixed constraints.
 2. Accepted ADRs in `docs/adr/` — decisions and consequences.
 3. Canonical architecture documents in this directory.
-4. Root `AGENTS.md` — concise engineering constitution derived from the above.
+4. Root `AGENTS.md` — one-page working rules. [ADR-016](adr/ADR-016-internal-single-agency-tool.md) (internal single-agency tool) takes precedence where it supersedes older ADRs.
 
 When documents conflict, stop and repair the conflict. Do not let implementation silently choose a new architecture.
 
@@ -29,16 +29,6 @@ When documents conflict, stop and repair the conflict. Do not let implementation
 ## Supporting records
 
 - [ADR index](adr/README.md)
-- [Independent Phase 0 review](reviews/PHASE_0_ARCHITECTURE_REVIEW.md)
-- [Pre-PO correction matrix](reviews/PHASE_0_REVIEW_CORRECTIONS.md)
-- [Pre-PO independent closure](reviews/PHASE_0_PRE_PO_CLOSURE_REVIEW.md)
-- [Product Owner decisions](reviews/PHASE_0_PRODUCT_OWNER_DECISIONS.md)
-- [Post-PO adjustment corrections](reviews/PHASE_0_PO_ADJUSTMENT_CORRECTIONS.md)
-- [Post-PO candidate validation](reviews/PHASE_0_POST_PO_VALIDATION.md)
-- [Post-PO independent closure](reviews/PHASE_0_POST_PO_CLOSURE_REVIEW.md)
-- [Final Phase 0 gate](reviews/PHASE_0_FINAL_GATE.md)
-- [Accepted Phase 0 baseline manifest](reviews/PHASE_0_ACCEPTED_BASELINE.md)
-- Immutable candidate freeze manifests under `reviews/`
 
 ## Status meanings
 

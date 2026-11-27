@@ -1,9 +1,0 @@
-{
-  "result": "PASS",
-  "localRehearsalExtraction": "/home/hermes/.hermes/cache/scratch/travelos-stage7-gen15-rehearsal.Mh9jKY",
-  "localExtractionAbsent": true,
-  "ct200FinalPoststate": "ct200-final-poststate.json",
-  "restoreProbeAbsent": true,
-  "noTemporaryAccessCreated": true,
-  "stage8Actions": 0
-}

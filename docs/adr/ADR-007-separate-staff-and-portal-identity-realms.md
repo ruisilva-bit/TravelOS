@@ -1,5 +1,7 @@
 # ADR-007: Separate Staff and Portal Identity Realms
 
+> Superseded in part by ADR-016 (Portal realm part).
+
 - **Status:** Accepted
 - **Date:** 2026-08-13
 

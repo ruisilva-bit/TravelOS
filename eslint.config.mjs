@@ -21,7 +21,6 @@ export default tseslint.config(
   {
     ignores: [
       ".git/**",
-      ".hermes/**",
       "docs/**",
       "**/dist/**",
       "**/node_modules/**",

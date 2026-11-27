@@ -1,5 +1,0 @@
-# Stage 10 synthetic publisher — local implementation report
-
-**Status: not implemented; no acceptance.** The design permits synthetic-only mechanism work, but that work was not completed in this session. No publisher, fixture, or test was created, and no test was run. No host/CT, credentials, CI, candidate freeze, or Stage 11 action was performed. Existing retention remains quarantine only; S10-RET-002/004/005 remain open.
-
-The remaining implementation must define and test a concrete synthetic envelope and complete-byte privacy coverage, including the approval envelope and non-self-referential acceptance metadata; durable replay coordinated atomically with publication; anchored bounded snapshotting; fsync/no-replace promotion; and ambiguous post-rename failure handling. These implementation choices must not be mistaken for independently provisioned real authority or an approved real-world trust policy. Local permissions and successful fixtures cannot establish actual principal separation or off-instance durability.

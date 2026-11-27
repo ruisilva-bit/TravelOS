@@ -1,5 +1,7 @@
 # ADR-014: Privacy Deletion, Retention and Backup Residual Risk
 
+> Superseded in part by ADR-016.
+
 - **Status:** Accepted
 - **Date:** 2026-08-13
 

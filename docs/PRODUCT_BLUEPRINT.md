@@ -220,4 +220,4 @@ An approved privacy deletion removes/redacts the payload in the active system wh
 
 ## 11. Product-owner acceptance gate
 
-Rui accepted the V1 package with the adjustments recorded in `reviews/PHASE_0_PRODUCT_OWNER_DECISIONS.md`. This acceptance does not waive independent technical closure. Items requiring pre-production evidence remain engineering targets, not customer commitments. Any change to a critical invariant requires an ADR and updates to all dependent documents.
+Rui accepted the V1 package with the adjustments recorded by the Product Owner (review records removed in ADR-016). This acceptance does not waive independent technical closure. Items requiring pre-production evidence remain engineering targets, not customer commitments. Any change to a critical invariant requires an ADR and updates to all dependent documents.

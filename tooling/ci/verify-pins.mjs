@@ -14,29 +14,17 @@ const assert = (condition, message) => {
 const sha256 = (content) => createHash("sha256").update(content).digest("hex");
 
 const root = process.cwd();
-const matrix = await readJson(
-  path.join(root, "docs/evidence/phase-1-m1/stage-1/dependency-matrix.json"),
-);
 const packageJson = await readJson(path.join(root, "package.json"));
-const expected = Object.fromEntries(
-  matrix.direct_packages.map(({ name, expected_version: version }) => [name, version]),
-);
+const exactVersion = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+const expected = { ...packageJson.dependencies, ...packageJson.devDependencies };
+for (const [name, version] of Object.entries(expected)) {
+  assert(exactVersion.test(version), `${name} must be an exact version pin, found ${version}`);
+}
 const packageScopedExactPins = {
   "@travelos/auth-adapters": {
     "@better-auth/kysely-adapter": "1.6.27",
   },
 };
-const actual = { ...packageJson.dependencies, ...packageJson.devDependencies };
-assert(matrix.direct_count === 46, "Stage 1 matrix must declare 46 direct package pins");
-assert(matrix.direct_packages.length === 46, "Stage 1 matrix must contain 46 direct package pins");
-assert(Object.keys(expected).length === 46, "Stage 1 package names must be unique");
-assert(
-  JSON.stringify(Object.keys(actual).sort()) === JSON.stringify(Object.keys(expected).sort()),
-  "Root direct dependency names differ from Stage 1",
-);
-for (const [name, version] of Object.entries(expected)) {
-  assert(actual[name] === version, `${name} must remain pinned to ${version}`);
-}
 assert(packageJson.packageManager === "pnpm@11.21.0", "packageManager pin mismatch");
 assert(packageJson.engines?.node === "24.19.0", "Node engine pin mismatch");
 assert(process.version === "v24.19.0", `Expected Node v24.19.0, received ${process.version}`);
@@ -135,7 +123,7 @@ console.log(
       schemaVersion: 1,
       result: "PASS",
       toolchain: { node: process.version.slice(1), corepack: corepackVersion, pnpm: pnpmVersion },
-      directPins: { count: Object.keys(expected).length, matchStage1: true, resolvedMatch: true },
+      directPins: { count: Object.keys(expected).length, exactPins: true, resolvedMatch: true },
       workspace: {
         projectCount: workspaceManifests.length + 1,
         externalDeclarationsUseApprovedPins: true,

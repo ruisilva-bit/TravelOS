@@ -21,4 +21,4 @@ jobs:
       - name: Frozen install
         run: bash tooling/ci/install.sh
       - name: Run repository-owned verification
-        run: pnpm ci:verify
+        run: pnpm check
