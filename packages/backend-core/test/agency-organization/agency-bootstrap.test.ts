@@ -86,7 +86,6 @@ describe("root Agency bootstrap identifiers", () => {
       "trip.edit",
       "trip.preview",
       "trip.publish",
-      "trip.access.manage",
     ]);
     expect(Object.isFrozen(permissionIds)).toBe(true);
     expect(template).toEqual({ templateKey, permissionIds });
@@ -102,8 +101,6 @@ describe("root Agency bootstrap identifiers", () => {
       "finance.manage_costs",
       "reservation.view",
       "reservation.edit",
-      "trip.withdraw_publication",
-      "runtime_acceptance.fixture.manage",
     ]) {
       expect(permissionIds).not.toContain(forbidden);
     }

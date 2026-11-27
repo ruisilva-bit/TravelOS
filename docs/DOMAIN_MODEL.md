@@ -31,8 +31,7 @@ TravelOS models the commercial and operational continuity of agency travel while
 | Customer Projection | Narrow allowlisted presentation assembled from publishable source views |
 | Preview | Pure read of the candidate customer projection at a workspace revision |
 | Publication | Immutable versioned customer projection made active explicitly |
-| Portal Principal | Customer-realm login that has only explicit Portal grants |
-| Document Grant | Explicit permission for one Portal Principal to access a document/version in scope |
+| Share Link | Planned revocable, read-only link to a frozen publication snapshot of one Trip (ADR-016); customers have no login |
 | Staff Invitation | Agency-scoped, single-use authorization to enrol a Staff Principal with one fixed lower-privilege role |
 | Activity Entry | Human-readable operational history item |
 | Audit Event | Append-only security/accountability evidence |
@@ -55,12 +54,11 @@ Forbidden ambiguous terms in code include `User` without realm, `CustomerUser`, 
 | Context/module | Owns | Does not own |
 |---|---|---|
 | Agency Organization | Agency, OrganizationUnit, Team, branding draft, feature/plan references | Staff credentials; business records from other contexts |
-| Staff Access | StaffPrincipal, StaffMembership, Role, PermissionAssignment, sessions/MFA | CRM Person or PortalPrincipal |
+| Staff Access | StaffPrincipal, StaffMembership, Role, PermissionAssignment, sessions/MFA | CRM Person |
 | CRM | Person, Customer, CustomerPerson relationship, TravellerGroup | Logins; Trip Traveller participation |
 | Sales | Lead, TravelRequest, Opportunity, Quote, QuoteVersion, ProposalAlternative, Sale | Operational Trip mutations; payment ledger |
 | Trip Operations | Trip, TripTraveller, ItineraryItem families, Reservation and links | Customer-facing snapshot; supplier SDK payloads |
 | Customer Presentation | publication source contracts, preview, immutable retained Publication payload, current pointer, published agency profile | Mutable workspace, authentication, raw documents, storage implementation |
-| Portal Access | PortalPrincipal, enrolment/session realm, TripAccessGrant | Staff roles; Customer ownership inference |
 | Finance Operations | priced lines, costs, prices, fees, commissions, payment records/allocations | Full accounting ledger; provider SDK |
 | Documents | Document, DocumentVersion, opaque provider object metadata, classification, DocumentGrant | Public static files; inferred trip grants; provider implementation |
 | Work & Service | Task, CustomerServiceCase, assignment and service states | General communications transport |
@@ -81,18 +79,15 @@ flowchart TD
   CRM -. stable IDs .-> TRIP
   TRIP --> PUB[Customer Presentation]
   ORG --> PUB
-  PORTAL[Portal Access] --> PUB
   TRIP --> FIN[Finance Operations]
   SALES --> FIN
   TRIP --> DOC[Documents]
-  PORTAL --> DOC
   TRIP --> WORK[Work & Service]
   CRM --> COMM[Communications]
   SALES --> ACT[Activity]
   TRIP --> ACT
   PUB --> ACT
   STAFF --> AUDIT[Audit]
-  PORTAL --> AUDIT
   PUB --> AUDIT
   DOC --> AUDIT
   INT[Integrations] -. adapters .-> COMM
@@ -134,7 +129,7 @@ Solid arrows mean stable identifiers/contracts, not shared ORM objects. Dotted p
   - State changes are commands, never free-form status edits: `OPEN --update--> OPEN`, `OPEN --qualify--> QUALIFIED` and `OPEN --disqualify(reason)--> DISQUALIFIED`. `QUALIFIED` and `DISQUALIFIED` are terminal; every command on them fails with the typed `LEAD_NOT_OPEN` error, and a stale expected lock version fails with the existing typed optimistic conflict.
   - `QUALIFIED` holds exactly when `qualifiedCustomerId` is set, `DISQUALIFIED` exactly when a categorical reason (`NO_RESPONSE`, `NOT_INTERESTED`, `NOT_SERVICEABLE`, `DUPLICATE`, `OTHER`) is set, and `closedAt` is set exactly when the Lead is not `OPEN`.
   - Qualification has two explicit modes. `CREATE_CUSTOMER` creates, in one transaction, a Person copied from the contact snapshot, a Customer (display name `"<given> <family>"` unless provided) and a primary `PRIMARY_CONTACT` link. `LINK_CUSTOMER` links a caller-chosen Customer of the same Agency and creates or modifies no Person. Email equality never selects or links an existing Person or Customer; deduplication stays an explicit merge use case.
-  - Qualify and disqualify append, in the same transaction as the state change, one Audit event, one Activity entry and one outbox message (`LeadQualified`/`LeadDisqualified`) that carries only identifiers and the new lock version. Lead data has no Portal contract, source field or database privilege.
+  - Qualify and disqualify append, in the same transaction as the state change, one Audit event, one Activity entry and one outbox message (`LeadQualified`/`LeadDisqualified`) that carries only identifiers and the new lock version. Lead data has no customer-facing contract, source field or database privilege.
 - **TravelRequest** captures needs and constraints.
 - **Opportunity** owns pipeline state and responsibility.
 - **Quote** owns sequential immutable QuoteVersions.
@@ -188,7 +183,6 @@ Travel times store local civil time, IANA zone and derived UTC instant. An offse
 - **StorageObject** owns immutable bytes by opaque storage key/checksum.
 - **Document** owns business classification/association.
 - **DocumentVersion** points to one StorageObject and has scan/quarantine state.
-- **DocumentGrant** explicitly connects a PortalPrincipal to permitted document/version scope and expiry/revocation.
 - A Document can relate to multiple domain records through typed associations, but each relation is Agency-scoped.
 
 ## 6. State machines
@@ -220,9 +214,9 @@ Representative past-tense events include:
 - `LeadQualified`, `TravelRequestCreated`, `OpportunityStageChanged`;
 - `QuoteVersionCreated`, `ProposalAccepted`, `SaleRecorded`;
 - `TripCreated`, `TripTravellerAdded`, `ItineraryItemChanged`, `ReservationConfirmed`;
-- `TripPublicationCreated`, `TripPublicationActivated`, `TripPublicationWithdrawn`;
-- `PaymentReceived`, `DocumentVersionAvailable`, `DocumentGrantIssued`;
-- `StaffRoleAssigned`, `PortalTripAccessGranted`.
+- `TripPublicationCreated`, `TripPublicationActivated`;
+- `PaymentReceived`, `DocumentVersionAvailable`;
+- `StaffRoleAssigned`.
 
 Domain events are not automatically Audit Events or Activity Entries. Each consumer explicitly maps meaningful facts to its own model.
 
@@ -245,8 +239,8 @@ Domain events are not automatically Audit Events or Activity Entries. Each consu
 2. A package Reservation covers Accommodation and Transfer.
 3. An item with two supplier reservations remains one itinerary presentation item.
 4. A payer who is not travelling has a Customer relationship but no TripTraveller.
-5. A Traveller has no Portal login.
-6. A Portal Principal can see a Trip but no traveller document.
+5. A Traveller has no login.
+6. A share link shows a Trip snapshot but no traveller document.
 7. A staff edit after preview makes the publish token stale.
 8. An INTERNAL_ONLY supplier cost cannot be represented by the publication schema.
 9. A cancelled reservation does not erase historical itinerary/publications.

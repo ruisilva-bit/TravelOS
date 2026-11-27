@@ -5,7 +5,7 @@ import path from "node:path";
 import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
 
-type AuthRealmKind = "STAFF" | "PORTAL";
+type AuthRealmKind = "STAFF";
 type GeneratedField = {
   readonly type?: unknown;
   readonly fieldName?: unknown;
@@ -65,26 +65,24 @@ const fieldEntries = (table: GeneratedTable): readonly [string, GeneratedField][
 const escapeExpression = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 
 const generatedRealm = (kind: AuthRealmKind): unknown => {
-  const schema = kind === "STAFF" ? "staff_access" : "portal_access";
-  const prefix = kind === "STAFF" ? "staff" : "portal";
+  const schema = "staff_access";
+  const prefix = "staff";
   const database = new Kysely<Record<string, never>>({
     dialect: new PostgresDialect({ pool: new Pool({ host: "127.0.0.1", port: 1, max: 1 }) }),
   });
   const realm = betterAuth({
     appName: `TravelOS ${kind}`,
-    baseURL: `http://${kind === "STAFF" ? "admin" : "portal"}.travelos.test`,
+    baseURL: "http://admin.travelos.test",
     basePath: `/api/auth/${prefix}`,
     database: kyselyAdapter(database.withSchema(schema), { type: "postgres", transaction: true }),
     secret: verifierKeyMaterial,
-    trustedOrigins: [`http://${kind === "STAFF" ? "admin" : "portal"}.travelos.test`],
+    trustedOrigins: ["http://admin.travelos.test"],
     emailAndPassword: { enabled: true, disableSignUp: true, requireEmailVerification: true },
     user: { modelName: `${prefix}_user` },
     session: { modelName: `${prefix}_session` },
     account: { modelName: `${prefix}_account` },
     verification: { modelName: `${prefix}_verification` },
-    ...(kind === "STAFF"
-      ? { plugins: [twoFactor({ issuer: "TravelOS Staff", twoFactorTable: "staff_two_factor" })] }
-      : {}),
+    plugins: [twoFactor({ issuer: "TravelOS Staff", twoFactorTable: "staff_two_factor" })],
   });
   const generated = getAuthTables(realm.options);
   void database.destroy();
@@ -203,7 +201,7 @@ const assertReferenceParity = (
   const columnName = typeof field.fieldName === "string" ? field.fieldName : fieldName;
   const clause = columnClause(statement, columnName);
   const [realmPrefix] = tableName.split("_", 1);
-  if (realmPrefix !== "staff" && realmPrefix !== "portal") {
+  if (realmPrefix !== "staff") {
     throw new Error(`Unsupported Better Auth table prefix for ${tableName}`);
   }
   const expectedTarget = `REFERENCES "${schema}"."${realmPrefix}_user" ("id")`;
@@ -226,7 +224,7 @@ const indexColumnsFor = (statements: readonly string[], tableName: string): read
   return [
     ...allSql.matchAll(
       new RegExp(
-        `CREATE INDEX[^\\n]+ON\\s+"(?:staff_access|portal_access)"\\."${escapeExpression(tableName)}"\\s+\\("([^"]+)"\\)`,
+        `CREATE INDEX[^\\n]+ON\\s+"staff_access"\\."${escapeExpression(tableName)}"\\s+\\("([^"]+)"\\)`,
         "gu",
       ),
     ),
@@ -240,7 +238,7 @@ const assertRealmParity = (
   kind: AuthRealmKind,
   statements: readonly string[],
 ): readonly string[] => {
-  const schema = kind === "STAFF" ? "staff_access" : "portal_access";
+  const schema = "staff_access";
   const tables = tableEntries(generatedRealm(kind));
   const expectedTableNames = tables
     .map(([, table]) => requiredString(table.modelName, "modelName"))
@@ -282,7 +280,6 @@ const assertRealmParity = (
 
 const statements = migrationStatements();
 const staffTables = assertRealmParity("STAFF", statements);
-const portalTables = assertRealmParity("PORTAL", statements);
 process.stdout.write(
-  `${JSON.stringify({ schemaVersion: 1, result: "PASS", staffTables, portalTables }, null, 2)}\n`,
+  `${JSON.stringify({ schemaVersion: 1, result: "PASS", staffTables }, null, 2)}\n`,
 );

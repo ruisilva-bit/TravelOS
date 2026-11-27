@@ -116,29 +116,9 @@ export const STAGE_6_PERMISSION_REGISTRY = [
   },
 ] as const satisfies readonly PermissionDefinition[];
 
-/** Stage 7 adds explicit Agency-scoped Portal grants and runtime acceptance lifecycle permissions. */
-export const STAGE_7_PERMISSION_REGISTRY = [
-  ...STAGE_6_PERMISSION_REGISTRY,
-  {
-    id: "trip.access.manage",
-    allowedScopeKinds: ["AGENCY"],
-    allowedAccessLevels: ["ALL"],
-  },
-  {
-    id: "trip.withdraw_publication",
-    allowedScopeKinds: ["AGENCY"],
-    allowedAccessLevels: ["ALL"],
-  },
-  {
-    id: "runtime_acceptance.fixture.manage",
-    allowedScopeKinds: ["AGENCY"],
-    allowedAccessLevels: ["ALL"],
-  },
-] as const satisfies readonly PermissionDefinition[];
-
 /** M2 slice 1 adds the Sales Lead capabilities; qualification additionally needs `customer.edit`. */
 export const M2_PERMISSION_REGISTRY = [
-  ...STAGE_7_PERMISSION_REGISTRY,
+  ...STAGE_6_PERMISSION_REGISTRY,
   {
     id: "sales.view",
     allowedScopeKinds: ["AGENCY"],
@@ -185,5 +165,4 @@ export const TRIP_OPERATIONS_ROLE_PERMISSION_IDS = Object.freeze([
   "trip.edit",
   "trip.preview",
   "trip.publish",
-  "trip.access.manage",
 ] as const satisfies readonly StaffPermissionId[]);

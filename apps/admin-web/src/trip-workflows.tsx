@@ -834,8 +834,7 @@ function PublicationWorkflow({
         <div>
           <h2 id="admin-publication-workflow-title">Pré-visualização e publicação</h2>
           <p className="admin-form__hint">
-            A pré-visualização é apenas de leitura. A publicação cria uma versão imutável para o
-            Portal.
+            A pré-visualização é apenas de leitura. A publicação cria uma versão imutável da viagem.
           </p>
         </div>
         <button

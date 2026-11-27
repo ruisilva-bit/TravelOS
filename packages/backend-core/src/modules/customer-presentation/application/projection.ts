@@ -1,13 +1,13 @@
 import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
-import { canonicalPortalTripSnapshotV1Json } from "../domain/canonical-json.js";
+import { canonicalTripSnapshotV1Json } from "../domain/canonical-json.js";
 import {
-  assemblePortalTripSnapshotV1,
-  type PortalTripSnapshotV1,
+  assembleTripSnapshotV1,
+  type TripSnapshotV1,
   type PublicationSafeTripInput,
 } from "../domain/snapshot-v1.js";
 import type {
-  PortalTripSnapshotHashPort,
-  PortalTripSnapshotValidatorPort,
+  TripSnapshotHashPort,
+  TripSnapshotValidatorPort,
   TripPublicationRevisionSource,
   TripPublicationSourceReadPort,
   TripPublicationSourceUnit,
@@ -18,7 +18,7 @@ export interface TripPublicationCandidate {
   readonly workspaceRevision: bigint;
   readonly projectionHash: string;
   readonly schemaVersion: 1;
-  readonly projection: PortalTripSnapshotV1;
+  readonly projection: TripSnapshotV1;
   readonly canonicalJson: string;
 }
 
@@ -62,15 +62,15 @@ const loadPublicationInput = async (
 /** Shared builder used inside both Preview reads and Publish transactions. */
 export const buildTripPublicationCandidateFromSources = async (
   sources: TripPublicationSourceUnit,
-  hasher: PortalTripSnapshotHashPort,
-  validator: PortalTripSnapshotValidatorPort,
+  hasher: TripSnapshotHashPort,
+  validator: TripSnapshotValidatorPort,
   agencyId: OpaqueId,
   tripId: OpaqueId,
 ): Promise<TripPublicationCandidate> => {
   const { trip, input } = await loadPublicationInput(sources, agencyId, tripId);
-  const projection = assemblePortalTripSnapshotV1(input);
+  const projection = assembleTripSnapshotV1(input);
   validator.validate(projection);
-  const canonicalJson = canonicalPortalTripSnapshotV1Json(projection);
+  const canonicalJson = canonicalTripSnapshotV1Json(projection);
   const projectionHash = await hasher.sha256(canonicalJson);
   if (!/^[0-9a-f]{64}$/u.test(projectionHash)) {
     throw new Error("Snapshot hasher returned a non-canonical SHA-256 digest");
@@ -88,8 +88,8 @@ export const buildTripPublicationCandidateFromSources = async (
 /** Preview wrapper: every family query is enclosed in the same consistent read. */
 export const buildTripPublicationCandidate = async (
   sources: TripPublicationSourceReadPort,
-  hasher: PortalTripSnapshotHashPort,
-  validator: PortalTripSnapshotValidatorPort,
+  hasher: TripSnapshotHashPort,
+  validator: TripSnapshotValidatorPort,
   agencyId: OpaqueId,
   tripId: OpaqueId,
 ): Promise<TripPublicationCandidate> =>

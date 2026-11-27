@@ -20,10 +20,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./portal": {
-      "types": "./dist/portal.d.ts",
-      "import": "./dist/portal.js"
     }
   }
 }

@@ -11,9 +11,8 @@ import {
 type JsonObject = Record<string, unknown>;
 type ListenerRecords = {
   adminApi: Record<string, unknown>;
-  portalApi: Record<string, unknown>;
 };
-type RuntimeRoleRecords = Record<"adminApi" | "portalApi" | "worker", Record<string, unknown>>;
+type RuntimeRoleRecords = Record<"adminApi" | "worker", Record<string, unknown>>;
 
 const examplePath = fileURLToPath(
   new URL("../../../deploy/manifests/development.example.json", import.meta.url),
@@ -229,7 +228,7 @@ describe("development manifest JSON Schema and runtime conformance", () => {
     const candidate = copyManifest();
     candidate["hostAllowlist"] = [
       { host: "admin.travelos.test", surface: "ADMIN" },
-      { host: "portal.travelos.test", surface: "ADMIN" },
+      { host: "other.travelos.test", surface: "ADMIN" },
     ];
     expect(runtimeAccepts(candidate)).toBe(false);
     expect(jsonSchemaAccepts(candidate)).toBe(false);
@@ -242,31 +241,13 @@ describe("development manifest JSON Schema and runtime conformance", () => {
     expect(jsonSchemaAccepts(candidate)).toBe(false);
   });
 
-  it("identifies listener collision as runtime-only without weakening runtime validation", () => {
-    const candidate = copyManifest();
-    listenersOf(candidate)["portalApi"] = structuredClone(listenersOf(candidate)["adminApi"]);
-    expect(jsonSchemaAccepts(candidate)).toBe(true);
-    expect(runtimeAccepts(candidate)).toBe(false);
-    expect(instanceManifestInvariantRegistry.runtimeOnly).toContainEqual(
-      expect.objectContaining({ id: "TOS-CONFIG-RUNTIME-001" }),
-    );
-  });
-
-  it("allows equal port numbers on clearly distinct loopback bind addresses", () => {
-    const candidate = copyManifest();
-    listenersOf(candidate)["portalApi"]["host"] = "127.0.0.2";
-    listenersOf(candidate)["portalApi"]["port"] = listenersOf(candidate)["adminApi"]["port"];
-    expect(jsonSchemaAccepts(candidate)).toBe(true);
-    expect(runtimeAccepts(candidate)).toBe(true);
-  });
-
   it.each([
-    ["adminApi", "travelos_portal_api"],
-    ["portalApi", "travelos_admin_api"],
-    ["worker", "travelos_portal_api"],
-    ["portalApi", "travelos_owner"],
-    ["portalApi", "travelos_migrator"],
-    ["portalApi", "travelos_portal_runtime"],
+    ["adminApi", "travelos_worker"],
+    ["worker", "travelos_admin_api"],
+    ["adminApi", "travelos_owner"],
+    ["worker", "travelos_migrator"],
+    ["adminApi", "travelos_admin_runtime"],
+    ["worker", "travelos_worker_runtime"],
   ] as const)("represents exact %s database identity and rejects %s", (processName, roleName) => {
     const candidate = copyManifest();
     runtimeRolesOf(candidate)[processName]["roleName"] = roleName;
@@ -277,24 +258,21 @@ describe("development manifest JSON Schema and runtime conformance", () => {
   it("declares credential-reference inequality as runtime-only", () => {
     const candidate = copyManifest();
     const roles = runtimeRolesOf(candidate);
-    roles["portalApi"]["credentialReference"] = roles["adminApi"]["credentialReference"];
+    roles["worker"]["credentialReference"] = roles["adminApi"]["credentialReference"];
     expect(jsonSchemaAccepts(candidate)).toBe(true);
     expect(runtimeAccepts(candidate)).toBe(false);
     expect(instanceManifestInvariantRegistry.runtimeOnly).toContainEqual(
-      expect.objectContaining({ id: "TOS-CONFIG-RUNTIME-005" }),
+      expect.objectContaining({ id: "TOS-CONFIG-RUNTIME-003" }),
     );
   });
 
   it("identifies host and allowlist relationships as runtime-only", () => {
     const candidate = copyManifest();
-    candidate["hostAllowlist"] = [
-      { host: "wrong.travelos.test", surface: "ADMIN" },
-      { host: "portal.travelos.test", surface: "PORTAL" },
-    ];
+    candidate["hostAllowlist"] = [{ host: "wrong.travelos.test", surface: "ADMIN" }];
     expect(jsonSchemaAccepts(candidate)).toBe(true);
     expect(runtimeAccepts(candidate)).toBe(false);
     expect(instanceManifestInvariantRegistry.runtimeOnly).toContainEqual(
-      expect.objectContaining({ id: "TOS-CONFIG-RUNTIME-003" }),
+      expect.objectContaining({ id: "TOS-CONFIG-RUNTIME-001" }),
     );
   });
 

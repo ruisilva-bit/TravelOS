@@ -20,39 +20,38 @@ When an agency employee opens TravelOS, they can determine:
 - what happened previously;
 - what must happen next.
 
-A customer sees only information that the agency explicitly released to them, in a calm mobile-first Portal.
+A customer sees only information that the agency explicitly released to them, through a read-only share link to a frozen snapshot (ADR-016); customers have no login.
 
 ## 2. Product principles
 
 1. **Architecture before feature breadth.** Build narrow vertical slices against a stable model.
 2. **Works without AI.** Deterministic workflow and automation precede optional AI.
 3. **History is a product capability.** Do not overwrite commercial commitments or published customer versions.
-4. **Explicit publication.** Saving agency work never silently changes the Portal.
+4. **Explicit publication.** Saving agency work never silently changes what customers see.
 5. **Structured travel data.** Flight, accommodation and other itinerary families are typed business concepts, not prose blobs.
 6. **Least privilege.** A relationship to a trip does not imply access to every traveller or document.
 7. **One codebase.** Agency differences are configuration, branding, entitlements and providers—not forks.
 8. **Dedicated by default, organization-aware inside.** Isolation at deployment/database level does not excuse missing organization scope in the model.
-9. **Operational truth and customer presentation are different models.** Portal contracts are constructed allowlists.
+9. **Operational truth and customer presentation are different models.** Customer-facing contracts are constructed allowlists.
 10. **Automation and providers live at the edges.** Vendors do not dictate core language.
-11. **Staff enrolment is invitation-only.** A lower-privilege Staff account is created through an audited, single-use invitation; public Staff signup and implicit Portal access are forbidden.
+11. **Staff enrolment is invitation-only.** A lower-privilege Staff account is created through an audited, single-use invitation; public Staff signup is forbidden and there is no customer login.
 
 ## 3. Actors and identities
 
 | Term | Meaning | Not equivalent to |
 |---|---|---|
-| Agency | Root business customer of one TravelOS deployment | Branch, team or Portal customer |
+| Agency | Root business customer of one TravelOS deployment | Branch, team or customer |
 | Organization Unit | Branch, brand or business unit within the root Agency | Independent tenant |
-| Staff Principal | A login in the Agency security realm | Person, Customer, Traveller or Portal Principal |
+| Staff Principal | A login in the Agency security realm | Person, Customer or Traveller |
 | Person | A natural person known to the CRM | Login account |
-| Customer | A commercial relationship/account with the Agency | Necessarily one Person or one Portal login |
-| Traveller | A Person participating in one Trip, with trip-specific data | Customer, payer or Portal Principal |
+| Customer | A commercial relationship/account with the Agency | Necessarily one Person |
+| Traveller | A Person participating in one Trip, with trip-specific data | Customer or payer |
 | Traveller Group | A CRM grouping such as family/party | Authorization group |
-| Portal Principal | A login in the customer Portal realm | Staff Principal or automatic owner of trip data |
 | Supplier | Provider of a booked travel service | Integration provider implementation |
 | Integration Provider | Adapter to an external technical service | Travel supplier record |
 | Managed Operator | Authorized TravelOS operator performing fleet work | Hidden super-user inside an Agency instance |
 
-The same human/email may correspond to a Person, Staff Principal and Portal Principal. Those records remain distinct and require explicit links; no privileges flow through email equality.
+The same human/email may correspond to a Person and a Staff Principal. Those records remain distinct and require explicit links; no privileges flow through email equality.
 
 ## 4. Lifecycle and record continuity
 
@@ -133,15 +132,15 @@ A reproducible development build must prove, end to end:
 3. create a Customer linked to a Person and create a Trip Traveller from that Person;
 4. create a Trip with one Flight segment and one Accommodation item;
 5. create one Reservation linked to both items, proving the many-to-many association without merging concepts;
-6. capture at least one `INTERNAL_ONLY` value (for example supplier cost/internal note) that has no Portal projection field;
+6. capture at least one `INTERNAL_ONLY` value (for example supplier cost/internal note) that has no customer-facing projection field;
 7. generate a read-only customer preview without any publication row, version increment, pointer change, activity event or outbox message;
 8. publish v1 with expected workspace revision and projection hash;
-9. enrol a separate Portal Principal and grant that principal access to the Trip, but not to any document;
-10. show v1 through the Portal using only the published read model;
-11. edit the Accommodation and prove the Portal still shows v1;
+9. (planned, ADR-016) issue a revocable read-only share link to the Trip snapshot, but not to any document;
+10. show v1 through the share link using only the published snapshot;
+11. edit the Accommodation and prove the share link still shows v1;
 12. reject a stale publish attempt with a typed `409` conflict;
 13. publish v2, show v2, and retain v1 for staff audit;
-14. pass role, cross-realm, IDOR, allowlist, migration, outbox-idempotency, mobile Portal and accessibility tests;
+14. pass role, cross-realm, IDOR, allowlist, migration, outbox-idempotency, mobile and accessibility tests;
 15. build a single immutable release artifact and run it in DEVELOPMENT only.
 
 This milestone deliberately omits the complete Lead → Quote → Sale funnel. The next milestone extends backward through that lifecycle. M1 attacks the highest-risk architecture first rather than producing superficial breadth.
@@ -155,8 +154,7 @@ These are V1 planning assumptions, not contractual SLAs.
 | Availability | 99.5% monthly service objective per dedicated instance; no contractual HA claim | Paid SLA above 99.5%, multi-zone requirement or measured outage cost |
 | Recovery | RPO ≤ 1 hour and RTO ≤ 4 hours | Contract requires tighter values or restore drills fail |
 | Typical latency | API p95 < 500 ms for ordinary reads/writes at assumed load; publish p95 < 2 s excluding external notifications | SLO breach under representative load |
-| Portal UX | Mobile-first; target LCP < 2.5 s on representative mobile network for cached static shell | Real-user data materially misses target |
-| Accessibility | WCAG 2.2 AA for Admin and Portal critical paths | Legal/customer requirement is stricter |
+| Accessibility | WCAG 2.2 AA for Admin and customer-facing critical paths | Legal/customer requirement is stricter |
 | Scale per instance | ≤100 staff, ≤100 concurrent sessions, ≤10k active customers, ≤5k trips/year, ≤100k itinerary items/year | 70% sustained capacity or order-of-magnitude customer exception |
 | Request load | 50 HTTP requests/s peak and 10 jobs/s peak are adequate initial planning envelopes | Load tests or telemetry exceed 70% |
 | Documents | 250 GB per Agency planning ceiling; immutable object keys | Customer forecast or storage growth exceeds 70% |
@@ -170,14 +168,14 @@ Identifiers `INV-*` are authoritative and referenced by architecture/tests.
 
 | ID | Invariant |
 |---|---|
-| INV-PUB-01 | Mutable workspace records are never a Portal read source. |
+| INV-PUB-01 | Mutable workspace records are never a customer-facing read source. |
 | INV-PUB-02 | Preview performs no database writes and cannot create/advance/activate a publication. |
 | INV-PUB-03 | Publish requires the workspace revision and projection hash the staff user previewed; stale input fails closed. |
 | INV-PUB-04 | A publication payload and metadata are immutable business facts; corrections create a new version. |
-| INV-PUB-05 | Portal snapshot contracts are allowlists built field by field; denylist serialization and object spreading from persistence/domain records are forbidden. |
+| INV-PUB-05 | Customer snapshot contracts are allowlists built field by field; denylist serialization and object spreading from persistence/domain records are forbidden. |
 | INV-VIS-01 | `INTERNAL_ONLY` fields have no customer contract member and no configurable override. |
-| INV-ID-01 | Staff and Portal principals use separate realms; an email match conveys no authority. |
-| INV-DOC-01 | Trip/customer/group membership never grants document access; each Portal document access follows an explicit active grant. |
+| INV-ID-01 | There is no customer login; an email match conveys no authority. |
+| INV-DOC-01 | Trip/customer/group membership never grants document access; each document access follows an explicit active grant. |
 | INV-TEN-01 | Every Agency-owned reference remains in the same root Agency scope, even in a dedicated database. |
 | INV-ITN-01 | Reservation and Itinerary Item are separate aggregates connected through an explicit many-to-many association. |
 | INV-MNY-01 | Money is represented as integer minor units plus currency; binary floating point is forbidden. |
@@ -187,7 +185,7 @@ Identifiers `INV-*` are authoritative and referenced by architecture/tests.
 | INV-DEL-01 | An approved privacy deletion removes protected payload access from the active service and retains only lawful evidence; retained encrypted backups may still contain an older copy until scheduled expiry, and the system never claims otherwise. |
 | INV-HOST-01 | A request host selects only an exact manifest-declared surface, never an Agency; unknown/crafted hosts fail closed before branding/auth/data lookup. |
 | INV-ID-02 | Staff enrolment is invitation-only; an invitation is single-use, bound to the issuer-approved target email, expires after 60 minutes, and atomically creates Staff access plus its audit evidence. Public Staff signup is forbidden. |
-| INV-ID-03 | An invited Staff principal receives no usable Admin authorization context until TOTP MFA is enabled and verified; Staff and Portal identities remain separate. |
+| INV-ID-03 | An invited Staff principal receives no usable Admin authorization context until TOTP MFA is enabled and verified. |
 
 ## 9. Retention assumptions
 
@@ -210,9 +208,8 @@ An approved privacy deletion removes/redacts the payload in the active system wh
 | A-002 | M1 starts at Trip rather than Lead | Proves highest-risk security/publication architecture first | PO requires funnel value before technical risk slice | Accepted 2026-08-13 |
 | A-003 | No high-availability promise in V1 | One CT/database is a recoverable SPOF; honest SLO | Contractual SLA >99.5% | Accepted 2026-08-13 |
 | A-004 | RPO ≤1h/RTO ≤4h are engineering targets, not guarantees | Sensible managed-instance baseline; must be measured by rehearsal | Customer contract or restore evidence | Accepted 2026-08-13 |
-| A-005 | Portal historical publications are staff-auditable but customers see current active version only | Simpler customer semantics and avoids confusion | Customer/legal need for version history | Accepted 2026-08-13 |
+| A-005 | Historical publications are staff-auditable but customers see current active version only | Simpler customer semantics and avoids confusion | Customer/legal need for version history | Accepted 2026-08-13 |
 | A-006 | Staff MFA is mandatory in production | Sensitive traveller, finance and document data | None; relaxing requires security ADR | Accepted 2026-08-13 |
-| A-007 | Portal MFA is optional in V1 | Lower customer friction; explicit grants constrain data | High-risk products/customer demand | Accepted 2026-08-13 |
 | A-008 | HALF_UP is the commercial V1 default only; tax, FX, payment, supplier and accounting contexts select explicit policies | Predictable ordinary pricing without misrepresenting specialist rules | New jurisdiction/provider/accounting requirement | Accepted 2026-08-13 |
 | A-009 | `PrivateFilesystemProvider` is acceptable first, behind the storage port with no domain filesystem dependency | Avoids MinIO/S3 per CT while keeping provider portability; production requires private authorized storage plus tested encrypted backup/restore | Scale, HA or storage contract | Accepted 2026-08-13 |
 | A-010 | GitHub Actions is the initial CI target once a repository host exists | Practical default; pipeline contract stays vendor-neutral | Different repository host | Accepted 2026-08-13 |

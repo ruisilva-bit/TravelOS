@@ -9,7 +9,7 @@ export interface WorkspaceNavigationItem {
 }
 
 interface WorkspaceFrameProps {
-  readonly realm: "Staff" | "Portal";
+  readonly realm: "Staff";
   readonly headerContext: string;
   readonly navigation: readonly WorkspaceNavigationItem[];
   readonly activeHref: string;
@@ -97,9 +97,7 @@ export function WorkspaceFrame({
     <div className="workspace-shell">
       <aside className="workspace-sidebar">
         <Brand realm={realm} />
-        <p className="workspace-sidebar__scope">
-          {realm === "Staff" ? "Operações" : "As minhas viagens"}
-        </p>
+        <p className="workspace-sidebar__scope">Operações</p>
         <Navigation items={navigation} activeHref={activeHref} onNavigate={closeNavigation} />
         <footer className="workspace-sidebar__footer">Sessão {realm} ativa</footer>
       </aside>

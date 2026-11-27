@@ -359,7 +359,6 @@ const runDefaultPrivilegeProbes = async (): Promise<void> => {
       "finance",
       "integration",
       "organization",
-      "portal_access",
       "presentation",
       "sales",
       "staff_access",
@@ -490,7 +489,6 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
       "integration",
       "job_runtime",
       "organization",
-      "portal_access",
       "presentation",
       "sales",
       "staff_access",
@@ -834,6 +832,66 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
       )[0];
       expect(row?.can_insert, `worker audit.${table_name}`).toBe(false);
     }
+  });
+
+  it("leaves no customer-portal schema, tables or grants after the chain head", async () => {
+    const schemas = await queryAs<{ nspname: string }>(
+      "postgres",
+      `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = 'portal_access'`,
+    );
+    expect(schemas).toEqual([]);
+    const retiredRelations = await queryAs<{ relation: string }>(
+      "postgres",
+      `SELECT n.nspname || '.' || c.relname AS relation
+         FROM pg_catalog.pg_class AS c
+         JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
+        WHERE c.relkind IN ('r', 'p', 'v', 'm')
+          AND n.nspowner = 'travelos_owner'::regrole
+          AND (c.relname LIKE '%portal%' OR c.relname LIKE '%trip_access%'
+               OR c.relname LIKE '%runtime_acceptance%' OR c.relname LIKE '%trip_cancellation%'
+               OR c.relname LIKE '%publication_withdrawal%')
+        ORDER BY 1`,
+    );
+    expect(retiredRelations).toEqual([]);
+    const retiredPermissions = await queryAs<{ count: string }>(
+      "postgres",
+      `SELECT count(*)::text AS count FROM staff_access.role_permission
+        WHERE "permissionId" IN ('trip.access.manage', 'runtime_acceptance.fixture.manage', 'trip.withdraw_publication')`,
+    );
+    expect(retiredPermissions).toEqual([{ count: "0" }]);
+
+    // The Portal roles may still exist cluster-wide, but hold no privilege on any application object.
+    const portalGrants = await queryAs<{ object: string }>(
+      "postgres",
+      `SELECT 'schema ' || n.nspname AS object
+         FROM pg_catalog.pg_namespace AS n
+        WHERE (n.nspowner = 'travelos_owner'::regrole OR n.nspname = 'public')
+          AND (has_schema_privilege('travelos_portal_runtime', n.oid, 'USAGE')
+               OR has_schema_privilege('travelos_portal_api', n.oid, 'USAGE')
+               OR has_schema_privilege('travelos_portal_runtime', n.oid, 'CREATE')
+               OR has_schema_privilege('travelos_portal_api', n.oid, 'CREATE'))
+       UNION ALL
+       SELECT 'relation ' || n.nspname || '.' || c.relname
+         FROM pg_catalog.pg_class AS c
+         JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
+        WHERE n.nspowner = 'travelos_owner'::regrole AND c.relkind IN ('r', 'p', 'v', 'm', 'S')
+          AND EXISTS (
+            SELECT 1
+              FROM unnest(ARRAY['travelos_portal_runtime', 'travelos_portal_api']) AS portal_role(name),
+                   unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) AS privilege(name)
+             WHERE has_table_privilege(portal_role.name, c.oid, privilege.name)
+                OR (privilege.name IN ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
+                    AND has_any_column_privilege(portal_role.name, c.oid, privilege.name))
+          )
+       UNION ALL
+       SELECT 'function ' || n.nspname || '.' || p.proname
+         FROM pg_catalog.pg_proc AS p
+         JOIN pg_catalog.pg_namespace AS n ON n.oid = p.pronamespace
+        WHERE n.nspowner = 'travelos_owner'::regrole
+          AND (has_function_privilege('travelos_portal_runtime', p.oid, 'EXECUTE')
+               OR has_function_privilege('travelos_portal_api', p.oid, 'EXECUTE'))`,
+    );
+    expect(portalGrants).toEqual([]);
   });
 
   it("keeps PUBLIC free of ACLs on every application schema, relation and function", async () => {

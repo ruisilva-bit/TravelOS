@@ -4,7 +4,7 @@
 
 TravelOS is a modern operational platform for travel agencies.
 
-The goal is to provide a complete operational cockpit where a travel agency can manage the full lifecycle of its customers and trips without spreading information across CRM tools, email, WhatsApp, spreadsheets, supplier portals, documents and task-management systems.
+The goal is to provide a complete operational cockpit where a travel agency can manage the full lifecycle of its customers and trips without spreading information across CRM tools, email, WhatsApp, spreadsheets, supplier websites, documents and task-management systems.
 
 TravelOS should support both:
 
@@ -69,7 +69,7 @@ TravelOS should eventually provide:
 * Activity history
 * Audit history
 * Global search
-* Customer portal
+* Customer share links
 * Integrations
 * Automation
 * Reporting and insights
@@ -78,9 +78,9 @@ AI is explicitly NOT part of the initial core.
 
 ---
 
-## Customer Portal
+## Customer Share Links
 
-The Customer Portal is a central part of TravelOS.
+Customers do not log in (ADR-016). TravelOS is an internal tool for one agency; customers receive a revocable, read-only share link to a frozen snapshot of their trip.
 
 It should provide the customer with access to relevant information before, during and after a trip.
 
@@ -93,15 +93,13 @@ Possible sections include:
 * Messages
 * Travellers
 
-The portal should be mobile-first, modern and eventually support white-label branding and custom agency domains.
-
-The portal should remain useful after the trip and allow an existing customer to initiate a new travel request.
+The shared view should be mobile-first and modern.
 
 ---
 
 ## Critical Publishing Principle
 
-The internal agency workspace and the Customer Portal are NOT live mirrors of each other.
+The internal agency workspace and what customers see are NOT live mirrors of each other.
 
 Agency staff work on mutable internal data.
 
@@ -115,7 +113,7 @@ Internal Workspace
 → Preview as Customer
 → Publish
 → Immutable Published Version
-→ Customer Portal
+→ Customer share link
 
 The customer sees the latest explicitly published version.
 
@@ -208,7 +206,7 @@ Customer presentation may include:
 * useful instructions
 * customer-facing booking information
 
-The portal must never simply expose complete internal database objects.
+The customer-facing view must never simply expose complete internal database objects.
 
 ---
 
@@ -222,7 +220,7 @@ Platform Default
 → Agency Default
 → Item Override
 
-Some fields are permanently INTERNAL_ONLY and can never be exposed through the Customer Portal.
+Some fields are permanently INTERNAL_ONLY and can never be exposed to customers.
 
 Examples:
 
@@ -373,7 +371,6 @@ The initial architectural direction is:
 * Modular monolith
 * TypeScript
 * Next.js for Agency Admin
-* Next.js for Client Portal
 * NestJS backend
 * PostgreSQL
 * Prisma

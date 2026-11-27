@@ -157,27 +157,6 @@
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
-      "path": "apps/portal-web/test/app.test.tsx",
-      "rule": "email-address",
-      "lineSha256": "d822f0f1413f38e3d024cdbcbdd528d7ebfdaa33878250007cfd6079c5757797",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/portal-web/test/app.test.tsx",
-      "rule": "email-address",
-      "lineSha256": "f4f99c0230856fc1f2788c3472d1ef846ae6e792604bb891088280966335a7e1",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "apps/portal-web/test/app.test.tsx",
-      "rule": "secret-assignment",
-      "lineSha256": "81f6c02311d3cb1a455365a36ee0d8e2a28deb1994cf16dc8b5a6552aa2b13c9",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
       "path": "apps/worker/src/main.ts",
       "rule": "high-entropy-secret-assignment",
       "lineSha256": "2b1c2aa85ca1806ce390e51fa286e97331d06e30368406f6e9a8a0d53b61fb6d",

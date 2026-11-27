@@ -178,7 +178,7 @@ describe("Admin API global host and Staff auth routing boundary", () => {
     }
   });
 
-  it("routes only canonical Staff auth paths and rejects lookalikes, Portal and path variants", async () => {
+  it("routes only canonical Staff auth paths and rejects lookalikes, other realms and path variants", async () => {
     const handle = vi.fn(
       async () =>
         new Response("staff-auth", {
@@ -215,8 +215,8 @@ describe("Admin API global host and Staff auth routing boundary", () => {
 
       const rejectedPaths = [
         "/api/auth/staffish/get-session",
-        "/api/auth/staff-portal/get-session",
-        "/api/auth/portal/get-session",
+        "/api/auth/staff-other/get-session",
+        "/api/auth/other/get-session",
         `${STAFF_AUTH_BASE_PATH}/`,
         `${STAFF_AUTH_BASE_PATH}//get-session`,
         `${STAFF_AUTH_BASE_PATH}%2Fget-session`,

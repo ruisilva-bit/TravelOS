@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PortalTripSnapshotV1Schema } from "../src/portal/index.js";
+import { TripSnapshotV1Schema } from "../src/share/index.js";
 
 const scheduled = {
   localDate: "2026-10-12",
@@ -32,21 +32,21 @@ const snapshot = {
   ],
 } as const;
 
-describe("PortalTripSnapshotV1", () => {
+describe("TripSnapshotV1", () => {
   it("accepts the golden customer-safe fixture and rejects unknown keys recursively", () => {
-    expect(PortalTripSnapshotV1Schema.parse(snapshot)).toEqual(snapshot);
+    expect(TripSnapshotV1Schema.parse(snapshot)).toEqual(snapshot);
     expect(
-      PortalTripSnapshotV1Schema.safeParse({ ...snapshot, supplierCostSentinel: "never publish" })
+      TripSnapshotV1Schema.safeParse({ ...snapshot, supplierCostSentinel: "never publish" })
         .success,
     ).toBe(false);
     expect(
-      PortalTripSnapshotV1Schema.safeParse({
+      TripSnapshotV1Schema.safeParse({
         ...snapshot,
         items: [{ ...snapshot.items[0], internalNote: "never publish" }],
       }).success,
     ).toBe(false);
     expect(
-      PortalTripSnapshotV1Schema.safeParse({
+      TripSnapshotV1Schema.safeParse({
         ...snapshot,
         items: [
           { ...snapshot.items[0], rawProviderPayload: { providerField: "synthetic sentinel" } },
@@ -60,14 +60,12 @@ describe("PortalTripSnapshotV1", () => {
     expect(JSON.stringify(snapshot)).not.toMatch(
       /INTERNAL_ONLY|supplierCost|margin|internalNote|session|credential|rawProviderPayload/u,
     );
-    expect(PortalTripSnapshotV1Schema.safeParse({ ...snapshot, schemaVersion: 2 }).success).toBe(
-      false,
-    );
+    expect(TripSnapshotV1Schema.safeParse({ ...snapshot, schemaVersion: 2 }).success).toBe(false);
   });
 
   it("rejects invalid temporal intervals and same-airport flights", () => {
     expect(
-      PortalTripSnapshotV1Schema.safeParse({
+      TripSnapshotV1Schema.safeParse({
         ...snapshot,
         items: [
           {
@@ -92,7 +90,7 @@ describe("PortalTripSnapshotV1", () => {
   });
 
   it("compares itinerary instants after normalizing their ISO offsets", () => {
-    const result = PortalTripSnapshotV1Schema.safeParse({
+    const result = TripSnapshotV1Schema.safeParse({
       ...snapshot,
       items: [
         {

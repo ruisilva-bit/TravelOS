@@ -6,24 +6,18 @@ import {
   createStaffInvitationToken,
   digestStaffInvitationToken,
 } from "@travelos/auth-adapters";
-import {
-  createRuntimeAcceptanceFixtureOperations,
-  createStaffTripAccessOperations,
-  createStaffInvitationOperations,
-} from "@travelos/backend-core";
+import { createStaffInvitationOperations } from "@travelos/backend-core";
 import {
   loadDevelopmentInstanceManifest,
   readSystemdCredentialText,
   type DevelopmentInstanceManifest,
 } from "@travelos/config";
 import {
-  createPostgresStaffTripAccessRepository,
   createPostgresStaffTripPublicationOperations,
   createPostgresStaffLeadOperations,
   createPostgresStaffTripOperations,
   createPostgresStaffTripWorkspaceOperations,
   createPostgresStaffTripWorkspaceWriteOperations,
-  createPostgresRuntimeAcceptanceFixtureCleanupRepository,
   createPostgresPersistence,
   createStaffAccessRepository,
   createPostgresStaffInvitationRepository,
@@ -96,11 +90,6 @@ const createAdminAuthOptions = async (
       persistence,
       sessionResolver,
     );
-    const tripAccessOperations = createStaffTripAccessOperations({
-      repository: createPostgresStaffTripAccessRepository(persistence),
-      authorizationRepository: staffAccessRepository,
-      sessionResolver,
-    });
     const publicationOperations = createPostgresStaffTripPublicationOperations(
       persistence,
       sessionResolver,
@@ -131,17 +120,6 @@ const createAdminAuthOptions = async (
       nowEpochMs: Date.now,
     });
     const staffInvitationRateLimiter = createStaffInvitationRateLimiter();
-    const runtimeAcceptanceFixtureOperations =
-      manifest.environment === "DEVELOPMENT"
-        ? createRuntimeAcceptanceFixtureOperations({
-            repository: createPostgresRuntimeAcceptanceFixtureCleanupRepository(persistence),
-            authorizationRepository: staffAccessRepository,
-            sessionResolver,
-            tripOperations: tripOperations,
-            tripAccessOperations: tripAccessOperations,
-            publicationOperations: publicationOperations,
-          })
-        : undefined;
     return {
       options: {
         auth: {
@@ -152,19 +130,10 @@ const createAdminAuthOptions = async (
           tripOperations,
           workspaceOperations,
           workspaceWriteOperations,
-          tripAccessOperations,
           publicationOperations,
           leadOperations,
           staffInvitationOperations,
           staffInvitationRateLimiter,
-          ...(runtimeAcceptanceFixtureOperations === undefined
-            ? {}
-            : {
-                runtimeAcceptanceFixtureOperations: {
-                  createFixtureTrip: tripOperations.createRuntimeAcceptanceFixtureTrip,
-                  cleanupFixture: runtimeAcceptanceFixtureOperations.cleanupFixture,
-                },
-              }),
         },
       },
       destroy: () => persistence.destroy(),

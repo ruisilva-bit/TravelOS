@@ -24,25 +24,20 @@ TravelOS should feel modern, calm, contextual, fast and trustworthy. Linear, Str
 - tables only where comparison matters; details use sections and inline actions;
 - sensitive finance/document information requires explicit permission and is not rendered then hidden with CSS.
 
-### Customer Portal
+### Customer share link (planned)
+
+Customers have no login (ADR-016). A later read-only share link shows one frozen trip snapshot:
 
 - mobile-first single-column journey narrative with resilient touch targets;
 - current published Trip/itinerary, not a mirrored Admin UI;
-- simple language, useful offline/cached shell states and clear last-publication time;
-- no customer-visible internal status, supplier cost, margin, staff identity or operational note;
-- custom branding changes tokens/assets/content, never layout safety or accessibility minimums.
-
-The two apps share tokens and accessible primitives but not privileged feature components or data DTOs.
+- simple language and clear last-publication time;
+- no customer-visible internal status, supplier cost, margin, staff identity or operational note.
 
 ## 3. Information architecture
 
 ### Admin initial navigation
 
 Keep top-level areas bounded: Home/Attention, CRM, Sales, Trips, Work/Service, Finance (permission-gated), Documents, and Settings. Contextual entity work remains inside a Customer/Opportunity/Trip workspace rather than duplicating every submodule in navigation.
-
-### Portal initial navigation
-
-Overview, Itinerary, Documents, Payments, Messages and Travellers may exist eventually. A section appears only when its customer-facing read model, release/grant semantics and useful content exist. M1 contains Overview and Itinerary only; Documents appears only after an explicit grant model is implemented.
 
 ## 4. Token architecture
 
@@ -84,14 +79,13 @@ Avoid a component wrapper that adds no information hiding. Components document a
 
 Publication is the most important product affordance.
 
-- Admin always distinguishes **Workspace changed**, **Previewing revision N**, **Published vN**, **Not yet published**, **Publication withdrawn** and **Stale preview**.
+- Admin always distinguishes **Workspace changed**, **Previewing revision N**, **Published vN**, **Not yet published** and **Stale preview**.
 - Preview has a persistent, unmistakable “Preview — not visible to customer” banner and no publish side effect.
 - Publish is a separate primary action available only with permission/recent MFA.
 - The confirmation identifies current published version, candidate revision and customer-visible change summary; it never claims that Preview saved/released anything.
 - If revision/hash is stale, publishing stops and asks staff to regenerate/review preview. No silent rebase.
 - After publish, UI reports immutable version/time/actor and asynchronous notification state separately.
 - Internal-only fields are absent from preview DOM/network data—not blurred or labelled hidden.
-- Withdrawal is visually distinct, requires reason and does not masquerade as deletion.
 
 ## 7. Itinerary UX
 
@@ -123,7 +117,7 @@ Target WCAG 2.2 AA:
 - status changes announced through appropriate live regions without noise;
 - 4.5:1 normal text and 3:1 large/UI graphical contrast minimums;
 - no information conveyed only by colour, position or animation;
-- touch targets at least 44×44 CSS pixels on Portal critical actions;
+- touch targets at least 44×44 CSS pixels on customer-facing critical actions;
 - zoom/reflow at 400%, narrow 320px layouts and text-size increase;
 - prefers-reduced-motion and no essential timed interactions;
 - itinerary/financial tables have list/card alternatives where mobile/accessibility demands it;
@@ -133,7 +127,7 @@ Automated axe checks are necessary but manual keyboard/screen-reader review is r
 
 ## 10. Responsive and performance budgets
 
-- Portal is designed at narrow mobile first, then enhanced.
+- Customer-facing views are designed at narrow mobile first, then enhanced.
 - Admin supports core approve/publish/customer-service actions on narrow mobile but may provide richer desktop comparison surfaces.
 - Avoid horizontal page scrolling; data grids may have explicit contained overflow with fixed context.
 - Static app shell and route/code splitting keep initial JS bounded; define measured budgets during M1 and fail CI on material regression.
@@ -146,8 +140,8 @@ Allowed runtime configuration:
 
 - Agency display name, approved logo/favicon assets;
 - constrained brand accent palette passing contrast checks;
-- contact details and Portal welcome content via published Agency Profile;
-- custom Portal domain and locale/time-zone defaults.
+- contact details and welcome content via published Agency Profile;
+- locale/time-zone defaults.
 
 A custom domain becomes usable only after declarative ownership/TLS verification and exact inclusion in the instance manifest. Unknown hosts receive no Agency-branded page or distinguishable tenant-existence response; the UI never tries to select an Agency from an arbitrary browser host.
 
@@ -160,7 +154,7 @@ Not configurable:
 - arbitrary CSS/JavaScript/HTML;
 - customer-specific routes or code.
 
-White-label assets are versioned/scanned/published, not read from mutable settings directly by the Portal.
+White-label assets are versioned/scanned/published, not read from mutable settings directly by customer-facing views.
 
 ## 12. Design acceptance
 

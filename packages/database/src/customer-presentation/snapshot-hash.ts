@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import type { PortalTripSnapshotHashPort } from "@travelos/backend-core";
+import type { TripSnapshotHashPort } from "@travelos/backend-core";
 
-export const createPortalTripSnapshotSha256Hasher = (): PortalTripSnapshotHashPort => ({
+export const createTripSnapshotSha256Hasher = (): TripSnapshotHashPort => ({
   async sha256(canonicalJson) {
     return createHash("sha256").update(canonicalJson, "utf8").digest("hex");
   },

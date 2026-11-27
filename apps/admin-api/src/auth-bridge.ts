@@ -12,7 +12,6 @@ import {
 import type { StaffTripOperations } from "@travelos/backend-core";
 import type { StaffTripWorkspaceOperations } from "@travelos/backend-core";
 import type { StaffTripWorkspaceWriteOperations } from "@travelos/backend-core";
-import type { StaffTripAccessOperations } from "@travelos/backend-core";
 import type { StaffTripPublicationOperations } from "@travelos/backend-core";
 import type { StaffInvitationOperations } from "@travelos/backend-core";
 import type { StaffLeadOperations } from "@travelos/backend-core";
@@ -25,10 +24,7 @@ import {
   requestUrlFor,
   surfaceRejectionStatus as boundarySurfaceRejectionStatus,
 } from "./request-boundary.js";
-import {
-  registerAdminRoutes,
-  type AdminRuntimeAcceptanceFixtureRouteOperations,
-} from "./admin-routes.js";
+import { registerAdminRoutes } from "./admin-routes.js";
 import { registerAdminStaffInvitationRoutes } from "./staff-invitation-routes.js";
 import type { StaffInvitationRateLimiter } from "./staff-invitation-rate-limit.js";
 
@@ -73,10 +69,8 @@ export interface AdminAuthBridgeOptions {
   readonly tripOperations?: StaffTripOperations;
   readonly workspaceOperations?: StaffTripWorkspaceOperations;
   readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
-  readonly tripAccessOperations?: StaffTripAccessOperations;
   readonly publicationOperations?: StaffTripPublicationOperations;
   readonly leadOperations?: StaffLeadOperations;
-  readonly runtimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
   readonly staffInvitationOperations?: StaffInvitationOperations;
   readonly staffInvitationRateLimiter?: StaffInvitationRateLimiter;
 }
@@ -270,17 +264,10 @@ export const registerAdminAuthBridge = (
       ...(options.workspaceWriteOperations === undefined
         ? {}
         : { workspaceWriteOperations: options.workspaceWriteOperations }),
-      ...(options.tripAccessOperations === undefined
-        ? {}
-        : { tripAccessOperations: options.tripAccessOperations }),
       ...(options.publicationOperations === undefined
         ? {}
         : { publicationOperations: options.publicationOperations }),
       ...(options.leadOperations === undefined ? {} : { leadOperations: options.leadOperations }),
-      ...(options.environment !== "DEVELOPMENT" ||
-      options.runtimeAcceptanceFixtureOperations === undefined
-        ? {}
-        : { runtimeAcceptanceFixtureOperations: options.runtimeAcceptanceFixtureOperations }),
     });
   }
 };

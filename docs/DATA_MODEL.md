@@ -53,7 +53,6 @@ Rules:
 | `sales` | `lead`, `lead_idempotency`, `travel_request`, `opportunity`, `quote`, `quote_version`, `proposal_alternative`, `sale` | Sales |
 | `trip_ops` | `trip`, `trip_traveller`, `itinerary_item`, family detail tables, `journey_group`, `reservation`, `reservation_item_link` | Trip Operations |
 | `presentation` | `publication`, one-to-one `publication_payload`, `current_publication`, `publication_event`, `agency_profile_publication` | Customer Presentation |
-| `portal_access` | auth-library-prefixed Portal tables, `trip_access_grant`, authorization epoch | Portal Access |
 | `finance` | `price_line`, `cost_line`, `fee`, `commission`, `payment`, `payment_allocation`, `exchange_rate` | Finance Operations |
 | `documents` | `storage_object`, `document`, `document_version`, typed association tables, `document_grant` | Documents |
 | `work_service` | `task`, `case`, assignment/state history | Work & Service |
@@ -63,24 +62,24 @@ Rules:
 | `integration` | `provider_config`, `provider_reference`, `webhook_inbox`, `outbox_message`, `outbox_delivery`, `lead_outbox` | Integrations |
 | `job_runtime` | `job`, `job_attempt`, `recurring_job_key` | TravelOS Job Runtime |
 
-Authentication-library tables are physically separate per realm and cannot share a session/account table.
+Authentication-library tables (Staff realm only) are physically separate from application tables. The former customer-login schema, Trip access grants and runtime-acceptance fixture tables were dropped by migration 0018 (ADR-016).
 
 ### Stage 9 Staff invitations
 
-| Record/data | Owner and classification | Portal eligibility | Retention, audit and access |
+| Record/data | Owner and classification | Customer-facing eligibility | Retention, audit and access |
 |---|---|---|---|
-| `staff_access.staff_invitation` | Staff Access. `targetEmail` is Staff-access PII; `tokenDigest` is restricted authentication material (lowercase SHA-256 digest only); identifiers and lifecycle timestamps are internal operational data. | None. The Portal has no contract or database privilege for this table. | Pending tokens expire after 60 minutes; expiry is not a record-retention period. The migration defines no automatic purge: terminal invitation metadata/digests remain subject to the privileged, policy-controlled retention/deletion process. Every issue, reissue, revoke, expiry and consume transition has a same-transaction audit event. The Admin runtime uses Agency-scoped permission `staff.invite` with recent MFA; list pages are bounded/keyset-paginated by Agency and ID, expiry scans use Agency/status/expiry, and acceptance looks up the unique digest. |
-| `audit.staff_invitation_event` | Audit. Agency/invitation/actor identifiers, event type and timestamp only; no email, raw token, digest, password, MFA seed or recovery code. | None. The Portal has no contract or database privilege for this table. | Append-only, retained under the privileged Audit retention policy. A restricted Admin runtime may select/insert; mutation and truncation are denied. Foreign keys bind invitation, related invitation and actor to the same Agency; retention/deletion must reconcile linked invitation and audit rows together. |
+| `staff_access.staff_invitation` | Staff Access. `targetEmail` is Staff-access PII; `tokenDigest` is restricted authentication material (lowercase SHA-256 digest only); identifiers and lifecycle timestamps are internal operational data. | None. There is no customer-facing contract or database privilege for this table. | Pending tokens expire after 60 minutes; expiry is not a record-retention period. The migration defines no automatic purge: terminal invitation metadata/digests remain subject to the privileged, policy-controlled retention/deletion process. Every issue, reissue, revoke, expiry and consume transition has a same-transaction audit event. The Admin runtime uses Agency-scoped permission `staff.invite` with recent MFA; list pages are bounded/keyset-paginated by Agency and ID, expiry scans use Agency/status/expiry, and acceptance looks up the unique digest. |
+| `audit.staff_invitation_event` | Audit. Agency/invitation/actor identifiers, event type and timestamp only; no email, raw token, digest, password, MFA seed or recovery code. | None. There is no customer-facing contract or database privilege for this table. | Append-only, retained under the privileged Audit retention policy. A restricted Admin runtime may select/insert; mutation and truncation are denied. Foreign keys bind invitation, related invitation and actor to the same Agency; retention/deletion must reconcile linked invitation and audit rows together. |
 
 The 60-minute expiry limits token use, not how long the invitation email or digest is retained. This Stage 9 extension introduces no numeric post-terminal retention period; the existing privileged retention policy remains authoritative and must be followed before any purge.
 
-The only Stage 9 inviteable role is the code-owned Agency template `trip-operations-v1`; callers cannot choose a role ID or permission set. Acceptance locks and validates the pending invitation, creates the Better Auth Staff identity and its controlled email-verification state, inserts the active Agency membership and fixed role assignment, consumes the invitation, and appends the immutable audit event in one transaction. Any failure rolls back the complete operation. The issuer-approved email binding is not independent proof of mailbox ownership. No session is issued by enrolment, and Staff authorization context remains unavailable until TOTP MFA is enabled and verified. Portal roles have no access to invitation or invitation-audit data.
+The only Stage 9 inviteable role is the code-owned Agency template `trip-operations-v1`; callers cannot choose a role ID or permission set. Acceptance locks and validates the pending invitation, creates the Better Auth Staff identity and its controlled email-verification state, inserts the active Agency membership and fixed role assignment, consumes the invitation, and appends the immutable audit event in one transaction. Any failure rolls back the complete operation. The issuer-approved email binding is not independent proof of mailbox ownership. No session is issued by enrolment, and Staff authorization context remains unavailable until TOTP MFA is enabled and verified. No customer-facing role has access to invitation or invitation-audit data.
 
 ### M2 slice 1 Sales Lead
 
-| Record/data | Owner and classification | Portal eligibility | Retention, audit and access |
+| Record/data | Owner and classification | Customer-facing eligibility | Retention, audit and access |
 |---|---|---|---|
-| `sales.lead` (`id`, `agencyId`, `source`, `contactGivenName`, `contactFamilyName`, `contactEmail`, `contactPhone`, `internalNote`, `state`, `qualifiedCustomerId`, `disqualificationReason`, `lockVersion`, `createdAt`, `updatedAt`, `closedAt`) | Sales. Contact fields are `CONFIDENTIAL_PERSONAL`; `internalNote` is `INTERNAL_ONLY`; `source`, `state`, reason, identifiers, version and timestamps are internal operational data. | None. No Portal contract, source field or override exists; the Portal runtime has no schema or table privilege on `sales`. | Retained after qualification and follows the CRM retention/privacy-deletion policy; privacy deletion of a Lead is a later slice and there is no blanket soft delete. Qualify and disqualify are audited. The Admin runtime has `SELECT`, `INSERT`, `UPDATE` (no `DELETE`/`TRUNCATE`); a trigger rejects any update of a closed Lead, any lock-version step other than +1 and any change of identity or creation time. Access: Agency-scoped cursor listing by `(agencyId, state, createdAt DESC, id DESC)` and point reads by `(agencyId, id)`. |
+| `sales.lead` (`id`, `agencyId`, `source`, `contactGivenName`, `contactFamilyName`, `contactEmail`, `contactPhone`, `internalNote`, `state`, `qualifiedCustomerId`, `disqualificationReason`, `lockVersion`, `createdAt`, `updatedAt`, `closedAt`) | Sales. Contact fields are `CONFIDENTIAL_PERSONAL`; `internalNote` is `INTERNAL_ONLY`; `source`, `state`, reason, identifiers, version and timestamps are internal operational data. | None. No customer-facing contract, source field or override exists; no customer-facing runtime has a schema or table privilege on `sales`. | Retained after qualification and follows the CRM retention/privacy-deletion policy; privacy deletion of a Lead is a later slice and there is no blanket soft delete. Qualify and disqualify are audited. The Admin runtime has `SELECT`, `INSERT`, `UPDATE` (no `DELETE`/`TRUNCATE`); a trigger rejects any update of a closed Lead, any lock-version step other than +1 and any change of identity or creation time. Access: Agency-scoped cursor listing by `(agencyId, state, createdAt DESC, id DESC)` and point reads by `(agencyId, id)`. |
 | `sales.lead_idempotency` | Sales. Agency, Staff principal, command (`lead.create`, `lead.qualify`, `lead.disqualify`), caller key and a SHA-256 request hash; no contact data. | None. | Immutable. Read by the exact primary key `(agencyId, staffPrincipalId, command, idempotencyKey)`; retention follows the Lead it references. |
 | `audit.lead_event` | Audit. Agency, Lead, actor, action (`LEAD_QUALIFIED`/`LEAD_DISQUALIFIED`), lock-version step, the linked Customer ID or the categorical reason; never contact data or the note. | None. | Append-only with mutation and truncation rejected for every role; at most one closure event per Lead. Retained under the privileged Audit retention policy and reconciled with the Lead on privacy deletion. |
 | `activity.lead_entry` | Activity. Agency, Lead, actor, entry type and instant; a human-readable line is rendered from these identifiers, never stored with contact data. | None. | Append-only; written synchronously with the audit event because the Stage 8 `ACTIVITY_V1` projection is Trip-scoped. Read by `(agencyId, leadId, occurredAt)`. |
@@ -106,14 +105,11 @@ erDiagram
   ITINERARY_ITEM ||--o{ RESERVATION_ITEM_LINK : fulfilled_by
   TRIP ||--o{ PUBLICATION : releases
   TRIP ||--o| CURRENT_PUBLICATION : selects
-  PORTAL_PRINCIPAL ||--o{ TRIP_ACCESS_GRANT : receives
-  TRIP ||--o{ TRIP_ACCESS_GRANT : permits
   DOCUMENT ||--o{ DOCUMENT_VERSION : versions
-  PORTAL_PRINCIPAL ||--o{ DOCUMENT_GRANT : receives
   DOCUMENT ||--o{ DOCUMENT_GRANT : permits
 ```
 
-`Customer–Person` is an explicit relationship with commercial/contact roles. `TripTraveller` references Person but stores trip-specific participation. PortalPrincipal links to neither as an authorization shortcut.
+`Customer–Person` is an explicit relationship with commercial/contact roles. `TripTraveller` references Person but stores trip-specific participation.
 
 ## 6. Itinerary and Reservation storage
 
@@ -154,13 +150,13 @@ No reservation details are copied into item internals merely for UI convenience.
 - publisher/correlation metadata;
 - schema version, canonical content hash and payload-presence metadata;
 - `publication_payload.payload jsonb` is validated against the named application snapshot schema before insertion and has a same-publication/same-Agency foreign key;
-- Admin/Portal runtime roles have no UPDATE/DELETE privilege on publication metadata or payload.
+- Runtime roles have no UPDATE/DELETE privilege on publication metadata or payload.
 
 `current_publication` has one row per Trip and a same-Agency/Trip composite FK to Publication. Publish updates it in the same serializable transaction as insertion.
 
 `publication_event` records activation, supersession, withdrawal and privacy payload deletion. A narrowly privileged security-definer command verifies authority/legal hold, clears the current pointer if necessary, deletes only the separate payload row and appends `PRIVACY_PAYLOAD_DELETED` in one transaction. It cannot rewrite payload fields or publication metadata. Routine runtime roles cannot call it.
 
-The Portal role sees a restrictive view joining an active pointer to a still-present publication payload; it cannot enumerate historical rows or read workspace schemas. The presentation adapter verifies the canonical content hash and parses the declared snapshot schema before returning a Portal DTO. Payloads are never materialized into a static asset or generic cache.
+A future share link (ADR-016) reads only the frozen snapshot behind an active pointer; it cannot enumerate historical rows or read workspace schemas. The presentation adapter verifies the canonical content hash and parses the declared snapshot schema before returning a customer DTO. Payloads are never materialized into a static asset or generic cache.
 
 ## 8. Exact financial representation
 
@@ -200,7 +196,7 @@ Original and converted Money are both retained with rate, source, effective time
 - `document`: Agency, classification, title and lifecycle; no filesystem path exposed.
 - `document_version`: ordinal, StorageObject, uploader, original filename (protected metadata), scan result/version, quarantine/availability.
 - Typed association tables such as `trip_document`, `traveller_document`, `reservation_document`; avoid a generic unconstrained polymorphic foreign key.
-- `document_grant`: PortalPrincipal, Document and optional fixed version, capability, expiry/revocation, issuer and reason; unique active-grant rules.
+- `document_grant`: Principal, Document and optional fixed version, capability, expiry/revocation, issuer and reason; unique active-grant rules.
 
 Only AVAILABLE versions can be returned by grant-safe query services. Removing a grant never deletes the underlying audit/history.
 
@@ -240,7 +236,6 @@ Every index cites an access pattern in the migration review. Initial patterns in
 - Trip + item order/time;
 - Customer/Person normalized search keys with privacy-conscious indexing;
 - current publication by Agency/Trip;
-- active Portal grants by principal/resource/expiry;
 - outbox pending by next-attempt/lease;
 - audit by Agency/time and target;
 - provider inbox by provider/external event ID.
@@ -263,7 +258,7 @@ Unbounded list queries are forbidden; cursor pagination uses stable `(sort_value
 1. classify lock, rewrite, data volume, rollback and compatibility risk;
 2. author explicit migration and inspect generated/final SQL;
 3. test from empty database and each supported prior release with representative volume/data edge cases;
-4. when a Better Auth dependency/config/plugin changes, generate its Staff and Portal SQL into review-only temporary output, inspect/adapt it into an ordinary TravelOS migration, and fail CI if the declared auth schemas no longer conform; Better Auth documents SQL generation for its built-in Kysely adapter,[13] while `auth migrate` is forbidden in TravelOS deployment/startup;
+4. when a Better Auth dependency/config/plugin changes, generate its Staff SQL into review-only temporary output, inspect/adapt it into an ordinary TravelOS migration, and fail CI if the declared auth schemas no longer conform; Better Auth documents SQL generation for its built-in Kysely adapter,[13] while `auth migrate` is forbidden in TravelOS deployment/startup;
 5. use expand → backfill → verify → switch reads/writes → contract across releases for incompatible changes;
 6. keep backfills resumable, idempotent, bounded and observable; run large work as a controlled job, not an unbounded migration transaction;
 7. set `lock_timeout` and `statement_timeout`; fail rather than surprise-lock an instance;
@@ -292,7 +287,7 @@ An instance may upgrade only from the current or immediately previous supported 
 
 ## 14. Data-model acceptance gate
 
-BLOCKER conditions include float Money, implicit specialist-context rounding, mutable publication payload through routine runtime credentials, unencrypted database/private-storage/backup media, Portal workspace privilege, missing same-Agency/Trip foreign keys, dependency-owned runtime migration, unreviewed SQL, customer-specific migration logic, opaque core JSON or an inability to render retained snapshot versions after migration. Before production, an unapproved retention/deletion policy or an unaccepted residual backup window is also a BLOCKER.
+BLOCKER conditions include float Money, implicit specialist-context rounding, mutable publication payload through routine runtime credentials, unencrypted database/private-storage/backup media, customer-facing workspace privilege, missing same-Agency/Trip foreign keys, dependency-owned runtime migration, unreviewed SQL, customer-specific migration logic, opaque core JSON or an inability to render retained snapshot versions after migration. Before production, an unapproved retention/deletion policy or an unaccepted residual backup window is also a BLOCKER.
 
 ## Sources
 

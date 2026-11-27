@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PortalTripSnapshotV1Schema } from "../../portal/customer-presentation/trip-snapshot-v1.js";
+import { TripSnapshotV1Schema } from "../../share/trip-snapshot-v1.js";
 
 const containsControlCharacter = (value: string): boolean => {
   for (const character of value) {
@@ -17,7 +17,7 @@ export const AdminTripPublicationPreviewV1Schema = z
     workspaceRevision: WorkspaceRevisionSchema,
     projectionHash: ProjectionHashSchema,
     schemaVersion: z.literal(1),
-    projection: PortalTripSnapshotV1Schema,
+    projection: TripSnapshotV1Schema,
   })
   .strict();
 
@@ -42,7 +42,7 @@ export const AdminTripPublicationV1ResponseSchema = z
     schemaVersion: z.literal(1),
     projectionHash: ProjectionHashSchema,
     isActive: z.boolean(),
-    projection: PortalTripSnapshotV1Schema,
+    projection: TripSnapshotV1Schema,
   })
   .strict();
 

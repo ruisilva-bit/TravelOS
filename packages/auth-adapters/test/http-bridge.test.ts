@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PORTAL_AUTH_BASE_PATH, STAFF_AUTH_BASE_PATH, type AuthRealm } from "../src/realm.js";
+import { STAFF_AUTH_BASE_PATH, type AuthRealm } from "../src/realm.js";
 import {
   dispatchAuthRealmRequest,
   originAllowedForMethod,
@@ -44,7 +44,7 @@ describe("auth realm HTTP boundary", () => {
         true,
       );
       expect(
-        originAllowedForMethod(method, "http://portal.travelos.test", policy.canonicalOrigin),
+        originAllowedForMethod(method, "http://other.travelos.test", policy.canonicalOrigin),
       ).toBe(false);
       expect(originAllowedForMethod(method, null, policy.canonicalOrigin)).toBe(false);
       expect(originAllowedForMethod(method, policy.canonicalOrigin, null)).toBe(false);
@@ -60,7 +60,7 @@ describe("auth realm HTTP boundary", () => {
       dispatchAuthRealmRequest(
         fake,
         policy,
-        request({ headers: new Headers({ host: "portal.travelos.test" }) }),
+        request({ headers: new Headers({ host: "other.travelos.test" }) }),
       ),
     ).resolves.toMatchObject({ status: 404 });
     await expect(
@@ -89,7 +89,7 @@ describe("auth realm HTTP boundary", () => {
           method: "POST",
           headers: new Headers({
             host: policy.expectedHost,
-            origin: "http://portal.travelos.test",
+            origin: "http://other.travelos.test",
           }),
         }),
       ),
@@ -141,11 +141,7 @@ describe("auth realm HTTP boundary", () => {
     const handled: Request[] = [];
     const fake = realm(handled);
     await expect(
-      dispatchAuthRealmRequest(
-        fake,
-        policy,
-        request({ url: `${PORTAL_AUTH_BASE_PATH}/get-session` }),
-      ),
+      dispatchAuthRealmRequest(fake, policy, request({ url: `/api/auth/other/get-session` })),
     ).resolves.toMatchObject({ status: 404 });
     const result = await dispatchAuthRealmRequest(
       fake,

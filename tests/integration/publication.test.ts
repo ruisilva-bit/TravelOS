@@ -15,7 +15,7 @@ import {
   type StaffSessionAuthorizationProof,
 } from "@travelos/backend-core";
 import type { CreateTripSliceInput } from "@travelos/backend-core";
-import { canonicalPortalTripSnapshotV1Json } from "@travelos/backend-core";
+import { canonicalTripSnapshotV1Json } from "@travelos/backend-core";
 import { createOperationalSliceRepository } from "../../packages/database/src/trip-operations/operational-slice-repository.js";
 import type { createPostgresPersistence } from "@travelos/database";
 import {
@@ -23,7 +23,7 @@ import {
   createStaffAccessRepository,
   createUuidV7,
 } from "@travelos/database";
-import { PortalTripSnapshotV1Schema } from "../../packages/contracts/src/portal/index.js";
+import { TripSnapshotV1Schema } from "../../packages/contracts/src/share/index.js";
 import {
   clientFor as clientForDatabase,
   createAdminPersistence,
@@ -214,7 +214,7 @@ beforeAll(async () => {
     authorizationSessionResolver,
     {
       validate(value) {
-        PortalTripSnapshotV1Schema.parse(value);
+        TripSnapshotV1Schema.parse(value);
       },
     },
   );
@@ -538,7 +538,7 @@ describe.sequential("Trip publication on PostgreSQL", () => {
       )
     )[0]?.canonicalPayload;
     expect(newOldPayload).toBe(oldPayload);
-    expect(newOldPayload).toBe(canonicalPortalTripSnapshotV1Json(preview1.projection));
+    expect(newOldPayload).toBe(canonicalTripSnapshotV1Json(preview1.projection));
 
     expect(
       await queryErrorCode(() =>
@@ -624,7 +624,7 @@ describe.sequential("Trip publication on PostgreSQL", () => {
       { resolveStaffSession: async () => null },
       {
         validate(value) {
-          PortalTripSnapshotV1Schema.parse(value);
+          TripSnapshotV1Schema.parse(value);
         },
       },
     );

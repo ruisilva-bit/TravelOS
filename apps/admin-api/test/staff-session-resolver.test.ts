@@ -49,18 +49,18 @@ describe("Admin Staff application session resolver", () => {
     await expect(resolver.resolveStaffSession("travelos_staff=opaque-session")).resolves.toBeNull();
   });
 
-  it("fails closed when a Staff adapter returns a Portal realm session", async () => {
+  it("fails closed when a Staff adapter returns a non-Staff realm session", async () => {
     const realm = {
       kind: "STAFF",
-      getServerSession: vi.fn().mockResolvedValue({ ...session, realm: "PORTAL" }),
+      getServerSession: vi.fn().mockResolvedValue({ ...session, realm: "OTHER" }),
     } as unknown as AuthRealm;
     const resolver = createAdminStaffSessionResolver(realm, policy);
 
     await expect(resolver.resolveStaffSession("travelos_staff=opaque-session")).resolves.toBeNull();
   });
 
-  it("rejects a Portal realm at the adapter boundary", () => {
-    const realm = { kind: "PORTAL" } as unknown as AuthRealm;
+  it("rejects a non-Staff realm at the adapter boundary", () => {
+    const realm = { kind: "OTHER" as never } as unknown as AuthRealm;
     expect(() => createAdminStaffSessionResolver(realm, policy)).toThrow("Staff auth realm");
   });
 });

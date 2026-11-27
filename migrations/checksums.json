@@ -69,6 +69,10 @@
     {
       "file": "0017_m2_sales_lead.cjs",
       "sha256": "33ded36ed997a7ce2b38ad90bb1bf01ef50c82754b3c44b98b96079951c48fff"
+    },
+    {
+      "file": "0018_drop_portal.cjs",
+      "sha256": "19e887f0aa93f92d173ac08a6fc0b531e1c47676834a2cb73cb9d7f017178a44"
     }
   ]
 }

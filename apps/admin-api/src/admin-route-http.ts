@@ -1,8 +1,6 @@
 import {
   asOpaqueId,
   InputValidationError,
-  RuntimeAcceptanceFixtureConflictError,
-  RuntimeAcceptanceFixtureNotFoundError,
   OptimisticConflictError,
   TransactionConflictError,
   StaffAuthorizationError,
@@ -11,19 +9,15 @@ import {
   StalePublicationCandidateError,
   IdempotencyConflictError,
   TripPublicationNotFoundError,
-  StaffTripAccessNotFoundError,
   LeadIdempotencyConflictError,
   LeadNotFoundError,
   LeadNotOpenError,
   type StaffLeadOperations,
   type StaffTripWorkspaceWriteOperations,
-  type StaffTripAccessOperations,
   type StaffTripOperations,
   type StaffTripWorkspaceOperations,
   type StaffTripPublicationOperations,
-  type RuntimeAcceptanceFixtureOperations,
 } from "@travelos/backend-core";
-import { AdminRuntimeAcceptanceFixtureConflictV1ResponseSchema } from "@travelos/contracts/admin";
 import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
 
 import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
@@ -64,15 +58,8 @@ export interface AdminRouteOptions {
   readonly tripOperations: StaffTripOperations;
   readonly workspaceOperations?: StaffTripWorkspaceOperations;
   readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
-  readonly tripAccessOperations?: StaffTripAccessOperations;
   readonly publicationOperations?: StaffTripPublicationOperations;
   readonly leadOperations?: StaffLeadOperations;
-  readonly runtimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
-}
-
-export interface AdminRuntimeAcceptanceFixtureRouteOperations {
-  readonly createFixtureTrip: StaffTripOperations["createRuntimeAcceptanceFixtureTrip"];
-  readonly cleanupFixture: RuntimeAcceptanceFixtureOperations["cleanupFixture"];
 }
 
 /** Admin route policy: URL, Host, Authorization, X-Forwarded-Host and (when required) Origin. */
@@ -148,29 +135,6 @@ export const runHandler = (
     }
     if (error instanceof TripNotFoundError) {
       response.status(404).end();
-      return;
-    }
-    if (error instanceof StaffTripAccessNotFoundError) {
-      response.status(404).end();
-      return;
-    }
-    if (error instanceof RuntimeAcceptanceFixtureNotFoundError) {
-      response.status(404).end();
-      return;
-    }
-    if (error instanceof RuntimeAcceptanceFixtureConflictError) {
-      const conflictResponse =
-        error.recoveryFixtureRunId === null
-          ? { error: "runtime_acceptance_fixture_conflict" as const }
-          : {
-              error: "runtime_acceptance_fixture_conflict" as const,
-              recoveryFixtureRunId: error.recoveryFixtureRunId,
-            };
-      send(
-        response,
-        409,
-        AdminRuntimeAcceptanceFixtureConflictV1ResponseSchema.parse(conflictResponse),
-      );
       return;
     }
     if (error instanceof StaffPublicationInputError) {

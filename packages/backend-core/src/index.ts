@@ -51,7 +51,6 @@ export {
   M2_PERMISSION_REGISTRY,
   STAGE_4_PERMISSION_REGISTRY,
   STAGE_5_PERMISSION_REGISTRY,
-  STAGE_7_PERMISSION_REGISTRY,
   type AuthorizationScopeKind,
   type PermissionDefinition,
   type ResourceAccessLevel,
@@ -93,20 +92,16 @@ export {
   type ScheduledLocalDateTime,
 } from "./shared-kernel/time.js";
 export {
-  TripCancellationIdempotencyConflictError,
   OptimisticConflictError,
   TripNotFoundError,
   TransactionConflictError,
-  UnsupportedTripStateError,
   InputValidationError,
-  validateCancelTripInput,
   validateCreateTripWorkspaceInput,
   validateCreateTripWorkspaceFlightInput,
   validateUpdateTripWorkspaceFlightInput,
   validateCreateTripWorkspaceAccommodationInput,
   validateUpdateTripWorkspaceAccommodationInput,
   validateUpdateTripWorkspaceTripInput,
-  type CancelTripInput,
   type CreateTripWorkspaceInput,
   type CreateTripWorkspaceFlightInput,
   type UpdateTripWorkspaceFlightInput,
@@ -122,7 +117,6 @@ export {
   createStaffTripOperations,
   authorizeOperation,
   OPERATION_PERMISSION_REQUIREMENTS,
-  RuntimeAcceptanceFixtureConflictError,
   StaffAuthorizationError,
   type StaffAuthorizationDependencies,
   type StaffAuthorizationRepository,
@@ -181,45 +175,6 @@ export {
   type StaffTripWorkspaceWriteRepository,
 } from "./modules/trip-operations/application/staff-workspace-write-operations.js";
 export {
-  FIXTURE_PORTAL_PRINCIPAL_RETIREMENT_REASON,
-  STAFF_FIXTURE_PORTAL_RETIREMENT_PERMISSION_REQUIREMENTS,
-  STAFF_TRIP_ACCESS_PERMISSION_REQUIREMENTS,
-  createStaffTripAccessOperations,
-  StaffTripAccessNotFoundError,
-  TRIP_ACCESS_MANAGE_PERMISSION_ID,
-  type IssueTripAccessGrantCommand,
-  type PortalPrincipalRetirementResult,
-  type StaffTripAccessOperations,
-  type StaffTripAccessOperationsDependencies,
-  type StaffTripAccessRepository,
-  type RevokeTripAccessGrantCommand,
-  type RetireFixturePortalPrincipalCommand,
-} from "./modules/portal-access/application/staff-trip-access-operations.js";
-export {
-  TRIP_ACCESS_CAPABILITY_IDS,
-  type TripAccessCapabilityId,
-  type TripAccessGrant,
-  type TripAccessGrantCapabilitySet,
-} from "./modules/portal-access/domain/trip-access-grant.js";
-export {
-  RUNTIME_ACCEPTANCE_FIXTURE_RUN_STATES,
-  type RuntimeAcceptanceFixtureRunState,
-} from "./modules/runtime-acceptance/domain/fixture-run-state.js";
-export {
-  createRuntimeAcceptanceFixtureOperations,
-  RUNTIME_ACCEPTANCE_FIXTURE_MANAGE_PERMISSION_REQUIREMENTS,
-  RuntimeAcceptanceFixtureNotFoundError,
-  type RuntimeAcceptanceFixtureOperations,
-  type RuntimeAcceptanceFixtureOperationsDependencies,
-  type RuntimeAcceptanceCleanupCommand,
-  type RuntimeAcceptanceCleanupCounts,
-  type RuntimeAcceptanceCleanupHistoryCounts,
-  type RuntimeAcceptanceCleanupReceipt,
-  type RuntimeAcceptanceCleanupStart,
-  type RuntimeAcceptanceFixtureCleanupPlan,
-  type RuntimeAcceptanceFixtureCleanupRepository,
-} from "./modules/runtime-acceptance/application/fixture-cleanup.js";
-export {
   INTERNAL_ONLY_FIELD_CLASSIFICATION,
   type SupplierCostDraft,
   type SupplierCostLine,
@@ -250,13 +205,13 @@ export {
   type TripTravellerRole,
 } from "./modules/crm/domain/continuity.js";
 export {
-  assemblePortalTripSnapshotV1,
+  assembleTripSnapshotV1,
   resolvePublicationFieldVisibility,
   type ConfigurablePublicationField,
-  type PortalAccommodationSnapshotV1,
-  type PortalFlightSnapshotV1,
-  type PortalScheduledTimeV1,
-  type PortalTripSnapshotV1,
+  type AccommodationSnapshotV1,
+  type FlightSnapshotV1,
+  type ScheduledTimeV1,
+  type TripSnapshotV1,
   type PublicationFieldClassification,
   type PublicationFieldVisibility,
   type PublicationSafeAccommodationSource,
@@ -266,7 +221,7 @@ export {
   type PublicationVisibilityPolicy,
   type VisibilityChoice,
 } from "./modules/customer-presentation/domain/snapshot-v1.js";
-export { canonicalPortalTripSnapshotV1Json } from "./modules/customer-presentation/domain/canonical-json.js";
+export { canonicalTripSnapshotV1Json } from "./modules/customer-presentation/domain/canonical-json.js";
 export {
   buildTripPublicationCandidate,
   buildTripPublicationCandidateFromSources,
@@ -284,15 +239,13 @@ export {
   type PublicationHistoryEntry,
   type PublicationHistoryPage,
   type PublishTripRequest,
-  type TripPublicationWithdrawalResult,
   type TripPublicationResult,
-  type WithdrawActivePublicationRequest,
 } from "./modules/customer-presentation/application/staff-publication-operations.js";
 export type {
   AccommodationPublicationSourcePort,
   FlightPublicationSourcePort,
-  PortalTripSnapshotHashPort,
-  PortalTripSnapshotValidatorPort,
+  TripSnapshotHashPort,
+  TripSnapshotValidatorPort,
   TripPublicationRevisionSource,
   TripPublicationSourceReadPort,
   TripPublicationSourcePort,

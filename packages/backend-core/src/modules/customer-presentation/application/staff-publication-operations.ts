@@ -21,19 +21,6 @@ export interface PublishTripRequest {
   readonly idempotencyKey: string;
 }
 
-export interface WithdrawActivePublicationRequest {
-  readonly reason: string;
-  readonly idempotencyKey: string;
-}
-
-export interface TripPublicationWithdrawalResult {
-  readonly status: "WITHDRAWN" | "ALREADY_WITHDRAWN";
-  readonly tripId: OpaqueId;
-  readonly publicationId: OpaqueId | null;
-  readonly version: number | null;
-  readonly withdrawnAt: string | null;
-}
-
 export interface PublicationHistoryEntry {
   readonly version: number;
   readonly publishedAt: string;
@@ -77,12 +64,6 @@ export interface StaffTripPublicationRepository {
     authorization: StaffAuthorizationOperationProof,
     beforeVersion: number | null,
   ): Promise<PublicationHistoryPage>;
-  withdrawActivePublication(
-    agencyId: OpaqueId,
-    tripId: OpaqueId,
-    request: WithdrawActivePublicationRequest,
-    authorization: StaffAuthorizationOperationProof,
-  ): Promise<TripPublicationWithdrawalResult>;
 }
 
 export interface StaffTripPublicationOperationsDependencies extends StaffAuthorizationDependencies {
@@ -101,11 +82,6 @@ export interface StaffTripPublicationOperations {
     tripId: unknown,
     beforeVersion?: unknown,
   ): Promise<PublicationHistoryPage>;
-  withdrawActivePublication(
-    cookieHeader: unknown,
-    tripId: unknown,
-    input: unknown,
-  ): Promise<TripPublicationWithdrawalResult>;
 }
 
 export class StalePublicationCandidateError extends Error {
@@ -142,10 +118,6 @@ const PREVIEW_PERMISSIONS = Object.freeze([
 const PUBLISH_PERMISSIONS = Object.freeze([
   "trip.view",
   "trip.publish",
-] as const satisfies readonly StaffPermissionId[]);
-const WITHDRAW_PERMISSIONS = Object.freeze([
-  "trip.view",
-  "trip.withdraw_publication",
 ] as const satisfies readonly StaffPermissionId[]);
 const RECENT_MFA_MAXIMUM_AGE_MS = 5 * 60 * 1_000;
 
@@ -190,44 +162,6 @@ const parsePublishRequest = (value: unknown): PublishTripRequest => {
     expectedProjectionHash: request.expectedProjectionHash,
     idempotencyKey: request.idempotencyKey,
   };
-};
-
-const parseWithdrawalRequest = (value: unknown): WithdrawActivePublicationRequest => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new StaffPublicationInputError();
-  }
-  const prototype = Object.getPrototypeOf(value);
-  if (prototype !== Object.prototype && prototype !== null) {
-    throw new StaffPublicationInputError();
-  }
-  const request = value as Record<string, unknown>;
-  const keys = Reflect.ownKeys(request);
-  if (
-    keys.some((key) => typeof key !== "string") ||
-    keys.toSorted().join("\u0000") !== ["idempotencyKey", "reason"].join("\u0000") ||
-    keys.some((key) => {
-      const descriptor = Object.getOwnPropertyDescriptor(request, key);
-      return (
-        descriptor === undefined || !descriptor.enumerable || !Object.hasOwn(descriptor, "value")
-      );
-    }) ||
-    typeof request.reason !== "string" ||
-    typeof request.idempotencyKey !== "string"
-  ) {
-    throw new StaffPublicationInputError();
-  }
-  const reason = request.reason.trim();
-  if (
-    reason.length < 1 ||
-    reason.length > 500 ||
-    containsControlCharacter(reason) ||
-    request.idempotencyKey.length < 1 ||
-    request.idempotencyKey.length > 128 ||
-    containsControlCharacter(request.idempotencyKey)
-  ) {
-    throw new StaffPublicationInputError();
-  }
-  return { reason, idempotencyKey: request.idempotencyKey };
 };
 
 const parseHistoryCursor = (value: unknown): number | null => {
@@ -304,22 +238,6 @@ export const createStaffTripPublicationOperations = (
         tripId,
         authorization,
         beforeVersion,
-      );
-    },
-    async withdrawActivePublication(cookieHeader, tripIdValue, requestValue) {
-      const tripId = parseTripId(tripIdValue);
-      const request = parseWithdrawalRequest(requestValue);
-      const authorization = await authorizePublicationOperation(
-        dependencies,
-        cookieHeader,
-        WITHDRAW_PERMISSIONS,
-        true,
-      );
-      return dependencies.repository.withdrawActivePublication(
-        asOpaqueId(authorization.session.agencyId),
-        tripId,
-        request,
-        authorization,
       );
     },
   };

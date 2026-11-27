@@ -374,8 +374,6 @@ describe.sequential("Trip workspace persistence", () => {
         return repository.updateAccommodation(input, authorization);
       },
       updateInternalSupplierNote: repository.updateInternalSupplierNote,
-      cancelTrip: repository.cancelTrip,
-      createRuntimeAcceptanceFixtureTrip: repository.createRuntimeAcceptanceFixtureTrip,
     };
     const operations = createStaffTripOperations({
       repository: revokingRepository,
@@ -2930,7 +2928,7 @@ describe.sequential("Trip workspace create and edit flows", () => {
       await expect(
         workspaceRepository.readTripWorkspace(agencyId, asOpaqueId(tripId), {
           ...authorization,
-          requiredPermissionIds: ["trip.access.manage"],
+          requiredPermissionIds: ["trip.publish"],
         }),
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
 

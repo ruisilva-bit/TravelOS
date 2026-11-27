@@ -499,7 +499,6 @@ describe.sequential("Staff invitations", () => {
     { permissionId: "agency.view", scopeKind: "AGENCY", accessLevel: "ALL" },
     { permissionId: "customer.edit", scopeKind: "AGENCY", accessLevel: "ALL" },
     { permissionId: "traveller.edit", scopeKind: "AGENCY", accessLevel: "ALL" },
-    { permissionId: "trip.access.manage", scopeKind: "AGENCY", accessLevel: "ALL" },
     { permissionId: "trip.edit", scopeKind: "AGENCY", accessLevel: "ALL" },
     { permissionId: "trip.preview", scopeKind: "AGENCY", accessLevel: "ALL" },
     { permissionId: "trip.publish", scopeKind: "AGENCY", accessLevel: "ALL" },

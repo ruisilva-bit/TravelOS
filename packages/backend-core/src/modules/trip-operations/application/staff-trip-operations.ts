@@ -8,12 +8,10 @@ import type { StaffPermissionId } from "../../../staff-access/permission-registr
 import { asOpaqueId, type OpaqueId } from "../../../shared-kernel/opaque-id.js";
 import type { TripSlice, Trip } from "../domain/trip-slice.js";
 import {
-  validateCancelTripInput,
   validateCreateTripWorkspaceInput,
   validateCreateTripSliceInput,
   validateUpdateAccommodationInput,
   validateUpdateInternalSupplierNoteInput,
-  type CancelTripInput,
   type CreateTripWorkspaceInput,
   type CreateTripSliceInput,
   type OperationalSliceRepository,
@@ -36,18 +34,12 @@ export interface StaffAuthorizationRepository {
 export interface StaffTripOperations {
   createTripWorkspace(cookieHeader: unknown, input: CreateTripWorkspaceInput): Promise<Trip>;
   createTripSlice(cookieHeader: unknown, input: CreateTripSliceInput): Promise<TripSlice>;
-  createRuntimeAcceptanceFixtureTrip(
-    cookieHeader: unknown,
-    input: unknown,
-    fixtureRunId: unknown,
-  ): Promise<TripSlice>;
   readTripSlice(cookieHeader: unknown, tripId: OpaqueId): Promise<TripSlice | null>;
   updateAccommodation(cookieHeader: unknown, input: UpdateAccommodationInput): Promise<TripSlice>;
   updateInternalSupplierNote(
     cookieHeader: unknown,
     input: UpdateInternalNoteInput,
   ): Promise<TripSlice>;
-  cancelTrip(cookieHeader: unknown, input: unknown): Promise<TripSlice>;
 }
 
 export interface StaffAuthorizationDependencies {
@@ -71,17 +63,6 @@ export class StaffAuthorizationError extends Error {
     );
     this.name = "M1StaffAuthorizationError";
     this.code = code;
-  }
-}
-
-export class RuntimeAcceptanceFixtureConflictError extends Error {
-  readonly code = "FIXTURE_RUN_CONFLICT" as const;
-  readonly recoveryFixtureRunId: OpaqueId | null;
-
-  constructor(recoveryFixtureRunId: OpaqueId | null) {
-    super("Runtime acceptance fixture run is unresolved");
-    this.name = "M1RuntimeAcceptanceFixtureConflictError";
-    this.recoveryFixtureRunId = recoveryFixtureRunId;
   }
 }
 
@@ -109,11 +90,6 @@ const TRIP_WORKSPACE_CREATE_PERMISSIONS = Object.freeze([
   "trip.view",
 ] as const satisfies readonly StaffPermissionId[]);
 
-const RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS = Object.freeze([
-  ...CREATE_PERMISSIONS,
-  "runtime_acceptance.fixture.manage",
-] as const satisfies readonly StaffPermissionId[]);
-
 const ACCOMMODATION_EDIT_PERMISSIONS = Object.freeze([
   ...COMPOSITE_READ_PERMISSIONS,
   "trip.edit",
@@ -124,20 +100,13 @@ const INTERNAL_NOTE_EDIT_PERMISSIONS = Object.freeze([
   "finance.manage_costs",
 ] as const satisfies readonly StaffPermissionId[]);
 
-const CANCEL_PERMISSIONS = Object.freeze([
-  ...COMPOSITE_READ_PERMISSIONS,
-  "trip.edit",
-] as const satisfies readonly StaffPermissionId[]);
-
 /** Fixed policy per operation; persistence adapters enforce it independently of caller input. */
 export const OPERATION_PERMISSION_REQUIREMENTS = Object.freeze({
   CREATE: CREATE_PERMISSIONS,
   WORKSPACE_CREATE: TRIP_WORKSPACE_CREATE_PERMISSIONS,
-  FIXTURE_CREATE: RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS,
   READ: COMPOSITE_READ_PERMISSIONS,
   ACCOMMODATION_EDIT: ACCOMMODATION_EDIT_PERMISSIONS,
   INTERNAL_NOTE_EDIT: INTERNAL_NOTE_EDIT_PERMISSIONS,
-  CANCEL: CANCEL_PERMISSIONS,
 });
 
 const sessionProofFrom = (value: unknown): StaffSessionAuthorizationProof | null => {
@@ -275,31 +244,6 @@ export const createStaffTripOperations = (
       return dependencies.repository.createTripSlice(normalizedInput, authorization);
     },
 
-    async createRuntimeAcceptanceFixtureTrip(cookieHeader, input, fixtureRunIdValue) {
-      const normalizedInput = validateCreateTripSliceInput(input as CreateTripSliceInput);
-      if (typeof fixtureRunIdValue !== "string") {
-        throw new Error("Invalid runtime acceptance fixture run identifier");
-      }
-      let fixtureRunId: OpaqueId;
-      try {
-        fixtureRunId = asOpaqueId(fixtureRunIdValue);
-      } catch {
-        throw new Error("Invalid runtime acceptance fixture run identifier");
-      }
-      const authorization = await authorizeOperation(
-        dependencies,
-        cookieHeader,
-        normalizedInput.agencyId,
-        RUNTIME_ACCEPTANCE_FIXTURE_CREATE_PERMISSIONS,
-        5 * 60 * 1_000,
-      );
-      return dependencies.repository.createRuntimeAcceptanceFixtureTrip(
-        normalizedInput,
-        fixtureRunId,
-        authorization,
-      );
-    },
-
     async readTripSlice(cookieHeader, tripId) {
       const normalizedTripId = asOpaqueId(tripId);
       const authorization = await authorizeOperation(
@@ -335,18 +279,6 @@ export const createStaffTripOperations = (
         INTERNAL_NOTE_EDIT_PERMISSIONS,
       );
       return dependencies.repository.updateInternalSupplierNote(normalizedInput, authorization);
-    },
-
-    async cancelTrip(cookieHeader, input) {
-      const normalizedInput: CancelTripInput = validateCancelTripInput(input);
-      const authorization = await authorizeOperation(
-        dependencies,
-        cookieHeader,
-        null,
-        CANCEL_PERMISSIONS,
-        5 * 60 * 1_000,
-      );
-      return dependencies.repository.cancelTrip(normalizedInput, authorization);
     },
   };
   return Object.freeze(operations);

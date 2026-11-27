@@ -22,8 +22,8 @@ When documents conflict, stop and repair the conflict. Do not let implementation
 | [DEPLOYMENT_MODEL.md](DEPLOYMENT_MODEL.md) | Dedicated-instance topology, environments, upgrades, backups and future fleet contract |
 | [DATA_MODEL.md](DATA_MODEL.md) | Logical relational model, money, constraints, persistence and migration policy |
 | [PUBLISHING_MODEL.md](PUBLISHING_MODEL.md) | Workspace/presentation separation, preview, publication and snapshot evolution |
-| [PERMISSIONS.md](PERMISSIONS.md) | Staff RBAC, Portal grants and authorization policy |
-| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Admin/Portal experience principles, tokens and accessibility |
+| [PERMISSIONS.md](PERMISSIONS.md) | Staff RBAC and authorization policy |
+| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Admin and customer-facing experience principles, tokens and accessibility |
 | [SECURITY_MODEL.md](SECURITY_MODEL.md) | Threat model, authentication, documents, privacy and security controls |
 
 ## Supporting records

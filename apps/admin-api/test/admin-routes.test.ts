@@ -292,7 +292,6 @@ const makeHarness = (
     getTripSlice: vi.fn().mockResolvedValue(slice),
     updateAccommodation: vi.fn().mockResolvedValue(slice),
     updateInternalSupplierNote: vi.fn().mockResolvedValue(slice),
-    cancelTrip: vi.fn().mockResolvedValue(slice),
   };
   const authorizationRepository = {
     getStaffAuthorizationSnapshot: vi.fn().mockResolvedValue({
@@ -320,7 +319,7 @@ const makeHarness = (
       customer: slice.customer,
       reservations: slice.reservations,
       supplierCosts: slice.supplierCosts,
-      INTERNAL_ONLY: "not-for-portal-or-workspace",
+      INTERNAL_ONLY: "not-for-customer-or-workspace",
     },
   ) as unknown as TripWorkspace;
   const workspaceRepository = {
@@ -819,7 +818,7 @@ describe("Admin Trip workspace V1 routes", () => {
       "title",
       "tripId",
     ]);
-    expect(JSON.stringify(response.body)).not.toContain("not-for-portal-or-workspace");
+    expect(JSON.stringify(response.body)).not.toContain("not-for-customer-or-workspace");
     expect(JSON.stringify(response.body)).not.toContain("supplierCosts");
     expect(JSON.stringify(response.body)).not.toContain(syntheticEmail);
   });

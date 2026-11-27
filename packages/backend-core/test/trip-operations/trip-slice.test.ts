@@ -22,10 +22,6 @@ import {
 
 const syntheticEmail = ["rui", "example.test"].join(String.fromCharCode(64));
 
-const rejectUnexpectedFixtureTripCreation = async (): Promise<never> => {
-  throw new Error("Unexpected fixture Trip creation in unit test");
-};
-
 const rejectUnexpectedTripWorkspaceCreation = async (): Promise<never> => {
   throw new Error("Unexpected minimal Trip workspace creation in unit test");
 };
@@ -249,10 +245,6 @@ describe("Stage 5 application invariants", () => {
         calls.updateInternalNote += 1;
         return undefined as never;
       },
-      async cancelTrip() {
-        return undefined as never;
-      },
-      createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
     await expect(
       createTripSlice(repository, { ...input(), unexpected: true } as never),
@@ -365,10 +357,6 @@ describe("Stage 5 application invariants", () => {
         calls.updateInternalNote += 1;
         return undefined as never;
       },
-      async cancelTrip() {
-        return undefined as never;
-      },
-      createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
     const base = input();
     const without = (value: object, key: string): Record<string, unknown> =>
@@ -693,10 +681,6 @@ describe("Stage 5 application invariants", () => {
       async updateInternalSupplierNote() {
         return undefined as never;
       },
-      async cancelTrip() {
-        return undefined as never;
-      },
-      createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
     await expect(createTripSlice(repository, input())).resolves.toMatchObject({ value: input() });
   });
@@ -718,10 +702,6 @@ describe("Stage 5 application invariants", () => {
       async updateInternalSupplierNote() {
         return undefined as never;
       },
-      async cancelTrip() {
-        return undefined as never;
-      },
-      createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
     await createTripSlice(repository, {
       ...input(),
@@ -792,10 +772,6 @@ describe("Stage 5 application invariants", () => {
         calls.push("workspace:update-internal-note");
         return undefined as never;
       },
-      async cancelTrip() {
-        return undefined as never;
-      },
-      createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
     const operations = createStaffTripOperations({
       repository,
@@ -865,10 +841,6 @@ describe("Stage 5 application invariants", () => {
         workspaceCalls.push("update-internal-note");
         return undefined as never;
       },
-      async cancelTrip() {
-        return undefined as never;
-      },
-      createRuntimeAcceptanceFixtureTrip: rejectUnexpectedFixtureTripCreation,
     };
     const makeOperations = (snapshot: StaffAuthorizationSnapshot | null) =>
       createStaffTripOperations({

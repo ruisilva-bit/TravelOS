@@ -101,13 +101,13 @@ try {
 
   const wrongBundlePath = scanSensitiveText({
     text: `${tokenAssignmentKey}: "${lowEntropySentinel}"\n`,
-    file: "apps/portal-web/dist/assets/index-DNU0NKRm.js",
+    file: "apps/admin-web/dist/assets/index-DNU0NKRm.js",
     allowlist: [{ path: reviewedBundlePath, rule: "secret-assignment", line: 1 }],
     additionalRules: browserLeakageRules,
   });
   assert.deepEqual(wrongBundlePath.findings, [
     {
-      file: "apps/portal-web/dist/assets/index-DNU0NKRm.js",
+      file: "apps/admin-web/dist/assets/index-DNU0NKRm.js",
       rule: "secret-assignment",
       line: 1,
     },
@@ -144,7 +144,7 @@ try {
   );
 
   const safeCodeReference = scanSensitiveText({
-    text: `${passwordKey}: runtimeCredentials.portal\n${passwordKey}: runtimeCredentials[role]\n`,
+    text: `${passwordKey}: runtimeCredentials.worker\n${passwordKey}: runtimeCredentials[role]\n`,
     file: "fixtures/safe-code-credential-reference.ts",
   });
   assert.equal(safeCodeReference.findings.length, 0);

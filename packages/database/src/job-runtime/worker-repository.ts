@@ -174,14 +174,14 @@ export const createWorkerRepository = (
     dispatch: () =>
       transaction(async (database) => {
         const result = await sql`WITH candidates AS (
-        SELECT source."agencyId", source."messageId", source."publicationMessageId", source."grantMessageId"
+        SELECT source."agencyId", source."messageId", source."publicationMessageId"
         FROM "integration"."activity_source" AS source
         WHERE NOT EXISTS (SELECT 1 FROM "integration"."outbox_delivery" AS delivery
           WHERE delivery."agencyId"=source."agencyId" AND delivery."messageId"=source."messageId" AND delivery."consumer"='ACTIVITY_V1')
         ORDER BY source."occurredAt", source."messageId" LIMIT 100
       ), inserted AS (
-        INSERT INTO "integration"."outbox_delivery" ("agencyId", "messageId", "consumer", "publicationMessageId", "grantMessageId", "state")
-        SELECT "agencyId", "messageId", 'ACTIVITY_V1', "publicationMessageId", "grantMessageId", 'PENDING' FROM candidates
+        INSERT INTO "integration"."outbox_delivery" ("agencyId", "messageId", "consumer", "publicationMessageId", "state")
+        SELECT "agencyId", "messageId", 'ACTIVITY_V1', "publicationMessageId", 'PENDING' FROM candidates
         ON CONFLICT ("agencyId", "messageId", "consumer") DO NOTHING RETURNING "agencyId", "messageId", "consumer"
       ) INSERT INTO "job_runtime"."job" ("agencyId", "messageId", "consumer", "state")
         SELECT "agencyId", "messageId", "consumer", 'PENDING' FROM inserted RETURNING "messageId"`.execute(

@@ -1,4 +1,4 @@
-import { PORTAL_AUTH_BASE_PATH, STAFF_AUTH_BASE_PATH, type AuthRealm } from "./realm.js";
+import { STAFF_AUTH_BASE_PATH, type AuthRealm } from "./realm.js";
 
 export interface AuthHttpRequest {
   readonly method: string;
@@ -131,7 +131,7 @@ export const dispatchAuthRealmRequest = async (
   ) {
     return { status: 403, headers: new Headers(), body: new Uint8Array() };
   }
-  const expectedBasePath = realm.kind === "STAFF" ? STAFF_AUTH_BASE_PATH : PORTAL_AUTH_BASE_PATH;
+  const expectedBasePath = STAFF_AUTH_BASE_PATH;
   if (
     realm.basePath !== expectedBasePath ||
     !authRequestPathMatchesBase(request.url, targetUrl, expectedBasePath)

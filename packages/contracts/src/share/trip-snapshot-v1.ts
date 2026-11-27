@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const PortalScheduledTripTimeV1Schema = z
+const ScheduledTripTimeV1Schema = z
   .object({
     localDate: z.iso.date(),
     localTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?$/u),
@@ -11,7 +11,7 @@ const PortalScheduledTripTimeV1Schema = z
   })
   .strict();
 
-const PortalTripFlightV1Schema = z
+const TripFlightV1Schema = z
   .object({
     kind: z.literal("FLIGHT"),
     title: z.string().min(1).max(300),
@@ -20,8 +20,8 @@ const PortalTripFlightV1Schema = z
     flightNumber: z.string().min(1).max(50),
     departureAirport: z.string().length(3),
     arrivalAirport: z.string().length(3),
-    departure: PortalScheduledTripTimeV1Schema,
-    arrival: PortalScheduledTripTimeV1Schema,
+    departure: ScheduledTripTimeV1Schema,
+    arrival: ScheduledTripTimeV1Schema,
     terminal: z.string().max(100).nullable(),
     cabin: z.string().max(100).nullable(),
     baggage: z.string().max(500).nullable(),
@@ -30,14 +30,14 @@ const PortalTripFlightV1Schema = z
   })
   .strict();
 
-const PortalTripAccommodationV1Schema = z
+const TripAccommodationV1Schema = z
   .object({
     kind: z.literal("ACCOMMODATION"),
     title: z.string().min(1).max(300),
     description: z.string().max(10_000).nullable(),
     propertyName: z.string().min(1).max(300),
-    checkIn: PortalScheduledTripTimeV1Schema,
-    checkOut: PortalScheduledTripTimeV1Schema,
+    checkIn: ScheduledTripTimeV1Schema,
+    checkOut: ScheduledTripTimeV1Schema,
     roomDescription: z.string().max(500).nullable(),
     boardType: z.string().max(200).nullable(),
     customerBookingReference: z.string().max(200).nullable(),
@@ -45,7 +45,7 @@ const PortalTripAccommodationV1Schema = z
   .strict();
 
 /** Independently authored, strict customer allowlist; never derive from Admin/domain rows. */
-export const PortalTripSnapshotV1Schema = z
+export const TripSnapshotV1Schema = z
   .object({
     schemaVersion: z.literal(1),
     trip: z
@@ -55,9 +55,7 @@ export const PortalTripSnapshotV1Schema = z
         endDate: z.iso.date(),
       })
       .strict(),
-    items: z.array(
-      z.discriminatedUnion("kind", [PortalTripFlightV1Schema, PortalTripAccommodationV1Schema]),
-    ),
+    items: z.array(z.discriminatedUnion("kind", [TripFlightV1Schema, TripAccommodationV1Schema])),
   })
   .strict()
   .superRefine((snapshot, context) => {
@@ -88,4 +86,4 @@ export const PortalTripSnapshotV1Schema = z
     }
   });
 
-export type PortalTripSnapshotV1 = z.infer<typeof PortalTripSnapshotV1Schema>;
+export type TripSnapshotV1 = z.infer<typeof TripSnapshotV1Schema>;

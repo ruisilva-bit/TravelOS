@@ -52,10 +52,10 @@ export interface TripPublicationSourceReadPort extends TripPublicationSourceUnit
   ): Promise<Result>;
 }
 
-export interface PortalTripSnapshotHashPort {
+export interface TripSnapshotHashPort {
   sha256(canonicalJson: string): Promise<string>;
 }
 
-export interface PortalTripSnapshotValidatorPort {
+export interface TripSnapshotValidatorPort {
   validate(value: unknown): void;
 }

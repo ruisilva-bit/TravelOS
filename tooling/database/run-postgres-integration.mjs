@@ -279,12 +279,7 @@ try {
   await chmod(runRoot, 0o755);
   await chmod(packageRoot, 0o755);
   summary.postgresVersion = provisioned.postgresql.serverVersion;
-  for (const filter of [
-    "@travelos/database...",
-    "@travelos/admin-api...",
-    "@travelos/portal-api...",
-    "@travelos/worker...",
-  ]) {
+  for (const filter of ["@travelos/database...", "@travelos/admin-api...", "@travelos/worker..."]) {
     const build = run(corepack, ["pnpm", "--filter", filter, "build"], buildEnvironment);
     if (build.exitCode !== 0) {
       process.stderr.write(`${build.stdout}${build.stderr}`.slice(-4_000));

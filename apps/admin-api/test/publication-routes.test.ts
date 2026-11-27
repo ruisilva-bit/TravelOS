@@ -96,7 +96,6 @@ describe("Admin Stage 6 publication routes", () => {
       previewTrip,
       publishTrip: vi.fn(),
       listPublicationHistory: vi.fn(),
-      withdrawActivePublication: vi.fn(async () => undefined as never),
     });
     const response = await harness.invoke("GET /api/admin/trips/:tripId/publication-preview");
     expect(response.statusCode).toBe(200);
@@ -127,7 +126,6 @@ describe("Admin Stage 6 publication routes", () => {
       previewTrip: vi.fn(),
       publishTrip: vi.fn(),
       listPublicationHistory,
-      withdrawActivePublication: vi.fn(async () => undefined as never),
     });
     const rejected = await harness.invoke("GET /api/admin/trips/:tripId/publications", undefined, {
       unknown: "value",
@@ -152,7 +150,6 @@ describe("Admin Stage 6 publication routes", () => {
       previewTrip: vi.fn(),
       publishTrip,
       listPublicationHistory: vi.fn(),
-      withdrawActivePublication: vi.fn(async () => undefined as never),
     });
     const response = await harness.invoke("POST /api/admin/trips/:tripId/publications", {
       expectedWorkspaceRevision: "7",

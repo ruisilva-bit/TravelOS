@@ -4,7 +4,9 @@
     "mode": "source",
     "unit": "@travelos/backend-core",
     "file": "tooling/architecture/fixtures/layered-boundaries/backend-better-auth-static.ts",
-    "declaredDependencies": { "better-auth": "1.6.27" },
+    "declaredDependencies": {
+      "better-auth": "1.6.27"
+    },
     "expectedRule": "architecture/external-dependency-not-allowed"
   },
   {
@@ -12,7 +14,9 @@
     "mode": "source",
     "unit": "@travelos/backend-core",
     "file": "tooling/architecture/fixtures/layered-boundaries/backend-better-auth-deep.ts",
-    "declaredDependencies": { "better-auth": "1.6.27" },
+    "declaredDependencies": {
+      "better-auth": "1.6.27"
+    },
     "expectedRule": "architecture/external-dependency-not-allowed"
   },
   {
@@ -20,7 +24,9 @@
     "mode": "source",
     "unit": "@travelos/backend-core",
     "file": "tooling/architecture/fixtures/layered-boundaries/backend-auth-alias.ts",
-    "declaredDependencies": { "auth": "1.6.27" },
+    "declaredDependencies": {
+      "auth": "1.6.27"
+    },
     "expectedRule": "architecture/external-dependency-not-allowed"
   },
   {
@@ -28,7 +34,9 @@
     "mode": "source",
     "unit": "@travelos/backend-core",
     "file": "tooling/architecture/fixtures/layered-boundaries/backend-design-system.ts",
-    "declaredDependencies": { "@travelos/design-system": "workspace:*" },
+    "declaredDependencies": {
+      "@travelos/design-system": "workspace:*"
+    },
     "expectedRule": "architecture/workspace-dependency-not-allowed"
   },
   {
@@ -48,25 +56,21 @@
     "expectedRule": "architecture/computed-module-specifier-forbidden"
   },
   {
-    "name": "portal-admin-contract-inversion",
-    "mode": "source",
-    "unit": "@travelos/portal-api",
-    "file": "tooling/architecture/fixtures/layered-boundaries/portal-admin-contract.ts",
-    "declaredDependencies": { "@travelos/contracts": "workspace:*" },
-    "expectedRule": "architecture/workspace-dependency-not-allowed"
-  },
-  {
     "name": "backend-manifest-better-auth",
     "mode": "manifest",
     "unit": "@travelos/backend-core",
-    "declaredDependencies": { "better-auth": "1.6.27" },
+    "declaredDependencies": {
+      "better-auth": "1.6.27"
+    },
     "expectedRule": "architecture/manifest-dependency-not-allowed"
   },
   {
     "name": "backend-manifest-design-system",
     "mode": "manifest",
     "unit": "@travelos/backend-core",
-    "declaredDependencies": { "@travelos/design-system": "workspace:*" },
+    "declaredDependencies": {
+      "@travelos/design-system": "workspace:*"
+    },
     "expectedRule": "architecture/manifest-dependency-not-allowed"
   }
 ]

@@ -215,70 +215,6 @@ importers:
         specifier: 8.2.1
         version: 8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)
 
-  apps/portal-api:
-    dependencies:
-      '@nestjs/common':
-        specifier: 11.1.29
-        version: 11.1.29(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0)
-      '@nestjs/core':
-        specifier: 11.1.29
-        version: 11.1.29(@nestjs/common@11.1.29(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/platform-express@11.1.29)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/platform-express':
-        specifier: 11.1.29
-        version: 11.1.29(@nestjs/common@11.1.29(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@11.1.29)(supports-color@7.2.0)
-      '@travelos/auth-adapters':
-        specifier: workspace:*
-        version: link:../../packages/auth-adapters
-      '@travelos/config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@travelos/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@travelos/observability':
-        specifier: workspace:*
-        version: link:../../packages/observability
-      '@travelos/portal-safe-core':
-        specifier: workspace:*
-        version: link:../../packages/portal-safe-core
-      kysely:
-        specifier: 0.29.5
-        version: 0.29.5
-      reflect-metadata:
-        specifier: 0.2.2
-        version: 0.2.2
-      rxjs:
-        specifier: 7.8.2
-        version: 7.8.2
-
-  apps/portal-web:
-    dependencies:
-      '@travelos/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@travelos/design-system':
-        specifier: workspace:*
-        version: link:../../packages/design-system
-      better-auth:
-        specifier: 1.6.27
-        version: 1.6.27(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
-      react:
-        specifier: 19.2.8
-        version: 19.2.8
-      react-dom:
-        specifier: 19.2.8
-        version: 19.2.8(react@19.2.8)
-    devDependencies:
-      '@tailwindcss/vite':
-        specifier: 4.3.3
-        version: 4.3.3(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
-      '@vitejs/plugin-react':
-        specifier: 6.0.5
-        version: 6.0.5(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
-      vite:
-        specifier: 8.2.1
-        version: 8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)
-
   apps/worker:
     dependencies:
       '@travelos/backend-core':
@@ -357,12 +293,6 @@ importers:
         version: 8.23.0
 
   packages/observability: {}
-
-  packages/portal-safe-core:
-    dependencies:
-      '@travelos/contracts':
-        specifier: workspace:*
-        version: link:../contracts
 
   packages/test-support: {}
 
