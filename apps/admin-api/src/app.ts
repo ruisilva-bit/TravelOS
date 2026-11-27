@@ -3,6 +3,7 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import { hostHeaderMatchesExpectedHost } from "@travelos/auth-adapters";
 import { createRequestTelemetry } from "@travelos/observability";
 
+import type { AdminHealthEnvironment } from "@travelos/contracts/admin";
 import { AdminApiModule } from "./app.module.js";
 import { registerAdminAuthBridge, type AdminAuthBridgeOptions } from "./auth-bridge.js";
 import { registerPublicShareRoutes, type PublicShareRouteOptions } from "./public-share-routes.js";
@@ -14,6 +15,8 @@ import {
 
 export interface CreateAdminApiOptions {
   readonly expectedHost: string;
+  /** Manifest environment reported by liveness; test harnesses default to DEVELOPMENT. */
+  readonly environment?: AdminHealthEnvironment;
   readonly auth?: AdminAuthBridgeOptions;
   /** Unauthenticated read-only customer share route, `/v/:token`. */
   readonly publicShare?: PublicShareRouteOptions;
@@ -47,11 +50,14 @@ export const createAdminApi = async (
     throw new Error("Admin API and Staff auth must use the same canonical manifest host");
   }
 
-  const application = await NestFactory.create<NestExpressApplication>(AdminApiModule, {
-    abortOnError: true,
-    logger: false,
-    bodyParser: false,
-  });
+  const application = await NestFactory.create<NestExpressApplication>(
+    AdminApiModule.register(options.environment ?? "DEVELOPMENT"),
+    {
+      abortOnError: true,
+      logger: false,
+      bodyParser: false,
+    },
+  );
   application.use(createAdminCacheControlMiddleware());
   application.use(createAdminHostValidationMiddleware(options.expectedHost));
   application.use(createRequestTelemetry("admin-api"));

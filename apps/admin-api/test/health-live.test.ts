@@ -20,4 +20,24 @@ describe("Admin API liveness", () => {
       await application.close();
     }
   });
+
+  it("reports the manifest INTERNAL environment", async () => {
+    const application = await createAdminApi({
+      expectedHost: "admin.travelos.test",
+      environment: "INTERNAL",
+    });
+    try {
+      const response = await request(application.getHttpServer())
+        .get("/health/live")
+        .set("Host", "admin.travelos.test")
+        .expect(200);
+      expect(response.body).toEqual({
+        status: "ok",
+        service: "admin-api",
+        environment: "INTERNAL",
+      });
+    } finally {
+      await application.close();
+    }
+  });
 });

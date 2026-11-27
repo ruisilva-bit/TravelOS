@@ -1,8 +1,15 @@
-import { Module } from "@nestjs/common";
+import { Module, type DynamicModule } from "@nestjs/common";
+import type { AdminHealthEnvironment } from "@travelos/contracts/admin";
 
-import { AdminHealthController } from "./health.controller.js";
+import { ADMIN_HEALTH_ENVIRONMENT, AdminHealthController } from "./health.controller.js";
 
-@Module({
-  controllers: [AdminHealthController],
-})
-export class AdminApiModule {}
+@Module({})
+export class AdminApiModule {
+  static register(environment: AdminHealthEnvironment): DynamicModule {
+    return {
+      module: AdminApiModule,
+      controllers: [AdminHealthController],
+      providers: [{ provide: ADMIN_HEALTH_ENVIRONMENT, useValue: environment }],
+    };
+  }
+}

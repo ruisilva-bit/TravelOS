@@ -182,6 +182,7 @@ const main = async (): Promise<void> => {
   const runtime = smoke || smokeListener ? null : await createAdminAuthOptions(manifest);
   const application = await createAdminApi({
     expectedHost: manifest.hosts.admin,
+    environment: manifest.environment,
     ...(runtime?.options ?? {}),
   }).catch(async (error: unknown) => {
     await runtime?.destroy();

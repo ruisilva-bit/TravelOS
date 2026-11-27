@@ -1,4 +1,9 @@
-export { AdminHealthLiveResponseSchema, type AdminHealthLiveResponse } from "./health.js";
+export {
+  AdminHealthEnvironmentSchema,
+  AdminHealthLiveResponseSchema,
+  type AdminHealthEnvironment,
+  type AdminHealthLiveResponse,
+} from "./health.js";
 export { AdminStaffSessionContextSchema, type AdminStaffSessionContext } from "./auth/index.js";
 export {
   AdminInternalOnlyClassificationSchema,

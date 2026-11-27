@@ -3,7 +3,7 @@
   "environment": "DEVELOPMENT",
   "instanceId": "travelos-dev-local",
   "compatibility": {
-    "releaseVersion": "0.0.0-stage4",
+    "releaseVersion": "0.1.0",
     "releaseTarget": "development:stage-4",
     "configSchemaVersion": 3,
     "databaseSchema": {

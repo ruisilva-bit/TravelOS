@@ -77,7 +77,7 @@ export const DevelopmentInstanceManifestSchema = z
     instanceId: z.string().regex(/^travelos-[a-z0-9]+(?:-[a-z0-9]+)*$/),
     compatibility: z
       .object({
-        releaseVersion: z.string().regex(/^0\.0\.0-stage4$/),
+        releaseVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
         releaseTarget: z.string().regex(/^development:[a-z0-9][a-z0-9.-]{2,63}$/),
         configSchemaVersion: z.literal(3),
         databaseSchema: z
