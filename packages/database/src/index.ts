@@ -30,3 +30,5 @@ export { createPostgresPublicShareReader } from "./share-links/public-share-read
 export { createShareTokenCrypto } from "./share-links/share-token-crypto.js";
 export { createPostgresLeadRepository } from "./sales/lead-repository.js";
 export { createPostgresStaffLeadOperations } from "./sales/staff-lead-operations.js";
+export { createPostgresCrmRepository } from "./crm/crm-repository.js";
+export { createPostgresStaffCrmOperations } from "./crm/staff-crm-operations.js";

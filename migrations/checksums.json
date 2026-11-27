@@ -9,6 +9,10 @@
     {
       "file": "0002_drop_publication_outbox.cjs",
       "sha256": "e491e3a5654d16dfb1e8de6126a253f6ecb5ccfa5909ee197a68793b36f9f63b"
+    },
+    {
+      "file": "0003_crm_details.cjs",
+      "sha256": "e98f3a2f4ee08ae4a6b4cfb08d97ba111cc2b3bea99444800b020c9be8a8bb13"
     }
   ]
 }

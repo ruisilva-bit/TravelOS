@@ -55,6 +55,30 @@ describe("TripSnapshotV1", () => {
     ).toBe(false);
   });
 
+  it("rejects CRM traveller identity fields at the trip, item and top level", () => {
+    const identityFields = {
+      passportNumber: "PT-SECRET-42",
+      passportExpiry: "2031-07-01",
+      birthDate: "1984-03-02",
+      phone: "+351 912 345 678",
+      nationality: "PT",
+      notes: "internal",
+    } as const;
+    for (const [key, value] of Object.entries(identityFields)) {
+      expect(TripSnapshotV1Schema.safeParse({ ...snapshot, [key]: value }).success).toBe(false);
+      expect(
+        TripSnapshotV1Schema.safeParse({ ...snapshot, trip: { ...snapshot.trip, [key]: value } })
+          .success,
+      ).toBe(false);
+      expect(
+        TripSnapshotV1Schema.safeParse({
+          ...snapshot,
+          items: [{ ...snapshot.items[0], [key]: value }],
+        }).success,
+      ).toBe(false);
+    }
+  });
+
   it("declares only customer presentation members and keeps the schema version explicit", () => {
     expect(Object.keys(snapshot).toSorted()).toEqual(["items", "schemaVersion", "trip"]);
     expect(JSON.stringify(snapshot)).not.toMatch(
