@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceFrame } from "@travelos/design-system";
 
@@ -727,9 +727,12 @@ describe("Admin Web", () => {
 
     expect(await screen.findByRole("heading", { name: "Convites de equipa" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Equipa" })).toHaveAttribute("aria-current", "page");
-    expect(mocks.fetch).toHaveBeenCalledWith(
-      "/api/admin/staff/invitations?limit=25",
-      expect.objectContaining({ method: "GET", credentials: "same-origin", cache: "no-store" }),
+    // The heading renders before the list request is issued; wait for it instead of racing.
+    await waitFor(() =>
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "/api/admin/staff/invitations?limit=25",
+        expect.objectContaining({ method: "GET", credentials: "same-origin", cache: "no-store" }),
+      ),
     );
     expect(mocks.fetch).not.toHaveBeenCalledWith("/api/admin/trips?limit=25", expect.anything());
   });
