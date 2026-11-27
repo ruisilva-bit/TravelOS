@@ -2,9 +2,9 @@
 module.exports = {
   forbidden: [
     {
-      name: "portal-fixture-cannot-import-backend-core",
+      name: "browser-fixture-cannot-import-backend-core",
       severity: "error",
-      from: { path: "^tooling/architecture/fixtures/invalid-portal-import/" },
+      from: { path: "^tooling/architecture/fixtures/invalid-browser-import/" },
       to: { path: "^packages/backend-core/" },
     },
     {

@@ -3,72 +3,8 @@
   "algorithm": "sha256",
   "migrations": [
     {
-      "file": "0001_foundation_schemas.cjs",
-      "sha256": "a5cc693a28129686f83fd4f8fbaddd754348e167f1de931a296b6f22abc23482"
-    },
-    {
-      "file": "0002_runtime_schema_boundaries.cjs",
-      "sha256": "bc5b9f0a4439a80b2167af4722b1245a9982c6226fbc8f7cfefae10fa1fce4fd"
-    },
-    {
-      "file": "0003_creator_default_privileges.cjs",
-      "sha256": "7c4ecf09cdaabef7aa96d38af8d46ad4405d31c0b340cfcabd89e3c6ce5f0138"
-    },
-    {
-      "file": "0004_authentication_realms.cjs",
-      "sha256": "76f5ac720afdcd4fd7aa8a16790c7c24e08a9fb97341c00e7de62d21303e9c62"
-    },
-    {
-      "file": "0005_root_agency_staff_authorization.cjs",
-      "sha256": "b6be1816bd5751f08cfabd8399cbc8b4b374042ba97edb912fb37953cae34661"
-    },
-    {
-      "file": "0006_stage4_authorization_hardening.cjs",
-      "sha256": "51f3f8a59028e5650990de79332b05a5a9249c72dadcae567e522e819619f93f"
-    },
-    {
-      "file": "0007_stage5_m1_domain_slice.cjs",
-      "sha256": "e52672ef7d720488b7b274cef30f3c89d68d8dd88fc616dc8baf356ac5265ddf"
-    },
-    {
-      "file": "0008_stage5_cardinality_only.cjs",
-      "sha256": "8120a68cd1f8b9799029b818d8431f0c18fdd8683cf0554966263c43c9922d20"
-    },
-    {
-      "file": "0009_stage5_revision_and_lock_version_hardening.cjs",
-      "sha256": "ce927a10e9001098d9cac648d74032d2bf73bb6d5dbee5844cd01cf963c3ab2c"
-    },
-    {
-      "file": "0010_stage5_temporal_persistence_parity.cjs",
-      "sha256": "d7961fbf06cda8b222fd1219de6d9aec85a0205fb1d186e809260d579c598030"
-    },
-    {
-      "file": "0011_stage6_trip_publication.cjs",
-      "sha256": "a6b4924aca43670c2b1034dca7471df349476a4922ac8370dbde9e3bb5ce6503"
-    },
-    {
-      "file": "0012_stage7_portal_trip_access.cjs",
-      "sha256": "4bf653fdc7522443ea321d98d448934ec1b5d0c4e8d4abd904360182ada5ade8"
-    },
-    {
-      "file": "0013_stage7_runtime_acceptance_cleanup.cjs",
-      "sha256": "f8d45edb3625a79882c8b8569b45ce2c449168b8ef02fb1f97bfea6f6bcbd3ec"
-    },
-    {
-      "file": "0014_stage8_worker_activity.cjs",
-      "sha256": "cde21a83dc078a888d30210217e040fd47a5dc5b38993f98ce8ddf06f4c741c6"
-    },
-    {
-      "file": "0015_stage9_trip_workspace_writes.cjs",
-      "sha256": "21e5a124e986406b689b2b38496be1502511990bdbad5ce4bc27b1c009e8b3c9"
-    },
-    {
-      "file": "0016_stage9_staff_invitations.cjs",
-      "sha256": "a1734cef25a350d22de35b1a967282375c46b894c434601d781f925e33eb6070"
-    },
-    {
-      "file": "0017_m2_sales_lead.cjs",
-      "sha256": "33ded36ed997a7ce2b38ad90bb1bf01ef50c82754b3c44b98b96079951c48fff"
+      "file": "0001_baseline.cjs",
+      "sha256": "c41446182bfb4ba2cbdb3aca60997ae8a82388d6a52bd6379caa2e1dedb8459f"
     }
   ]
 }

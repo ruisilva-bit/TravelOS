@@ -5,7 +5,7 @@
 
 ## 1. Architectural drivers
 
-1. A Portal release must be isolated from mutable workspace state.
+1. A customer share link must read a frozen snapshot, isolated from mutable workspace state.
 2. Sensitive identities/documents/financial data require default-deny authorization and audit.
 3. One codebase and one migration chain must serve reproducible dedicated deployments.
 4. Per-instance runtime footprint matters when fleet size grows.
@@ -18,13 +18,9 @@
 ```mermaid
 flowchart TD
   STAFF[Agency Staff] --> AW[Admin Web SPA]
-  CUSTOMER[Portal Customer] --> PW[Portal Web SPA]
   AW --> AA[Admin API / NestJS]
-  PW --> PA[Portal API / NestJS]
   AA --> PG[(Independent PostgreSQL)]
-  PA --> PG
   AA --> ST[Private Document Storage]
-  PA --> ST
   WK[Worker] --> PG
   WK --> ST
   WK --> EXT[Provider APIs]
@@ -32,7 +28,7 @@ flowchart TD
   OB --> WK
 ```
 
-All boxes except external providers are one TravelOS release and one dedicated instance. Separate processes/composition roots are security and workload boundaries, not independently versioned microservices. There is no synchronous Admin API → Portal API call.
+All boxes except external providers are one TravelOS release and one dedicated instance. Separate processes/composition roots are security and workload boundaries, not independently versioned microservices. 
 
 ## 3. Final stack decision
 
@@ -40,12 +36,11 @@ All boxes except external providers are one TravelOS release and one dedicated i
 |---|---|---|
 | Language/runtime | TypeScript on one pinned active Node.js LTS | Shared contracts/tooling; runtime validation still required |
 | Admin Web | React SPA + Vite static build | Authenticated app has no SSR/SEO need; removes a Node web runtime per instance |
-| Portal Web | React SPA + Vite static build | Mobile authenticated app; runtime branding/data fetched safely; no per-Agency build |
-| API delivery | Two NestJS composition roots: Admin API and Portal API | Nest modules/DI/OpenAPI ergonomics; separate Portal process/DB role enforces data boundary |
+| API delivery | NestJS composition root: Admin API (plus the Worker) | Nest modules/DI/OpenAPI ergonomics |
 | Database | PostgreSQL, one independent DB per instance; exact supported major selected/pinned at M1 bootstrap | Strong transactions/constraints/exact types; avoid accidental host default, then upgrade only as a tested fleet operation |
 | Data access | Kysely + `pg` driver | Typed, explicit SQL and transactions with strict mappers; no ORM entity leakage |
 | Migrations | `node-pg-migrate`, reviewed deterministic SQL | PostgreSQL-native constraints/indexes and fleet-safe migration control |
-| Auth | Two isolated Better Auth instances at Nest adapters | Avoid custom crypto/session implementation while preserving realm separation |
+| Auth | One Better Auth instance (Staff realm) at the Nest adapter | Avoid custom crypto/session implementation; staff login only, no customer login (ADR-016) |
 | Workspaces | pnpm workspaces only | Enough package orchestration initially; no demonstrated need for Turborepo |
 | UI | Tailwind CSS + owned design-system components; Radix primitives where useful | Constrained implementation and accessibility; shadcn-style source is owned, not a black-box system |
 | Validation/contracts | Zod at trust boundaries; OpenAPI generated from canonical API schemas | Runtime safety and one contract owner |
@@ -89,20 +84,18 @@ The shared kernel is deliberately tiny: opaque IDs, Clock interface, Money/Curre
 | Sales | CRM stable query contracts, Organization, shared kernel |
 | Trip Operations | Sales/CRM stable IDs/snapshots, Organization, shared kernel |
 | Customer Presentation write side | Trip/Organization publication-source ports, shared schema registry |
-| Portal safe core | Portal Access + Customer Presentation read contracts + safe Document grant port only |
 | Finance | Sales/Trip contracts, Money kernel |
-| Documents | stable subject IDs, Portal grant contract, StorageProvider port |
+| Documents | stable subject IDs, StorageProvider port |
 | Activity/Audit | event contracts, never module repositories |
 | Integrations | ports and anti-corruption maps; core modules do not depend back |
 
-Dependency cycles fail CI via TypeScript project references/package exports plus an import-graph rule (for example dependency-cruiser/ESLint). Portal API has its own allowlist and cannot import workspace module paths.
+Dependency cycles fail CI via TypeScript project references/package exports plus an import-graph rule (for example dependency-cruiser/ESLint).
 
 ## 6. API architecture
 
 ### Surfaces
 
 - `/api/admin/v1/*` — staff realm, commands and operational queries.
-- `/api/portal/v1/*` — Portal realm, active published read models and explicit Portal commands.
 - `/api/webhooks/v1/:provider/*` — provider-specific verified ingress adapter.
 - `/internal/*` — localhost/private operational health/version only; never exposed publicly.
 
@@ -111,7 +104,7 @@ REST is the V1 external style. GraphQL is unnecessary for the bounded client sur
 ### Contract rules
 
 - Zod schemas in `packages/contracts` own external shapes and reject unknown input fields.
-- Admin and Portal DTOs are independent; “shared Trip DTO” is forbidden.
+- Admin and customer-facing (share link snapshot) DTOs are independent; “shared Trip DTO” is forbidden.
 - OpenAPI is generated in CI from canonical schemas and diffed for breaking changes.
 - Errors follow Problem Details-style shape with stable TravelOS code, safe detail and correlation ID.
 - Mutations accept expected `lockVersion`/workspace revision and return `409` on conflict.
@@ -127,13 +120,9 @@ REST is the V1 external style. GraphQL is unnecessary for the bounded client sur
 
 Owns staff authentication, authorized workspace commands/queries, preview/publish commands and Admin document operations. It has an Admin runtime pool, not migration-owner credentials.
 
-### Portal API
-
-Owns Portal authentication, active-publication reads, TripAccessGrant evaluation and grant-safe document downloads. It uses a Portal-restricted PostgreSQL role and cannot query workspace schemas. Its package graph exposes no workspace repository.
-
 ### Worker
 
-Owns outbox dispatch, TravelOS job execution, provider calls, scans, notifications, backfills and projections. Each handler receives only the ports/credentials it needs. Queue backlog cannot block synchronous Admin/Portal health unnecessarily.
+Owns outbox dispatch, TravelOS job execution, provider calls, scans, notifications, backfills and projections. Each handler receives only the ports/credentials it needs. Queue backlog cannot block synchronous Admin health unnecessarily.
 
 ## 8. Transactions and concurrency
 
@@ -218,15 +207,12 @@ Audit is insert-only security/accountability evidence written synchronously for 
 TravelOS/
 ├── apps/
 │   ├── admin-web/             # React/Vite static SPA
-│   ├── portal-web/            # React/Vite static SPA
 │   ├── admin-api/             # NestJS staff composition root
-│   ├── portal-api/            # NestJS restricted Portal composition root
 │   └── worker/                # PostgreSQL jobs/outbox composition root
 ├── packages/
 │   ├── backend-core/
 │   │   └── src/modules/       # bounded modules; internal exports restricted
-│   ├── portal-safe-core/      # presentation/grant-safe query surface only
-│   ├── contracts/             # independent Admin, Portal, event schemas
+│   ├── contracts/             # independent Admin, share-link snapshot, event schemas
 │   ├── database/              # Kysely adapters/types + migration runner
 │   ├── auth-adapters/         # isolated Better Auth integrations
 │   ├── design-system/         # tokens and accessible owned primitives
@@ -257,7 +243,7 @@ Turborepo may be reconsidered when CI measurements show material repeated-build 
 | Layer | Required evidence |
 |---|---|
 | Domain unit/property | Money arithmetic/allocation, state machines, visibility resolution, permissions, invariants |
-| Architecture | forbidden imports, cycle-free modules, Portal package/DB access allowlist |
+| Architecture | forbidden imports, cycle-free modules, package/DB access allowlist |
 | Database integration | real pinned PostgreSQL; constraints, transactions, optimistic conflicts, role privileges |
 | Contract | Zod/OpenAPI compatibility, snapshot schema/golden fixtures, provider conformance |
 | Security | realm confusion, CSRF, IDOR, scope, revocation, INTERNAL_ONLY sentinels, document grants |
@@ -348,7 +334,7 @@ Future fleet automation is enabled by release/instance manifests, health/version
 
 ## 18. Architecture quality assessment
 
-**Accepted Phase 0 foundation score: 9/10.** It uses a modular monolith, deep boundaries, explicit trade-offs and a low per-instance dependency count. The final independent reviewer verified the 37-entry post-PO freeze byte-for-byte, closed TOS-AR-001 through TOS-AR-005 and TOS-INT-001/002, found no new BLOCKER/HIGH and confirmed that no Product Owner decision remains open. Phase 0 is therefore technically closed. Reaching 10/10 requires executable evidence rather than more speculative design: M1 must prove auth-realm isolation, Portal database privileges, host rejection, document reauthorization, job lease/CAS and `UNKNOWN_OUTCOME` reconciliation, migration drift controls and artifact footprint; pre-production must prove encrypted restore/expiry/deletion reconciliation and legal/privacy plus threat-model acceptance of residual backup windows.
+**Accepted Phase 0 foundation score: 9/10.** It uses a modular monolith, deep boundaries, explicit trade-offs and a low per-instance dependency count. The final independent reviewer verified the 37-entry post-PO freeze byte-for-byte, closed TOS-AR-001 through TOS-AR-005 and TOS-INT-001/002, found no new BLOCKER/HIGH and confirmed that no Product Owner decision remains open. Phase 0 is therefore technically closed. Reaching 10/10 requires executable evidence rather than more speculative design: M1 must prove auth-realm isolation, database privileges, host rejection, document reauthorization, job lease/CAS and `UNKNOWN_OUTCOME` reconciliation, migration drift controls and artifact footprint; pre-production must prove encrypted restore/expiry/deletion reconciliation and legal/privacy plus threat-model acceptance of residual backup windows.
 
 ## Sources
 

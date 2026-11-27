@@ -1,24 +1,24 @@
 import {
-  createStaffTripPublicationOperations,
+  createStaffTripPreviewOperations,
   type StaffSessionResolver,
-  type StaffTripPublicationOperations,
-  type PortalTripSnapshotValidatorPort,
+  type StaffTripPreviewOperations,
+  type TripSnapshotValidatorPort,
 } from "@travelos/backend-core";
 import type { PostgresPersistence } from "../postgres/postgres-persistence.js";
-import { createPortalTripSnapshotSha256Hasher } from "../customer-presentation/snapshot-hash.js";
-import { createPostgresStaffTripPublicationRepository } from "../customer-presentation/staff-publication-repository.js";
+import { createTripSnapshotSha256Hasher } from "../customer-presentation/snapshot-hash.js";
+import { createPostgresStaffTripPreviewRepository } from "../customer-presentation/staff-publication-repository.js";
 import { createStaffAccessRepository } from "../staff-access/staff-access-repository.js";
 
-/** Composes the authorized Stage 6 boundary; callers supply the independent V1 contract validator. */
-export const createPostgresStaffTripPublicationOperations = (
+/** Composes the authorized read-only preview; callers supply the independent V1 contract validator. */
+export const createPostgresStaffTripPreviewOperations = (
   persistence: PostgresPersistence<Record<string, never>>,
   sessionResolver: StaffSessionResolver,
-  validator: PortalTripSnapshotValidatorPort,
-): StaffTripPublicationOperations =>
-  createStaffTripPublicationOperations({
-    repository: createPostgresStaffTripPublicationRepository(
+  validator: TripSnapshotValidatorPort,
+): StaffTripPreviewOperations =>
+  createStaffTripPreviewOperations({
+    repository: createPostgresStaffTripPreviewRepository(
       persistence,
-      createPortalTripSnapshotSha256Hasher(),
+      createTripSnapshotSha256Hasher(),
       validator,
     ),
     authorizationRepository: createStaffAccessRepository(persistence),

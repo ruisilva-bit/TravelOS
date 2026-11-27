@@ -20,10 +20,8 @@ export {
 } from "./staff-invitation-token.js";
 export {
   createLocalOperatorStaffEnrollmentRealm,
-  createPortalAuthRealm,
   createStaffAuthRealm,
   createStaffInvitationEnrollmentService,
-  PORTAL_AUTH_BASE_PATH,
   STAFF_AUTH_BASE_PATH,
   type AuthenticationRealm,
   type AuthRealm,

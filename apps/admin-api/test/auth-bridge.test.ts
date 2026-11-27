@@ -108,12 +108,12 @@ const sessionContextRequest = (
 });
 
 describe("Admin Staff auth bridge", () => {
-  it("refuses a Portal realm at composition time", () => {
+  it("refuses a non-Staff realm at composition time", () => {
     const express = new FakeExpress();
     expect(() =>
       registerAdminAuthBridge(
         { getHttpAdapter: () => ({ getInstance: () => express }) },
-        { ...bridgeOptions(), realm: { ...staffRealm(), kind: "PORTAL" } },
+        { ...bridgeOptions(), realm: { ...staffRealm(), kind: "OTHER" as never } },
       ),
     ).toThrow("Staff realm");
   });
@@ -196,7 +196,7 @@ describe("Admin Staff auth bridge", () => {
     );
     const context = express.routes.get("/api/staff/session-context");
     await expect(
-      invoke(context!, sessionContextRequest({ host: "portal.travelos.test" })),
+      invoke(context!, sessionContextRequest({ host: "other.travelos.test" })),
     ).resolves.toMatchObject({
       status: 404,
       headers: { "cache-control": "private, no-store" },
@@ -234,7 +234,7 @@ describe("Admin Staff auth bridge", () => {
       invoke(express.middleware[0]!, {
         method: "GET",
         url: "/api/auth/staff/get-session",
-        headers: { host: "portal.travelos.test" },
+        headers: { host: "other.travelos.test" },
       }),
     ).resolves.toMatchObject({
       status: 404,
@@ -260,12 +260,12 @@ describe("Admin Staff auth bridge", () => {
     );
     const context = express.routes.get("/api/staff/session-context");
     await expect(
-      invoke(context!, sessionContextRequest({ host: "portal.travelos.test" })),
+      invoke(context!, sessionContextRequest({ host: "other.travelos.test" })),
     ).resolves.toMatchObject({ status: 404 });
     await expect(
       invoke(express.middleware[0]!, {
         method: "GET",
-        url: "/api/auth/portal/get-session",
+        url: "/api/auth/other/get-session",
         headers: { host: policy.expectedHost },
       }),
     ).resolves.toMatchObject({ next: true });

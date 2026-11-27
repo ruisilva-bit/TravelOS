@@ -9,15 +9,8 @@ const examplePath = fileURLToPath(
 );
 const validManifest = JSON.parse(readFileSync(examplePath, "utf8")) as Record<string, unknown>;
 const copyManifest = (): Record<string, unknown> => structuredClone(validManifest);
-type ListenerRecords = {
-  adminApi: Record<string, unknown>;
-  portalApi: Record<string, unknown>;
-};
-type RuntimeRoleRecords = Record<"adminApi" | "portalApi" | "worker", Record<string, unknown>>;
-type AuthenticationRecords = Record<
-  "staffRealmCredentialReference" | "portalRealmCredentialReference",
-  unknown
->;
+type RuntimeRoleRecords = Record<"adminApi" | "worker", Record<string, unknown>>;
+type AuthenticationRecords = Record<"staffRealmCredentialReference", unknown>;
 
 const runtimeRolesOf = (candidate: Record<string, unknown>): RuntimeRoleRecords => {
   const database = candidate["database"] as Record<string, unknown>;
@@ -32,12 +25,8 @@ describe("development instance manifest", () => {
     expect(manifest.environment).toBe("DEVELOPMENT");
     expect(manifest.runtime.listeners).toEqual({
       adminApi: { host: "127.0.0.1", port: 3101 },
-      portalApi: { host: "127.0.0.1", port: 3102 },
     });
-    expect(manifest.hostAllowlist).toEqual([
-      { host: "admin.travelos.test", surface: "ADMIN" },
-      { host: "portal.travelos.test", surface: "PORTAL" },
-    ]);
+    expect(manifest.hostAllowlist).toEqual([{ host: "admin.travelos.test", surface: "ADMIN" }]);
     expect(manifest.database).toEqual({
       host: "127.0.0.1",
       port: 5432,
@@ -48,10 +37,6 @@ describe("development instance manifest", () => {
           roleName: "travelos_admin_api",
           credentialReference: "systemd-credential:admin-api-db",
         },
-        portalApi: {
-          roleName: "travelos_portal_api",
-          credentialReference: "systemd-credential:portal-api-db",
-        },
         worker: {
           roleName: "travelos_worker",
           credentialReference: "systemd-credential:worker-db",
@@ -60,7 +45,6 @@ describe("development instance manifest", () => {
     });
     expect(manifest.authentication).toEqual({
       staffRealmCredentialReference: "systemd-credential:staff-auth-realm",
-      portalRealmCredentialReference: "systemd-credential:portal-auth-realm",
     });
   });
 
@@ -75,29 +59,6 @@ describe("development instance manifest", () => {
     const runtime = candidate["runtime"] as Record<string, unknown>;
     runtime["unexpected"] = true;
     expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow();
-  });
-
-  it("rejects an Admin and Portal API listener collision", () => {
-    const candidate = copyManifest();
-    const runtime = candidate["runtime"] as Record<string, unknown>;
-    const listeners = runtime["listeners"] as ListenerRecords;
-    listeners["portalApi"] = structuredClone(listeners["adminApi"]);
-    expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(
-      /listeners must use distinct host and port pairs/,
-    );
-  });
-
-  it("accepts equal API port numbers on clearly distinct loopback bind addresses", () => {
-    const candidate = copyManifest();
-    const runtime = candidate["runtime"] as Record<string, unknown>;
-    const listeners = runtime["listeners"] as ListenerRecords;
-    listeners["portalApi"]["host"] = "127.0.0.2";
-    listeners["portalApi"]["port"] = listeners["adminApi"]["port"];
-    const manifest = parseDevelopmentInstanceManifest(candidate);
-    expect(manifest.runtime.listeners).toEqual({
-      adminApi: { host: "127.0.0.1", port: 3101 },
-      portalApi: { host: "127.0.0.2", port: 3101 },
-    });
   });
 
   it.each(["password", "apiKey", "token", "databaseUrl", "privateKey"])(
@@ -128,12 +89,10 @@ describe("development instance manifest", () => {
   });
 
   it.each([
-    ["adminApi", "travelos_portal_api"],
-    ["portalApi", "travelos_admin_api"],
-    ["worker", "travelos_portal_api"],
-    ["portalApi", "travelos_owner"],
-    ["portalApi", "travelos_migrator"],
-    ["portalApi", "travelos_portal_runtime"],
+    ["adminApi", "travelos_worker"],
+    ["worker", "travelos_admin_api"],
+    ["adminApi", "travelos_owner"],
+    ["worker", "travelos_migrator"],
     ["adminApi", "travelos_admin_runtime"],
     ["worker", "travelos_worker_runtime"],
   ] as const)("rejects %s database identity %s", (processName, roleName) => {
@@ -142,27 +101,10 @@ describe("development instance manifest", () => {
     expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow();
   });
 
-  it.each([
-    ["adminApi", "portalApi"],
-    ["adminApi", "worker"],
-    ["portalApi", "worker"],
-  ] as const)(
-    "rejects duplicate credential references for %s and %s",
-    (sourceProcess, duplicateProcess) => {
-      const candidate = copyManifest();
-      const roles = runtimeRolesOf(candidate);
-      roles[duplicateProcess]["credentialReference"] = roles[sourceProcess]["credentialReference"];
-      expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(
-        /Credential references must be pairwise distinct/,
-      );
-    },
-  );
-
-  it("rejects duplicate Staff and Portal realm credential references", () => {
+  it("rejects duplicate credential references for adminApi and worker", () => {
     const candidate = copyManifest();
-    const authentication = authenticationOf(candidate);
-    authentication["portalRealmCredentialReference"] =
-      authentication["staffRealmCredentialReference"];
+    const roles = runtimeRolesOf(candidate);
+    roles["worker"]["credentialReference"] = roles["adminApi"]["credentialReference"];
     expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(
       /Credential references must be pairwise distinct/,
     );
@@ -193,23 +135,7 @@ describe("development instance manifest", () => {
 
   it("rejects a host allowlist that does not match the surface hosts", () => {
     const candidate = copyManifest();
-    candidate["hostAllowlist"] = [
-      { host: "wrong.travelos.test", surface: "ADMIN" },
-      { host: "portal.travelos.test", surface: "PORTAL" },
-    ];
+    candidate["hostAllowlist"] = [{ host: "wrong.travelos.test", surface: "ADMIN" }];
     expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(/Host allowlist must match/);
-  });
-
-  it("rejects equal Admin and Portal hosts", () => {
-    const candidate = copyManifest();
-    const hosts = candidate["hosts"] as Record<string, unknown>;
-    hosts["portal"] = "admin.travelos.test";
-    candidate["hostAllowlist"] = [
-      { host: "admin.travelos.test", surface: "ADMIN" },
-      { host: "admin.travelos.test", surface: "PORTAL" },
-    ];
-    expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow(
-      /Admin and Portal hosts must be distinct/,
-    );
   });
 });

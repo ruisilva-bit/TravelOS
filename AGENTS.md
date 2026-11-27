@@ -4,7 +4,7 @@
 
 TravelOS is an INTERNAL tool for ONE travel agency (the owner's). It is not a SaaS product and has
 no fleet of customer instances. There is no audit or legal obligation driving the design, and
-there is no customer portal with login. Later, customers will get a revocable, read-only share
+customers have no login. Later, customers will get a revocable, read-only share
 link to a frozen snapshot of their trip (see `docs/adr/ADR-016-internal-single-agency-tool.md`).
 
 ## Stack
@@ -26,6 +26,7 @@ link to a frozen snapshot of their trip (see `docs/adr/ADR-016-internal-single-a
 - No secrets, tokens, credentials or real customer data in the repository, fixtures or logs.
 - Never claim a test passed without actually running it.
 - Applied migrations are never edited; add a new one. Application startup never runs migrations.
+- Migrations were squashed into 0001_baseline on 2026-11-27 (no real data existed). From now on applied migrations are never edited; add a new one.
 
 ## Working rules
 

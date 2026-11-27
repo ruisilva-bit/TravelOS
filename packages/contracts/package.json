@@ -15,9 +15,9 @@
       "types": "./dist/admin/index.d.ts",
       "import": "./dist/admin/index.js"
     },
-    "./portal": {
-      "types": "./dist/portal/index.d.ts",
-      "import": "./dist/portal/index.js"
+    "./share": {
+      "types": "./dist/share/index.d.ts",
+      "import": "./dist/share/index.js"
     }
   },
   "dependencies": {

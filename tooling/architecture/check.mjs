@@ -53,7 +53,6 @@ const expectedNonTypeScriptAssetDependencies = [
   "apps/admin-web/src/leads-view.tsx\0./leads.css",
   "apps/admin-web/src/main.tsx\0@travelos/design-system/styles.css",
   "apps/admin-web/src/staff-invitations-view.tsx\0./staff-invitations.css",
-  "apps/portal-web/src/main.tsx\0@travelos/design-system/styles.css",
 ];
 const actualNonTypeScriptAssetDependencies = dependencyUniverse.nonTypeScriptAssetDependencies
   .map(({ file, specifier }) => `${file}\0${specifier}`)
@@ -84,18 +83,12 @@ if (production.result.status !== 0 || productionViolations.length !== 0) {
 const requiredRules = [
   "no-circular-dependencies",
   "no-unresolvable-dependencies",
-  "portal-api-cannot-import-admin-workspace",
-  "portal-safe-core-cannot-import-admin-workspace",
   "backend-core-dependencies-must-be-explicitly-allowed",
   "core-cannot-import-frameworks-or-adapters",
-  "portal-roots-cannot-import-admin-contracts",
-  "admin-roots-cannot-import-portal-contracts",
   "browser-apps-cannot-import-privileged-backend",
   "packages-cannot-import-composition-roots",
   "composition-root-admin-web-cannot-import-another-root",
-  "composition-root-portal-web-cannot-import-another-root",
   "composition-root-admin-api-cannot-import-another-root",
-  "composition-root-portal-api-cannot-import-another-root",
   "composition-root-worker-cannot-import-another-root",
   "production-cannot-import-test-support",
   "production-cannot-import-tests",
@@ -128,29 +121,6 @@ const packageBoundaries = await checkRepositoryPackageBoundaries({
 });
 if (packageBoundaries.result !== "PASS" || packageBoundaries.violations.length !== 0) {
   process.stderr.write(`${JSON.stringify(packageBoundaries, null, 2)}\n`);
-  process.exit(1);
-}
-
-const portalImportFixtures = spawnSync(
-  process.execPath,
-  ["tooling/architecture/fixtures/stage-7/verify-portal-import-boundaries.mjs"],
-  { cwd: process.cwd(), encoding: "utf8", maxBuffer: 20 * 1024 * 1024 },
-);
-let portalImportFixtureReport;
-try {
-  portalImportFixtureReport = JSON.parse(portalImportFixtures.stdout);
-} catch {
-  process.stderr.write(portalImportFixtures.stderr);
-  process.stderr.write("Portal import-boundary fixtures did not return JSON\n");
-  process.exit(1);
-}
-if (
-  portalImportFixtures.status !== 0 ||
-  portalImportFixtureReport.result !== "PASS" ||
-  portalImportFixtureReport.failedCaseCount !== 0
-) {
-  process.stderr.write(portalImportFixtures.stderr);
-  process.stderr.write(`${JSON.stringify(portalImportFixtureReport, null, 2)}\n`);
   process.exit(1);
 }
 
@@ -232,8 +202,7 @@ const output = {
   dependencyUniverse: dependencyUniverseSummary(dependencyUniverse),
   nonTypeScriptAssetDependencies: dependencyUniverse.nonTypeScriptAssetDependencies,
   packageBoundaries,
-  portalImportBoundaries: portalImportFixtureReport,
-  negativePortalFixture: {
+  negativeBrowserFixture: {
     expectedFailureObserved: true,
     processExitCode: negative.status,
     rule: negativeReport.violation.rule,

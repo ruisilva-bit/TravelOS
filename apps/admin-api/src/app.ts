@@ -5,6 +5,7 @@ import { createRequestTelemetry } from "@travelos/observability";
 
 import { AdminApiModule } from "./app.module.js";
 import { registerAdminAuthBridge, type AdminAuthBridgeOptions } from "./auth-bridge.js";
+import { registerPublicShareRoutes, type PublicShareRouteOptions } from "./public-share-routes.js";
 import { createAdminHostValidationMiddleware } from "./host-validation.js";
 import {
   createAdminCacheControlMiddleware,
@@ -14,6 +15,8 @@ import {
 export interface CreateAdminApiOptions {
   readonly expectedHost: string;
   readonly auth?: AdminAuthBridgeOptions;
+  /** Unauthenticated read-only customer share route, `/v/:token`. */
+  readonly publicShare?: PublicShareRouteOptions;
 }
 
 const isCanonicalOriginForHost = (canonicalOrigin: string, expectedHost: string): boolean => {
@@ -56,6 +59,12 @@ export const createAdminApi = async (
     createAdminOriginValidationMiddleware(options.auth?.policy.canonicalOrigin ?? null),
   );
   application.useBodyParser("json");
+  if (options.publicShare !== undefined) {
+    registerPublicShareRoutes(
+      application.getHttpAdapter().getInstance() as Parameters<typeof registerPublicShareRoutes>[0],
+      options.publicShare,
+    );
+  }
   if (options.auth !== undefined) {
     registerAdminAuthBridge(application, options.auth);
   }

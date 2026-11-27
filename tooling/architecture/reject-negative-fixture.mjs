@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-const ruleName = "portal-fixture-cannot-import-backend-core";
+const ruleName = "browser-fixture-cannot-import-backend-core";
 const result = spawnSync(
   "pnpm",
   [
@@ -10,7 +10,7 @@ const result = spawnSync(
     "tooling/architecture/negative-fixture.cjs",
     "--output-type",
     "json",
-    "tooling/architecture/fixtures/invalid-portal-import/portal-entry.ts",
+    "tooling/architecture/fixtures/invalid-browser-import/browser-entry.ts",
   ],
   { cwd: process.cwd(), encoding: "utf8", maxBuffer: 20 * 1024 * 1024 },
 );

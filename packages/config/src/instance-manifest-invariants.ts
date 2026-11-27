@@ -23,7 +23,7 @@ export const instanceManifestInvariantRegistry = {
     {
       id: "TOS-CONFIG-SCHEMA-004",
       path: "hostAllowlist",
-      summary: "Exactly one ADMIN and one PORTAL surface entry is required.",
+      summary: "Exactly one ADMIN surface entry is required.",
     },
     {
       id: "TOS-CONFIG-SCHEMA-005",
@@ -49,7 +49,7 @@ export const instanceManifestInvariantRegistry = {
       id: "TOS-CONFIG-SCHEMA-009",
       path: "database",
       summary:
-        "Database name, exact Admin/Portal/Worker role identities, and exactly three opaque credential-reference identifiers are constrained.",
+        "Database name, exact Admin/Worker role identities, and exactly two opaque credential-reference identifiers are constrained.",
     },
     {
       id: "TOS-CONFIG-SCHEMA-010",
@@ -60,41 +60,28 @@ export const instanceManifestInvariantRegistry = {
       id: "TOS-CONFIG-SCHEMA-011",
       path: "authentication",
       summary:
-        "Staff and Portal realm key material is referenced only by distinct opaque systemd credential identifiers.",
+        "Staff realm key material is referenced only by a distinct opaque systemd credential identifier.",
     },
   ],
   runtimeOnly: [
     {
       id: "TOS-CONFIG-RUNTIME-001",
-      path: "runtime.listeners.adminApi,runtime.listeners.portalApi",
-      summary: "Admin and Portal API listeners must not use the same host and port pair.",
-      reason: "Draft 2020-12 cannot compare two sibling property values for equality.",
-    },
-    {
-      id: "TOS-CONFIG-RUNTIME-002",
-      path: "hosts.admin,hosts.portal",
-      summary: "Admin and Portal canonical hosts must differ.",
-      reason: "Draft 2020-12 cannot compare two sibling property values for equality.",
-    },
-    {
-      id: "TOS-CONFIG-RUNTIME-003",
       path: "hostAllowlist[*].host,hosts.*",
       summary: "Each allowlist host must equal the canonical host declared for its surface.",
       reason:
         "Draft 2020-12 cannot compare values in array entries with sibling object properties.",
     },
     {
-      id: "TOS-CONFIG-RUNTIME-004",
+      id: "TOS-CONFIG-RUNTIME-002",
       path: "hostAllowlist[*].host",
       summary: "Host allowlist host values must be unique across surface objects.",
       reason: "Draft 2020-12 uniqueItems compares complete objects, not a projected host property.",
     },
     {
-      id: "TOS-CONFIG-RUNTIME-005",
+      id: "TOS-CONFIG-RUNTIME-003",
       path: "database.runtimeRoles.*.credentialReference,authentication.*CredentialReference",
-      summary:
-        "Admin, Portal, Worker, Staff-realm, and Portal-realm credential references must be pairwise distinct.",
-      reason: "Draft 2020-12 cannot compare five sibling string values for inequality.",
+      summary: "Admin, Worker, and Staff-realm credential references must be pairwise distinct.",
+      reason: "Draft 2020-12 cannot compare three sibling string values for inequality.",
     },
   ],
 } as const;

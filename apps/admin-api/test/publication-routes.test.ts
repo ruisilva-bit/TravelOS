@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   asOpaqueId,
-  StalePublicationCandidateError,
   type StaffTripOperations,
-  type StaffTripPublicationOperations,
+  type StaffTripPreviewOperations,
 } from "@travelos/backend-core";
 import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
 import { registerAdminRoutes, type AdminExpressApplication } from "../src/admin-routes.js";
@@ -20,7 +19,7 @@ const projection = {
   items: [],
 };
 
-const makeHarness = (publicationOperations: StaffTripPublicationOperations) => {
+const makeHarness = (previewOperations: StaffTripPreviewOperations) => {
   type Handler = Parameters<AdminExpressApplication["get"]>[1];
   const handlers = new Map<string, Handler>();
   const application: AdminExpressApplication = {
@@ -31,7 +30,7 @@ const makeHarness = (publicationOperations: StaffTripPublicationOperations) => {
   registerAdminRoutes(application, {
     policy,
     tripOperations: {} as StaffTripOperations,
-    publicationOperations: publicationOperations,
+    previewOperations,
   });
   const invoke = async (
     key: string,
@@ -81,7 +80,7 @@ const makeHarness = (publicationOperations: StaffTripPublicationOperations) => {
   return { handlers, invoke };
 };
 
-describe("Admin Stage 6 publication routes", () => {
+describe("Admin preview route", () => {
   it("returns a strict preview and delegates with the Staff cookie", async () => {
     const previewTrip = vi.fn().mockResolvedValue({
       tripId,
@@ -92,12 +91,7 @@ describe("Admin Stage 6 publication routes", () => {
       canonicalJson:
         '{"items":[],"schemaVersion":1,"trip":{"endDate":"2026-10-15","startDate":"2026-10-12","title":"Portugal"}}',
     });
-    const harness = makeHarness({
-      previewTrip,
-      publishTrip: vi.fn(),
-      listPublicationHistory: vi.fn(),
-      withdrawActivePublication: vi.fn(async () => undefined as never),
-    });
+    const harness = makeHarness({ previewTrip });
     const response = await harness.invoke("GET /api/admin/trips/:tripId/publication-preview");
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual({
@@ -109,62 +103,10 @@ describe("Admin Stage 6 publication routes", () => {
     expect(previewTrip).toHaveBeenCalledWith("session=opaque", tripId);
   });
 
-  it("rejects unknown publication-history query parameters and validates the response", async () => {
-    const listPublicationHistory = vi.fn().mockResolvedValue({
-      entries: [
-        {
-          version: 2,
-          publishedAt: "2026-10-12T12:00:00.000Z",
-          actorReference: "00000000-0000-7000-8000-000000000099",
-          schemaVersion: 1,
-          projectionHash: hash,
-          isActive: true,
-        },
-      ],
-      nextCursor: null,
-    });
-    const harness = makeHarness({
-      previewTrip: vi.fn(),
-      publishTrip: vi.fn(),
-      listPublicationHistory,
-      withdrawActivePublication: vi.fn(async () => undefined as never),
-    });
-    const rejected = await harness.invoke("GET /api/admin/trips/:tripId/publications", undefined, {
-      unknown: "value",
-    });
-    expect(rejected.statusCode).toBe(400);
-    expect(listPublicationHistory).not.toHaveBeenCalled();
-
-    const accepted = await harness.invoke("GET /api/admin/trips/:tripId/publications", undefined, {
-      before: "3",
-    });
-    expect(accepted.statusCode).toBe(200);
-    expect(listPublicationHistory).toHaveBeenCalledWith("session=opaque", tripId, "3");
-    expect(accepted.body).toMatchObject({
-      entries: [{ version: 2, isActive: true }],
-      nextCursor: null,
-    });
-  });
-
-  it("maps a stale publish candidate to the accepted HTTP 409 conflict", async () => {
-    const publishTrip = vi.fn().mockRejectedValue(new StalePublicationCandidateError());
-    const harness = makeHarness({
-      previewTrip: vi.fn(),
-      publishTrip,
-      listPublicationHistory: vi.fn(),
-      withdrawActivePublication: vi.fn(async () => undefined as never),
-    });
-    const response = await harness.invoke("POST /api/admin/trips/:tripId/publications", {
-      expectedWorkspaceRevision: "7",
-      expectedProjectionHash: hash,
-      idempotencyKey: "key-1",
-    });
-    expect(response.statusCode).toBe(409);
-    expect(response.body).toEqual({ error: "STALE_PUBLICATION_CANDIDATE" });
-    expect(publishTrip).toHaveBeenCalledWith("session=opaque", tripId, {
-      expectedWorkspaceRevision: "7",
-      expectedProjectionHash: hash,
-      idempotencyKey: "key-1",
-    });
+  it("no longer exposes publish or publication-history routes", () => {
+    const harness = makeHarness({ previewTrip: vi.fn() });
+    expect([...harness.handlers.keys()].filter((key) => /publication/u.test(key))).toEqual([
+      "GET /api/admin/trips/:tripId/publication-preview",
+    ]);
   });
 });

@@ -1,17 +1,17 @@
-export type PortalScheduledTimeV1 = {
+export type ScheduledTimeV1 = {
   readonly localDate: string;
   readonly localTime: string;
   readonly timeZone: string;
   readonly instant: string;
 };
 
-export type PortalTripSnapshotV1 = {
+export type TripSnapshotV1 = {
   readonly schemaVersion: 1;
   readonly trip: { readonly title: string; readonly startDate: string; readonly endDate: string };
-  readonly items: readonly (PortalFlightSnapshotV1 | PortalAccommodationSnapshotV1)[];
+  readonly items: readonly (FlightSnapshotV1 | AccommodationSnapshotV1)[];
 };
 
-export type PortalFlightSnapshotV1 = {
+export type FlightSnapshotV1 = {
   readonly kind: "FLIGHT";
   readonly title: string;
   readonly description: string | null;
@@ -19,8 +19,8 @@ export type PortalFlightSnapshotV1 = {
   readonly flightNumber: string;
   readonly departureAirport: string;
   readonly arrivalAirport: string;
-  readonly departure: PortalScheduledTimeV1;
-  readonly arrival: PortalScheduledTimeV1;
+  readonly departure: ScheduledTimeV1;
+  readonly arrival: ScheduledTimeV1;
   readonly terminal: string | null;
   readonly cabin: string | null;
   readonly baggage: string | null;
@@ -28,13 +28,13 @@ export type PortalFlightSnapshotV1 = {
   readonly customerBookingReference: string | null;
 };
 
-export type PortalAccommodationSnapshotV1 = {
+export type AccommodationSnapshotV1 = {
   readonly kind: "ACCOMMODATION";
   readonly title: string;
   readonly description: string | null;
   readonly propertyName: string;
-  readonly checkIn: PortalScheduledTimeV1;
-  readonly checkOut: PortalScheduledTimeV1;
+  readonly checkIn: ScheduledTimeV1;
+  readonly checkOut: ScheduledTimeV1;
   readonly roomDescription: string | null;
   readonly boardType: string | null;
   readonly customerBookingReference: string | null;
@@ -87,8 +87,8 @@ export interface PublicationSafeFlightSource {
   readonly flightNumber: string;
   readonly departureAirport: string;
   readonly arrivalAirport: string;
-  readonly departure: PortalScheduledTimeV1;
-  readonly arrival: PortalScheduledTimeV1;
+  readonly departure: ScheduledTimeV1;
+  readonly arrival: ScheduledTimeV1;
   readonly terminal: string | null;
   readonly cabin: string | null;
   readonly baggage: string | null;
@@ -103,8 +103,8 @@ export interface PublicationSafeAccommodationSource {
   readonly title: string;
   readonly description: string;
   readonly propertyName: string;
-  readonly checkIn: PortalScheduledTimeV1;
-  readonly checkOut: PortalScheduledTimeV1;
+  readonly checkIn: ScheduledTimeV1;
+  readonly checkOut: ScheduledTimeV1;
   readonly roomDescription: string | null;
   readonly boardType: string | null;
   readonly customerBookingReference: string | null;
@@ -160,9 +160,7 @@ const compareItems = (
   compareCodeUnits(left.kind, right.kind);
 
 /** Pure allowlist assembler. It accepts only publication-safe source fields and explicit policy. */
-export const assemblePortalTripSnapshotV1 = (
-  input: PublicationSafeTripInput,
-): PortalTripSnapshotV1 => {
+export const assembleTripSnapshotV1 = (input: PublicationSafeTripInput): TripSnapshotV1 => {
   const ordered = [
     ...input.flights.map((source) => ({
       source,

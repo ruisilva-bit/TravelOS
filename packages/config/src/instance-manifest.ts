@@ -48,7 +48,7 @@ const FqdnSchema = z
 const HostSurfaceSchema = z
   .object({
     host: FqdnSchema,
-    surface: z.enum(["ADMIN", "PORTAL"]),
+    surface: z.literal("ADMIN"),
   })
   .strict();
 
@@ -92,10 +92,9 @@ export const DevelopmentInstanceManifestSchema = z
     hosts: z
       .object({
         admin: FqdnSchema,
-        portal: FqdnSchema,
       })
       .strict(),
-    hostAllowlist: z.array(HostSurfaceSchema).length(2),
+    hostAllowlist: z.array(HostSurfaceSchema).length(1),
     agencyBootstrap: z
       .object({
         reference: z.string().regex(/^agency-bootstrap:[a-z0-9][a-z0-9-]{2,63}$/),
@@ -111,7 +110,6 @@ export const DevelopmentInstanceManifestSchema = z
         runtimeRoles: z
           .object({
             adminApi: databaseRuntimeRoleSchema("travelos_admin_api"),
-            portalApi: databaseRuntimeRoleSchema("travelos_portal_api"),
             worker: databaseRuntimeRoleSchema("travelos_worker"),
           })
           .strict(),
@@ -120,7 +118,6 @@ export const DevelopmentInstanceManifestSchema = z
     authentication: z
       .object({
         staffRealmCredentialReference: CredentialReferenceIdSchema,
-        portalRealmCredentialReference: CredentialReferenceIdSchema,
       })
       .strict(),
     runtime: z
@@ -128,7 +125,6 @@ export const DevelopmentInstanceManifestSchema = z
         listeners: z
           .object({
             adminApi: DevelopmentApiListenerSchema,
-            portalApi: DevelopmentApiListenerSchema,
           })
           .strict(),
         shutdownGracePeriodMs: z.number().int().min(1_000).max(30_000),
@@ -147,27 +143,7 @@ export const DevelopmentInstanceManifestSchema = z
   })
   .strict()
   .superRefine((manifest, context) => {
-    const { adminApi, portalApi } = manifest.runtime.listeners;
-    if (adminApi.host === portalApi.host && adminApi.port === portalApi.port) {
-      context.addIssue({
-        code: "custom",
-        path: ["runtime", "listeners", "portalApi"],
-        message: "Admin and Portal API listeners must use distinct host and port pairs",
-      });
-    }
-
-    if (manifest.hosts.admin === manifest.hosts.portal) {
-      context.addIssue({
-        code: "custom",
-        path: ["hosts", "portal"],
-        message: "Admin and Portal hosts must be distinct",
-      });
-    }
-
-    const expected = new Map([
-      ["ADMIN", manifest.hosts.admin],
-      ["PORTAL", manifest.hosts.portal],
-    ]);
+    const expected = new Map([["ADMIN", manifest.hosts.admin]]);
     const seenSurfaces = new Set<string>();
     const seenHosts = new Set<string>();
 
@@ -199,10 +175,8 @@ export const DevelopmentInstanceManifestSchema = z
 
     const credentialReferences = [
       ["adminApi", manifest.database.runtimeRoles.adminApi.credentialReference],
-      ["portalApi", manifest.database.runtimeRoles.portalApi.credentialReference],
       ["worker", manifest.database.runtimeRoles.worker.credentialReference],
       ["staffRealm", manifest.authentication.staffRealmCredentialReference],
-      ["portalRealm", manifest.authentication.portalRealmCredentialReference],
     ] as const;
     const firstProcessByCredentialReference = new Map<string, string>();
     for (const [processName, credentialReference] of credentialReferences) {
@@ -211,8 +185,8 @@ export const DevelopmentInstanceManifestSchema = z
         context.addIssue({
           code: "custom",
           path:
-            processName === "staffRealm" || processName === "portalRealm"
-              ? ["authentication", `${processName}CredentialReference`]
+            processName === "staffRealm"
+              ? ["authentication", "staffRealmCredentialReference"]
               : ["database", "runtimeRoles", processName, "credentialReference"],
           message: `Credential references must be pairwise distinct; ${processName} duplicates ${firstProcess}`,
         });

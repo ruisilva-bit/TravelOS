@@ -46,5 +46,5 @@ const canonicalValue = (value: unknown, ancestors: Set<object>): string => {
 };
 
 /** Canonical JSON: UTF-8 encoding of this key-sorted, compact JSON text. */
-export const canonicalPortalTripSnapshotV1Json = (snapshot: unknown): string =>
+export const canonicalTripSnapshotV1Json = (snapshot: unknown): string =>
   canonicalValue(snapshot, new Set<object>());

@@ -10,9 +10,8 @@ TravelOS protects sensitive traveller, commercial, identity, financial and docum
 Security properties:
 
 - default deny and least privilege;
-- separate Staff and Portal security realms;
-- structurally restricted Portal data path;
-- explicit Portal Trip and Document grants;
+- one Staff security realm and no customer login (ADR-016);
+- customer-facing data only through frozen, allowlisted snapshots (later: revocable share links);
 - no secrets/customer payloads in logs, snapshots, URLs or static bundles;
 - auditable privileged actions and revocation;
 - reproducible patched deployments and restorable encrypted backups.
@@ -22,13 +21,9 @@ Security properties:
 ```mermaid
 flowchart TD
   SB[Staff Browser] --> RP[Caddy/TLS]
-  PB[Portal Browser] --> RP
   RP --> AAPI[Admin API process]
-  RP --> PAPI[Portal API process]
   AAPI --> ADB[(Workspace DB role)]
-  PAPI --> PDB[(Portal-restricted DB role)]
   AAPI --> FS[Private Storage Provider]
-  PAPI --> FS
   WK[Worker process] --> ADB
   WK --> FS
   WK --> EXT[External Providers]
@@ -36,31 +31,31 @@ flowchart TD
   BK[Backup operator] --> BR[Encrypted off-instance repository]
 ```
 
-Admin API, Portal API and Worker are separate OS processes/composition roots from one release. They do not call each other synchronously. The Portal process lacks workspace database credentials.
+Admin API and Worker are separate OS processes/composition roots from one release. They do not call each other synchronously.
 
 ## 3. Data classification
 
 | Class | Examples | Baseline controls |
 |---|---|---|
 | Public | deliberately published generic agency contact/branding | Integrity, versioning, safe caching |
-| Customer-visible | active publication fields, explicitly released instructions | Portal grant, allowlist snapshot, TLS, no public enumeration |
+| Customer-visible | active publication fields, explicitly released instructions | share-link capability (planned), allowlist snapshot, TLS, no public enumeration |
 | Confidential | CRM contacts, reservations, communications, ordinary internal documents | Staff RBAC/scope, encryption/backup, audit on sensitive actions |
 | Restricted | passports/IDs, visas, medical/accessibility data, payment details, supplier costs/margins, auth secrets | Minimal collection, field/document permissions, step-up auth, no logs, short retention/export controls |
 | Security | password hashes, MFA seeds, recovery/session/reset tokens, provider credentials | Dedicated stores/secret references, encryption, hashing where appropriate, never export through product |
 
-Every new field declares classification, owner, Portal eligibility, retention and audit requirements before migration approval.
+Every new field declares classification, owner, customer-facing eligibility, retention and audit requirements before migration approval.
 
 ## 4. Threat model
 
 | Threat | Primary controls | Required verification |
 |---|---|---|
-| Portal reads mutable/internal Trip data | Separate Portal process/DB role; presentation schema only; allowlist contracts | DB privilege denial and import-boundary tests |
-| INTERNAL_ONLY serialization | No Portal contract member; narrow SQL source; schema rejects unknowns | Adversarial sentinel/golden tests |
+| Customer-facing path reads mutable/internal Trip data | Frozen snapshot only; allowlist contracts | Import-boundary and snapshot contract tests |
+| INTERNAL_ONLY serialization | No customer-facing contract member; narrow SQL source; schema rejects unknowns | Adversarial sentinel/golden tests |
 | Stale/concurrent publication | revision + hash + row lock + serializable transaction + idempotency | concurrent publish tests |
 | Cross-realm session confusion | separate hosts/paths/cookies/secrets/tables/auth instances | wrong-cookie and fixation tests |
 | Host-header/custom-domain confusion | exact manifest FQDN allowlist at Caddy and API; proxy overwrites forwarded host; no host-to-tenant lookup | unknown/crafted Host and X-Forwarded-Host probes with uniform rejection |
 | IDOR/cross-Agency lookup | Agency-scoped repositories/composite FKs; generic errors | IDs, metadata, counts, timing, downloads |
-| Same-trip document leakage | independent DocumentGrant evaluated per request; protected downloads always traverse Portal API | grant/no-grant/revocation and previously issued URL tests |
+| Same-trip document leakage | independent DocumentGrant evaluated per request; protected downloads always traverse the Admin API | grant/no-grant/revocation and previously issued URL tests |
 | Credential theft | TLS, HttpOnly host-only cookies, MFA, CSP, secret storage, rate limiting | cookie/header/no-JS auth tests |
 | Staff invitation replay or privilege escalation | Agency-scoped `staff.invite` plus recent MFA; single-use 60-minute token stored only as a SHA-256 digest; fixed role template; atomic enrollment/audit; no public signup | replay, expiry, revoke/reissue, concurrency, exact-role, rollback and pre-MFA denial tests |
 | CSRF | SameSite cookies, Origin/Host checks, framework CSRF tokens where required | cross-origin state-change denial |
@@ -71,7 +66,7 @@ Every new field declares classification, owner, Portal eligibility, retention an
 | SQL injection | parameterized Kysely queries; reviewed raw SQL | static review and injection tests |
 | Secret/PII log leak | structured allowlist logging and centralized redaction | canary-secret test; log scan |
 | Dependency/supply-chain compromise | lockfile, provenance/SBOM, scanning, pinned runtime, review | CI policy and update drills |
-| Database/migration privilege abuse | separate owner/runtime/Portal roles, checked migrations, backup | privilege and restore tests |
+| Database/migration privilege abuse | separate owner/runtime roles, checked migrations, backup | privilege and restore tests |
 | Audit tampering | insert-only runtime, trigger/privilege protection, off-instance signed checkpoints | mutation denial/checkpoint verification |
 | Backup theft/loss | encrypted off-instance copies, separate credentials, restore drills | scheduled restore and access review |
 | Deleted PII remains in an older backup | honest residual-window policy, encrypted/access-separated backups, bounded verified expiry, isolated restore and deletion reconciliation; stronger crypto-erasure only if justified | legal/threat acceptance plus oldest-retained-backup restore/expiry drill |
@@ -93,8 +88,7 @@ Mandatory controls before production:
 - invitation issue, list, reissue and revoke require a live Agency-scoped `staff.invite` permission and recent MFA no older than five minutes. Acceptance is available only through the invitation flow, uses POST-body credentials, and atomically enrolls the Staff identity, membership, fixed role assignment, invitation consumption and audit event;
 - invitation enrollment does not issue a session or usable Admin context. The invited Staff Principal must enable and verify TOTP before Staff authorization context or Admin business data is available. Public Staff signup remains disabled;
 - credential/MFA changes revoke other sessions and create Audit Events;
-- staff/Portal cookies use unique names, `Secure`, `HttpOnly`, appropriate `SameSite`, no parent-domain scope;
-- custom Portal domains receive isolated host cookies; Admin cookies never span them;
+- staff cookies use a unique name, `Secure`, `HttpOnly`, appropriate `SameSite`, no parent-domain scope;
 - canonical request host must match the manifest surface allowlist before any auth handler runs; APIs trust forwarded host information only from Caddy and Caddy overwrites client-supplied forwarded headers;
 - authentication assurance and authorization epoch are checked server-side, not trusted from browser claims.
 
@@ -106,7 +100,6 @@ Authorization follows `PERMISSIONS.md` and occurs inside every use case/reposito
 
 - migration owner: DDL only during controlled deployment, no routine application login;
 - Admin runtime: scoped DML on workspace, presentation commands, outbox and audit insert;
-- Portal runtime: Portal realm/grant data plus active presentation views; no workspace privileges;
 - Worker runtime: only tables/functions required by registered handlers;
 - backup/monitoring roles: narrowly scoped, separate credentials.
 
@@ -144,12 +137,11 @@ A production instance cannot enable customer document downloads without a config
 ### Grants and downloads
 
 - Staff download requires explicit permission/resource scope.
-- Portal listing and download each require active TripAccessGrant where applicable **and** active DocumentGrant for the principal/document/version.
 - Granting “latest version” is explicit; otherwise a grant pins a version.
 - A document reference in a publication is display metadata, not authority.
-- Portal API streams/proxies every Confidential or Restricted file only after a fresh authorization check. V1 issues no direct storage URL or bearer download capability for protected Portal documents.
+- The Admin API streams/proxies every Confidential or Restricted file only after a fresh authorization check. V1 issues no direct storage URL or bearer download capability for protected documents.
 - Response uses safe `Content-Disposition`, `X-Content-Type-Options: nosniff`, restrictive CSP/sandbox for inline-safe types, and attachment download for risky types.
-- Revocation takes effect before the next response begins because every request rechecks TripAccessGrant, DocumentGrant, session and authorization epoch. Bytes already delivered or already in flight cannot be clawed back; the service aborts a stream when practical after session/connection termination but never claims retroactive revocation.
+- Revocation takes effect before the next response begins because every request rechecks the session and authorization epoch. Bytes already delivered or already in flight cannot be clawed back; the service aborts a stream when practical after session/connection termination but never claims retroactive revocation.
 - A future CDN/direct-download capability is allowed only for explicitly Public, non-personal assets, or through a gateway that rechecks the current revocation epoch on every request. Enabling protected-document signed URLs requires a superseding security ADR and a revocation drill.
 - Upload, scan, view-sensitive-metadata, download, grant, revoke, reject, erase and export are Audit Events. Document content is never logged.
 - Active document deletion first revokes grants/marks `DELETING`, then calls the provider idempotently by opaque object ID, confirms absence and records `DELETED`; reads fail closed throughout and a crash resumes rather than reauthorizing the object.
@@ -157,7 +149,7 @@ A production instance cannot enable customer document downloads without a config
 ## 8. Web and API security
 
 - TLS is mandatory outside local development; HSTS after domain/TLS validation.
-- Admin and Portal use separate hostnames where possible; same-origin `/api` proxy avoids broad CORS.
+- Same-origin `/api` proxy avoids broad CORS.
 - Caddy and each API independently require an exact normalized host from the instance manifest. Unknown/malformed hosts, duplicate/conflicting host headers and client-supplied forwarded hosts are rejected before branding, auth or data lookup with one fixed unbranded response; no wildcard/suffix tenancy lookup is permitted.
 - CSP defaults to `default-src 'self'`, no inline script/eval, narrowly approved image/connect sources; frame ancestors deny unless an ADR allows embedding.
 - Other headers: `nosniff`, strict Referrer-Policy, Permissions-Policy, frame protection and safe cache directives.
@@ -220,9 +212,8 @@ No production release until:
 
 - threat model and data classification are updated for implemented scope;
 - Staff MFA, realm/session isolation, CSRF/CSP and no-JS credential safety pass;
-- Portal DB role cannot query workspace tables;
 - authorization matrix and direct API abuse tests pass;
-- INTERNAL_ONLY sentinel scan passes every Portal response/snapshot/log;
+- INTERNAL_ONLY sentinel scan passes every customer-facing snapshot/log;
 - document scanning/grants/download controls pass if documents are enabled;
 - crafted/unknown Host and X-Forwarded-Host probes are rejected uniformly at edge and API;
 - dependency/secret/static/container scans pass;

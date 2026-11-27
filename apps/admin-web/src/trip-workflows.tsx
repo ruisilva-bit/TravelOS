@@ -9,8 +9,9 @@ import {
   createAdminTripWorkspace,
   getAdminPublicationPreview,
   getAdminTripWorkspace,
-  listAdminTripPublications,
-  publishAdminTrip,
+  listAdminShareLinks,
+  revokeAdminShareLink,
+  createAdminShareLink,
   updateAdminAccommodation,
   updateAdminFlight,
   updateAdminTripWorkspace,
@@ -19,7 +20,8 @@ import { getZonedInstantCandidates } from "./local-date-time.js";
 
 export type AdminWorkflowWorkspace = Awaited<ReturnType<typeof getAdminTripWorkspace>>;
 type TripPublicationPreview = Awaited<ReturnType<typeof getAdminPublicationPreview>>;
-type TripPublicationHistory = Awaited<ReturnType<typeof listAdminTripPublications>>;
+type ShareLinkList = Awaited<ReturnType<typeof listAdminShareLinks>>;
+type CreatedShareLink = Awaited<ReturnType<typeof createAdminShareLink>>;
 type FlightDraft = Parameters<typeof createAdminFlight>[1]["flight"];
 type AccommodationDraft = Parameters<typeof createAdminAccommodation>[1]["accommodation"];
 type FlightItem = AdminWorkflowWorkspace["flights"][number];
@@ -68,10 +70,6 @@ const isAuthenticationRequired = (error: unknown): boolean =>
 
 const isConflict = (error: unknown): boolean =>
   error instanceof AdminApiError && error.code === "CONFLICT";
-
-const isRetryablePublishFailure = (error: unknown): boolean =>
-  error instanceof AdminApiError &&
-  (error.code === "NETWORK_FAILURE" || error.code === "UNAVAILABLE");
 
 export const createIdempotencyKey = (): string => {
   const cryptoApi = globalThis.crypto;
@@ -691,7 +689,7 @@ const formatSnapshotTime = (value: {
   readonly timeZone: string;
 }): string => `${formatDate(value.localDate)} · ${value.localTime} · ${value.timeZone}`;
 
-const formatPublishedAt = (value: string): string =>
+const formatDateTimeUtc = (value: string): string =>
   new Intl.DateTimeFormat("pt-PT", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -700,7 +698,7 @@ const formatPublishedAt = (value: string): string =>
 
 function PreviewItems({ preview }: { readonly preview: TripPublicationPreview }) {
   if (preview.projection.items.length === 0) {
-    return <p className="admin-form__hint">O itinerário publicado não contém serviços.</p>;
+    return <p className="admin-form__hint">O itinerário não contém serviços.</p>;
   }
   return (
     <ol className="admin-preview__items">
@@ -732,60 +730,65 @@ function PreviewItems({ preview }: { readonly preview: TripPublicationPreview })
   );
 }
 
-function PublicationHistory({
-  history,
+const SHARE_STATE_LABEL = { ACTIVE: "Ativo", EXPIRED: "Expirado", REVOKED: "Revogado" } as const;
+
+function ShareLinkList({
+  links,
   loading,
-  loadingMore,
   errorMessage,
-  onLoadMore,
+  revokingId,
+  onRevoke,
+  onRetry,
 }: {
-  readonly history: TripPublicationHistory | null;
+  readonly links: ShareLinkList | null;
   readonly loading: boolean;
-  readonly loadingMore: boolean;
   readonly errorMessage: string | null;
-  readonly onLoadMore: () => void;
+  readonly revokingId: string | null;
+  readonly onRevoke: (shareLinkId: string) => void;
+  readonly onRetry: () => void;
 }) {
   return (
-    <section className="admin-publications" aria-labelledby="admin-publications-title">
+    <section className="admin-publications" aria-labelledby="admin-share-links-title">
       <div className="section-heading">
-        <h2 id="admin-publications-title">Histórico de publicações</h2>
+        <h2 id="admin-share-links-title">Ligações partilhadas</h2>
       </div>
       {loading ? (
         <p className="state-message" role="status" aria-live="polite">
-          A carregar publicações…
+          A carregar ligações…
         </p>
       ) : errorMessage ? (
         <div className="state-message state-message--error" role="alert">
           <p>{errorMessage}</p>
-          <button className="button button--secondary" type="button" onClick={onLoadMore}>
+          <button className="button button--secondary" type="button" onClick={onRetry}>
             Tentar novamente
           </button>
         </div>
-      ) : history?.entries.length ? (
-        <>
-          <ol className="admin-publication-list">
-            {history.entries.map((entry) => (
-              <li key={entry.version}>
-                <strong>
-                  Versão {entry.version} · {entry.isActive ? "Ativa" : "Anterior"}
-                </strong>
-                <time dateTime={entry.publishedAt}>{formatPublishedAt(entry.publishedAt)}</time>
-              </li>
-            ))}
-          </ol>
-          {history.nextCursor ? (
-            <button
-              className="button button--secondary"
-              type="button"
-              disabled={loadingMore}
-              onClick={onLoadMore}
-            >
-              {loadingMore ? "A carregar…" : "Carregar publicações anteriores"}
-            </button>
-          ) : null}
-        </>
+      ) : links?.links.length ? (
+        <ol className="admin-publication-list">
+          {links.links.map((link) => (
+            <li key={link.shareLinkId}>
+              <strong>{SHARE_STATE_LABEL[link.state]}</strong>
+              <span>
+                Criada em <time dateTime={link.createdAt}>{formatDateTimeUtc(link.createdAt)}</time>
+              </span>
+              <span>
+                Expira em <time dateTime={link.expiresAt}>{formatDateTimeUtc(link.expiresAt)}</time>
+              </span>
+              {link.state === "ACTIVE" ? (
+                <button
+                  className="button button--secondary"
+                  type="button"
+                  disabled={revokingId !== null}
+                  onClick={() => onRevoke(link.shareLinkId)}
+                >
+                  {revokingId === link.shareLinkId ? "A revogar…" : "Revogar"}
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ol>
       ) : (
-        <p className="state-message">Ainda não existe nenhuma versão publicada.</p>
+        <p className="state-message">Ainda não existe nenhuma ligação partilhada.</p>
       )}
     </section>
   );
@@ -795,36 +798,43 @@ function PublicationWorkflow({
   workspace,
   preview,
   previewLoading,
-  publishing,
+  sharing,
   feedback,
   disabled,
-  successMessage,
+  created,
+  copyMessage,
+  expiresInDays,
+  onExpiresInDaysChange,
   onPreview,
-  onPublish,
-  onAuthenticationRequired,
-  history,
-  historyLoading,
-  historyLoadingMore,
-  historyError,
-  onLoadMoreHistory,
+  onShare,
+  onCopy,
+  links,
+  linksLoading,
+  linksError,
+  revokingId,
+  onRevoke,
+  onRetryLinks,
 }: {
   readonly workspace: AdminWorkflowWorkspace;
   readonly preview: TripPublicationPreview | null;
   readonly previewLoading: boolean;
-  readonly publishing: boolean;
+  readonly sharing: boolean;
   readonly feedback: string | null;
   readonly disabled: boolean;
-  readonly successMessage: string | null;
+  readonly created: CreatedShareLink | null;
+  readonly copyMessage: string | null;
+  readonly expiresInDays: string;
+  readonly onExpiresInDaysChange: (value: string) => void;
   readonly onPreview: () => void;
-  readonly onPublish: () => void;
-  readonly onAuthenticationRequired: () => void;
-  readonly history: TripPublicationHistory | null;
-  readonly historyLoading: boolean;
-  readonly historyLoadingMore: boolean;
-  readonly historyError: string | null;
-  readonly onLoadMoreHistory: () => void;
+  readonly onShare: () => void;
+  readonly onCopy: () => void;
+  readonly links: ShareLinkList | null;
+  readonly linksLoading: boolean;
+  readonly linksError: string | null;
+  readonly revokingId: string | null;
+  readonly onRevoke: (shareLinkId: string) => void;
+  readonly onRetryLinks: () => void;
 }) {
-  void onAuthenticationRequired;
   return (
     <section
       className="admin-publication-workflow"
@@ -832,19 +842,19 @@ function PublicationWorkflow({
     >
       <div className="section-heading">
         <div>
-          <h2 id="admin-publication-workflow-title">Pré-visualização e publicação</h2>
+          <h2 id="admin-publication-workflow-title">Pré-visualização e partilha</h2>
           <p className="admin-form__hint">
-            A pré-visualização é apenas de leitura. A publicação cria uma versão imutável para o
-            Portal.
+            A pré-visualização é apenas de leitura. Partilhar cria uma cópia imutável da viagem e
+            uma ligação revogável para o cliente.
           </p>
         </div>
         <button
           className="button button--secondary"
           type="button"
           onClick={onPreview}
-          disabled={disabled || previewLoading || publishing}
+          disabled={disabled || previewLoading || sharing}
         >
-          {previewLoading ? "A preparar…" : "Pré-visualizar publicação"}
+          {previewLoading ? "A preparar…" : "Pré-visualizar como cliente"}
         </button>
       </div>
       {feedback ? (
@@ -852,14 +862,9 @@ function PublicationWorkflow({
           {feedback}
         </p>
       ) : null}
-      {successMessage ? (
-        <p className="admin-form__success" role="status" aria-live="polite">
-          {successMessage}
-        </p>
-      ) : null}
       {preview ? (
         <div className="admin-preview">
-          <h3>Pré-visualização — ainda não publicada</h3>
+          <h3>Pré-visualização — o que o cliente verá</h3>
           <p>
             Revisão do espaço de trabalho: <strong>{preview.workspaceRevision}</strong>
             {preview.workspaceRevision !== workspace.trip.workspaceRevision
@@ -872,26 +877,52 @@ function PublicationWorkflow({
             {formatDate(preview.projection.trip.endDate)}
           </p>
           <PreviewItems preview={preview} />
-          <button
-            className="button button--primary"
-            type="button"
-            onClick={onPublish}
-            disabled={
-              publishing ||
-              previewLoading ||
-              preview.workspaceRevision !== workspace.trip.workspaceRevision
-            }
-          >
-            {publishing ? "A publicar…" : "Publicar versão"}
-          </button>
         </div>
       ) : null}
-      <PublicationHistory
-        history={history}
-        loading={historyLoading}
-        loadingMore={historyLoadingMore}
-        errorMessage={historyError}
-        onLoadMore={onLoadMoreHistory}
+      <div className="admin-share">
+        <label>
+          Validade (dias)
+          <input
+            type="number"
+            min={1}
+            max={365}
+            inputMode="numeric"
+            placeholder="90"
+            value={expiresInDays}
+            onChange={(event) => onExpiresInDaysChange(event.target.value)}
+            disabled={disabled || sharing}
+          />
+        </label>
+        <button
+          className="button button--primary"
+          type="button"
+          onClick={onShare}
+          disabled={disabled || sharing}
+        >
+          {sharing ? "A partilhar…" : "Partilhar com o cliente"}
+        </button>
+      </div>
+      {created ? (
+        <div className="admin-form__success" role="status" aria-live="polite">
+          <p>
+            <strong>Ligação criada.</strong> Copie-a agora: por segurança, só é mostrada uma vez.
+          </p>
+          <p>
+            <input type="text" readOnly aria-label="Ligação para o cliente" value={created.url} />
+          </p>
+          <button className="button button--secondary" type="button" onClick={onCopy}>
+            Copiar link
+          </button>
+          {copyMessage ? <span> {copyMessage}</span> : null}
+        </div>
+      ) : null}
+      <ShareLinkList
+        links={links}
+        loading={linksLoading}
+        errorMessage={linksError}
+        revokingId={revokingId}
+        onRevoke={onRevoke}
+        onRetry={onRetryLinks}
       />
     </section>
   );
@@ -920,45 +951,44 @@ export function TripWorkspaceEditor({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [preview, setPreview] = useState<TripPublicationPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [publishKey, setPublishKey] = useState<string | null>(null);
-  const [publishing, setPublishing] = useState(false);
-  const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
-  const [history, setHistory] = useState<TripPublicationHistory | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
-  const [historyError, setHistoryError] = useState<string | null>(null);
-  const [historyReloadKey, setHistoryReloadKey] = useState(0);
+  const [sharing, setSharing] = useState(false);
+  const [created, setCreated] = useState<CreatedShareLink | null>(null);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [expiresInDays, setExpiresInDays] = useState("");
+  const [links, setLinks] = useState<ShareLinkList | null>(null);
+  const [linksLoading, setLinksLoading] = useState(true);
+  const [linksError, setLinksError] = useState<string | null>(null);
+  const [linksReloadKey, setLinksReloadKey] = useState(0);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   useEffect(() => {
     let current = true;
-    setHistoryLoading(true);
-    setHistoryError(null);
-    void listAdminTripPublications(tripId, null)
+    setLinksLoading(true);
+    setLinksError(null);
+    void listAdminShareLinks(tripId)
       .then(
         (result) => {
-          if (current) setHistory(result);
+          if (current) setLinks(result);
         },
         (error: unknown) => {
           if (!current) return;
           if (isAuthenticationRequired(error)) onAuthenticationRequired();
-          else setHistoryError(safeErrorMessage(error));
+          else setLinksError(safeErrorMessage(error));
         },
       )
       .finally(() => {
-        if (current) setHistoryLoading(false);
+        if (current) setLinksLoading(false);
       });
     return () => {
       current = false;
     };
-  }, [historyReloadKey, onAuthenticationRequired, tripId]);
+  }, [linksReloadKey, onAuthenticationRequired, tripId]);
 
   const openEditor = (editor: ActiveEditor): void => {
     setActiveEditor(editor);
     setScheduleChoices({});
     setFeedback(null);
-    setPublishSuccess(null);
     setPreview(null);
-    setPublishKey(null);
   };
 
   const cancelEditor = (): void => {
@@ -982,14 +1012,12 @@ export function TripWorkspaceEditor({
   ): Promise<void> => {
     setSaving(true);
     setFeedback(null);
-    setPublishSuccess(null);
     try {
       const updated = await operation();
       onWorkspaceUpdated(updated);
       setActiveEditor(null);
       setScheduleChoices({});
       setPreview(null);
-      setPublishKey(null);
       setFeedback(successMessage);
     } catch (error) {
       if (isAuthenticationRequired(error)) {
@@ -1000,7 +1028,6 @@ export function TripWorkspaceEditor({
         setActiveEditor(null);
         setScheduleChoices({});
         setPreview(null);
-        setPublishKey(null);
         setFeedback(
           "A viagem foi alterada desde a última leitura. Os dados atuais foram recarregados; reveja-os antes de editar novamente.",
         );
@@ -1132,12 +1159,10 @@ export function TripWorkspaceEditor({
     );
   };
 
-  const refreshWorkspaceAfterPublicationConflict = async (): Promise<void> => {
+  const refreshWorkspaceAfterPreviewConflict = async (): Promise<void> => {
     setPreview(null);
-    setPublishKey(null);
-    setPublishSuccess(null);
     setFeedback(
-      "A pré-visualização ficou desatualizada. Carregámos os dados atuais; gere uma nova pré-visualização antes de publicar.",
+      "A pré-visualização ficou desatualizada. Carregámos os dados atuais; gere uma nova pré-visualização.",
     );
     try {
       onWorkspaceUpdated(await getAdminTripWorkspace(tripId));
@@ -1150,75 +1175,70 @@ export function TripWorkspaceEditor({
   const loadPreview = async (): Promise<void> => {
     setPreviewLoading(true);
     setFeedback(null);
-    setPublishSuccess(null);
     try {
       const result = await getAdminPublicationPreview(tripId);
       if (result.workspaceRevision !== workspace.trip.workspaceRevision) {
-        await refreshWorkspaceAfterPublicationConflict();
+        await refreshWorkspaceAfterPreviewConflict();
         return;
       }
       setPreview(result);
-      setPublishKey(createIdempotencyKey());
     } catch (error) {
       if (isAuthenticationRequired(error)) onAuthenticationRequired();
-      else if (isConflict(error)) await refreshWorkspaceAfterPublicationConflict();
+      else if (isConflict(error)) await refreshWorkspaceAfterPreviewConflict();
       else setFeedback(safeErrorMessage(error));
     } finally {
       setPreviewLoading(false);
     }
   };
 
-  const publish = async (): Promise<void> => {
-    if (!preview || preview.workspaceRevision !== workspace.trip.workspaceRevision || !publishKey) {
-      setFeedback("Gere uma pré-visualização atual antes de publicar.");
+  const share = async (): Promise<void> => {
+    const trimmed = expiresInDays.trim();
+    const days = trimmed === "" ? undefined : Number(trimmed);
+    if (days !== undefined && (!Number.isInteger(days) || days < 1 || days > 365)) {
+      setFeedback("A validade deve ser um número inteiro de dias entre 1 e 365.");
       return;
     }
-    setPublishing(true);
+    setSharing(true);
     setFeedback(null);
-    setPublishSuccess(null);
+    setCopyMessage(null);
+    setCreated(null);
     try {
-      const result = await publishAdminTrip(tripId, {
-        expectedWorkspaceRevision: preview.workspaceRevision,
-        expectedProjectionHash: preview.projectionHash,
-        idempotencyKey: publishKey,
-      });
-      setPreview(null);
-      setPublishKey(null);
-      setPublishSuccess(`Versão ${result.version} publicada`);
-      setHistoryReloadKey((current) => current + 1);
+      const result = await createAdminShareLink(
+        tripId,
+        days === undefined ? {} : { expiresInDays: days },
+        createIdempotencyKey(),
+      );
+      setCreated(result);
+      setLinksReloadKey((current) => current + 1);
     } catch (error) {
       if (isAuthenticationRequired(error)) onAuthenticationRequired();
-      else if (isConflict(error)) await refreshWorkspaceAfterPublicationConflict();
-      else if (isRetryablePublishFailure(error)) {
-        setFeedback(
-          `${safeErrorMessage(error)} Pode tentar novamente; será reutilizada a mesma chave de idempotência.`,
-        );
-      } else setFeedback(safeErrorMessage(error));
+      else setFeedback(safeErrorMessage(error));
     } finally {
-      setPublishing(false);
+      setSharing(false);
     }
   };
 
-  const loadMoreHistory = async (): Promise<void> => {
-    if (historyLoadingMore) return;
-    if (historyError) {
-      setHistoryReloadKey((current) => current + 1);
-      return;
-    }
-    if (!history?.nextCursor) return;
-    setHistoryLoadingMore(true);
+  const copyLink = async (): Promise<void> => {
+    if (!created) return;
     try {
-      const next = await listAdminTripPublications(tripId, history.nextCursor);
-      setHistory((current) =>
-        current
-          ? { entries: [...current.entries, ...next.entries], nextCursor: next.nextCursor }
-          : next,
-      );
+      await navigator.clipboard.writeText(created.url);
+      setCopyMessage("Link copiado.");
+    } catch {
+      setCopyMessage("Não foi possível copiar; selecione o texto e copie manualmente.");
+    }
+  };
+
+  const revoke = async (shareLinkId: string): Promise<void> => {
+    setRevokingId(shareLinkId);
+    setFeedback(null);
+    try {
+      await revokeAdminShareLink(shareLinkId);
+      setLinksReloadKey((current) => current + 1);
     } catch (error) {
       if (isAuthenticationRequired(error)) onAuthenticationRequired();
-      else setHistoryError(safeErrorMessage(error));
+      else setFeedback(safeErrorMessage(error));
     } finally {
-      setHistoryLoadingMore(false);
+      setRevokingId(null);
     }
   };
 
@@ -1252,7 +1272,7 @@ export function TripWorkspaceEditor({
             className="button button--secondary"
             type="button"
             onClick={() => openEditor({ kind: "trip", itemId: null })}
-            disabled={saving || publishing}
+            disabled={saving || sharing}
           >
             Editar viagem
           </button>
@@ -1260,7 +1280,7 @@ export function TripWorkspaceEditor({
             className="button button--secondary"
             type="button"
             onClick={() => openEditor({ kind: "flight", itemId: null })}
-            disabled={saving || publishing}
+            disabled={saving || sharing}
           >
             Adicionar voo
           </button>
@@ -1268,7 +1288,7 @@ export function TripWorkspaceEditor({
             className="button button--secondary"
             type="button"
             onClick={() => openEditor({ kind: "accommodation", itemId: null })}
-            disabled={saving || publishing}
+            disabled={saving || sharing}
           >
             Adicionar alojamento
           </button>
@@ -1306,7 +1326,7 @@ export function TripWorkspaceEditor({
                   type="button"
                   aria-label={`Editar voo: ${item.title}`}
                   onClick={() => openEditor({ kind: "flight", itemId: item.id })}
-                  disabled={saving || publishing}
+                  disabled={saving || sharing}
                 >
                   Editar voo
                 </button>
@@ -1320,7 +1340,7 @@ export function TripWorkspaceEditor({
                   type="button"
                   aria-label={`Editar alojamento: ${item.title}`}
                   onClick={() => openEditor({ kind: "accommodation", itemId: item.id })}
-                  disabled={saving || publishing}
+                  disabled={saving || sharing}
                 >
                   Editar alojamento
                 </button>
@@ -1333,18 +1353,22 @@ export function TripWorkspaceEditor({
         workspace={workspace}
         preview={preview}
         previewLoading={previewLoading}
-        publishing={publishing}
+        sharing={sharing}
         feedback={null}
         disabled={activeEditor !== null || saving}
-        successMessage={publishSuccess}
+        created={created}
+        copyMessage={copyMessage}
+        expiresInDays={expiresInDays}
+        onExpiresInDaysChange={setExpiresInDays}
         onPreview={() => void loadPreview()}
-        onPublish={() => void publish()}
-        onAuthenticationRequired={onAuthenticationRequired}
-        history={history}
-        historyLoading={historyLoading}
-        historyLoadingMore={historyLoadingMore}
-        historyError={historyError}
-        onLoadMoreHistory={() => void loadMoreHistory()}
+        onShare={() => void share()}
+        onCopy={() => void copyLink()}
+        links={links}
+        linksLoading={linksLoading}
+        linksError={linksError}
+        revokingId={revokingId}
+        onRevoke={(shareLinkId) => void revoke(shareLinkId)}
+        onRetryLinks={() => setLinksReloadKey((current) => current + 1)}
       />
     </>
   );

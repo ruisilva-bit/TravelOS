@@ -13,17 +13,12 @@
     "postgresqlMajor": 18
   },
   "hosts": {
-    "admin": "admin.travelos.test",
-    "portal": "portal.travelos.test"
+    "admin": "admin.travelos.test"
   },
   "hostAllowlist": [
     {
       "host": "admin.travelos.test",
       "surface": "ADMIN"
-    },
-    {
-      "host": "portal.travelos.test",
-      "surface": "PORTAL"
     }
   ],
   "agencyBootstrap": {
@@ -40,10 +35,6 @@
         "roleName": "travelos_admin_api",
         "credentialReference": "systemd-credential:admin-api-db"
       },
-      "portalApi": {
-        "roleName": "travelos_portal_api",
-        "credentialReference": "systemd-credential:portal-api-db"
-      },
       "worker": {
         "roleName": "travelos_worker",
         "credentialReference": "systemd-credential:worker-db"
@@ -51,18 +42,13 @@
     }
   },
   "authentication": {
-    "staffRealmCredentialReference": "systemd-credential:staff-auth-realm",
-    "portalRealmCredentialReference": "systemd-credential:portal-auth-realm"
+    "staffRealmCredentialReference": "systemd-credential:staff-auth-realm"
   },
   "runtime": {
     "listeners": {
       "adminApi": {
         "host": "127.0.0.1",
         "port": 3101
-      },
-      "portalApi": {
-        "host": "127.0.0.1",
-        "port": 3102
       }
     },
     "shutdownGracePeriodMs": 5000

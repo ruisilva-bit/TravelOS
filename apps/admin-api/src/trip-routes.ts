@@ -1,6 +1,5 @@
 import { asOpaqueId, createMoney, type TripWorkspace } from "@travelos/backend-core";
 import {
-  ADMIN_RUNTIME_ACCEPTANCE_FIXTURE_RUN_HEADER,
   AdminCreateM1TripSliceRequestSchema,
   AdminTripWorkspaceCreateV1RequestSchema,
   AdminTripWorkspaceListV1QuerySchema,
@@ -279,29 +278,8 @@ export const registerAdminTripRoutes = (
           response.status(rejection).end();
           return;
         }
-        const headers = headersFor(request);
-        const fixtureRunIdHeader = headers.get(ADMIN_RUNTIME_ACCEPTANCE_FIXTURE_RUN_HEADER);
-        if (fixtureRunIdHeader !== null) {
-          const fixtureOperations = options.runtimeAcceptanceFixtureOperations;
-          const fixtureRunId = idFrom(fixtureRunIdHeader);
-          if (fixtureOperations === undefined) {
-            response.status(403).end();
-            return;
-          }
-          if (fixtureRunId === null) {
-            badRequest(response);
-            return;
-          }
-          const slice = await fixtureOperations.createFixtureTrip(
-            headers.get("cookie"),
-            toCreateInput(parsed.data),
-            fixtureRunId,
-          );
-          send(response, 201, mapSlice(slice));
-          return;
-        }
         const slice = await options.tripOperations.createTripSlice(
-          headers.get("cookie"),
+          headersFor(request).get("cookie"),
           toCreateInput(parsed.data),
         );
         send(response, 201, mapSlice(slice));

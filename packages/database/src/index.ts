@@ -23,9 +23,10 @@ export { createPostgresStaffTripWorkspaceOperations } from "./trip-operations/st
 export { createPostgresStaffTripWorkspaceWriteOperations } from "./trip-operations/staff-trip-workspace-write-operations.js";
 export { createUuidV7 } from "./uuidv7.js";
 export { createTripPublicationSourceRepository } from "./customer-presentation/publication-source-repository.js";
-export { createPortalTripSnapshotSha256Hasher } from "./customer-presentation/snapshot-hash.js";
-export { createPostgresStaffTripPublicationOperations } from "./customer-presentation/staff-publication-operations.js";
-export { createPostgresStaffTripAccessRepository } from "./portal-access/staff-trip-access-repository.js";
-export { createPostgresRuntimeAcceptanceFixtureCleanupRepository } from "./portal-access/runtime-acceptance-fixture-repository.js";
+export { createTripSnapshotSha256Hasher } from "./customer-presentation/snapshot-hash.js";
+export { createPostgresStaffTripPreviewOperations } from "./customer-presentation/staff-publication-operations.js";
+export { createPostgresStaffShareLinkOperations } from "./share-links/staff-share-link-operations.js";
+export { createPostgresPublicShareReader } from "./share-links/public-share-reader.js";
+export { createShareTokenCrypto } from "./share-links/share-token-crypto.js";
 export { createPostgresLeadRepository } from "./sales/lead-repository.js";
 export { createPostgresStaffLeadOperations } from "./sales/staff-lead-operations.js";

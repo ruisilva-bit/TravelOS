@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  assemblePortalTripSnapshotV1,
-  canonicalPortalTripSnapshotV1Json,
+  assembleTripSnapshotV1,
+  canonicalTripSnapshotV1Json,
   resolvePublicationFieldVisibility,
   type PublicationSafeAccommodationSource,
   type PublicationSafeFlightSource,
@@ -130,8 +130,8 @@ describe("Stage 6 snapshot projection", () => {
   });
 
   it("uses one explicit allowlist and sorts families/items independently of source row order", () => {
-    const projection = assemblePortalTripSnapshotV1(input);
-    const reversedProjection = assemblePortalTripSnapshotV1({
+    const projection = assembleTripSnapshotV1(input);
+    const reversedProjection = assembleTripSnapshotV1({
       ...input,
       flights: [...input.flights].reverse(),
       accommodations: [...input.accommodations].reverse(),
@@ -146,8 +146,8 @@ describe("Stage 6 snapshot projection", () => {
   });
 
   it("canonicalizes property insertion order and produces a repeatable SHA-256", () => {
-    const projection = assemblePortalTripSnapshotV1(input);
-    const canonical = canonicalPortalTripSnapshotV1Json(projection);
+    const projection = assembleTripSnapshotV1(input);
+    const canonical = canonicalTripSnapshotV1Json(projection);
     const reordered = {
       trip: {
         endDate: projection.trip.endDate,
@@ -157,9 +157,9 @@ describe("Stage 6 snapshot projection", () => {
       items: projection.items,
       schemaVersion: projection.schemaVersion,
     };
-    expect(canonicalPortalTripSnapshotV1Json(reordered)).toBe(canonical);
-    expect(canonicalPortalTripSnapshotV1Json(projection)).toBe(canonical);
-    expect(() => canonicalPortalTripSnapshotV1Json({ unsupported: undefined })).toThrow();
+    expect(canonicalTripSnapshotV1Json(reordered)).toBe(canonical);
+    expect(canonicalTripSnapshotV1Json(projection)).toBe(canonical);
+    expect(() => canonicalTripSnapshotV1Json({ unsupported: undefined })).toThrow();
   });
 
   it("pins canonical V1 golden bytes and their SHA-256", () => {
@@ -170,6 +170,6 @@ describe("Stage 6 snapshot projection", () => {
     };
     const canonical =
       '{"items":[],"schemaVersion":1,"trip":{"endDate":"2026-01-02","startDate":"2026-01-01","title":"T"}}';
-    expect(canonicalPortalTripSnapshotV1Json(golden)).toBe(canonical);
+    expect(canonicalTripSnapshotV1Json(golden)).toBe(canonical);
   });
 });

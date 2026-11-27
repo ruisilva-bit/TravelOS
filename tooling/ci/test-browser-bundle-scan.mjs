@@ -19,7 +19,7 @@ const runScanner = () =>
   });
 
 try {
-  for (const app of ["admin-web", "portal-web"]) {
+  for (const app of ["admin-web"]) {
     await cp(
       path.join(repositoryRoot, "apps", app, "dist"),
       path.join(temporaryRoot, "apps", app, "dist"),

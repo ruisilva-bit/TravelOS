@@ -7,20 +7,12 @@
     "paths": {
       "@travelos/backend-core": ["./packages/backend-core/src/index.ts"],
       "@travelos/auth-adapters": ["./packages/auth-adapters/src/index.ts"],
-      "@travelos/auth-adapters/portal": ["./packages/auth-adapters/src/portal.ts"],
       "@travelos/contracts/admin": ["./packages/contracts/src/admin/index.ts"],
-      "@travelos/contracts/portal": ["./packages/contracts/src/portal/index.ts"],
+      "@travelos/contracts/share": ["./packages/contracts/src/share/index.ts"],
       "@travelos/config": ["./packages/config/src/index.ts"],
       "@travelos/observability": ["./packages/observability/src/index.ts"],
       "@travelos/database": ["./packages/database/src/index.ts"],
-      "@travelos/design-system": ["./packages/design-system/src/index.ts"],
-      "@travelos/portal-safe-core/portal-access": [
-        "./packages/portal-safe-core/src/portal-access/index.ts"
-      ],
-      "@travelos/portal-safe-core/customer-presentation": [
-        "./packages/portal-safe-core/src/customer-presentation/index.ts"
-      ],
-      "@travelos/portal-safe-core/documents": ["./packages/portal-safe-core/src/documents/index.ts"]
+      "@travelos/design-system": ["./packages/design-system/src/index.ts"]
     },
     "strict": true,
     "noUncheckedIndexedAccess": true,

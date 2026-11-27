@@ -5,41 +5,40 @@
 
 ## 1. Security principals
 
-TravelOS has two independent human security realms.
+TravelOS has one human security realm: the Staff realm. There is no customer login and no customer principal (ADR-016); customers will later receive a revocable, read-only share link to a frozen snapshot of their trip.
 
-| Property | Staff realm | Portal realm |
-|---|---|---|
-| Principal | `StaffPrincipal` | `PortalPrincipal` |
-| Purpose | Agency operations/administration | Customer-facing published access/actions |
-| Auth base path | `/api/auth/staff/*` | `/api/auth/portal/*` |
-| Browser host | Admin host | Portal host/custom domain |
-| Cookie | Host-only `__Host-travelos-staff` | Host-only `__Host-travelos-portal` |
-| Tables | Dedicated staff auth tables | Dedicated Portal auth tables |
-| Secret/key material | Staff realm secret reference | Different Portal realm secret reference |
-| Authorization | Staff membership + RBAC + scope/policy | Explicit Trip/Document/action grants |
-| MFA | Mandatory for production staff | Optional V1; risk-based later |
+| Property | Staff realm |
+|---|---|
+| Principal | `StaffPrincipal` |
+| Purpose | Agency operations/administration |
+| Auth base path | `/api/auth/staff/*` |
+| Browser host | Admin host |
+| Cookie | Host-only `__Host-travelos-staff` |
+| Tables | Dedicated staff auth tables |
+| Secret/key material | Staff realm secret reference |
+| Authorization | Staff membership + RBAC + scope/policy |
+| MFA | Mandatory for production staff |
 
-The same normalized email may exist in both realms. It creates no link and grants no permission. A Person/Customer/Traveller is not a principal. An optional, audited link between PortalPrincipal and Person supports UX but conveys no authority.
+A Person/Customer/Traveller is not a principal.
 
 There is no hidden cross-customer “platform admin” principal inside an Agency instance. Managed support uses an explicit, customer-approved, expiring local Staff Principal with visible audit history.
 
 ## 2. Authentication decision
 
-Use two independently configured Better Auth instances embedded at the NestJS delivery boundary, behind TravelOS authentication/session ports. Business modules never import Better Auth types.
+Use one Better Auth instance (Staff realm) embedded at the NestJS delivery boundary, behind TravelOS authentication/session ports. Business modules never import Better Auth types.
 
 V1 policy:
 
 - invitation-only staff enrolment;
-- verified email and password for both realms;
+- verified email and password;
 - memory-hard library-managed password hashing; no custom password cryptography;
 - mandatory TOTP MFA and hashed recovery codes for all production Staff Principals;
 - opaque server-side sessions in Secure, HttpOnly, SameSite=Lax, host-only cookies;
 - no browser bearer token in local/session storage;
-- Portal invitation explicitly establishes a PortalPrincipal and TripAccessGrant;
 - password reset/invitation tokens are single-use, hashed at rest, short-lived and invalidate relevant prior sessions;
 - enumeration-safe responses and throttling by account/network risk;
 - high-risk staff actions require recent MFA assurance (publish, role/user administration, exports, private documents, payments, audit export);
-- staff session: 8-hour idle / 7-day absolute maximum; Portal session: 30-day absolute maximum, both revocable;
+- staff session: 8-hour idle / 7-day absolute maximum, revocable;
 - Origin/Host validation and CSRF protection on state-changing cookie-authenticated requests;
 - same-origin static SPA + `/api` proxy is the default; CORS is closed unless a reviewed integration requires it.
 
@@ -59,10 +58,10 @@ Initial groups include:
 - `staff.view`, `staff.invite`, `staff.manage_roles`, `staff.suspend`;
 - `customer.view`, `customer.edit`, `traveller.view_sensitive`, `traveller.edit`;
 - `sales.view`, `sales.edit`, `quote.version.create`, `sale.record`;
-- `trip.view`, `trip.edit`, `trip.preview`, `trip.publish`, `trip.withdraw_publication`, `trip.access.manage`;
+- `trip.view`, `trip.edit`, `trip.preview`, `trip.publish`;
 - `reservation.view`, `reservation.edit`;
 - `finance.view_prices`, `finance.view_costs`, `finance.view_margins`, `finance.manage_payments`;
-- `document.view_metadata`, `document.upload`, `document.download_private`, `document.manage`, `document.grant_portal`;
+- `document.view_metadata`, `document.upload`, `document.download_private`, `document.manage`;
 - `task.manage`, `case.manage`, `communication.manage`;
 - `activity.view`, `audit.view`, `audit.export`;
 - `integration.manage`, `feature.manage`.
@@ -83,11 +82,11 @@ Owner is reserved and protected. At least one active Staff Principal must retain
 | Create, update and disqualify a Lead | `sales.edit` |
 | Qualify a Lead (creates or links a Customer) | `sales.edit` **and** `customer.edit` |
 
-Each use case authorizes inside the application use case and again inside the repository transaction against the live session, membership and authorization epoch; a missing permission or a Lead/Customer of another Agency gives a generic forbidden or not-found response. The `trip-operations-v1` template below is unchanged by this slice (its exact Stage 9 set is a documented contract); a Sales role template is a later decision. Lead data has no Portal access.
+Each use case authorizes inside the application use case and again inside the repository transaction against the live session, membership and authorization epoch; a missing permission or a Lead/Customer of another Agency gives a generic forbidden or not-found response. The `trip-operations-v1` template below is unchanged by this slice (its exact Stage 9 set is a documented contract); a Sales role template is a later decision. Lead data has no customer-facing access.
 
 ### Stage 9 fixed invitation role
 
-Stage 9 provides one code-owned Agency role template, `trip-operations-v1`, for invited staff who need the workspace, preview/publish and explicit Portal Trip-grant workflows. Its exact Agency-scoped permission set is `agency.view`, `customer.edit`, `traveller.edit`, `trip.view`, `trip.edit`, `trip.preview`, `trip.publish` and `trip.access.manage`. It excludes `staff.invite`, `staff.view`, `staff.manage_roles`, `staff.suspend`, `agency.manage_settings`, finance permissions, reservation permissions, `trip.withdraw_publication` and `runtime_acceptance.fixture.manage`. Invitation requests cannot select another role or submit permission IDs.
+Stage 9 provides one code-owned Agency role template, `trip-operations-v1`, for invited staff who need the workspace, and preview/publish workflows. Its exact Agency-scoped permission set is `agency.view`, `customer.edit`, `traveller.edit`, `trip.view`, `trip.edit`, `trip.preview` and `trip.publish`. It excludes `staff.invite`, `staff.view`, `staff.manage_roles`, `staff.suspend`, `agency.manage_settings`, finance permissions and reservation permissions. Invitation requests cannot select another role or submit permission IDs.
 
 Issuing, listing, reissuing or revoking a Staff invitation requires `staff.invite` at Agency scope and recent MFA no older than five minutes. The server derives the Agency and actor from the Staff session. Each state-changing transition is audited; issuance/reissue returns the raw token once, while persistence and later list responses contain only its digest/safe metadata. Acceptance creates the fixed assignment atomically and gives no Admin authorization context until TOTP is enabled and verified. There is no public Staff signup.
 
@@ -115,48 +114,31 @@ Every staff command/query performs, server-side:
 
 UI visibility is convenience only. Hiding a button is never authorization.
 
-## 5. Portal authorization
+## 5. Customer access
 
-Portal permissions are capabilities derived from explicit grants, not staff RBAC.
-
-### TripAccessGrant
-
-An active grant identifies:
-
-- Agency, Portal Principal and Trip;
-- allowed capability set such as `trip.view_current`, `message.create`, `request.create`;
-- issue/revoke actor and timestamps;
-- optional expiry;
-- optional relationship label for UX only.
-
-A Customer, Person, Traveller, family/group or matching email does not create a grant. Enrolment and grant issue are separate transactional operations/audit events, even if orchestrated in one invitation use case.
+Customers have no login and no grants. A later share link (ADR-016) is a revocable, read-only capability to one frozen publication snapshot built from an explicit field allowlist; it is not an RBAC principal and needs its own design (token storage, expiry, revocation).
 
 ### DocumentGrant
 
-Document access is evaluated independently for every listing and download. A grant identifies Portal Principal, Document or version scope, allowed action, expiry and revocation. A TripAccessGrant is necessary for trip-scoped presentation but never sufficient for a document.
-
-A traveller may receive only their own passport/policy while another trip participant sees none. Guardians/delegates require explicit grants. Confidential and Restricted Portal documents are streamed/proxied through the Portal API after a fresh authorization check; V1 does not issue a reusable or direct-to-storage signed URL for them.
+Document access is evaluated independently for every listing and download. Documents are never part of a trip snapshot, and trip membership never implies document access.
 
 ## 6. Resource policy examples
 
 | Operation | Required controls |
 |---|---|
-| View supplier cost | `finance.view_costs`, correct scope; never Portal |
-| View margin | `finance.view_margins`; never Portal |
+| View supplier cost | `finance.view_costs`, correct scope; never customer-facing |
+| View margin | `finance.view_margins`; never customer-facing |
 | Publish Trip | `trip.publish`, expected revision/hash, recent MFA, publishable state |
-| Withdraw publication | dedicated permission, recent MFA, reason, Audit Event |
 | Assign staff role | `staff.manage_roles`, recent MFA, cannot remove last Owner |
 | Issue, list, reissue or revoke Staff invitation | `staff.invite`, Agency scope, recent MFA ≤ 5 minutes; server-derived Agency/actor; audited state changes |
-| Download private document | explicit staff permission and resource scope, or active Portal DocumentGrant |
-| Grant document to Portal | `document.grant_portal`, available/clean version, grant cannot exceed issuer policy |
+| Download private document | explicit staff permission and resource scope |
 | Manage payments | `finance.manage_payments`, scope and immutable correction rules |
 | Audit export | `audit.export`, recent MFA, justification and export audit |
 
 ## 7. Revocation and race behaviour
 
-- Membership suspension and role/grant revocation take effect on the next request; high-risk operations re-evaluate authorization inside their transaction.
+- Membership suspension and role revocation take effect on the next request; high-risk operations re-evaluate authorization inside their transaction.
 - Revocation increments a principal authorization epoch. Sessions carry/check that epoch so cached authorization cannot survive revocation.
-- Protected Portal downloads recheck session, TripAccessGrant, DocumentGrant and authorization epoch before each response. Revoking any of them makes a previously discovered download endpoint fail on its next use; no residual capability TTL is accepted. Bytes already delivered cannot be revoked retroactively.
 - Publish rechecks permission/MFA after acquiring its transaction lock.
 - Access caches are per request or short-lived and keyed by principal authorization epoch and Agency.
 
@@ -180,9 +162,6 @@ For each permission-sensitive use case test:
 - stale role/grant cache after revocation;
 - missing/recent MFA where applicable;
 - direct API call despite hidden UI control;
-- Portal Trip grant without Document grant;
-- Document grant after expiry/revocation;
-- reuse of a previously obtained document endpoint after Trip/Document grant or session revocation;
 - metadata, filename, count, error and timing leakage—not only response body.
 
 Any cross-realm acceptance, cross-Agency access, or implicit document access is a BLOCKER.

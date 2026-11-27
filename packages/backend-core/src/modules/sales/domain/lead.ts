@@ -36,7 +36,7 @@ export interface LeadDraft {
   readonly contactEmail: string | null;
   /** CONFIDENTIAL_PERSONAL. */
   readonly contactPhone: string | null;
-  /** INTERNAL_ONLY. No Portal contract or source field exists for it. */
+  /** INTERNAL_ONLY. No customer-facing contract or source field exists for it. */
   readonly internalNote: string | null;
 }
 

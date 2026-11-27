@@ -195,7 +195,7 @@ const collectFiles = async (directory) => {
   return files.sort();
 };
 
-const webBuild = async (app, requiredText, forbiddenText) => {
+const webBuild = async (app, requiredText) => {
   const directory = path.join(root, `apps/${app}/dist`);
   assert((await stat(path.join(directory, "index.html"))).isFile(), `${app} index.html is missing`);
   const files = await collectFiles(directory);
@@ -205,17 +205,11 @@ const webBuild = async (app, requiredText, forbiddenText) => {
     aggregate.includes(requiredText),
     `${app} bundle does not contain its own application title`,
   );
-  assert(
-    !aggregate.includes(forbiddenText),
-    `${app} bundle contains the other application's title`,
-  );
   return {
     app,
     markerChecks: {
       ownMarker: requiredText,
       ownMarkerPresent: true,
-      otherMarker: forbiddenText,
-      otherMarkerAbsent: true,
     },
     fileCount: files.length,
     aggregateSha256: sha256(Buffer.concat(contents)),
@@ -229,11 +223,9 @@ const webBuild = async (app, requiredText, forbiddenText) => {
   };
 };
 
-const adminWeb = await webBuild("admin-web", "TravelOS", "TravelOS Portal");
-const portalWeb = await webBuild("portal-web", "TravelOS Portal", 'data-routing-root="admin"');
+const adminWeb = await webBuild("admin-web", "TravelOS");
 const processSmokes = [
   await runApiListenerSmoke({ service: "admin-api", hostKey: "admin" }),
-  await runApiListenerSmoke({ service: "portal-api", hostKey: "portal" }),
   runProcessSmoke("worker"),
 ];
 assert(
@@ -256,30 +248,12 @@ assert(
 );
 assert(
   processSmokes[1].events.some(
-    (event) =>
-      event.event === "process_smoke" &&
-      event.initialized === true &&
-      event.listening === true &&
-      event.binding?.requestedPort === 0 &&
-      event.binding?.boundAddress === "127.0.0.1" &&
-      Number.isInteger(event.binding?.boundPort) &&
-      event.binding.boundPort > 0 &&
-      event.binding?.ephemeralPortRequested === true &&
-      event.healthRequest?.method === "GET" &&
-      event.healthRequest?.path === "/health/live" &&
-      event.healthStatus === 200 &&
-      event.cleanShutdown === true,
-  ),
-  "Portal API did not initialize",
-);
-assert(
-  processSmokes[2].events.some(
     (event) => event.event === "process_bootstrap" && event.state === "RUNNING",
   ),
   "Worker did not enter RUNNING state",
 );
 assert(
-  processSmokes[2].events.some(
+  processSmokes[1].events.some(
     (event) => event.event === "process_shutdown" && event.state === "STOPPED",
   ),
   "Worker did not shut down",
@@ -290,8 +264,8 @@ console.log(
     {
       schemaVersion: 1,
       result: "PASS",
-      deployablesBuilt: 5,
-      webBuilds: [adminWeb, portalWeb],
+      deployablesBuilt: 3,
+      webBuilds: [adminWeb],
       processSmokes,
     },
     null,

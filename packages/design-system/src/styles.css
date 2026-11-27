@@ -672,49 +672,6 @@ button {
   display: none;
 }
 
-.portal-trip-card {
-  display: block;
-  padding: 18px 8px;
-  border-bottom: 1px solid var(--border-rule);
-  color: inherit;
-  text-decoration: none;
-}
-
-.portal-trip-card:hover .portal-trip-card__title {
-  color: var(--action-primary);
-}
-
-.portal-trip-card__title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.portal-trip-card__date {
-  margin: 4px 0 0;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
-
-.portal-pending-card {
-  padding: 18px 8px;
-  border-bottom: 1px solid var(--border-rule);
-}
-
-.portal-pending-card h2 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.portal-pending-card p {
-  margin: 4px 0 0;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
 .sr-only {
   position: absolute;
   width: 1px;

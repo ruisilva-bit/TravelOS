@@ -1,29 +1,25 @@
 import {
   asOpaqueId,
   InputValidationError,
-  RuntimeAcceptanceFixtureConflictError,
-  RuntimeAcceptanceFixtureNotFoundError,
   OptimisticConflictError,
   TransactionConflictError,
   StaffAuthorizationError,
   StaffPublicationInputError,
+  ShareLinkInputError,
+  ShareLinkNotFoundError,
   TripNotFoundError,
-  StalePublicationCandidateError,
   IdempotencyConflictError,
   TripPublicationNotFoundError,
-  StaffTripAccessNotFoundError,
   LeadIdempotencyConflictError,
   LeadNotFoundError,
   LeadNotOpenError,
   type StaffLeadOperations,
   type StaffTripWorkspaceWriteOperations,
-  type StaffTripAccessOperations,
   type StaffTripOperations,
   type StaffTripWorkspaceOperations,
-  type StaffTripPublicationOperations,
-  type RuntimeAcceptanceFixtureOperations,
+  type StaffTripPreviewOperations,
+  type StaffShareLinkOperations,
 } from "@travelos/backend-core";
-import { AdminRuntimeAcceptanceFixtureConflictV1ResponseSchema } from "@travelos/contracts/admin";
 import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
 
 import { ADMIN_PRIVATE_NO_STORE } from "./http-security.js";
@@ -35,6 +31,7 @@ export interface IncomingHttpRequest {
   readonly url: string;
   readonly headers: Record<string, string | string[] | undefined>;
   readonly body?: unknown;
+  readonly rawHeaders?: readonly string[];
   readonly params?: Readonly<Record<string, string | undefined>>;
   readonly query?: Readonly<Record<string, string | readonly string[] | undefined>>;
 }
@@ -64,15 +61,9 @@ export interface AdminRouteOptions {
   readonly tripOperations: StaffTripOperations;
   readonly workspaceOperations?: StaffTripWorkspaceOperations;
   readonly workspaceWriteOperations?: StaffTripWorkspaceWriteOperations;
-  readonly tripAccessOperations?: StaffTripAccessOperations;
-  readonly publicationOperations?: StaffTripPublicationOperations;
+  readonly previewOperations?: StaffTripPreviewOperations;
+  readonly shareLinkOperations?: StaffShareLinkOperations;
   readonly leadOperations?: StaffLeadOperations;
-  readonly runtimeAcceptanceFixtureOperations?: AdminRuntimeAcceptanceFixtureRouteOperations;
-}
-
-export interface AdminRuntimeAcceptanceFixtureRouteOperations {
-  readonly createFixtureTrip: StaffTripOperations["createRuntimeAcceptanceFixtureTrip"];
-  readonly cleanupFixture: RuntimeAcceptanceFixtureOperations["cleanupFixture"];
 }
 
 /** Admin route policy: URL, Host, Authorization, X-Forwarded-Host and (when required) Origin. */
@@ -122,10 +113,6 @@ export const runHandler = (
       send(response, 409, { error: "transaction_conflict" });
       return;
     }
-    if (error instanceof StalePublicationCandidateError) {
-      send(response, 409, { error: "STALE_PUBLICATION_CANDIDATE" });
-      return;
-    }
     if (error instanceof IdempotencyConflictError) {
       send(response, 409, { error: "IDEMPOTENCY_KEY_CONFLICT" });
       return;
@@ -142,35 +129,20 @@ export const runHandler = (
       response.status(404).end();
       return;
     }
+    if (error instanceof ShareLinkNotFoundError) {
+      response.status(404).end();
+      return;
+    }
+    if (error instanceof ShareLinkInputError) {
+      badRequest(response);
+      return;
+    }
     if (error instanceof TripPublicationNotFoundError) {
       response.status(404).end();
       return;
     }
     if (error instanceof TripNotFoundError) {
       response.status(404).end();
-      return;
-    }
-    if (error instanceof StaffTripAccessNotFoundError) {
-      response.status(404).end();
-      return;
-    }
-    if (error instanceof RuntimeAcceptanceFixtureNotFoundError) {
-      response.status(404).end();
-      return;
-    }
-    if (error instanceof RuntimeAcceptanceFixtureConflictError) {
-      const conflictResponse =
-        error.recoveryFixtureRunId === null
-          ? { error: "runtime_acceptance_fixture_conflict" as const }
-          : {
-              error: "runtime_acceptance_fixture_conflict" as const,
-              recoveryFixtureRunId: error.recoveryFixtureRunId,
-            };
-      send(
-        response,
-        409,
-        AdminRuntimeAcceptanceFixtureConflictV1ResponseSchema.parse(conflictResponse),
-      );
       return;
     }
     if (error instanceof StaffPublicationInputError) {

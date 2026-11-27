@@ -1,11 +1,14 @@
 import { originAllowedForMethod } from "@travelos/auth-adapters";
 
+import { isPublicSharePath } from "./public-share-routes.js";
 import { headerValues } from "./request-boundary.js";
 
 export const ADMIN_PRIVATE_NO_STORE = "private, no-store";
 
 interface IncomingHttpRequest {
   readonly method: string;
+  readonly url?: string;
+  readonly originalUrl?: string;
   readonly headers: Readonly<Record<string, string | string[] | undefined>>;
   readonly rawHeaders?: readonly string[];
 }
@@ -25,7 +28,12 @@ type HttpHandler = (
 ) => void;
 
 /** Pins the Admin cache policy before any route, parser, or error handler can write headers. */
-export const createAdminCacheControlMiddleware = (): HttpHandler => (_request, response, next) => {
+export const createAdminCacheControlMiddleware = (): HttpHandler => (request, response, next) => {
+  // The public share route (`/v/...`) owns its headers (`Cache-Control: no-store`).
+  if (isPublicSharePath(request.originalUrl ?? request.url)) {
+    next();
+    return;
+  }
   const originalSetHeader = response.setHeader.bind(response);
   response.setHeader = (name, value) =>
     originalSetHeader(

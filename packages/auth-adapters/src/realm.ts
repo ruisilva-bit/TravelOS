@@ -4,17 +4,16 @@ import { twoFactor } from "better-auth/plugins";
 import { sql, type Kysely } from "kysely";
 
 export const STAFF_AUTH_BASE_PATH = "/api/auth/staff" as const;
-export const PORTAL_AUTH_BASE_PATH = "/api/auth/portal" as const;
 
 export type RealmEnvironment = "DEVELOPMENT" | "PRODUCTION";
-export type AuthenticationRealm = "STAFF" | "PORTAL";
+export type AuthenticationRealm = "STAFF";
 
 export interface RealmSession {
   readonly realm: AuthenticationRealm;
   readonly sessionId: string;
   readonly principalId: string;
   readonly expiresAtEpochMs: number;
-  /** Current Agency context; null when a Staff membership or Portal context is unavailable. */
+  /** Current Agency context; null when no Staff membership context is available. */
   readonly agencyId: string | null;
   readonly authorizationEpoch: bigint | null;
   readonly recentMfaVerifiedAtEpochMs: number | null;
@@ -34,13 +33,6 @@ export interface AuthRealmConfiguration {
   readonly canonicalOrigin: string;
   readonly realmKeyMaterial: string;
   readonly environment: RealmEnvironment;
-}
-
-export type PortalAuthRealmConfiguration = AuthRealmConfiguration;
-
-export interface PortalAuthRealm extends AuthRealm {
-  readonly kind: "PORTAL";
-  readonly basePath: typeof PORTAL_AUTH_BASE_PATH;
 }
 
 const assertRealmConfiguration = ({
@@ -63,51 +55,15 @@ const assertRealmConfiguration = ({
   }
 };
 
-const cookieNameFor = (realm: AuthenticationRealm, environment: RealmEnvironment): string => {
-  if (environment === "PRODUCTION") {
-    return realm === "STAFF" ? "__Host-travelos-staff" : "__Host-travelos-portal";
-  }
-  return realm === "STAFF" ? "travelos-dev-staff-session" : "travelos-dev-portal-session";
+const cookieNameFor = (environment: RealmEnvironment): string => {
+  if (environment === "PRODUCTION") return "__Host-travelos-staff";
+  return "travelos-dev-staff-session";
 };
 
 type StaffSessionContextRow = {
   readonly agencyId: string;
   readonly authorizationEpoch: string;
   readonly recentMfaVerifiedAt: Date | null;
-};
-
-type PortalSessionContextRow = {
-  readonly agencyId: string;
-  readonly authorizationEpoch: string;
-};
-
-type PortalSessionContextCandidateRow = {
-  readonly agencyId: string;
-  readonly sessionAuthorizationEpoch: string;
-  readonly principalAuthorizationEpoch: string;
-  readonly principalRetiredAt: Date | null;
-};
-
-export const resolveCurrentPortalSessionContext = (
-  candidate: PortalSessionContextCandidateRow,
-): PortalSessionContextRow | null => {
-  if (
-    candidate.agencyId.length === 0 ||
-    candidate.principalRetiredAt !== null ||
-    !/^(0|[1-9]\d*)$/u.test(candidate.sessionAuthorizationEpoch) ||
-    !/^(0|[1-9]\d*)$/u.test(candidate.principalAuthorizationEpoch)
-  ) {
-    return null;
-  }
-  if (
-    BigInt(candidate.sessionAuthorizationEpoch) !== BigInt(candidate.principalAuthorizationEpoch)
-  ) {
-    return null;
-  }
-  return {
-    agencyId: candidate.agencyId,
-    authorizationEpoch: candidate.principalAuthorizationEpoch,
-  };
 };
 
 type SetCookieHeaders = Headers & { readonly getSetCookie?: () => string[] };
@@ -142,28 +98,6 @@ const staffSessionContextFor = async (
   return row ?? null;
 };
 
-const portalSessionContextFor = async (
-  database: Kysely<Record<string, never>>,
-  sessionId: string,
-  principalId: string,
-): Promise<PortalSessionContextRow | null> => {
-  const row = (
-    await sql<PortalSessionContextCandidateRow>`
-      SELECT context."agencyId"::text AS "agencyId",
-             context."authorizationEpoch"::text AS "sessionAuthorizationEpoch",
-             principal."authorizationEpoch"::text AS "principalAuthorizationEpoch",
-             principal."retiredAt" AS "principalRetiredAt"
-        FROM "portal_access"."portal_session_context" AS context
-        JOIN "portal_access"."portal_principal_context" AS principal
-          ON principal."agencyId" = context."agencyId"
-         AND principal."portalPrincipalId" = context."portalPrincipalId"
-       WHERE context."sessionId" = ${sessionId}
-         AND context."portalPrincipalId" = ${principalId}
-    `.execute(database)
-  ).rows[0];
-  return row === undefined ? null : resolveCurrentPortalSessionContext(row);
-};
-
 type InternalRealmConfiguration = AuthRealmConfiguration & {
   readonly allowOperatorEnrollment?: boolean;
   readonly allowStaffInvitationEnrollment?: boolean;
@@ -173,22 +107,22 @@ type InternalRealmConfiguration = AuthRealmConfiguration & {
 type VerificationTokenConsumer = (email: string, token: string) => void;
 
 const createRealm = (
-  kind: AuthenticationRealm,
   configuration: InternalRealmConfiguration,
   verificationTokenConsumer?: VerificationTokenConsumer,
 ) => {
   assertRealmConfiguration(configuration);
-  const basePath = kind === "STAFF" ? STAFF_AUTH_BASE_PATH : PORTAL_AUTH_BASE_PATH;
-  const cookieName = cookieNameFor(kind, configuration.environment);
+  const kind = "STAFF" as const satisfies AuthenticationRealm;
+  const basePath = STAFF_AUTH_BASE_PATH;
+  const cookieName = cookieNameFor(configuration.environment);
   const productionCookie = configuration.environment === "PRODUCTION";
-  const schema = kind === "STAFF" ? "staff_access" : "portal_access";
-  const tablePrefix = kind === "STAFF" ? "staff" : "portal";
+  const schema = "staff_access";
+  const tablePrefix = "staff";
   const allowPrivateEnrollment =
     configuration.allowOperatorEnrollment === true ||
     configuration.allowStaffInvitationEnrollment === true;
   const realmDatabase = configuration.database.withSchema(schema);
   const auth = betterAuth({
-    appName: kind === "STAFF" ? "TravelOS Staff" : "TravelOS Portal",
+    appName: "TravelOS Staff",
     baseURL: configuration.canonicalOrigin,
     basePath,
     database: kyselyAdapter(realmDatabase, {
@@ -219,24 +153,16 @@ const createRealm = (
     user: { modelName: `${tablePrefix}_user` },
     session: {
       modelName: `${tablePrefix}_session`,
-      ...(kind === "STAFF"
-        ? {
-            expiresIn: 60 * 60 * 24 * 7,
-            updateAge: 60 * 60 * 8,
-            cookieCache: { enabled: false },
-          }
-        : {
-            expiresIn: 60 * 60 * 24 * 30,
-            updateAge: 60 * 60 * 24,
-            cookieCache: { enabled: false },
-          }),
+      expiresIn: 60 * 60 * 24 * 7,
+      updateAge: 60 * 60 * 8,
+      cookieCache: { enabled: false },
     },
     account: { modelName: `${tablePrefix}_account` },
     verification: { modelName: `${tablePrefix}_verification` },
     advanced: {
       /** Custom __Host cookie names are preserved by opting out of Better Auth's __Secure prefix. */
       useSecureCookies: false,
-      cookiePrefix: kind === "STAFF" ? "travelos-staff" : "travelos-portal",
+      cookiePrefix: "travelos-staff",
       defaultCookieAttributes: {
         httpOnly: true,
         sameSite: "lax",
@@ -255,18 +181,14 @@ const createRealm = (
         },
       },
     },
-    ...(kind === "STAFF"
-      ? {
-          plugins: [
-            twoFactor({
-              issuer: "TravelOS Staff",
-              twoFactorTable: "staff_two_factor",
-              twoFactorCookieMaxAge: 60 * 10,
-              accountLockout: { enabled: true, maxFailedAttempts: 10, durationSeconds: 60 * 15 },
-            }),
-          ],
-        }
-      : {}),
+    plugins: [
+      twoFactor({
+        issuer: "TravelOS Staff",
+        twoFactorTable: "staff_two_factor",
+        twoFactorCookieMaxAge: 60 * 10,
+        accountLockout: { enabled: true, maxFailedAttempts: 10, durationSeconds: 60 * 15 },
+      }),
+    ],
   });
 
   const sessionFromResponseCookies = async (response: Response) => {
@@ -329,7 +251,7 @@ const createRealm = (
     secureTransportRequired: productionCookie,
     handle: async (request) => {
       const response = await auth.handler(request);
-      if (kind !== "STAFF" || response.status < 200 || response.status >= 300) return response;
+      if (response.status < 200 || response.status >= 300) return response;
       try {
         await synchronizeStaffSessionContext(response, isRecentMfaVerification(request));
         return response;
@@ -340,23 +262,14 @@ const createRealm = (
     getServerSession: async (request) => {
       const result = await auth.api.getSession({ headers: request.headers });
       if (result === null) return null;
-      const staffContext =
-        kind === "STAFF"
-          ? await staffSessionContextFor(configuration.database, result.session.id)
-          : null;
-      const portalContext =
-        kind === "PORTAL"
-          ? await portalSessionContextFor(configuration.database, result.session.id, result.user.id)
-          : null;
-      if (kind === "PORTAL" && portalContext === null) return null;
-      const context = kind === "STAFF" ? staffContext : portalContext;
+      const staffContext = await staffSessionContextFor(configuration.database, result.session.id);
       return {
         realm: kind,
         sessionId: result.session.id,
         principalId: result.user.id,
         expiresAtEpochMs: result.session.expiresAt.getTime(),
-        agencyId: context?.agencyId ?? null,
-        authorizationEpoch: context === null ? null : BigInt(context.authorizationEpoch),
+        agencyId: staffContext?.agencyId ?? null,
+        authorizationEpoch: staffContext === null ? null : BigInt(staffContext.authorizationEpoch),
         recentMfaVerifiedAtEpochMs: staffContext?.recentMfaVerifiedAt?.getTime() ?? null,
       };
     },
@@ -365,141 +278,12 @@ const createRealm = (
 };
 
 export const createStaffAuthRealm = (configuration: AuthRealmConfiguration): AuthRealm =>
-  createRealm("STAFF", { ...configuration, allowOperatorEnrollment: false }).realm;
-
-export const createPortalAuthRealm = (
-  configuration: PortalAuthRealmConfiguration,
-): PortalAuthRealm =>
-  createRealm("PORTAL", { ...configuration, allowOperatorEnrollment: false })
-    .realm as PortalAuthRealm;
+  createRealm({ ...configuration, allowOperatorEnrollment: false }).realm;
 
 const assertDevelopmentOperatorEnrollment = (configuration: AuthRealmConfiguration): void => {
   if (configuration.environment !== "DEVELOPMENT") {
     throw new Error("Local operator enrollment is available only in DEVELOPMENT");
   }
-};
-
-export interface LocalOperatorPortalEnrollmentInput {
-  readonly email: string;
-  readonly name: string;
-  readonly password: string;
-  readonly fixtureRunId?: string;
-}
-
-export interface LocalOperatorPortalEnrollmentResult {
-  readonly portalPrincipalId: string;
-}
-
-export interface LocalOperatorPortalEnrollmentService {
-  enroll(input: LocalOperatorPortalEnrollmentInput): Promise<LocalOperatorPortalEnrollmentResult>;
-}
-
-/**
- * This service is only for local DEVELOPMENT acceptance tooling. It owns the temporary
- * Better Auth handler so its enrollment capability cannot be mounted on an HTTP listener.
- */
-export const createLocalOperatorPortalEnrollmentService = (
-  configuration: AuthRealmConfiguration,
-): LocalOperatorPortalEnrollmentService => {
-  assertDevelopmentOperatorEnrollment(configuration);
-  return {
-    async enroll(input) {
-      const email = input.email.trim().toLowerCase();
-      if (!email.endsWith("@example.test")) {
-        throw new Error("Local Portal enrollment requires a synthetic @example.test address");
-      }
-      if (
-        input.fixtureRunId !== undefined &&
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(
-          input.fixtureRunId,
-        )
-      ) {
-        throw new Error("Local Portal fixture run identifier is invalid");
-      }
-      return configuration.database.transaction().execute(async (database) => {
-        const verificationToken: { value: string | undefined } = { value: undefined };
-        const { realm } = createRealm(
-          "PORTAL",
-          {
-            ...configuration,
-            database,
-            allowOperatorEnrollment: true,
-            transactionManagedExternally: true,
-          },
-          (_email, token) => {
-            verificationToken.value = token;
-          },
-        );
-        try {
-          const signup = await realm.handle(
-            new Request(
-              new URL(`${PORTAL_AUTH_BASE_PATH}/sign-up/email`, configuration.canonicalOrigin),
-              {
-                method: "POST",
-                headers: {
-                  "content-type": "application/json",
-                  origin: configuration.canonicalOrigin,
-                },
-                body: JSON.stringify({ email, name: input.name, password: input.password }),
-              },
-            ),
-          );
-          if (!signup.ok) throw new Error("Local Portal identity enrollment failed");
-
-          const signupBody: unknown = await signup.json();
-          const signupRecord =
-            signupBody !== null && typeof signupBody === "object"
-              ? (signupBody as Record<string, unknown>)
-              : null;
-          const user =
-            signupRecord?.user !== null && typeof signupRecord?.user === "object"
-              ? (signupRecord.user as Record<string, unknown>)
-              : null;
-          const portalPrincipalId = typeof user?.id === "string" ? user.id : null;
-          const token = verificationToken.value;
-          verificationToken.value = undefined;
-          if (portalPrincipalId === null || token === undefined) {
-            throw new Error(
-              "Local Portal identity enrollment returned incomplete Better Auth evidence",
-            );
-          }
-
-          const verified = await realm.handle(
-            new Request(
-              new URL(
-                `${PORTAL_AUTH_BASE_PATH}/verify-email?token=${encodeURIComponent(token)}`,
-                configuration.canonicalOrigin,
-              ),
-              { method: "GET", headers: { origin: configuration.canonicalOrigin } },
-            ),
-          );
-          if (!verified.ok) throw new Error("Local Portal identity verification failed");
-          const verificationBody: unknown = await verified.json();
-          const verificationRecord =
-            verificationBody !== null && typeof verificationBody === "object"
-              ? (verificationBody as Record<string, unknown>)
-              : null;
-          if (verificationRecord?.status !== true) {
-            throw new Error("Local Portal identity verification did not complete");
-          }
-          if (input.fixtureRunId !== undefined) {
-            const association = await sql<{ readonly associated: boolean }>`
-              SELECT "portal_access"."associate_runtime_acceptance_fixture_portal_principal"(
-                ${input.fixtureRunId}::uuid,
-                ${portalPrincipalId}
-              ) AS "associated"
-            `.execute(database);
-            if (association.rows[0]?.associated !== true) {
-              throw new Error("Local Portal fixture association did not complete");
-            }
-          }
-          return { portalPrincipalId };
-        } finally {
-          verificationToken.value = undefined;
-        }
-      });
-    },
-  };
 };
 
 export interface StaffInvitationEnrollmentInput {
@@ -527,7 +311,6 @@ export const createStaffInvitationEnrollmentService = (
     const email = input.email.trim().toLowerCase();
     const verificationToken: { value: string | undefined } = { value: undefined };
     const { auth } = createRealm(
-      "STAFF",
       {
         ...configuration,
         allowStaffInvitationEnrollment: true,
@@ -586,5 +369,5 @@ export const createLocalOperatorStaffEnrollmentRealm = (
   configuration: AuthRealmConfiguration,
 ): AuthRealm => {
   assertDevelopmentOperatorEnrollment(configuration);
-  return createRealm("STAFF", { ...configuration, allowOperatorEnrollment: true }).realm;
+  return createRealm({ ...configuration, allowOperatorEnrollment: true }).realm;
 };

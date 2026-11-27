@@ -25,14 +25,10 @@ CT 200 (`travelos-dev`, `192.168.1.200`) is DEVELOPMENT only. Phase 0 does not i
 flowchart TD
   INTERNET[Approved networks/Internet] --> C[Caddy: TLS, static assets, reverse proxy]
   C --> AW[Admin static SPA]
-  C --> PW[Portal static SPA]
   C --> AA[Admin API systemd service]
-  C --> PA[Portal API systemd service]
   AA --> DB[(PostgreSQL, pinned major, local/private)]
-  PA --> DB
   W[Worker systemd service, optional until jobs exist] --> DB
   AA --> DS[Private document dataset]
-  PA --> DS
   W --> DS
   DB --> B[Encrypted off-instance backup]
   DS --> B
@@ -40,9 +36,9 @@ flowchart TD
 
 Only Caddy is network-exposed. PostgreSQL is local/private and not published. Internal health/version endpoints bind privately. OS firewall and upstream routing are declared automation, never hand-edited customer exceptions.
 
-The Portal and Admin may use different domains. Because one deployment contains one root Agency, a request host selects only an allowlisted surface/domain for that instance; it never selects an Agency/tenant record. The instance manifest contains an exact normalized FQDN allowlist and surface map (`ADMIN` or `PORTAL`); wildcards, suffix matching and user-provided lookup keys are forbidden by default.
+Because one deployment contains one root Agency, a request host selects only an allowlisted surface/domain for that instance; it never selects an Agency/tenant record. The instance manifest contains an exact normalized FQDN allowlist and surface map (`ADMIN`); wildcards, suffix matching and user-provided lookup keys are forbidden by default.
 
-Caddy has an explicit default virtual host that returns one fixed, unbranded rejection for every unknown/malformed host. It overwrites—rather than trusts—forwarded host headers before proxying. The APIs accept traffic only from the declared proxy boundary, reconstruct one canonical effective host, independently compare it with the same manifest allowlist and fail closed before authentication, branding or record lookup. Unknown-host responses use the same status/body/cache policy and a bounded timing envelope so they do not become an Agency/domain discovery oracle. Runtime Portal branding is then fetched from the instance's allowlisted published Agency profile; the JavaScript artifact is identical across customers.
+Caddy has an explicit default virtual host that returns one fixed, unbranded rejection for every unknown/malformed host. It overwrites—rather than trusts—forwarded host headers before proxying. The APIs accept traffic only from the declared proxy boundary, reconstruct one canonical effective host, independently compare it with the same manifest allowlist and fail closed before authentication, branding or record lookup. Unknown-host responses use the same status/body/cache policy and a bounded timing envelope so they do not become an Agency/domain discovery oracle. The JavaScript artifact is identical across customers.
 
 ## 3. Native CT release model
 
@@ -53,9 +49,7 @@ One release artifact contains:
 ```text
 travelos-<version>/
   admin-web/            # static assets
-  portal-web/           # static assets
   admin-api/            # compiled Node app + production deps
-  portal-api/           # compiled Node app + production deps
   worker/               # compiled Node app + production deps
   migrations/           # immutable ordered migration bundle
   openapi/               # generated contracts
@@ -76,7 +70,7 @@ A non-secret, schema-versioned manifest declares:
 - instance ID and environment;
 - root Agency bootstrap ID/slug;
 - release channel/digest target;
-- exact canonical Admin/Portal FQDN allowlist and surface mapping, with domain-verification/TLS state;
+- exact canonical Admin FQDN allowlist and surface mapping, with domain-verification/TLS state;
 - PostgreSQL major and database name/role references;
 - storage/scan/provider adapter selections;
 - branding/profile bootstrap reference;
@@ -128,7 +122,7 @@ The exact PostgreSQL major is a one-time M1 bootstrap decision: choose a current
 3. create/verify restore point for migration risk class;
 4. stage release beside current, never overwrite it;
 5. stop/maintenance only the processes required by migration compatibility;
-6. run the migration bundle exactly once with owner credentials and timeouts; it owns TravelOS, Staff/Portal auth and job-runtime schema changes;
+6. run the migration bundle exactly once with owner credentials and timeouts; it owns TravelOS, Staff auth and job-runtime schema changes;
 7. start new processes; check liveness/readiness/version, migration checksum and critical smoke paths;
 8. atomically switch static/current release and monitor;
 9. retain prior artifact for the defined rollback window;
@@ -185,11 +179,11 @@ At least quarterly and before first production:
 2. restore the selected database point and matching/superset objects using access-separated recovery credentials;
 3. identify the recovery cutoff and establish explicit coverage of the interval to the recovery decision from approved deletion-request, Audit and operational evidence; absence in the restored database is not evidence that no later deletion occurred;
 4. apply every identified deletion/redaction and legal-hold rule idempotently before starting any public-facing process;
-5. verify deleted payloads are absent from active Admin/Portal/search/export paths, and record any older backup copy that remains inside retention plus its expiry date;
+5. verify deleted payloads are absent from active Admin/search/export paths, and record any older backup copy that remains inside retention plus its expiry date;
 6. when interval coverage is incomplete or policy is ambiguous, keep affected protected payload classes unavailable (or bulk-delete/redact them) and abort public opening until a later safe recovery point or verified remediation exists; privacy approval cannot waive potential active resurrection;
 7. verify migration checksums, publication hashes/renderers and object checksums;
 8. start the pinned compatible release with network access still restricted;
-9. run Admin/Portal authorization, host-boundary and v1/v2 publication smoke tests;
+9. run Admin authorization, host-boundary and v1/v2 publication smoke tests;
 10. open service only after the restore gate passes; record actual RPO/RTO and destroy/sanitize the drill environment.
 
 A restore into an older application version is allowed only if manifest/schema/snapshot compatibility says so.
@@ -231,7 +225,7 @@ Phase 1 can begin without deploying production. Production readiness later requi
 - encrypted off-instance backup and successful isolated restore;
 - approved retention/deletion policy, verified backup expiry and isolated restore with privacy-deletion reconciliation;
 - legal/privacy and threat-model acceptance of each protected data class's residual backup window, or a superseding stronger-control ADR;
-- Portal/Admin process and DB-role separation;
+- Admin/Worker process and DB-role separation;
 - exact host allowlist plus uniform unknown/crafted-host rejection at edge and API;
 - version/health/backup telemetry;
 - documented measured capacity and honest availability statement.

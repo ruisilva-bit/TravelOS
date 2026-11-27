@@ -60,7 +60,7 @@ const codes = new Set([
   "INVALID_CONFIGURATION",
   "LEASE_LOST",
 ]);
-const services = new Set(["admin-api", "portal-api", "worker"]);
+const services = new Set(["admin-api", "worker"]);
 
 export const createStructuredLogger = (
   service: string,
@@ -117,10 +117,7 @@ export interface CorrelatedResponse {
   once(event: "finish", listener: () => void): unknown;
 }
 
-export const createRequestTelemetry = (
-  service: "admin-api" | "portal-api",
-  write?: (line: string) => void,
-) => {
+export const createRequestTelemetry = (service: "admin-api", write?: (line: string) => void) => {
   const log = createStructuredLogger(service, write);
   return (request: CorrelatedRequest, response: CorrelatedResponse, next: () => void): void => {
     const context = createCorrelationContext(

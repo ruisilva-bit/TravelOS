@@ -18,7 +18,7 @@ const reviewedBundleFindings = [];
 const findingKey = ({ path: file, rule, line }) => `${file}\0${rule}\0${line}`;
 const observedReviewedFindings = new Set();
 
-for (const app of ["admin-web", "portal-web"]) {
+for (const app of ["admin-web"]) {
   const directory = path.join(root, "apps", app, "dist");
   const files = [];
   const walk = async (current) => {
@@ -89,7 +89,7 @@ const scannedPaths = new Set(bundleResults.map(({ file }) => file));
 for (const reviewedPath of reviewedBundleDigests.keys()) {
   if (!scannedPaths.has(reviewedPath)) {
     findings.push({
-      app: reviewedPath.startsWith("apps/admin-web/") ? "admin-web" : "portal-web",
+      app: "admin-web",
       file: reviewedPath,
       rule: "reviewed-bundle-missing",
       line: null,

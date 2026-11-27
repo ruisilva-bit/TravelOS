@@ -23,15 +23,6 @@ export const createDevelopmentInstanceManifestJsonSchemaDocument = () => {
         minContains: 1,
         maxContains: 1,
       },
-      {
-        contains: {
-          type: "object",
-          required: ["surface"],
-          properties: { surface: { const: "PORTAL" } },
-        },
-        minContains: 1,
-        maxContains: 1,
-      },
     ],
   };
 

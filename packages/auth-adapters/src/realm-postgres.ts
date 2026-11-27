@@ -26,7 +26,7 @@ const isLoopbackHost = (host: string): boolean =>
 
 /**
  * Opens a realm-scoped PostgreSQL adapter without exposing a general persistence/repository API.
- * Portal composition uses this to keep its dependency graph identity/auth-only.
+ * Composition uses this to keep the auth dependency graph identity-only.
  */
 export const createAuthRealmPostgresDatabase = (
   settings: AuthRealmPostgresConnectionSettings,
