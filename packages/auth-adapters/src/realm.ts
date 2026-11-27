@@ -5,7 +5,11 @@ import { sql, type Kysely } from "kysely";
 
 export const STAFF_AUTH_BASE_PATH = "/api/auth/staff" as const;
 
-export type RealmEnvironment = "DEVELOPMENT" | "PRODUCTION";
+export type RealmEnvironment = "DEVELOPMENT" | "INTERNAL" | "PRODUCTION";
+
+/** DEVELOPMENT and INTERNAL are the same non-production behaviour; keep them in one place. */
+const isNonProductionEnvironment = (environment: RealmEnvironment): boolean =>
+  environment === "DEVELOPMENT" || environment === "INTERNAL";
 export type AuthenticationRealm = "STAFF";
 
 export interface RealmSession {
@@ -50,7 +54,7 @@ const assertRealmConfiguration = ({
   if (environment === "PRODUCTION" && origin.protocol !== "https:") {
     throw new Error("Production authentication realm requires an HTTPS canonical origin");
   }
-  if (environment === "DEVELOPMENT" && origin.protocol !== "http:") {
+  if (isNonProductionEnvironment(environment) && origin.protocol !== "http:") {
     throw new Error("Development authentication realm uses explicit loopback HTTP only");
   }
 };
@@ -281,8 +285,8 @@ export const createStaffAuthRealm = (configuration: AuthRealmConfiguration): Aut
   createRealm({ ...configuration, allowOperatorEnrollment: false }).realm;
 
 const assertDevelopmentOperatorEnrollment = (configuration: AuthRealmConfiguration): void => {
-  if (configuration.environment !== "DEVELOPMENT") {
-    throw new Error("Local operator enrollment is available only in DEVELOPMENT");
+  if (!isNonProductionEnvironment(configuration.environment)) {
+    throw new Error("Local operator enrollment is available only in DEVELOPMENT or INTERNAL");
   }
 };
 

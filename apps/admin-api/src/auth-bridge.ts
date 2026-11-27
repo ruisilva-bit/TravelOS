@@ -65,7 +65,7 @@ interface NestHttpApplication {
 export interface AdminAuthBridgeOptions {
   readonly realm: AuthRealm;
   readonly policy: AuthSurfacePolicy;
-  readonly environment?: "DEVELOPMENT" | "PRODUCTION";
+  readonly environment?: "DEVELOPMENT" | "INTERNAL" | "PRODUCTION";
   readonly staffAccessRepository: Pick<StaffAccessRepository, "getStaffAuthorizationSnapshot">;
   readonly tripOperations?: StaffTripOperations;
   readonly workspaceOperations?: StaffTripWorkspaceOperations;

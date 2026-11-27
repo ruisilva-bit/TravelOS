@@ -146,6 +146,45 @@ describe("development instance manifest", () => {
     expect(parseDevelopmentInstanceManifest(candidate).hosts.admin).toBe("travelos-dev");
   });
 
+  it("accepts the INTERNAL environment with a neutral instance id", () => {
+    const candidate = copyManifest();
+    candidate["environment"] = "INTERNAL";
+    candidate["instanceId"] = "travelos-ct200";
+    const manifest = parseDevelopmentInstanceManifest(candidate);
+    expect(manifest.environment).toBe("INTERNAL");
+    expect(manifest.instanceId).toBe("travelos-ct200");
+  });
+
+  it("keeps accepting the DEVELOPMENT environment", () => {
+    const candidate = copyManifest();
+    candidate["environment"] = "DEVELOPMENT";
+    expect(parseDevelopmentInstanceManifest(candidate).environment).toBe("DEVELOPMENT");
+  });
+
+  it("rejects an unknown environment", () => {
+    const candidate = copyManifest();
+    candidate["environment"] = "PRODUCTION";
+    expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow();
+  });
+
+  it.each(["travelos-ct200", "travelos-dev-ct200", "travelos-a", "travelos-x-y-z"])(
+    "accepts instance id %s",
+    (instanceId) => {
+      const candidate = copyManifest();
+      candidate["instanceId"] = instanceId;
+      expect(parseDevelopmentInstanceManifest(candidate).instanceId).toBe(instanceId);
+    },
+  );
+
+  it.each(["Travelos-x", "travelos-", "other-x", "travelos--x", "travelos-x-", "travelos_x"])(
+    "rejects instance id %s",
+    (instanceId) => {
+      const candidate = copyManifest();
+      candidate["instanceId"] = instanceId;
+      expect(() => parseDevelopmentInstanceManifest(candidate)).toThrow();
+    },
+  );
+
   it("rejects a host allowlist that does not match the surface hosts", () => {
     const candidate = copyManifest();
     candidate["hostAllowlist"] = [{ host: "wrong.travelos.test", surface: "ADMIN" }];
@@ -159,6 +198,8 @@ describe("CT200 production-shaped example manifest", () => {
       new URL("../../../deploy/manifests/travelos.example.json", import.meta.url),
     );
     const manifest = parseDevelopmentInstanceManifest(JSON.parse(readFileSync(path, "utf8")));
+    expect(manifest.environment).toBe("INTERNAL");
+    expect(manifest.instanceId).toBe("travelos-ct200");
     expect(manifest.hosts.admin).toBe("travelos-dev");
     expect(manifest.runtime.listeners.adminApi.host).toBe("127.0.0.1");
   });

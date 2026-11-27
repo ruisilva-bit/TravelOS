@@ -1,7 +1,7 @@
 {
   "manifestSchemaVersion": 3,
-  "environment": "DEVELOPMENT",
-  "instanceId": "travelos-dev-ct200",
+  "environment": "INTERNAL",
+  "instanceId": "travelos-ct200",
   "compatibility": {
     "releaseVersion": "0.0.0-stage4",
     "releaseTarget": "development:ct200",

@@ -73,8 +73,8 @@ const databaseRuntimeRoleSchema = <RoleName extends string>(roleName: RoleName) 
 export const DevelopmentInstanceManifestSchema = z
   .object({
     manifestSchemaVersion: z.literal(3),
-    environment: z.literal("DEVELOPMENT"),
-    instanceId: z.string().regex(/^travelos-dev-[a-z0-9][a-z0-9-]{2,47}$/),
+    environment: z.enum(["DEVELOPMENT", "INTERNAL"]),
+    instanceId: z.string().regex(/^travelos-[a-z0-9]+(?:-[a-z0-9]+)*$/),
     compatibility: z
       .object({
         releaseVersion: z.string().regex(/^0\.0\.0-stage4$/),
