@@ -376,3 +376,26 @@ export {
   type UpdateCustomerInput,
   type UpdatePersonInput,
 } from "./modules/crm/application/staff-crm-operations.js";
+
+export {
+  QUOTE_CATEGORIES,
+  agencyNetMinor,
+  generateDays,
+  includedItems,
+  lineTotals,
+  nightsBetween,
+  quoteTotals,
+  quoteWarnings,
+  suggestedPvpMinor,
+  type QuoteCalcHeader,
+  type QuoteCalcLine,
+  type QuoteDay,
+  type QuoteIncludedGroup,
+  type QuoteLineCategory,
+  type QuoteLineSection,
+  type QuoteLineTotals,
+  type QuoteRoundingUnit,
+  type QuoteTotals,
+  type QuoteWarning,
+  type QuoteWarningCode,
+} from "./modules/quotes/domain/quote-calculations.js";

@@ -13,6 +13,10 @@
     {
       "file": "0003_crm_details.cjs",
       "sha256": "e98f3a2f4ee08ae4a6b4cfb08d97ba111cc2b3bea99444800b020c9be8a8bb13"
+    },
+    {
+      "file": "0004_quotes.cjs",
+      "sha256": "b608d08bcd3c6208453ca653ef621849beb3b717e13f7da3e1bfd09296fae77f"
     }
   ]
 }

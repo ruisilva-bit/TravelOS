@@ -1,4 +1,4 @@
-export const PERMISSION_REGISTRY_VERSION = 7 as const;
+export const PERMISSION_REGISTRY_VERSION = 8 as const;
 
 export type AuthorizationScopeKind = "AGENCY" | "ORGANIZATION_UNIT";
 export type ResourceAccessLevel = "OWN" | "TEAM" | "ALL";
@@ -113,6 +113,21 @@ export const PERMISSION_REGISTRY = [
   },
   {
     id: "sales.edit",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+  {
+    id: "quote.view",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+  {
+    id: "quote.edit",
+    allowedScopeKinds: ["AGENCY"],
+    allowedAccessLevels: ["ALL"],
+  },
+  {
+    id: "quote.send",
     allowedScopeKinds: ["AGENCY"],
     allowedAccessLevels: ["ALL"],
   },

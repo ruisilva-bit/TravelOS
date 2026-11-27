@@ -10,7 +10,7 @@ import {
 
 describe("Staff permission registry", () => {
   it("keeps the registry version for the M2 Sales capabilities", () => {
-    expect(PERMISSION_REGISTRY_VERSION).toBe(7);
+    expect(PERMISSION_REGISTRY_VERSION).toBe(8);
   });
 
   it("no longer defines the customer-grant, withdrawal and runtime-acceptance permissions", () => {
