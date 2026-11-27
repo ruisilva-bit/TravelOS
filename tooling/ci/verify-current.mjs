@@ -1,28 +1,20 @@
-// Steady-state repository verification (ADR-015). Every gate evaluates the current tree only;
-// M1 stage-frozen verifiers are historical and intentionally absent from this list.
+// Steady-state repository verification . Every gate evaluates the current tree only; `pnpm check` is the only gate.
 import { spawnSync } from "node:child_process";
 
 const gates = [
   ["verify:pins", "verify:pins"],
   ["db:migrations:verify", "db:migrations:verify"],
   ["auth:schema:verify", "auth:schema:verify"],
-  ["verify:accepted-adrs", "verify:accepted-adrs"],
-  ["test:lifecycle-policy", "test:lifecycle-policy"],
   ["config:schema:check", "config:schema:check"],
   ["format:check", "format:check"],
   ["lint", "lint"],
-  ["test:unit", "test:unit"],
-  // The root typecheck and architecture check include probes that read built output.
+  ["test", "test"],
   ["build", "build"],
   ["typecheck", "typecheck"],
   ["architecture:check", "architecture:check"],
-  ["test:rejected-technologies", "test:rejected-technologies"],
-  ["verify:rejected-technologies", "verify:rejected-technologies"],
-  ["test:security-scanner", "test:security-scanner"],
-  ["test:security:current-source", "test:security:current-source"],
-  ["security:scan:current-source", "security:scan:current-source"],
-  ["security:scan:bundles", "security:scan:bundles"],
-  ["test:postgres", "test:postgres"],
+  ["test:security", "test:security"],
+  ["security:scan", "security:scan"],
+  ["test:db", "test:db"],
   ["test:smoke", "test:smoke"],
 ];
 

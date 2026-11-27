@@ -1,5 +1,7 @@
 # ADR-002: Dedicated Single-Tenant Deployment
 
+> Superseded in part by ADR-016.
+
 - **Status:** Accepted
 - **Date:** 2026-08-13
 

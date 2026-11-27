@@ -1,8 +1,0 @@
-{
-  "result": "PASS",
-  "archivePath": "/home/hermes/travelos-stage7-gen15-5609bcb4.tar.gz",
-  "ciReceiptPath": "/home/hermes/travelos-stage7-gen15-5609bcb4-ci.json",
-  "archiveSha256": "88e5817721c60395700e36ab2ea30adde1a15d60878e485b6c9d888ae7243273",
-  "ciReceiptSha256": "acfc09323c591a6fed16be5b1f807b730918e9e36e30776877c04dae764f987e",
-  "stage8Actions": 0
-}

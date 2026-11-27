@@ -1,7 +1,0 @@
-{
-  "schemaVersion": 1,
-  "result": "PASS",
-  "command": "pnpm --filter @travelos/admin-api... build",
-  "nodeVersion": "v24.19.0",
-  "stdoutSha256": "e66f42e6cf12b110ed6bc64041b5fced877ee0f0b33d3b4a226c2183ea156508"
-}

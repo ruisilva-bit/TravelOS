@@ -1,5 +1,7 @@
 # ADR-015: Steady-State Delivery Pipeline
 
+> Superseded in part by ADR-016 (process/evidence parts).
+
 - **Status:** Accepted
 - **Date:** 2026-11-25
 - **Decision owner:** Product Owner (Rui), recorded in the delivery session of 2026-11-25
