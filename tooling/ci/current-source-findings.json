@@ -297,6 +297,20 @@
       "rationale": "Schema/data-flow field declaration or test input, not a credential literal."
     },
     {
+      "path": "packages/contracts/src/admin/trips/share-link-v1.ts",
+      "rule": "high-entropy-secret-assignment",
+      "lineSha256": "7c340dffd13b232a30f3fce68dd2c9844bd51db973755571b97fa92885b4aaac",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Zod schema for the share-link token field (shape validation only); the value is generated at runtime and returned once, never a literal."
+    },
+    {
+      "path": "packages/contracts/src/admin/trips/share-link-v1.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "7c340dffd13b232a30f3fce68dd2c9844bd51db973755571b97fa92885b4aaac",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Zod schema for the share-link token field (shape validation only); the value is generated at runtime and returned once, never a literal."
+    },
+    {
       "path": "packages/contracts/test/admin-staff-invitation-v1.test.ts",
       "rule": "email-address",
       "lineSha256": "260ac70ca9617ce947c83bcb9d672a65fce53e2b34f90995535278ceee35ee38",
