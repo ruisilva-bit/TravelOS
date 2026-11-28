@@ -723,6 +723,159 @@ describe.sequential("quote application flow over PostgreSQL", () => {
     ).rejects.toBeInstanceOf(QuoteNotFoundError);
   });
 
+  it("converts an accepted flight and hotel quote into items, reservations and NET costs once", async () => {
+    const quote = await operations.createQuote(editorCookie, asOpaqueId(flowLead), {
+      destination: "Madeira",
+      startDate: "2027-06-01",
+      endDate: "2027-06-05",
+    });
+    const quoteId = quoteIdOf(quote);
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: {
+        category: "FLIGHT",
+        service: "Ida LIS-FNC",
+        supplier: "TAP",
+        fromIata: "LIS",
+        toIata: "FNC",
+        departTime: "08:15",
+        arriveTime: "09:30",
+        carrier: "TAP",
+        flightNumber: "TP1234",
+        startDate: "2027-06-01",
+        endDate: "2027-06-01",
+        pvpMinor: 95000n,
+        netSupplierMinor: 70000n,
+      },
+    });
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: {
+        category: "FLIGHT",
+        service: "Volta FNC-LIS",
+        supplier: "TAP",
+        fromIata: "FNC",
+        toIata: "LIS",
+        departTime: "18:00",
+        arriveTime: "20:10",
+        carrier: "TAP",
+        flightNumber: "TP1235",
+        startDate: "2027-06-05",
+        endDate: "2027-06-05",
+        pvpMinor: 95000n,
+        netSupplierMinor: 50000n,
+      },
+    });
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: {
+        category: "ACCOMMODATION",
+        service: "Hotel Estrela",
+        supplier: "Hotel Estrela, Lda",
+        location: "Funchal",
+        roomType: "Duplo",
+        boardBasis: "Meia pensão",
+        startDate: "2027-06-01",
+        endDate: "2027-06-05",
+        pvpMinor: 120000n,
+        netSupplierMinor: 72000n,
+      },
+    });
+    const sent = await operations.sendQuote(editorCookie, quoteId, {
+      expectedLockVersion: quote.lockVersion,
+      expiresAt: null,
+    });
+    expect(await publicOperations.acceptPublicQuote(sent.token, "Marta Quintela")).toBe("ACCEPTED");
+
+    const first = await operations.convertToTrip(editorCookie, quoteId);
+    expect(first.created).toBe(true);
+    const counts = async () => {
+      const [row] = await queryAsOwner<{
+        items: string;
+        flights: string;
+        accommodations: string;
+        reservations: string;
+        links: string;
+        costs: string;
+        netMinor: string;
+      }>(
+        `SELECT
+           (SELECT count(*)::text FROM trip_ops.itinerary_item WHERE "tripId" = '${first.tripId}'::uuid) AS items,
+           (SELECT count(*)::text FROM trip_ops.flight_item_detail WHERE "tripId" = '${first.tripId}'::uuid) AS flights,
+           (SELECT count(*)::text FROM trip_ops.accommodation_item_detail WHERE "tripId" = '${first.tripId}'::uuid) AS accommodations,
+           (SELECT count(*)::text FROM trip_ops.reservation WHERE "tripId" = '${first.tripId}'::uuid) AS reservations,
+           (SELECT count(*)::text FROM trip_ops.reservation_item_link WHERE "tripId" = '${first.tripId}'::uuid) AS links,
+           (SELECT count(*)::text FROM finance.supplier_cost_line WHERE "tripId" = '${first.tripId}'::uuid) AS costs,
+           (SELECT COALESCE(sum("amountMinor"), 0)::text FROM finance.supplier_cost_line WHERE "tripId" = '${first.tripId}'::uuid) AS "netMinor"`,
+      );
+      return row;
+    };
+    expect(await counts()).toEqual({
+      items: "3",
+      flights: "2",
+      accommodations: "1",
+      reservations: "2",
+      links: "3",
+      costs: "2",
+      netMinor: "192000",
+    });
+    const flights = await queryAsOwner<{
+      departureAirport: string;
+      departureTimezone: string;
+      arrivalTimezone: string;
+      departureInstant: Date;
+    }>(
+      `SELECT "departureAirport", "departureTimezone", "arrivalTimezone", "departureInstant"
+         FROM trip_ops.flight_item_detail WHERE "tripId" = '${first.tripId}'::uuid
+        ORDER BY "departureInstant"`,
+    );
+    expect(
+      flights.map(({ departureAirport, departureTimezone, arrivalTimezone }) => ({
+        departureAirport,
+        departureTimezone,
+        arrivalTimezone,
+      })),
+    ).toEqual([
+      {
+        departureAirport: "LIS",
+        departureTimezone: "Europe/Lisbon",
+        arrivalTimezone: "Atlantic/Madeira",
+      },
+      {
+        departureAirport: "FNC",
+        departureTimezone: "Atlantic/Madeira",
+        arrivalTimezone: "Europe/Lisbon",
+      },
+    ]);
+    const costs = await queryAsOwner<{
+      classification: string;
+      supplierName: string;
+      amountMinor: string;
+    }>(
+      `SELECT c.classification, r."supplierName", c."amountMinor"::text AS "amountMinor"
+         FROM finance.supplier_cost_line c
+         JOIN trip_ops.reservation r ON r.id = c."reservationId"
+        WHERE c."tripId" = '${first.tripId}'::uuid
+        ORDER BY r."supplierName"`,
+    );
+    expect(costs).toEqual([
+      { classification: "INTERNAL_ONLY", supplierName: "Hotel Estrela, Lda", amountMinor: "72000" },
+      { classification: "INTERNAL_ONLY", supplierName: "TAP", amountMinor: "120000" },
+    ]);
+
+    const second = await operations.convertToTrip(editorCookie, quoteId);
+    expect(second).toEqual({ tripId: first.tripId, created: false });
+    expect(await counts()).toEqual({
+      items: "3",
+      flights: "2",
+      accommodations: "1",
+      reservations: "2",
+      links: "3",
+      costs: "2",
+      netMinor: "192000",
+    });
+  });
+
   it("supersedes an older link after revision, and refuses acceptance of the old version", async () => {
     const quote = await operations.createQuote(editorCookie, asOpaqueId(flowLead), {
       destination: "Évora",
