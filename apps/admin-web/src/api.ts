@@ -63,6 +63,35 @@ import {
   type AdminTripWorkspaceListV1Response,
   type AdminTripWorkspaceTripUpdateV1Request,
   type AdminTripWorkspaceV1Response,
+  AdminQuoteAddLineV1RequestSchema,
+  AdminQuoteApplyMarginV1RequestSchema,
+  AdminQuoteConvertedV1ResponseSchema,
+  AdminQuoteCreateV1RequestSchema,
+  AdminQuoteDayV1RequestSchema,
+  AdminQuoteDetailV1ResponseSchema,
+  AdminQuoteExpectedVersionV1RequestSchema,
+  AdminQuoteHeaderPatchV1RequestSchema,
+  AdminQuoteListV1ResponseSchema,
+  AdminQuoteReorderV1RequestSchema,
+  AdminQuoteRevokedV1ResponseSchema,
+  AdminQuoteSendV1RequestSchema,
+  AdminQuoteSentV1ResponseSchema,
+  AdminQuoteUpdateLineV1RequestSchema,
+  AdminQuoteV1ResponseSchema,
+  AdminLeadQuotesV1ResponseSchema,
+  type AdminQuoteAddLineV1Request,
+  type AdminQuoteApplyMarginV1Request,
+  type AdminQuoteCreateV1Request,
+  type AdminQuoteDayV1Request,
+  type AdminQuoteExpectedVersionV1Request,
+  type AdminQuoteHeaderPatchV1Request,
+  type AdminQuoteListV1Response,
+  type AdminQuoteReorderV1Request,
+  type AdminQuoteSendV1Request,
+  type AdminQuoteSentV1Response,
+  type AdminQuoteUpdateLineV1Request,
+  type AdminQuoteV1Response,
+  type AdminQuoteDetailV1Response,
 } from "@travelos/contracts/admin";
 
 export type AdminApiErrorCode =
@@ -109,11 +138,12 @@ const errorCodeForStatus = (status: number): AdminApiErrorCode => {
 const getJson = async <T>(
   path: string,
   schema: { safeParse: (value: unknown) => { success: true; data: T } | { success: false } },
+  method: "GET" | "DELETE" = "GET",
 ): Promise<T> => {
   let response: Response;
   try {
     response = await fetch(path, {
-      method: "GET",
+      method,
       credentials: "same-origin",
       cache: "no-store",
       headers: { accept: "application/json" },
@@ -585,3 +615,214 @@ export const searchAdmin = (q: string): Promise<AdminSearchV1Response> => {
     AdminSearchV1ResponseSchema,
   );
 };
+
+const quoteIdPath = (quoteId: string, resource = ""): string => {
+  const parsedId = AdminOpaqueIdSchema.safeParse(quoteId);
+  if (!parsedId.success) throw new AdminApiError("INVALID_REQUEST");
+  return `/api/admin/quotes/${encodeURIComponent(parsedId.data)}${resource}`;
+};
+
+const quoteEntityPath = (kind: "quote-lines" | "quote-share-links", id: string, resource = "") => {
+  const parsedId = AdminOpaqueIdSchema.safeParse(id);
+  if (!parsedId.success) throw new AdminApiError("INVALID_REQUEST");
+  return `/api/admin/${kind}/${encodeURIComponent(parsedId.data)}${resource}`;
+};
+
+/** Requests without a body; the empty object is accepted as-is. */
+const noBody = { safeParse: (value: unknown) => ({ success: true as const, data: value }) };
+
+export const listAdminQuotes = (input: {
+  readonly state?: string;
+  readonly customerId?: string;
+  readonly leadId?: string;
+  readonly q?: string;
+  readonly cursor?: string;
+  readonly limit?: number;
+}): Promise<AdminQuoteListV1Response> => {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  }
+  return getJson(`/api/admin/quotes?${query.toString()}`, AdminQuoteListV1ResponseSchema);
+};
+
+export const getAdminQuote = (quoteId: string): Promise<AdminQuoteDetailV1Response> =>
+  getJson(quoteIdPath(quoteId), AdminQuoteDetailV1ResponseSchema);
+
+export const createAdminQuote = (input: AdminQuoteCreateV1Request): Promise<AdminQuoteV1Response> =>
+  sendJson(
+    "/api/admin/quotes",
+    "POST",
+    input,
+    AdminQuoteCreateV1RequestSchema,
+    AdminQuoteV1ResponseSchema,
+  );
+
+export const updateAdminQuote = (
+  quoteId: string,
+  input: AdminQuoteHeaderPatchV1Request,
+): Promise<AdminQuoteDetailV1Response> =>
+  sendJson(
+    quoteIdPath(quoteId),
+    "PATCH",
+    input,
+    AdminQuoteHeaderPatchV1RequestSchema,
+    AdminQuoteDetailV1ResponseSchema,
+  );
+
+export const addAdminQuoteLine = (
+  quoteId: string,
+  input: AdminQuoteAddLineV1Request,
+): Promise<AdminQuoteDetailV1Response> =>
+  sendJson(
+    quoteIdPath(quoteId, "/lines"),
+    "POST",
+    input,
+    AdminQuoteAddLineV1RequestSchema,
+    AdminQuoteDetailV1ResponseSchema,
+  );
+
+export const updateAdminQuoteLine = (
+  quoteId: string,
+  lineId: string,
+  input: AdminQuoteUpdateLineV1Request,
+): Promise<AdminQuoteDetailV1Response> =>
+  sendJson(
+    `${quoteIdPath(quoteId, "/lines/")}${encodeURIComponent(AdminOpaqueIdSchema.parse(lineId))}`,
+    "PATCH",
+    input,
+    AdminQuoteUpdateLineV1RequestSchema,
+    AdminQuoteDetailV1ResponseSchema,
+  );
+
+export const deleteAdminQuoteLine = (
+  quoteId: string,
+  lineId: string,
+  expectedLockVersion: string,
+): Promise<AdminQuoteDetailV1Response> => {
+  const query = new URLSearchParams({ expectedLockVersion });
+  return getJson(
+    `${quoteIdPath(quoteId, "/lines/")}${encodeURIComponent(AdminOpaqueIdSchema.parse(lineId))}?${query.toString()}`,
+    AdminQuoteDetailV1ResponseSchema,
+    "DELETE",
+  );
+};
+
+export const duplicateAdminQuoteLine = (
+  quoteId: string,
+  lineId: string,
+): Promise<AdminQuoteDetailV1Response> =>
+  sendJson(
+    `${quoteIdPath(quoteId, "/lines/")}${encodeURIComponent(AdminOpaqueIdSchema.parse(lineId))}/duplicate`,
+    "POST",
+    {},
+    noBody,
+    AdminQuoteDetailV1ResponseSchema,
+  );
+
+export const reorderAdminQuoteLines = (
+  quoteId: string,
+  input: AdminQuoteReorderV1Request,
+): Promise<AdminQuoteDetailV1Response> =>
+  sendJson(
+    quoteIdPath(quoteId, "/line-order"),
+    "PUT",
+    input,
+    AdminQuoteReorderV1RequestSchema,
+    AdminQuoteDetailV1ResponseSchema,
+  );
+
+export const applyAdminQuoteMargin = (
+  quoteId: string,
+  input: AdminQuoteApplyMarginV1Request,
+): Promise<AdminQuoteDetailV1Response> =>
+  sendJson(
+    quoteIdPath(quoteId, "/apply-margin"),
+    "POST",
+    input,
+    AdminQuoteApplyMarginV1RequestSchema,
+    AdminQuoteDetailV1ResponseSchema,
+  );
+
+export const upsertAdminQuoteDay = (
+  quoteId: string,
+  dayIndex: number,
+  input: AdminQuoteDayV1Request,
+): Promise<AdminQuoteDetailV1Response> =>
+  sendJson(
+    quoteIdPath(quoteId, `/days/${String(dayIndex)}`),
+    "PUT",
+    input,
+    AdminQuoteDayV1RequestSchema,
+    AdminQuoteDetailV1ResponseSchema,
+  );
+
+export const resetAdminQuoteDays = (
+  quoteId: string,
+  expectedLockVersion: string,
+): Promise<AdminQuoteDetailV1Response> => {
+  const query = new URLSearchParams({ expectedLockVersion });
+  return getJson(
+    `${quoteIdPath(quoteId, "/days")}?${query.toString()}`,
+    AdminQuoteDetailV1ResponseSchema,
+    "DELETE",
+  );
+};
+
+export const sendAdminQuote = (
+  quoteId: string,
+  input: AdminQuoteSendV1Request,
+): Promise<AdminQuoteSentV1Response> =>
+  sendJson(
+    quoteIdPath(quoteId, "/send"),
+    "POST",
+    input,
+    AdminQuoteSendV1RequestSchema,
+    AdminQuoteSentV1ResponseSchema,
+  );
+
+const quoteTransition = (
+  quoteId: string,
+  action: "revise" | "decline" | "archive",
+  input: AdminQuoteExpectedVersionV1Request,
+): Promise<AdminQuoteDetailV1Response> =>
+  sendJson(
+    quoteIdPath(quoteId, `/${action}`),
+    "POST",
+    input,
+    AdminQuoteExpectedVersionV1RequestSchema,
+    AdminQuoteDetailV1ResponseSchema,
+  );
+
+export const reviseAdminQuote = (quoteId: string, input: AdminQuoteExpectedVersionV1Request) =>
+  quoteTransition(quoteId, "revise", input);
+
+export const declineAdminQuote = (quoteId: string, input: AdminQuoteExpectedVersionV1Request) =>
+  quoteTransition(quoteId, "decline", input);
+
+export const archiveAdminQuote = (quoteId: string, input: AdminQuoteExpectedVersionV1Request) =>
+  quoteTransition(quoteId, "archive", input);
+
+export const revokeAdminQuoteShareLink = async (shareLinkId: string): Promise<void> => {
+  await sendJson(
+    quoteEntityPath("quote-share-links", shareLinkId, "/revoke"),
+    "POST",
+    {},
+    noBody,
+    AdminQuoteRevokedV1ResponseSchema,
+  );
+};
+
+export const convertAdminQuoteToTrip = (quoteId: string): Promise<{ readonly tripId: string }> =>
+  sendJson(
+    quoteIdPath(quoteId, "/convert-to-trip"),
+    "POST",
+    {},
+    noBody,
+    AdminQuoteConvertedV1ResponseSchema,
+  );
+
+export const listAdminLeadQuotes = (
+  leadId: string,
+): Promise<{ readonly items: AdminQuoteV1Response[] }> =>
+  getJson(leadResourcePath(leadId, "/quotes"), AdminLeadQuotesV1ResponseSchema);

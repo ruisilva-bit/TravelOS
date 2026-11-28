@@ -17,6 +17,8 @@ import {
   type DevelopmentInstanceManifest,
 } from "@travelos/config";
 import {
+  createPostgresPublicQuoteOperations,
+  createPostgresStaffQuoteOperations,
   createPostgresPublicShareReader,
   createPostgresStaffShareLinkOperations,
   createPostgresStaffTripPreviewOperations,
@@ -112,9 +114,10 @@ const createAdminAuthOptions = async (
       snapshotValidator,
       policy.canonicalOrigin,
     );
+    const shareTokenCrypto = createShareTokenCrypto();
     const publicShareOperations = createPublicShareOperations({
       reader: createPostgresPublicShareReader(persistence),
-      crypto: createShareTokenCrypto(),
+      crypto: shareTokenCrypto,
       parseSnapshot: (value) => TripSnapshotV1Schema.parse(value) as TripSnapshotV1,
       // Failure kind only: the token and payload never reach the log.
       onFailure: (failure) =>
@@ -127,6 +130,17 @@ const createAdminAuthOptions = async (
     });
     const leadOperations = createPostgresStaffLeadOperations(persistence, sessionResolver);
     const crmOperations = createPostgresStaffCrmOperations(persistence, sessionResolver);
+    const quoteOperations = createPostgresStaffQuoteOperations(persistence, {
+      sessionResolver,
+      shareTokens: shareTokenCrypto,
+      agencyDisplayName: "Agência",
+      publicBaseUrl: `http://${manifest.hosts.admin}`,
+      nowEpochMs: Date.now,
+    });
+    const publicQuoteOperations = createPostgresPublicQuoteOperations(
+      persistence,
+      shareTokenCrypto,
+    );
     const staffInvitationOperations = createStaffInvitationOperations({
       repository: createPostgresStaffInvitationRepository(persistence),
       authorizationRepository: staffAccessRepository,
@@ -163,10 +177,16 @@ const createAdminAuthOptions = async (
           shareLinkOperations,
           leadOperations,
           crmOperations,
+          quoteOperations,
           staffInvitationOperations,
           staffInvitationRateLimiter,
         },
-        publicShare: { operations: publicShareOperations, rateLimiter: publicShareRateLimiter },
+        publicShare: {
+          operations: publicShareOperations,
+          rateLimiter: publicShareRateLimiter,
+          quoteOperations: publicQuoteOperations,
+          canonicalOrigin: policy.canonicalOrigin,
+        },
       },
       destroy: () => persistence.destroy(),
     };

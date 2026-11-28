@@ -15,6 +15,7 @@ export { AdminLockVersionSchema, AdminPostgresBigintSchema } from "./lock-versio
 export * from "./crm/index.js";
 export * from "./customers/index.js";
 export * from "./itinerary/index.js";
+export * from "./quotes/index.js";
 export * from "./reservations/index.js";
 export * from "./sales/index.js";
 export * from "./staff/index.js";

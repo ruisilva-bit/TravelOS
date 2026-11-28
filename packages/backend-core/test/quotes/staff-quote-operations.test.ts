@@ -222,7 +222,10 @@ const makeRepository = (overrides: Partial<QuoteRepository> = {}) => {
 
 const makeOperations = (
   repositoryOverrides: Partial<QuoteRepository> = {},
-  options: { readonly permissions?: readonly StaffPermissionId[] } = {},
+  options: {
+    readonly permissions?: readonly StaffPermissionId[];
+    readonly recentMfa?: boolean;
+  } = {},
 ) => {
   const { repository, authorizationRepository } = makeRepository(repositoryOverrides);
   if (options.permissions !== undefined) {
@@ -245,7 +248,12 @@ const makeOperations = (
   const operations = createStaffQuoteOperations({
     repository,
     authorizationRepository,
-    sessionResolver: { resolveStaffSession: vi.fn(async () => session) },
+    sessionResolver: {
+      resolveStaffSession: vi.fn(async () => ({
+        ...session,
+        recentMfaVerifiedAtEpochMs: options.recentMfa === true ? nowEpochMs - 60_000 : null,
+      })),
+    },
     shareTokens: {
       randomBytes: (length) => new Uint8Array(length).fill(7),
       sha256: (bytes) => new Uint8Array(32).fill(bytes.length),
@@ -402,9 +410,23 @@ describe("line automations", () => {
   });
 });
 
+/** Sending needs recent MFA; the default session in these tests has just verified it. */
+const makeSendOperations = (
+  repositoryOverrides: Partial<QuoteRepository> = {},
+  options: { readonly permissions?: readonly StaffPermissionId[] } = {},
+) => makeOperations(repositoryOverrides, { ...options, recentMfa: true });
+
 describe("sendQuote", () => {
-  it("freezes a customer snapshot with no internal fields and returns a ready message", async () => {
+  it("refuses to send without a recent MFA verification and publishes nothing", async () => {
     const { operations, repository } = makeOperations();
+    await expect(
+      operations.sendQuote(cookie, quoteId, { expectedLockVersion: 3n, expiresAt: null }),
+    ).rejects.toBeInstanceOf(StaffAuthorizationError);
+    expect(vi.mocked(repository.publish)).not.toHaveBeenCalled();
+  });
+
+  it("freezes a customer snapshot with no internal fields and returns a ready message", async () => {
+    const { operations, repository } = makeSendOperations();
     const sent = await operations.sendQuote(cookie, quoteId, {
       expectedLockVersion: 3n,
       expiresAt: null,
@@ -450,7 +472,7 @@ describe("sendQuote", () => {
   });
 
   it("refuses to send a quote without a customer-visible base line", async () => {
-    const { operations, repository } = makeOperations({
+    const { operations, repository } = makeSendOperations({
       readAggregate: vi.fn(async () =>
         storedAggregate({ lines: [lineRecord({ n: 9, customerVisible: false })] }),
       ),
@@ -462,7 +484,7 @@ describe("sendQuote", () => {
   });
 
   it("refuses an expired validity date", async () => {
-    const { operations } = makeOperations({
+    const { operations } = makeSendOperations({
       readAggregate: vi.fn(async () =>
         storedAggregate({ quote: quoteRecord({ validUntil: "2026-11-01" }) }),
       ),
@@ -473,7 +495,7 @@ describe("sendQuote", () => {
   });
 
   it("maps a stale lock token from the repository to a conflict", async () => {
-    const { operations } = makeOperations({
+    const { operations } = makeSendOperations({
       publish: vi.fn(async () => {
         throw new QuoteStaleError();
       }),

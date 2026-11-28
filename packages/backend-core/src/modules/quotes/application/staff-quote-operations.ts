@@ -394,6 +394,7 @@ export interface StaffQuoteOperations {
 }
 
 const POSTGRES_BIGINT_MAX = 9_223_372_036_854_775_807n;
+const QUOTE_SEND_RECENT_MFA_MAXIMUM_AGE_MS = 5 * 60 * 1_000;
 
 const invalid = (message: string): never => {
   throw new InputValidationError(message);
@@ -863,11 +864,13 @@ export const createStaffQuoteOperations = (
       const key = requireId(quoteId, "Quote");
       const expected = requireLockVersion(input.expectedLockVersion);
       const today = isoDay(nowMs(dependencies));
+      // Sending freezes a customer-visible version: like share links, it needs recent MFA.
       const authorization = await authorizeOperation(
         dependencies,
         cookieHeader,
         null,
         QUOTE_PERMISSION_REQUIREMENTS.SEND,
+        QUOTE_SEND_RECENT_MFA_MAXIMUM_AGE_MS,
       );
       const agencyId = asOpaqueId(authorization.session.agencyId);
       const current = await repository.readAggregate(agencyId, key, authorization);

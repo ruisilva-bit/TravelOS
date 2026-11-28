@@ -537,7 +537,8 @@ describe.sequential("quote application flow over PostgreSQL", () => {
       sessions,
       "quote-editor",
       ["quote.view", "quote.edit", "quote.send", "customer.view", "trip.edit"],
-      { agencyId: agencyId as string },
+      // Sending a customer-visible version requires recent MFA, like share links.
+      { agencyId: agencyId as string, recentMfa: true },
     );
     editorCookie = editor.cookie;
     const viewer = await createStaff(owner, sessions, "quote-viewer", ["quote.view"], {

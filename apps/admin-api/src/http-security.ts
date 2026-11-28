@@ -1,6 +1,6 @@
 import { originAllowedForMethod } from "@travelos/auth-adapters";
 
-import { isPublicSharePath } from "./public-share-routes.js";
+import { isPublicShareAcceptPath, isPublicSharePath } from "./public-share-routes.js";
 import { headerValues } from "./request-boundary.js";
 
 export const ADMIN_PRIVATE_NO_STORE = "private, no-store";
@@ -57,6 +57,11 @@ export const createAdminCacheControlMiddleware = (): HttpHandler => (request, re
 export const createAdminOriginValidationMiddleware =
   (canonicalOrigin: string | null): HttpHandler =>
   (request, response, next) => {
+    // The public proposal acceptance form is token-only; its route enforces its own same-origin check.
+    if (isPublicShareAcceptPath(request.originalUrl ?? request.url)) {
+      next();
+      return;
+    }
     const origins = headerValues(request, "origin");
     const origin = origins.length === 1 ? (origins[0] ?? null) : null;
     if (!originAllowedForMethod(request.method, origin, canonicalOrigin)) {

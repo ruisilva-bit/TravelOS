@@ -262,6 +262,13 @@
       "rationale": "Test fixture uses a reserved example.test address; no real-person data."
     },
     {
+      "path": "packages/backend-core/test/quotes/staff-quote-operations.test.ts",
+      "rule": "email-address",
+      "lineSha256": "b207cbd18e30af86d9ff199dc70bec779496c4edd73e544a27bd6362d65d5a94",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture uses a reserved example address; no real-person data."
+    },
+    {
       "path": "packages/backend-core/test/staff-access/staff-invitation-operations.test.ts",
       "rule": "email-address",
       "lineSha256": "35a6d69da5828c4ff93f80cecb13471262e5a6e6987b744397f84483d15b8a45",

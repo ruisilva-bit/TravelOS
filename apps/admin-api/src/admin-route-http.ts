@@ -22,6 +22,10 @@ import {
   type StaffTripWorkspaceOperations,
   type StaffTripPreviewOperations,
   type StaffShareLinkOperations,
+  type StaffQuoteOperations,
+  QuoteNotFoundError,
+  QuoteStaleError,
+  QuoteRuleError,
 } from "@travelos/backend-core";
 import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
 
@@ -58,6 +62,8 @@ export interface AdminExpressApplication {
   post(path: string, handler: HttpHandler): void;
   patch(path: string, handler: HttpHandler): void;
   put(path: string, handler: HttpHandler): void;
+  /** Optional so existing harnesses stay valid; quote routes require it when registered. */
+  delete?(path: string, handler: HttpHandler): void;
 }
 
 export interface AdminRouteOptions {
@@ -69,6 +75,7 @@ export interface AdminRouteOptions {
   readonly shareLinkOperations?: StaffShareLinkOperations;
   readonly leadOperations?: StaffLeadOperations;
   readonly crmOperations?: StaffCrmOperations;
+  readonly quoteOperations?: StaffQuoteOperations;
 }
 
 /** Admin route policy: URL, Host, Authorization, X-Forwarded-Host and (when required) Origin. */
@@ -140,6 +147,18 @@ export const runHandler = (
     }
     if (error instanceof CrmNotFoundError) {
       response.status(404).end();
+      return;
+    }
+    if (error instanceof QuoteNotFoundError) {
+      response.status(404).end();
+      return;
+    }
+    if (error instanceof QuoteStaleError) {
+      send(response, 409, { error: "optimistic_conflict" });
+      return;
+    }
+    if (error instanceof QuoteRuleError) {
+      send(response, 409, { error: error.code });
       return;
     }
     if (error instanceof ShareLinkNotFoundError) {
