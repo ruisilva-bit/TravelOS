@@ -3,16 +3,11 @@ import {
   TRAVELOS_CANONICAL_TIMEZONE_NAMES,
 } from "@travelos/contracts/admin";
 
+import { wallClockInZone } from "./format.js";
+
 const localDatePattern = /^(\d{4})-(\d{2})-(\d{2})$/u;
 const localTimePattern = /^(\d{2}):(\d{2})(?::(\d{2}))?$/u;
 const canonicalTimezones = new Set<string>(TRAVELOS_CANONICAL_TIMEZONE_NAMES);
-
-const formattedLocalTuple = (instant: number, formatter: Intl.DateTimeFormat): string => {
-  const parts = new Map(
-    formatter.formatToParts(new Date(instant)).map((part) => [part.type, part.value]),
-  );
-  return `${parts.get("year")}-${parts.get("month")}-${parts.get("day")}T${parts.get("hour")}:${parts.get("minute")}:${parts.get("second")}`;
-};
 
 export const getZonedInstantCandidates = (
   localDate: string,
@@ -41,21 +36,7 @@ export const getZonedInstantCandidates = (
     return [];
   }
 
-  let formatter: Intl.DateTimeFormat;
-  try {
-    formatter = new Intl.DateTimeFormat("en-GB", {
-      timeZone: timezoneName,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23",
-    });
-  } catch {
-    return [];
-  }
+  if (wallClockInZone(localEpoch, timezoneName) === null) return [];
 
   const requestedTuple = `${localDate}T${hour.toString().padStart(2, "0")}:${minute
     .toString()
@@ -65,7 +46,7 @@ export const getZonedInstantCandidates = (
   for (let deltaHours = -48; deltaHours <= 48; deltaHours += 3) {
     const sampledInstant = localEpoch + deltaHours * 60 * 60 * 1000;
     const wholeSecondInstant = Math.floor(sampledInstant / 1000) * 1000;
-    const sampledLocal = formattedLocalTuple(wholeSecondInstant, formatter);
+    const sampledLocal = wallClockInZone(wholeSecondInstant, timezoneName) ?? "";
     const [sampledDate, sampledTime] = sampledLocal.split("T");
     if (!sampledDate || !sampledTime) continue;
     const [sampledYear, sampledMonth, sampledDay] = sampledDate.split("-").map(Number);
@@ -84,7 +65,7 @@ export const getZonedInstantCandidates = (
   const candidates = new Set<string>();
   for (const offset of offsets) {
     const instant = localEpoch - offset;
-    if (formattedLocalTuple(instant, formatter) !== requestedTuple) continue;
+    if ((wallClockInZone(instant, timezoneName) ?? "") !== requestedTuple) continue;
     const isoInstant = new Date(instant).toISOString();
     if (
       AdminScheduledLocalDateTimeSchema.safeParse({

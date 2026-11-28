@@ -27,6 +27,7 @@ import {
   updateAdminLead,
 } from "./api.js";
 import { createIdempotencyKey } from "./trip-workflows.js";
+import { formatDateTimeMedium } from "./format.js";
 
 type AdminLead = Awaited<ReturnType<typeof getAdminLead>>;
 type LeadState = AdminLead["state"];
@@ -77,17 +78,7 @@ const reasonOptions = Object.keys(reasonLabel) as DisqualificationReason[];
 export const LEAD_CONFLICT_MESSAGE =
   "Este lead foi alterado por outra pessoa — recarregue. As suas alterações não foram guardadas.";
 
-const instantFormatter = new Intl.DateTimeFormat("pt-PT", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: "UTC",
-});
-
-const formatInstant = (instant: string): string =>
-  `${instantFormatter.format(new Date(instant))} UTC`;
+const formatInstant = (instant: string): string => formatDateTimeMedium(instant);
 
 const leadName = (lead: Pick<AdminLead, "contactGivenName" | "contactFamilyName">): string =>
   `${lead.contactGivenName} ${lead.contactFamilyName}`;

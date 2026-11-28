@@ -18,6 +18,7 @@ import { QuotesView } from "./quotes-view.js";
 import { StaffInvitationsView } from "./staff-invitations-view.js";
 import { TripCreateForm, TripWorkspaceEditor } from "./trip-workflows.js";
 import type { AdminWorkflowWorkspace } from "./trip-workflows.js";
+import { formatCalendarDate } from "./format.js";
 
 export type AdminTrip = Awaited<ReturnType<typeof listAdminTrips>>["items"][number];
 export type AdminWorkspace = Awaited<ReturnType<typeof getAdminTripWorkspace>>;
@@ -71,18 +72,8 @@ interface AdminWorkspaceViewProps {
   readonly signOutError: string | null;
 }
 
-const dateFormatter = new Intl.DateTimeFormat("pt-PT", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  timeZone: "UTC",
-});
-
-const formatLocalDate = (localDate: string): string =>
-  dateFormatter.format(new Date(`${localDate}T00:00:00Z`));
-
 const formatDateRange = (startDate: string, endDate: string): string =>
-  `${formatLocalDate(startDate)} – ${formatLocalDate(endDate)}`;
+  `${formatCalendarDate(startDate)} – ${formatCalendarDate(endDate)}`;
 
 const tripStateLabel: Record<AdminTrip["state"], string> = {
   DRAFT: "Em preparação",
@@ -244,7 +235,7 @@ function scheduleText(schedule: {
   readonly localTime: string;
   readonly timezoneName: string;
 }): string {
-  return `${formatLocalDate(schedule.localDate)} · ${schedule.localTime} · ${schedule.timezoneName}`;
+  return `${formatCalendarDate(schedule.localDate)} · ${schedule.localTime} · ${schedule.timezoneName}`;
 }
 
 function Facts({ facts }: { readonly facts: readonly (readonly [string, string | null])[] }) {
