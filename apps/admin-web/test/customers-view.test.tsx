@@ -207,7 +207,7 @@ describe("customer record", () => {
     renderRecord();
     expect(await screen.findByRole("heading", { level: 1, name: "Marta Quintela" })).toBeVisible();
     const tabs = screen.getAllByRole("tab").map((tab) => tab.textContent);
-    expect(tabs).toEqual(["Pessoas (1)", "Leads (1)", "Viagens (1)", "Notas"]);
+    expect(tabs).toEqual(["Pessoas (1)", "Leads (1)", "Viagens (1)", "Orçamentos", "Notas"]);
 
     const people = screen.getByRole("table", { name: "Pessoas do cliente" });
     expect(within(people).getByText("Contacto principal")).toBeInTheDocument();

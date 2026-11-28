@@ -1,3 +1,4 @@
+import { SHARE_NOT_FOUND_HTML } from "./share-page-renderer.js";
 import type { QuoteProposalV1 } from "@travelos/contracts/share";
 
 import { escapeHtml } from "./share-page-renderer.js";
@@ -7,7 +8,7 @@ export interface ProposalPageView {
   payload: QuoteProposalV1;
   token: string;
   isLatest: boolean;
-  /** Quote state of the sent version: SENT, ACCEPTED, DECLINED, EXPIRED, ... */
+  /** Quote state of the sent version: SENT, ACCEPTED, DECLINED, EXPIRED, or PREVIEW for a staff draft. */
   state: string;
   accepted: { name: string; at: string } | null;
   flash: "accepted" | "error" | null;
@@ -160,6 +161,15 @@ const renderAccept = (view: ProposalPageView): string => {
 const resolveStatus = (view: ProposalPageView): { banner: string; canAccept: boolean } => {
   const banner = (cls: string, text: string): string =>
     `<div class="banner ${cls}" role="${cls === "bad" ? "alert" : "status"}">${e(text)}</div>`;
+  if (view.state === "PREVIEW") {
+    return {
+      banner: banner(
+        "info",
+        "Pré-visualização do rascunho, visível apenas à equipa. O cliente ainda não a recebeu.",
+      ),
+      canAccept: false,
+    };
+  }
   if (view.accepted !== null || view.state === "ACCEPTED") {
     const who =
       view.accepted === null
@@ -306,5 +316,5 @@ ${status.canAccept ? renderAccept(view) : ""}
 <html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer"><title>${e(quote.title)} · ${e(agency.displayName)}</title><style>${PROPOSAL_STYLE}</style></head><body>${body}</body></html>`;
 };
 
-export const PROPOSAL_NOT_FOUND_HTML = `<!doctype html>
-<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Ligação indisponível</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f0e6;color:#1c2735;font:16px/1.6 system-ui,sans-serif}main{max-width:26rem;padding:2rem;text-align:center}h1{font:500 1.8rem "Iowan Old Style",Georgia,serif;color:#0e1c2f}</style></head><body><main><h1>Ligação indisponível</h1><p>Esta ligação não existe, expirou ou foi revogada.</p></main></body></html>`;
+// Unknown, expired and contract-violating links must be indistinguishable from a missing trip link.
+export const PROPOSAL_NOT_FOUND_HTML = SHARE_NOT_FOUND_HTML;

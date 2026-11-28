@@ -1,9 +1,25 @@
 export { Button, ButtonLink } from "./button.js";
 export type { ButtonLinkProps, ButtonProps, ButtonVariant } from "./button.js";
+export { CATEGORY_TONES, CategoryChip } from "./category-chip.js";
+export type { CategoryChipProps, CategoryTone } from "./category-chip.js";
+export { Drawer } from "./drawer.js";
+export type { DrawerProps } from "./drawer.js";
+export { MenuButton } from "./menu-button.js";
+export type { MenuButtonProps, MenuItem } from "./menu-button.js";
+export { SheetCellInput, SheetCellSelect } from "./sheet-cell.js";
+export type { SheetCellInputProps, SheetCellKind, SheetCellSelectProps } from "./sheet-cell.js";
+export { NumberStepper } from "./stepper.js";
+export type { NumberStepperProps } from "./stepper.js";
 export { Dialog } from "./dialog.js";
 export type { DialogProps } from "./dialog.js";
-export { DateField, Select, TextArea, TextField } from "./fields.js";
-export type { DateFieldProps, SelectProps, TextAreaProps, TextFieldProps } from "./fields.js";
+export { CheckboxField, DateField, Select, TextArea, TextField } from "./fields.js";
+export type {
+  CheckboxFieldProps,
+  DateFieldProps,
+  SelectProps,
+  TextAreaProps,
+  TextFieldProps,
+} from "./fields.js";
 export { FoundationPage, type FoundationPageProps } from "./foundation-page.js";
 export { Card, EmptyState, PageHeader, SectionHeading, StateMessage } from "./layout.js";
 export {

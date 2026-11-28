@@ -20,6 +20,7 @@ import {
   AdminQuoteUpdateLineV1RequestSchema,
   AdminQuoteV1ResponseSchema,
   AdminLeadQuotesV1ResponseSchema,
+  QuoteProposalV1Schema,
 } from "@travelos/contracts/admin";
 
 import {
@@ -34,6 +35,8 @@ import {
   type IncomingHttpRequest,
   type OutgoingHttpResponse,
 } from "./admin-route-http.js";
+import { renderProposalPage } from "./proposal-page-renderer.js";
+import { PROPOSAL_CONTENT_SECURITY_POLICY } from "./public-share-routes.js";
 import { headerValues, headersFor } from "./request-boundary.js";
 
 /** Thrown inside a quote route to end it with a status before any use case runs. */
@@ -189,6 +192,41 @@ export const registerAdminQuoteRoutes = (
       noQuery(request);
       const quoteId = idParam(request, "quoteId");
       send(response, 200, quoteView(await operations.getQuote(cookieOf(request), quoteId)));
+    }),
+  );
+
+  /** Staff preview of the current draft: the customer page without a token and without the accept form. */
+  application.get(
+    "/api/admin/quotes/:quoteId/preview",
+    handle(async (request, response) => {
+      readOnly(request, options);
+      noQuery(request);
+      const quoteId = idParam(request, "quoteId");
+      const preview = await operations.previewQuote(cookieOf(request), quoteId);
+      const payload = QuoteProposalV1Schema.safeParse(serialize(preview.payload));
+      if (!payload.success) throw new Error("quote preview failed the customer contract");
+      const headers: Record<string, string> = {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Referrer-Policy": "no-referrer",
+        "X-Robots-Tag": "noindex, nofollow",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": PROPOSAL_CONTENT_SECURITY_POLICY,
+      };
+      for (const [name, value] of Object.entries(headers)) response.setHeader(name, value);
+      response.status(200).end(
+        new TextEncoder().encode(
+          renderProposalPage({
+            payload: payload.data,
+            token: "",
+            isLatest: true,
+            state: "PREVIEW",
+            accepted: null,
+            flash: null,
+            today: preview.today,
+          }),
+        ),
+      );
     }),
   );
 

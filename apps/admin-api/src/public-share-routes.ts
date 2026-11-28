@@ -1,7 +1,7 @@
 import type { PublicQuoteOperations, PublicShareOperations } from "@travelos/backend-core";
 import { QuoteProposalV1Schema } from "@travelos/contracts/admin";
 
-import { renderProposalPage, PROPOSAL_NOT_FOUND_HTML } from "./proposal-page-renderer.js";
+import { renderProposalPage } from "./proposal-page-renderer.js";
 import { renderSharePage, SHARE_NOT_FOUND_HTML } from "./share-page-renderer.js";
 import {
   trustedStaffInvitationClientKey,
@@ -223,7 +223,7 @@ const readProposal = (
       );
     })
     // Unknown, revoked, expired, malformed and unparsable links are indistinguishable.
-    .catch(() => respond(response, 404, PROPOSAL_NOT_FOUND_HTML));
+    .catch(() => respond(response, 404, SHARE_NOT_FOUND_HTML));
 };
 
 const handleAccept = (

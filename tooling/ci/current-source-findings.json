@@ -367,6 +367,13 @@
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
     },
     {
+      "path": "packages/contracts/src/admin/quotes/quote-v1.ts",
+      "rule": "secret-assignment",
+      "lineSha256": "bbece77e564aa4c8a7890c47305169fa4c6b5b21a7229e6f9b53eaee0fc6e20e",
+      "category": "NON_LITERAL_FIELD_OR_GENERATED_SECRET",
+      "rationale": "Credential-handling field, comparison, or generated secret; no embedded secret value."
+    },
+    {
       "path": "packages/contracts/src/admin/staff/invitation-v1.ts",
       "rule": "high-entropy-secret-assignment",
       "lineSha256": "dc60b67ebc81863c498e6c946d39d68afcf9ae14c8e63e0427f6c8253c0c75a3",

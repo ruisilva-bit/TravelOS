@@ -417,6 +417,25 @@ const makeSendOperations = (
 ) => makeOperations(repositoryOverrides, { ...options, recentMfa: true });
 
 describe("sendQuote", () => {
+  it("previews the current draft as the customer snapshot, without MFA and without publishing", async () => {
+    const { operations, repository } = makeOperations();
+    const preview = await operations.previewQuote(cookie, quoteId);
+    expect(vi.mocked(repository.publish)).not.toHaveBeenCalled();
+    expect(preview.payload.agency.displayName).toBe("Agência Exemplo");
+    expect(preview.today).toBe(new Date(nowEpochMs).toISOString().slice(0, 10));
+    const serialized = JSON.stringify(preview.payload);
+    for (const forbidden of ["SEGREDO", "netSupplier", "internalNote", "agencyNet", "margin"]) {
+      expect(serialized.includes(forbidden)).toBe(false);
+    }
+  });
+
+  it("denies the preview without quote.view", async () => {
+    const { operations } = makeOperations({}, { permissions: [] });
+    await expect(operations.previewQuote(cookie, quoteId)).rejects.toBeInstanceOf(
+      StaffAuthorizationError,
+    );
+  });
+
   it("refuses to send without a recent MFA verification and publishes nothing", async () => {
     const { operations, repository } = makeOperations();
     await expect(

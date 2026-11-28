@@ -14,6 +14,7 @@ import type { getAdminTripWorkspace, listAdminTrips } from "./api.js";
 import { CustomersView } from "./customers-view.js";
 import { GlobalSearch } from "./global-search.js";
 import { LeadsView } from "./leads-view.js";
+import { QuotesView } from "./quotes-view.js";
 import { StaffInvitationsView } from "./staff-invitations-view.js";
 import { TripCreateForm, TripWorkspaceEditor } from "./trip-workflows.js";
 import type { AdminWorkflowWorkspace } from "./trip-workflows.js";
@@ -51,9 +52,11 @@ interface AdminWorkspaceViewProps {
     | "customers"
     | "customer-detail"
     | "quotes"
+    | "quote-detail"
     | "tasks";
   readonly leadId: string | null;
   readonly customerId?: string | null;
+  readonly quoteId?: string | null;
   readonly canInviteStaff: boolean;
   readonly trips: AdminTripsState;
   readonly workspace: AdminWorkspaceState;
@@ -391,6 +394,7 @@ export function AdminWorkspaceView({
   page,
   leadId,
   customerId = null,
+  quoteId = null,
   canInviteStaff,
   trips,
   workspace,
@@ -413,7 +417,7 @@ export function AdminWorkspaceView({
           ? "#/leads"
           : page === "customers" || page === "customer-detail"
             ? "#/clientes"
-            : page === "quotes"
+            : page === "quotes" || page === "quote-detail"
               ? "#/orcamentos"
               : page === "tasks"
                 ? "#/tarefas"
@@ -468,7 +472,12 @@ export function AdminWorkspaceView({
           customerId={page === "customer-detail" ? customerId : null}
           onAuthenticationRequired={onAuthenticationRequired}
         />
-      ) : page === "quotes" || page === "tasks" ? (
+      ) : page === "quotes" || page === "quote-detail" ? (
+        <QuotesView
+          quoteId={page === "quote-detail" ? quoteId : null}
+          onAuthenticationRequired={onAuthenticationRequired}
+        />
+      ) : page === "tasks" ? (
         <>
           <PageHeader title={headerContext} />
           <EmptyState

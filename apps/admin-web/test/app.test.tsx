@@ -772,7 +772,7 @@ describe("Admin Web", () => {
   });
 
   it("shows the new navigation and an Em breve page for sections without a screen", async () => {
-    window.history.replaceState({}, "", "/#/orcamentos");
+    window.history.replaceState({}, "", "/#/tarefas");
     mocks.fetch.mockImplementation(async (input: unknown) => {
       const path = pathOf(input);
       if (path === "/api/staff/session-context") return jsonResponse(staffContext);
@@ -782,7 +782,7 @@ describe("Admin Web", () => {
     render(<AdminRoot />);
 
     expect(await screen.findByRole("heading", { name: "Em breve" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Orçamentos", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tarefas", level: 1 })).toBeInTheDocument();
     const navigation = screen.getByRole("navigation", { name: "Navegação principal" });
     expect(
       Array.from(navigation.querySelectorAll("a")).map((link) => [
@@ -797,6 +797,26 @@ describe("Admin Web", () => {
       ["Viagens", "#/viagens"],
       ["Tarefas", "#/tarefas"],
     ]);
+    expect(screen.getByRole("link", { name: "Tarefas" })).toHaveAttribute("aria-current", "page");
+    expect(mocks.fetch).not.toHaveBeenCalledWith("/api/admin/trips?limit=25", expect.anything());
+  });
+
+  it("routes /#/orcamentos to the quotes list", async () => {
+    window.history.replaceState({}, "", "/#/orcamentos");
+    mocks.fetch.mockImplementation(async (input: unknown) => {
+      const path = pathOf(input);
+      if (path === "/api/staff/session-context") return jsonResponse(staffContext);
+      if (path === "/api/admin/quotes?limit=25")
+        return jsonResponse({ items: [], nextCursor: null });
+      throw new Error(`Unexpected Admin API request: ${path}`);
+    });
+
+    render(<AdminRoot />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Orçamentos", level: 1 }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("Ainda não existem orçamentos")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Orçamentos" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -804,10 +824,18 @@ describe("Admin Web", () => {
     expect(mocks.fetch).not.toHaveBeenCalledWith("/api/admin/trips?limit=25", expect.anything());
   });
 
-  it.each([
-    ["/#/orcamentos", "Orçamentos"],
-    ["/#/tarefas", "Tarefas"],
-  ])("routes %s to an Em breve page", async (hash, title) => {
+  it("routes /#/orcamentos/:id to the quote editor and rejects a malformed id", async () => {
+    window.history.replaceState({}, "", "/#/orcamentos/not-an-id");
+    mocks.fetch.mockImplementation(async (input: unknown) => {
+      const path = pathOf(input);
+      if (path === "/api/staff/session-context") return jsonResponse(staffContext);
+      throw new Error(`Unexpected Admin API request: ${path}`);
+    });
+    render(<AdminRoot />);
+    expect(await screen.findByRole("heading", { name: "Endereço inválido" })).toBeInTheDocument();
+  });
+
+  it.each([["/#/tarefas", "Tarefas"]])("routes %s to an Em breve page", async (hash, title) => {
     window.history.replaceState({}, "", hash);
     mocks.fetch.mockImplementation(async (input: unknown) => {
       const path = pathOf(input);

@@ -27,6 +27,7 @@ type AdminRoute =
   | { readonly kind: "customers" }
   | { readonly kind: "customer-detail"; readonly customerId: string }
   | { readonly kind: "quotes" }
+  | { readonly kind: "quote-detail"; readonly quoteId: string }
   | { readonly kind: "tasks" }
   | { readonly kind: "detail"; readonly tripId: string }
   | { readonly kind: "invalid" };
@@ -57,6 +58,16 @@ const readRoute = (): AdminRoute => {
       return UUID_PATTERN.test(customerId)
         ? { kind: "customer-detail", customerId }
         : { kind: "invalid" };
+    } catch {
+      return { kind: "invalid" };
+    }
+  }
+
+  const quoteMatch = /^\/orcamentos\/([^/]+)$/u.exec(rawPath);
+  if (quoteMatch?.[1]) {
+    try {
+      const quoteId = decodeURIComponent(quoteMatch[1]);
+      return UUID_PATTERN.test(quoteId) ? { kind: "quote-detail", quoteId } : { kind: "invalid" };
     } catch {
       return { kind: "invalid" };
     }
@@ -144,6 +155,7 @@ export function AdminRoot() {
       route.kind === "customers" ||
       route.kind === "customer-detail" ||
       route.kind === "quotes" ||
+      route.kind === "quote-detail" ||
       route.kind === "tasks"
     )
       return;
@@ -471,6 +483,7 @@ export function AdminRoot() {
       page={page}
       leadId={route.kind === "lead-detail" ? route.leadId : null}
       customerId={route.kind === "customer-detail" ? route.customerId : null}
+      quoteId={route.kind === "quote-detail" ? route.quoteId : null}
       canInviteStaff={staffContext?.canInviteStaff === true}
       trips={trips}
       workspace={workspace}

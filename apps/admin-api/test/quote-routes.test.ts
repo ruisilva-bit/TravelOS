@@ -10,6 +10,7 @@ import {
   type StaffTripOperations,
 } from "@travelos/backend-core";
 import type { AuthSurfacePolicy } from "@travelos/auth-adapters";
+import { sampleProposal } from "./proposal-fixture.js";
 import { registerAdminRoutes, type AdminExpressApplication } from "../src/admin-routes.js";
 
 const policy: AuthSurfacePolicy = {
@@ -86,6 +87,7 @@ const makeOperations = (): { [Key in keyof StaffQuoteOperations]: ReturnType<typ
   listQuotes: vi.fn(),
   createQuote: vi.fn(),
   getQuote: vi.fn(),
+  previewQuote: vi.fn(),
   updateQuote: vi.fn(),
   addLine: vi.fn(),
   updateLine: vi.fn(),
@@ -141,7 +143,10 @@ const makeHarness = (operations: StaffQuoteOperations | undefined) => {
       setHeader(name: string, value: unknown) {
         this.headers.set(name.toLowerCase(), value);
       },
-      end() {},
+      ended: undefined as Uint8Array | undefined,
+      end(chunk?: Uint8Array) {
+        this.ended = chunk;
+      },
       json(value: unknown) {
         this.body = value;
       },
@@ -197,6 +202,7 @@ describe("Admin Quote routes", () => {
         "GET /api/admin/leads/:leadId/quotes",
         "GET /api/admin/quotes",
         "GET /api/admin/quotes/:quoteId",
+        "GET /api/admin/quotes/:quoteId/preview",
         "PATCH /api/admin/quotes/:quoteId",
         "PATCH /api/admin/quotes/:quoteId/lines/:lineId",
         "POST /api/admin/quote-share-links/:linkId/revoke",
@@ -226,6 +232,36 @@ describe("Admin Quote routes", () => {
         quote: { lockVersion: "3", pvpOverrideMinor: "250000" },
         totals: { pvpFinalMinor: "250000", depositMinor: "75000" },
       });
+    });
+
+    it("renders the current draft as the customer page without an accept form", async () => {
+      const { operations, harness } = withOperations();
+      operations.previewQuote.mockResolvedValue({
+        payload: sampleProposal(),
+        today: "2026-11-28",
+      });
+      const response = await harness.invoke("GET /api/admin/quotes/:quoteId/preview");
+      expect(response.statusCode).toBe(200);
+      expect(operations.previewQuote).toHaveBeenCalledWith("session=opaque", asOpaqueId(quoteId));
+      const html = new TextDecoder().decode(response.ended);
+      expect(html).toContain("Pré-visualização do rascunho");
+      expect(html).not.toContain("<form");
+      expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
+      expect(String(response.headers.get("content-security-policy"))).toContain(
+        "form-action 'self'",
+      );
+      expect(response.headers.get("cache-control")).toBe("no-store");
+    });
+
+    it("answers 404 for a preview of an unknown quote and rejects stray query parameters", async () => {
+      const { operations, harness } = withOperations();
+      operations.previewQuote.mockRejectedValue(new QuoteNotFoundError());
+      const missing = await harness.invoke("GET /api/admin/quotes/:quoteId/preview");
+      expect(missing.statusCode).toBe(404);
+      const stray = await harness.invoke("GET /api/admin/quotes/:quoteId/preview", {
+        query: { x: "1" },
+      });
+      expect(stray.statusCode).toBe(400);
     });
 
     it("maps an unknown quote to 404 without a body", async () => {

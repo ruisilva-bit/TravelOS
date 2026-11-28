@@ -76,6 +76,13 @@ describe("renderProposalPage", () => {
     expect(html).toContain("Li e aceito a proposta e as condições");
   });
 
+  it("preview state: staff banner, no accept form and no token in the page", () => {
+    const html = renderProposalPage(view({ state: "PREVIEW", token: "" }));
+    expect(html).toContain("Pré-visualização do rascunho");
+    expect(html).not.toContain("<form");
+    expect(html).not.toContain("/accept");
+  });
+
   it("accepted state: banner, no form", () => {
     const html = renderProposalPage(
       view({

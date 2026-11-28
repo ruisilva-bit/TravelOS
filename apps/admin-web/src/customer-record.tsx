@@ -17,6 +17,7 @@ import type { AdminCustomerDetailV1Response } from "@travelos/contracts/admin";
 import { crmErrorMessage, isAuthenticationRequired } from "./crm-shared.js";
 import { CustomerEditDialog } from "./customer-edit-dialog.js";
 import { CustomerPeople } from "./customer-people.js";
+import { EntityQuotes } from "./entity-quotes.js";
 import { formatDate, formatDateTime } from "./format.js";
 
 type Customer = AdminCustomerDetailV1Response;
@@ -170,6 +171,19 @@ function CustomerRecordBody({
                     description="Este cliente ainda não tem viagens."
                   />
                 }
+              />
+            ),
+          },
+          {
+            id: "quotes",
+            label: "Orçamentos",
+            panel: (
+              <EntityQuotes
+                customerId={customer.id}
+                leads={customer.leads.map((lead) => ({ id: lead.id, name: lead.name }))}
+                canCreate={customer.leads.length > 0}
+                blockedReason="Crie primeiro uma lead para este cliente."
+                onAuthenticationRequired={onAuthenticationRequired}
               />
             ),
           },

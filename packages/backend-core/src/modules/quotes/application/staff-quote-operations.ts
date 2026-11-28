@@ -316,6 +316,11 @@ export interface StaffQuoteOperations {
   listQuotes(cookieHeader: unknown, query: QuoteListQuery): Promise<QuotePage>;
   createQuote(cookieHeader: unknown, leadId: OpaqueId, input: unknown): Promise<QuoteRecord>;
   getQuote(cookieHeader: unknown, quoteId: OpaqueId): Promise<QuoteView>;
+  /** The customer snapshot of the CURRENT draft (what Send would freeze), for staff preview. */
+  previewQuote(
+    cookieHeader: unknown,
+    quoteId: OpaqueId,
+  ): Promise<{ readonly payload: QuoteProposalV1; readonly today: string }>;
   updateQuote(
     cookieHeader: unknown,
     quoteId: OpaqueId,
@@ -634,6 +639,31 @@ export const createStaffQuoteOperations = (
       );
       if (aggregate === null) throw new QuoteNotFoundError();
       return viewOf(aggregate, isoDay(nowMs(dependencies)));
+    },
+
+    async previewQuote(cookieHeader, quoteId) {
+      const key = requireId(quoteId, "Quote");
+      const authorization = await authorizeOperation(
+        dependencies,
+        cookieHeader,
+        null,
+        QUOTE_PERMISSION_REQUIREMENTS.VIEW,
+      );
+      const aggregate = await repository.readAggregate(
+        asOpaqueId(authorization.session.agencyId),
+        key,
+        authorization,
+      );
+      if (aggregate === null) throw new QuoteNotFoundError();
+      return {
+        payload: buildQuoteProposalV1({
+          agencyDisplayName: dependencies.agencyDisplayName,
+          quote: aggregate.quote,
+          lines: aggregate.lines,
+          days: effectiveDays(aggregate.quote, aggregate.lines, aggregate.days),
+        }),
+        today: isoDay(nowMs(dependencies)),
+      };
     },
 
     async updateQuote(cookieHeader, quoteId, input) {

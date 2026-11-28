@@ -54,6 +54,8 @@ const respondWith = (handler: (call: RecordedCall) => Response | Promise<Respons
       body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
     };
     calls.push(call);
+    // The lead page also lists its quotes; that section has its own tests.
+    if (call.path.endsWith("/quotes")) return jsonResponse({ items: [] });
     return handler(call);
   });
 };

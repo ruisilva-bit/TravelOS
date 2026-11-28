@@ -16,6 +16,7 @@ import {
 } from "@travelos/design-system";
 import type { StatusTone, TableColumn } from "@travelos/design-system";
 
+import { EntityQuotes } from "./entity-quotes.js";
 import {
   AdminApiError,
   createAdminLead,
@@ -710,6 +711,15 @@ function LeadDetail({
         </StateMessage>
       ) : null}
       <LeadSummary lead={lead} />
+      <section className="lead-quotes" aria-labelledby="lead-quotes-heading">
+        <SectionHeading id="lead-quotes-heading" title="Orçamentos" />
+        <EntityQuotes
+          leadId={lead.id}
+          canCreate={lead.state === "QUALIFIED"}
+          blockedReason="Qualifique a lead para criar orçamentos."
+          onAuthenticationRequired={onAuthenticationRequired}
+        />
+      </section>
       {isOpen ? (
         <>
           <div className="admin-workflow__actions lead-actions">

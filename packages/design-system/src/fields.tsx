@@ -124,3 +124,34 @@ export interface DateFieldProps extends Omit<TextFieldProps, "type"> {
 export function DateField(props: DateFieldProps) {
   return <TextField {...props} type="date" />;
 }
+
+export interface CheckboxFieldProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "id" | "type"
+> {
+  readonly id?: string;
+  readonly label: ReactNode;
+  readonly hint?: ReactNode;
+}
+
+/** A single yes/no choice. The label is clickable and always visible. */
+export function CheckboxField({ id, label, hint, className, ...input }: CheckboxFieldProps) {
+  const generated = useId();
+  const fieldId = id ?? generated;
+  return (
+    <div className={className ? `ds-checkbox ${className}` : "ds-checkbox"}>
+      <input
+        {...input}
+        id={fieldId}
+        type="checkbox"
+        aria-describedby={hint ? `${fieldId}-hint` : undefined}
+      />
+      <label htmlFor={fieldId}>{label}</label>
+      {hint ? (
+        <p className="ds-field__hint" id={`${fieldId}-hint`}>
+          {hint}
+        </p>
+      ) : null}
+    </div>
+  );
+}

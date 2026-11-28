@@ -228,7 +228,7 @@ describe("public proposal GET /v/:token", () => {
         .set("Host", expectedHost)
         .expect(200);
       expect(response.text).not.toContain('action="/v/');
-      expect(response.text).toContain("já não está disponível");
+      expect(response.text).toContain("Esta proposta expirou");
     } finally {
       await application.close();
     }
@@ -244,16 +244,20 @@ describe("public proposal GET /v/:token", () => {
         .set("Host", expectedHost)
         .expect(200);
       expect(open1.text).toContain(`action="/v/${validToken}/accept"`);
+      // After a successful POST the reader reports the acceptance; the flash only adds the thank-you.
+      quote.readPublicQuote.mockResolvedValueOnce(
+        view({ state: "ACCEPTED", accepted: { name: "Ana", at: "2026-11-28T10:00:00.000Z" } }),
+      );
       const accepted = await request(application.getHttpServer())
         .get(`/v/${validToken}?aceite=1`)
         .set("Host", expectedHost)
         .expect(200);
-      expect(accepted.text).toContain("Proposta aceite. Obrigado!");
+      expect(accepted.text).toContain("Proposta aceite");
       const failed = await request(application.getHttpServer())
         .get(`/v/${validToken}?erro=1`)
         .set("Host", expectedHost)
         .expect(200);
-      expect(failed.text).toContain("Não foi possível registar o aceite");
+      expect(failed.text).toContain("Não foi possível registar a aceitação");
     } finally {
       await application.close();
     }
