@@ -29,6 +29,7 @@ import {
   updateAdminTripWorkspace,
 } from "./api.js";
 import { getZonedInstantCandidates } from "./local-date-time.js";
+import { formatCalendarDate, formatDateTimeMedium } from "./format.js";
 
 export type AdminWorkflowWorkspace = Awaited<ReturnType<typeof getAdminTripWorkspace>>;
 type TripPublicationPreview = Awaited<ReturnType<typeof getAdminPublicationPreview>>;
@@ -638,26 +639,11 @@ function AccommodationForm({
   );
 }
 
-const formatDate = (localDate: string): string =>
-  new Intl.DateTimeFormat("pt-PT", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${localDate}T00:00:00.000Z`));
-
 const formatSnapshotTime = (value: {
   readonly localDate: string;
   readonly localTime: string;
   readonly timeZone: string;
-}): string => `${formatDate(value.localDate)} · ${value.localTime} · ${value.timeZone}`;
-
-const formatDateTimeUtc = (value: string): string =>
-  new Intl.DateTimeFormat("pt-PT", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
-  }).format(new Date(value));
+}): string => `${formatCalendarDate(value.localDate)} · ${value.localTime} · ${value.timeZone}`;
 
 function PreviewItems({ preview }: { readonly preview: TripPublicationPreview }) {
   if (preview.projection.items.length === 0) {
@@ -739,14 +725,14 @@ function ShareLinkList({
               key: "created",
               header: "Criada em",
               cell: (link) => (
-                <time dateTime={link.createdAt}>{formatDateTimeUtc(link.createdAt)}</time>
+                <time dateTime={link.createdAt}>{formatDateTimeMedium(link.createdAt)}</time>
               ),
             },
             {
               key: "expires",
               header: "Expira em",
               cell: (link) => (
-                <time dateTime={link.expiresAt}>{formatDateTimeUtc(link.expiresAt)}</time>
+                <time dateTime={link.expiresAt}>{formatDateTimeMedium(link.expiresAt)}</time>
               ),
             },
             {
@@ -851,8 +837,8 @@ function PublicationWorkflow({
           </p>
           <h4>{preview.projection.trip.title}</h4>
           <p>
-            {formatDate(preview.projection.trip.startDate)} –{" "}
-            {formatDate(preview.projection.trip.endDate)}
+            {formatCalendarDate(preview.projection.trip.startDate)} –{" "}
+            {formatCalendarDate(preview.projection.trip.endDate)}
           </p>
           <PreviewItems preview={preview} />
         </div>

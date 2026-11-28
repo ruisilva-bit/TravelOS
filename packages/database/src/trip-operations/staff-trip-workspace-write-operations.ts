@@ -1,6 +1,8 @@
 import {
   asOpaqueId,
   createStaffTripWorkspaceWriteOperations,
+  type AccommodationDraft,
+  type FlightDraft,
   InputValidationError,
   OptimisticConflictError,
   type StaffSessionResolver,
@@ -87,7 +89,7 @@ const readWrittenWorkspace = async (
   return workspace;
 };
 
-const nextSortOrder = async (
+export const nextSortOrder = async (
   database: Kysely<DatabaseShape>,
   agencyId: OpaqueId,
   tripId: OpaqueId,
@@ -107,6 +109,85 @@ const nextSortOrder = async (
     throw new InputValidationError("Trip itinerary has reached its supported size");
   }
   return currentMaximum + 1;
+};
+
+/** Inserts one flight item and its detail row; the caller owns the transaction and the sort order. */
+export const insertFlightItemRows = async (
+  database: Kysely<DatabaseShape>,
+  agencyId: OpaqueId,
+  tripId: OpaqueId,
+  sortOrder: number,
+  flight: FlightDraft,
+): Promise<string> => {
+  const itemId = createUuidV7();
+  await sql`
+      INSERT INTO "trip_ops"."itinerary_item" (
+        "id", "agencyId", "tripId", "family", "state", "sortOrder",
+        "customerTitle", "customerDescription", "customerBookingReference"
+      ) VALUES (
+        ${itemId}::uuid, ${agencyId}::uuid, ${tripId}::uuid,
+        'FLIGHT', 'DRAFT', ${sortOrder}::integer,
+        ${flight.title}, ${flight.description}, ${flight.customerBookingReference}
+      )
+    `.execute(database);
+  await sql`
+      INSERT INTO "trip_ops"."flight_item_detail" (
+        "agencyId", "tripId", "itemId", "carrier", "flightNumber",
+        "departureAirport", "arrivalAirport", "departureDate", "departureTime",
+        "departureTimezone", "departureInstant", "arrivalDate", "arrivalTime",
+        "arrivalTimezone", "arrivalInstant", "terminal", "cabin", "baggage", "seat"
+      ) VALUES (
+        ${agencyId}::uuid, ${tripId}::uuid, ${itemId}::uuid,
+        ${flight.carrier}, ${flight.flightNumber}, ${flight.departureAirport},
+        ${flight.arrivalAirport}, ${flight.departure.localDate}::date,
+        ${flight.departure.localTime}::time, ${flight.departure.timezoneName},
+        ${flight.departure.instant}::timestamptz, ${flight.arrival.localDate}::date,
+        ${flight.arrival.localTime}::time, ${flight.arrival.timezoneName},
+        ${flight.arrival.instant}::timestamptz, ${flight.terminal}, ${flight.cabin},
+        ${flight.baggage}, ${flight.seat}
+      )
+    `.execute(database);
+  return itemId;
+};
+
+/** Inserts one accommodation item and its detail row; the caller owns the transaction and sort order. */
+export const insertAccommodationItemRows = async (
+  database: Kysely<DatabaseShape>,
+  agencyId: OpaqueId,
+  tripId: OpaqueId,
+  sortOrder: number,
+  accommodation: AccommodationDraft,
+): Promise<string> => {
+  const itemId = createUuidV7();
+  await sql`
+      INSERT INTO "trip_ops"."itinerary_item" (
+        "id", "agencyId", "tripId", "family", "state", "sortOrder",
+        "customerTitle", "customerDescription", "customerBookingReference"
+      ) VALUES (
+        ${itemId}::uuid, ${agencyId}::uuid, ${tripId}::uuid,
+        'ACCOMMODATION', 'DRAFT', ${sortOrder}::integer,
+        ${accommodation.title}, ${accommodation.description},
+        ${accommodation.customerBookingReference}
+      )
+    `.execute(database);
+  await sql`
+      INSERT INTO "trip_ops"."accommodation_item_detail" (
+        "agencyId", "tripId", "itemId", "propertyName", "checkInDate", "checkInTime",
+        "checkInTimezone", "checkInInstant", "checkOutDate", "checkOutTime",
+        "checkOutTimezone", "checkOutInstant", "roomDescription", "boardType"
+      ) VALUES (
+        ${agencyId}::uuid, ${tripId}::uuid, ${itemId}::uuid,
+        ${accommodation.propertyName}, ${accommodation.checkIn.localDate}::date,
+        ${accommodation.checkIn.localTime}::time, ${accommodation.checkIn.timezoneName},
+        ${accommodation.checkIn.instant}::timestamptz,
+        ${accommodation.checkOut.localDate}::date,
+        ${accommodation.checkOut.localTime}::time,
+        ${accommodation.checkOut.timezoneName},
+        ${accommodation.checkOut.instant}::timestamptz,
+        ${accommodation.roomDescription}, ${accommodation.boardType}
+      )
+    `.execute(database);
+  return itemId;
 };
 
 export const createPostgresStaffTripWorkspaceWriteRepository = (
@@ -154,34 +235,13 @@ export const createPostgresStaffTripWorkspaceWriteRepository = (
         }
 
         const sortOrder = await nextSortOrder(database, normalizedAgencyId, normalizedTripId);
-        const itemId = createUuidV7();
-        await sql`
-          INSERT INTO "trip_ops"."itinerary_item" (
-            "id", "agencyId", "tripId", "family", "state", "sortOrder",
-            "customerTitle", "customerDescription", "customerBookingReference"
-          ) VALUES (
-            ${itemId}::uuid, ${normalizedAgencyId}::uuid, ${normalizedTripId}::uuid,
-            'FLIGHT', 'DRAFT', ${sortOrder}::integer,
-            ${flight.title}, ${flight.description}, ${flight.customerBookingReference}
-          )
-        `.execute(database);
-        await sql`
-          INSERT INTO "trip_ops"."flight_item_detail" (
-            "agencyId", "tripId", "itemId", "carrier", "flightNumber",
-            "departureAirport", "arrivalAirport", "departureDate", "departureTime",
-            "departureTimezone", "departureInstant", "arrivalDate", "arrivalTime",
-            "arrivalTimezone", "arrivalInstant", "terminal", "cabin", "baggage", "seat"
-          ) VALUES (
-            ${normalizedAgencyId}::uuid, ${normalizedTripId}::uuid, ${itemId}::uuid,
-            ${flight.carrier}, ${flight.flightNumber}, ${flight.departureAirport},
-            ${flight.arrivalAirport}, ${flight.departure.localDate}::date,
-            ${flight.departure.localTime}::time, ${flight.departure.timezoneName},
-            ${flight.departure.instant}::timestamptz, ${flight.arrival.localDate}::date,
-            ${flight.arrival.localTime}::time, ${flight.arrival.timezoneName},
-            ${flight.arrival.instant}::timestamptz, ${flight.terminal}, ${flight.cabin},
-            ${flight.baggage}, ${flight.seat}
-          )
-        `.execute(database);
+        await insertFlightItemRows(
+          database,
+          normalizedAgencyId,
+          normalizedTripId,
+          sortOrder,
+          flight,
+        );
         return readWrittenWorkspace(database, normalizedAgencyId, normalizedTripId);
       });
     },
@@ -260,35 +320,13 @@ export const createPostgresStaffTripWorkspaceWriteRepository = (
         }
 
         const sortOrder = await nextSortOrder(database, normalizedAgencyId, normalizedTripId);
-        const itemId = createUuidV7();
-        await sql`
-          INSERT INTO "trip_ops"."itinerary_item" (
-            "id", "agencyId", "tripId", "family", "state", "sortOrder",
-            "customerTitle", "customerDescription", "customerBookingReference"
-          ) VALUES (
-            ${itemId}::uuid, ${normalizedAgencyId}::uuid, ${normalizedTripId}::uuid,
-            'ACCOMMODATION', 'DRAFT', ${sortOrder}::integer,
-            ${accommodation.title}, ${accommodation.description},
-            ${accommodation.customerBookingReference}
-          )
-        `.execute(database);
-        await sql`
-          INSERT INTO "trip_ops"."accommodation_item_detail" (
-            "agencyId", "tripId", "itemId", "propertyName", "checkInDate", "checkInTime",
-            "checkInTimezone", "checkInInstant", "checkOutDate", "checkOutTime",
-            "checkOutTimezone", "checkOutInstant", "roomDescription", "boardType"
-          ) VALUES (
-            ${normalizedAgencyId}::uuid, ${normalizedTripId}::uuid, ${itemId}::uuid,
-            ${accommodation.propertyName}, ${accommodation.checkIn.localDate}::date,
-            ${accommodation.checkIn.localTime}::time, ${accommodation.checkIn.timezoneName},
-            ${accommodation.checkIn.instant}::timestamptz,
-            ${accommodation.checkOut.localDate}::date,
-            ${accommodation.checkOut.localTime}::time,
-            ${accommodation.checkOut.timezoneName},
-            ${accommodation.checkOut.instant}::timestamptz,
-            ${accommodation.roomDescription}, ${accommodation.boardType}
-          )
-        `.execute(database);
+        await insertAccommodationItemRows(
+          database,
+          normalizedAgencyId,
+          normalizedTripId,
+          sortOrder,
+          accommodation,
+        );
         return readWrittenWorkspace(database, normalizedAgencyId, normalizedTripId);
       });
     },

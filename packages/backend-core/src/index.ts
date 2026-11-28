@@ -361,6 +361,7 @@ export {
   type AddPersonInput,
   type CreateCustomerInput,
   type CrmCustomerDetail,
+  type CrmCustomerDetailRecord,
   type CrmCustomerListQuery,
   type CrmCustomerPage,
   type CrmCustomerPerson,
@@ -424,3 +425,27 @@ export {
   type StaffQuoteOperations,
   type StaffQuoteOperationsDependencies,
 } from "./modules/quotes/application/staff-quote-operations.js";
+
+export * from "./modules/agency-profile/domain/agency-profile.js";
+export {
+  AGENCY_PROFILE_LOCK_VERSION_MAXIMUM,
+  AGENCY_PROFILE_PERMISSION_REQUIREMENTS,
+  AgencyProfileNotFoundError,
+  createStaffAgencyProfileOperations,
+  type AgencyProfileRepository,
+  type StaffAgencyProfileOperations,
+  type StaffAgencyProfileOperationsDependencies,
+} from "./modules/agency-profile/application/staff-agency-profile-operations.js";
+
+export {
+  ACCOMMODATION_CHECK_IN_TIME,
+  ACCOMMODATION_CHECK_OUT_TIME,
+  AIRPORT_TIMEZONES,
+  DEFAULT_TRIP_TIMEZONE,
+  UNKNOWN_SUPPLIER_NAME,
+  localToInstant,
+  planQuoteTrip,
+  type PlannedReservation,
+  type PlannedTripItem,
+  type QuoteTripPlan,
+} from "./modules/quotes/domain/quote-trip-plan.js";

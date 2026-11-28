@@ -7,7 +7,7 @@ import {
   InputValidationError,
   OptimisticConflictError,
   type CreateCustomerInput,
-  type CrmCustomerDetail,
+  type CrmCustomerDetailRecord,
   type CrmCustomerListQuery,
   type CrmCustomerPage,
   type CrmCustomerPerson,
@@ -72,6 +72,7 @@ type CustomerSummaryRow = {
   readonly email: string | null;
   readonly phone: string | null;
   readonly primaryContactName: string | null;
+  readonly peopleCount: number;
   readonly lockVersion: string;
   readonly updatedAt: Date;
 };
@@ -139,6 +140,7 @@ const mapCustomerSummary = (row: CustomerSummaryRow): CrmCustomerSummary => ({
   email: row.email,
   phone: row.phone,
   primaryContactName: row.primaryContactName,
+  peopleCount: row.peopleCount,
   lockVersion: BigInt(row.lockVersion),
   updatedAt: row.updatedAt.toISOString(),
 });
@@ -254,7 +256,7 @@ const readCustomerDetail = async (
   database: Kysely<DatabaseShape>,
   agencyId: OpaqueId,
   customerId: OpaqueId,
-): Promise<CrmCustomerDetail | null> => {
+): Promise<CrmCustomerDetailRecord | null> => {
   const row = await readCustomerRow(database, agencyId, customerId);
   if (row === null) return null;
   return {
@@ -330,6 +332,11 @@ const customerSummaryColumns = sql`
        AND link."isPrimary"
      LIMIT 1
   ) AS "primaryContactName",
+  (
+    SELECT count(DISTINCT link."personId")::integer
+      FROM "crm"."customer_person" AS link
+     WHERE link."agencyId" = customer."agencyId" AND link."customerId" = customer."id"
+  ) AS "peopleCount",
   customer."lockVersion"::text AS "lockVersion",
   customer."updatedAt"
 `;
@@ -401,7 +408,7 @@ export const createPostgresCrmRepository = (
     database: Kysely<DatabaseShape>,
     agencyId: OpaqueId,
     customerId: OpaqueId,
-  ): Promise<CrmCustomerDetail> => {
+  ): Promise<CrmCustomerDetailRecord> => {
     const detail = await readCustomerDetail(database, agencyId, customerId);
     if (detail === null) throw new CrmNotFoundError();
     return detail;

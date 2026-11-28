@@ -15,6 +15,11 @@ import {
 } from "../../trip-operations/application/staff-trip-operations.js";
 import { InputValidationError } from "../../trip-operations/application/trip-slice.js";
 import {
+  agencyContactProfile,
+  type AgencyProfile,
+} from "../../agency-profile/domain/agency-profile.js";
+import { AgencyProfileNotFoundError } from "../../agency-profile/application/staff-agency-profile-operations.js";
+import {
   agencyNetMinor,
   includedItems,
   quoteTotals,
@@ -169,6 +174,11 @@ export interface QuoteRepository {
     quoteId: OpaqueId,
     authorization: StaffAuthorizationOperationProof,
   ): Promise<QuoteAggregate | null>;
+  /** The Agency name and contact details printed on proposals; null only if the Agency is missing. */
+  readAgencyProfile(
+    agencyId: OpaqueId,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<AgencyProfile | null>;
   readLeadContext(
     agencyId: OpaqueId,
     leadId: OpaqueId,
@@ -307,7 +317,6 @@ export interface SentQuote {
 export interface StaffQuoteOperationsDependencies extends StaffAuthorizationDependencies {
   readonly repository: QuoteRepository;
   readonly shareTokens: ShareTokenCryptoPort;
-  readonly agencyDisplayName: string;
   /** Origin that serves the customer proposal page, without a trailing slash. */
   readonly publicBaseUrl: string;
 }
@@ -555,6 +564,14 @@ export const createStaffQuoteOperations = (
   dependencies: StaffQuoteOperationsDependencies,
 ): StaffQuoteOperations => {
   const repository = dependencies.repository;
+  const readAgency = async (
+    agencyId: OpaqueId,
+    authorization: StaffAuthorizationOperationProof,
+  ): Promise<AgencyProfile> => {
+    const profile = await repository.readAgencyProfile(agencyId, authorization);
+    if (profile === null) throw new AgencyProfileNotFoundError();
+    return profile;
+  };
 
   const operations: StaffQuoteOperations = {
     async listQuotes(cookieHeader, query) {
@@ -657,7 +674,9 @@ export const createStaffQuoteOperations = (
       if (aggregate === null) throw new QuoteNotFoundError();
       return {
         payload: buildQuoteProposalV1({
-          agencyDisplayName: dependencies.agencyDisplayName,
+          agency: agencyContactProfile(
+            await readAgency(asOpaqueId(authorization.session.agencyId), authorization),
+          ),
           quote: aggregate.quote,
           lines: aggregate.lines,
           days: effectiveDays(aggregate.quote, aggregate.lines, aggregate.days),
@@ -905,6 +924,7 @@ export const createStaffQuoteOperations = (
       const agencyId = asOpaqueId(authorization.session.agencyId);
       const current = await repository.readAggregate(agencyId, key, authorization);
       if (current === null) throw new QuoteNotFoundError();
+      const agency = agencyContactProfile(await readAgency(agencyId, authorization));
       assertSendable(current);
       if (current.quote.validUntil < today) {
         throw new QuoteRuleError(
@@ -927,7 +947,7 @@ export const createStaffQuoteOperations = (
           assertSendable(aggregate);
           const days = effectiveDays(aggregate.quote, aggregate.lines, aggregate.days);
           const payload = buildQuoteProposalV1({
-            agencyDisplayName: dependencies.agencyDisplayName,
+            agency,
             quote: aggregate.quote,
             lines: aggregate.lines,
             days,

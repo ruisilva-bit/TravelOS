@@ -24,6 +24,7 @@ import {
   reissueAdminStaffInvitation,
 } from "./staff-invitation-api.js";
 import type { AdminStaffInvitationMetadataV1 } from "@travelos/contracts/admin";
+import { formatDateTimeMedium } from "./format.js";
 
 type InvitationPageState =
   | { readonly kind: "loading" }
@@ -52,14 +53,7 @@ const invitationStatusTone = (status: AdminStaffInvitationMetadataV1["status"]):
   return "neutral";
 };
 
-const invitationDateFormatter = new Intl.DateTimeFormat("pt-PT", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Europe/Lisbon",
-});
-
-const formatInvitationDate = (value: string): string =>
-  invitationDateFormatter.format(new Date(value));
+const formatInvitationDate = (value: string): string => formatDateTimeMedium(value);
 
 const isAuthenticationRequired = (error: unknown): boolean =>
   error instanceof AdminApiError && error.code === "AUTHENTICATION_REQUIRED";

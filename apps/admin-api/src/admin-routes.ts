@@ -1,3 +1,4 @@
+import { registerAdminAgencyRoutes } from "./agency-routes.js";
 import { registerAdminCrmRoutes } from "./crm-routes.js";
 import { registerAdminItineraryRoutes } from "./itinerary-routes.js";
 import { registerAdminLeadRoutes } from "./lead-routes.js";
@@ -21,4 +22,5 @@ export const registerAdminRoutes = (
   registerAdminLeadRoutes(application, options);
   registerAdminCrmRoutes(application, options);
   registerAdminQuoteRoutes(application, options);
+  registerAdminAgencyRoutes(application, options);
 };

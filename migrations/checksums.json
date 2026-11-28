@@ -17,6 +17,10 @@
     {
       "file": "0004_quotes.cjs",
       "sha256": "5121b5f2c2de1ee5124c4ce83192297a7df7b05853016e89e1606cbbadcc0749"
+    },
+    {
+      "file": "0005_agency_profile.cjs",
+      "sha256": "7a9cddf1ce3c618e8217177df7b20aa264f72af534b8a78b1efd19fc94e9b0b0"
     }
   ]
 }

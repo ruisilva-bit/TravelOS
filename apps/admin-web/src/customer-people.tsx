@@ -14,26 +14,22 @@ type Dialogs =
   | { readonly kind: "edit"; readonly person: CustomerPerson }
   | { readonly kind: "roles"; readonly person: CustomerPerson };
 
-/** Sensitive fields come back null when redacted; any value present means the viewer may see them. */
-export const hasSensitiveAccess = (people: readonly CustomerPerson[]): boolean =>
-  people.some(
-    (person) =>
-      person.birthDate !== null || person.passportNumber !== null || person.passportExpiry !== null,
-  );
-
 export function CustomerPeople({
   customerId,
   people,
+  canViewSensitive,
   onChanged,
   onAuthenticationRequired,
 }: {
   readonly customerId: string;
   readonly people: readonly CustomerPerson[];
+  /** Server-decided: an authorised viewer sees the sensitive inputs even when they are empty. */
+  readonly canViewSensitive: boolean;
   readonly onChanged: () => void;
   readonly onAuthenticationRequired: () => void;
 }) {
   const [dialog, setDialog] = useState<Dialogs>({ kind: "none" });
-  const sensitive = hasSensitiveAccess(people);
+  const sensitive = canViewSensitive;
   const close = (): void => setDialog({ kind: "none" });
   const saved = (): void => {
     close();

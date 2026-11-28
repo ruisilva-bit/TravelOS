@@ -525,6 +525,8 @@ describe.sequential("CRM customers, people, search and privileges", () => {
     const fetched = await ops().getCustomer(ownerStaff!.cookie, created.id);
     expect(fetched.id).toBe(created.id);
     expect(fetched.lockVersion).toBe(0n);
+    expect(fetched.canViewSensitive).toBe(true);
+    expect(fetched.people).toHaveLength(1);
 
     const listed = await ops().listCustomers(readerStaff!.cookie, {
       limit: 50,
@@ -533,6 +535,7 @@ describe.sequential("CRM customers, people, search and privileges", () => {
     });
     expect(listed.items.map((item) => item.id)).toContain(created.id);
     expect(listed.items.map((item) => item.id)).not.toContain(otherAgencyCustomerId);
+    expect(listed.items.find((item) => item.id === created.id)?.peopleCount).toBe(1);
   });
 
   it("searches customers case-insensitively by display name, customer email, phone and person email", async () => {
@@ -663,6 +666,7 @@ describe.sequential("CRM customers, people, search and privileges", () => {
 
     // Without traveller.view_sensitive the same person is returned with the sensitive fields blank.
     const reader = await ops().getCustomer(readerStaff!.cookie, created.id);
+    expect(reader.canViewSensitive).toBe(false);
     expect(primaryOf(reader)).toMatchObject({
       passportNumber: null,
       passportExpiry: null,

@@ -53,6 +53,7 @@ const detail = (overrides: Partial<CrmCustomerDetail> = {}): CrmCustomerDetail =
   lockVersion: 1n,
   createdAt: "2026-11-25T10:00:00.000Z",
   updatedAt: "2026-11-25T10:00:00.000Z",
+  canViewSensitive: true,
   people: [{ ...person(), roles: ["PRIMARY_CONTACT"], isPrimary: true }],
   leads: [{ id: leadId, name: "Marta Quintela", state: "QUALIFIED" }],
   trips: [
@@ -74,6 +75,7 @@ const summary = (overrides: Partial<CrmCustomerSummary> = {}): CrmCustomerSummar
   email: null,
   phone: null,
   primaryContactName: "Marta Quintela",
+  peopleCount: 1,
   lockVersion: 1n,
   updatedAt: "2026-11-25T10:00:00.000Z",
   ...overrides,

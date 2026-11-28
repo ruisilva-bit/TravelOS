@@ -138,6 +138,7 @@ export const AdminCustomerSummaryV1ResponseSchema = z
     email: z.string().nullable(),
     phone: z.string().nullable(),
     primaryContactName: z.string().nullable(),
+    peopleCount: z.number().int().min(0),
     lockVersion: AdminLockVersionSchema,
     updatedAt: z.iso.datetime({ offset: true }),
   })
@@ -155,6 +156,8 @@ export const AdminCustomerDetailV1ResponseSchema = z
     createdAt: z.iso.datetime({ offset: true }),
     updatedAt: z.iso.datetime({ offset: true }),
     people: z.array(AdminCustomerPersonV1ResponseSchema).max(100),
+    /** Whether the caller may view traveller sensitive fields; an empty value then means "not recorded". */
+    canViewSensitive: z.boolean(),
     leads: z
       .array(z.object({ id: AdminOpaqueIdSchema, name: z.string(), state: z.string() }).strict())
       .max(100),

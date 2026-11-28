@@ -22,6 +22,8 @@ import {
   type QuotePublishPlan,
   type QuotePublishResult,
   type QuoteRecord,
+  type QuoteTripPlan,
+  planQuoteTrip,
   type QuoteRepository,
   type QuoteSharedRecord,
   type QuoteShareLinkRecord,
@@ -38,6 +40,11 @@ import {
   assertStaffAuthorizationInTransaction,
   mapPostgresMutationError,
 } from "../trip-operations/operational-slice-repository.js";
+import {
+  insertAccommodationItemRows,
+  insertFlightItemRows,
+  nextSortOrder,
+} from "../trip-operations/staff-trip-workspace-write-operations.js";
 import { createUuidV7 } from "../uuidv7.js";
 
 type DatabaseShape = Record<string, never>;
@@ -433,6 +440,70 @@ const outcomeOf = (rows: readonly { readonly result: string }[]): string => {
   return row.result;
 };
 
+/**
+ * Writes the planned items, supplier reservations and internal NET cost lines inside the conversion
+ * transaction, reusing the trip workspace item inserts so the rows match a manually created item.
+ */
+const writePlannedTripItems = async (
+  database: Kysely<DatabaseShape>,
+  agencyId: OpaqueId,
+  tripId: OpaqueId,
+  quote: QuoteRecord,
+  plan: QuoteTripPlan,
+): Promise<void> => {
+  const itemIds: string[] = [];
+  for (const item of plan.items) {
+    const sortOrder = await nextSortOrder(database, agencyId, tripId);
+    if (item.flight !== null) {
+      itemIds.push(await insertFlightItemRows(database, agencyId, tripId, sortOrder, item.flight));
+    } else if (item.accommodation !== null) {
+      itemIds.push(
+        await insertAccommodationItemRows(
+          database,
+          agencyId,
+          tripId,
+          sortOrder,
+          item.accommodation,
+        ),
+      );
+    } else {
+      throw new Error("Quote trip plan item has no family detail");
+    }
+  }
+  if (plan.reservations.length === 0) return;
+  const scaleRow = first(
+    (
+      await sql<{ readonly scale: number }>`
+        SELECT scale FROM "finance"."currency_registry" WHERE "currencyCode" = ${quote.currencyCode}
+      `.execute(database)
+    ).rows,
+  );
+  if (scaleRow === null) throw new Error("Quote currency is not in the currency registry");
+  for (const reservation of plan.reservations) {
+    const reservationId = createUuidV7();
+    await sql`
+      INSERT INTO "trip_ops"."reservation"
+        ("id", "agencyId", "tripId", "supplierName", "supplierReference", "customerBookingReference", "state")
+      VALUES (${reservationId}::uuid, ${agencyId}::uuid, ${tripId}::uuid, ${reservation.supplierName},
+              ${reservation.supplierReference}, NULL, 'PROVISIONAL')
+    `.execute(database);
+    for (const index of reservation.itemIndexes) {
+      await sql`
+        INSERT INTO "trip_ops"."reservation_item_link"
+          ("agencyId", "tripId", "reservationId", "itineraryItemId", "linkRole")
+        VALUES (${agencyId}::uuid, ${tripId}::uuid, ${reservationId}::uuid, ${itemIds[index]}::uuid, 'PRIMARY')
+      `.execute(database);
+    }
+    await sql`
+      INSERT INTO "finance"."supplier_cost_line"
+        ("id", "agencyId", "tripId", "reservationId", "amountMinor", "currencyCode", "currencyScale", "internalNote", "classification")
+      VALUES (${createUuidV7()}::uuid, ${agencyId}::uuid, ${tripId}::uuid, ${reservationId}::uuid,
+              ${reservation.netMinor.toString()}::bigint, ${quote.currencyCode}, ${scaleRow.scale}::smallint,
+              ${reservation.internalNote}, 'INTERNAL_ONLY')
+    `.execute(database);
+  }
+};
+
 const lockQuoteOrThrow = async (
   database: Kysely<DatabaseShape>,
   agencyId: OpaqueId,
@@ -525,6 +596,37 @@ export const createPostgresQuoteRepository = (
       return read(agencyId, authorization, PERMISSIONS.VIEW, (database) =>
         readAggregateRows(database, agencyId, quoteId),
       );
+    },
+
+    async readAgencyProfile(agencyId, authorization) {
+      return read(agencyId, authorization, PERMISSIONS.VIEW, async (database) => {
+        const row = first(
+          (
+            await sql<{
+              agencyId: string;
+              displayName: string;
+              email: string | null;
+              phone: string | null;
+              website: string | null;
+              lockVersion: string;
+            }>`
+              SELECT agency."id"::text AS "agencyId", agency."displayName", agency."email",
+                     agency."phone", agency."website", agency."lockVersion"::text AS "lockVersion"
+                FROM "organization"."agency" AS agency
+               WHERE agency."id" = ${agencyId}::uuid
+            `.execute(database)
+          ).rows,
+        );
+        if (row === null) return null;
+        return {
+          agencyId: row.agencyId,
+          displayName: row.displayName,
+          email: row.email,
+          phone: row.phone,
+          website: row.website,
+          lockVersion: BigInt(row.lockVersion),
+        };
+      });
     },
 
     async readLeadContext(agencyId, leadId, authorization): Promise<QuoteLeadContext | null> {
@@ -956,6 +1058,10 @@ export const createPostgresQuoteRepository = (
             "Defina as datas da viagem antes de converter",
           );
         }
+        // Plan before the first write: a quote that cannot be converted changes nothing.
+        const aggregate = await readAggregateRows(database, agencyId, quoteId);
+        if (aggregate === null) return { outcome: "NOT_FOUND", tripId: null, created: false };
+        const plan = planQuoteTrip(aggregate.quote, aggregate.lines);
         const tripId = createUuidV7();
         await sql`
           INSERT INTO "trip_ops"."trip" ("id", "agencyId", "title", "startDate", "endDate", "state")
@@ -987,6 +1093,13 @@ export const createPostgresQuoteRepository = (
         );
         if (linked === "ALREADY_CONVERTED") throw new OptimisticConflictError();
         if (linked !== "UPDATED") assertQuoteWriteOutcome(linked);
+        await writePlannedTripItems(
+          database,
+          asOpaqueId(agencyId),
+          asOpaqueId(tripId),
+          aggregate.quote,
+          plan,
+        );
         return { outcome: "UPDATED", tripId: asOpaqueId(tripId), created: true };
       });
     },

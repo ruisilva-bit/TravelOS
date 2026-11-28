@@ -72,6 +72,7 @@ const mapSummary = (customer: CrmCustomerSummary) =>
     email: customer.email,
     phone: customer.phone,
     primaryContactName: customer.primaryContactName,
+    peopleCount: customer.peopleCount,
     lockVersion: customer.lockVersion.toString(),
     updatedAt: customer.updatedAt,
   });
@@ -102,6 +103,7 @@ const mapDetail = (detail: CrmCustomerDetail) =>
     createdAt: detail.createdAt,
     updatedAt: detail.updatedAt,
     people: detail.people.map(mapCustomerPerson),
+    canViewSensitive: detail.canViewSensitive,
     leads: detail.leads.map(mapLeadSummary),
     trips: detail.trips.map(mapTripSummary),
   });

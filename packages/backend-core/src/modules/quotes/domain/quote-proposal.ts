@@ -12,6 +12,7 @@ import {
   type QuoteTotals,
 } from "./quote-calculations.js";
 import type { QuoteLineRecord, QuoteRecord } from "./quote-model.js";
+import type { AgencyContactProfile } from "../../agency-profile/domain/agency-profile.js";
 
 export interface CustomerMoneyV1 {
   readonly minorUnits: string;
@@ -21,7 +22,12 @@ export interface CustomerMoneyV1 {
 
 export interface QuoteProposalV1 {
   readonly schemaVersion: 1;
-  readonly agency: { readonly displayName: string };
+  readonly agency: {
+    readonly displayName: string;
+    readonly email?: string;
+    readonly phone?: string;
+    readonly website?: string;
+  };
   readonly quote: {
     readonly number: string;
     readonly title: string;
@@ -180,7 +186,7 @@ const flightDirections = (
  * reaches the customer is the service, description, supplier-free labels and the agency display name.
  */
 export const buildQuoteProposalV1 = (input: {
-  readonly agencyDisplayName: string;
+  readonly agency: AgencyContactProfile;
   readonly quote: QuoteRecord;
   readonly lines: readonly QuoteLineRecord[];
   readonly days: readonly EffectiveQuoteDay[];
@@ -198,7 +204,7 @@ export const buildQuoteProposalV1 = (input: {
 
   return {
     schemaVersion: 1,
-    agency: { displayName: input.agencyDisplayName },
+    agency: { ...input.agency },
     quote: {
       number: quote.number,
       title: quote.title,

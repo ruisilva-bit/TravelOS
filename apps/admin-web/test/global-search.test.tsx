@@ -30,6 +30,7 @@ beforeEach(() => {
         email: "marta@example.test",
         phone: null,
         primaryContactName: "Marta Quintela",
+        peopleCount: 1,
         lockVersion: "1",
         updatedAt: "2026-11-27T10:30:00.000Z",
       },

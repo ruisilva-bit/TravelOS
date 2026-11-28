@@ -377,6 +377,7 @@ describe("Admin same-origin API client", () => {
     };
     const customerPerson = { ...person, roles: ["PRIMARY_CONTACT"], isPrimary: true };
     const detail = {
+      canViewSensitive: true,
       id: customerId,
       agencyId,
       displayName: "Família Quintela",
@@ -397,6 +398,7 @@ describe("Admin same-origin API client", () => {
       email: null,
       phone: null,
       primaryContactName: "Marta Quintela",
+      peopleCount: 1,
       lockVersion: "1",
       updatedAt: "2027-01-01T12:00:00.000Z",
     };

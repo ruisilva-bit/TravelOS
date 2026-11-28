@@ -7,8 +7,11 @@ import {
   QuoteNotFoundError,
   type OpaqueId,
 } from "@travelos/backend-core";
+import { createQuoteExpiryTask } from "../../apps/worker/src/quote-expiry-task.js";
 import {
+  createPostgresPersistence,
   createPostgresPublicQuoteOperations,
+  createPostgresQuoteExpiryPort,
   createPostgresStaffQuoteOperations,
   createShareTokenCrypto,
   type PostgresPersistence,
@@ -17,6 +20,8 @@ import { createUuidV7 } from "../../packages/database/src/uuidv7.js";
 import {
   createOwnerClient,
   createStaff,
+  host,
+  port,
   registrySessionResolver,
   type StaffSessionRegistry,
 } from "./helpers/postgres.js";
@@ -474,6 +479,44 @@ describe.sequential("quotes schema, functions and privileges (0004)", () => {
     expect(await callText(`job_runtime.expire_quotes(now())`, WORKER)).toBe("0");
   });
 
+  it("the worker expiry task expires a SENT quote past validity after one tick", async () => {
+    const overdueQuote = await seedQuote({
+      customerId: customerA,
+      leadId: leadA,
+      validUntil: "2020-01-02",
+    });
+    await markSent(overdueQuote);
+    const workerPersistence = createPostgresPersistence({
+      host,
+      port,
+      database: databaseName,
+      user: WORKER,
+      tls: { mode: "DISABLED_LOOPBACK_ONLY" },
+      applicationName: "worker-quote-expiry-test",
+      maxConnections: 2,
+    });
+    try {
+      const logs: unknown[] = [];
+      const task = createQuoteExpiryTask({
+        port: createPostgresQuoteExpiryPort(
+          workerPersistence as PostgresPersistence<Record<string, never>>,
+        ),
+        clock: Date.now,
+        log: (record) => logs.push(record),
+      });
+      await task.tick();
+      const [row] = await queryAsOwner<{ state: string }>(
+        `SELECT state FROM "sales"."quote" WHERE id = '${overdueQuote}'::uuid`,
+      );
+      expect(row?.state).toBe("EXPIRED");
+      expect(logs).toContainEqual(
+        expect.objectContaining({ action: "quote_expiry", outcome: "SUCCEEDED" }),
+      );
+    } finally {
+      await workerPersistence.destroy();
+    }
+  });
+
   it("denies the admin runtime any direct UPDATE or DELETE on quote tables and the worker any internal column", async () => {
     const quoteId = await seedQuote({ customerId: customerA, leadId: leadA });
     expect(
@@ -548,7 +591,6 @@ describe.sequential("quote application flow over PostgreSQL", () => {
     operations = createPostgresStaffQuoteOperations(persistenceForFlow, {
       sessionResolver,
       shareTokens,
-      agencyDisplayName: "Agência Teste",
       publicBaseUrl: "https://propostas.test",
     });
     publicOperations = createPostgresPublicQuoteOperations(persistenceForFlow, shareTokens);
@@ -679,6 +721,159 @@ describe.sequential("quote application flow over PostgreSQL", () => {
     await expect(
       operations.convertToTrip(editorCookie, asOpaqueId(flowLead)),
     ).rejects.toBeInstanceOf(QuoteNotFoundError);
+  });
+
+  it("converts an accepted flight and hotel quote into items, reservations and NET costs once", async () => {
+    const quote = await operations.createQuote(editorCookie, asOpaqueId(flowLead), {
+      destination: "Madeira",
+      startDate: "2027-06-01",
+      endDate: "2027-06-05",
+    });
+    const quoteId = quoteIdOf(quote);
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: {
+        category: "FLIGHT",
+        service: "Ida LIS-FNC",
+        supplier: "TAP",
+        fromIata: "LIS",
+        toIata: "FNC",
+        departTime: "08:15",
+        arriveTime: "09:30",
+        carrier: "TAP",
+        flightNumber: "TP1234",
+        startDate: "2027-06-01",
+        endDate: "2027-06-01",
+        pvpMinor: 95000n,
+        netSupplierMinor: 70000n,
+      },
+    });
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: {
+        category: "FLIGHT",
+        service: "Volta FNC-LIS",
+        supplier: "TAP",
+        fromIata: "FNC",
+        toIata: "LIS",
+        departTime: "18:00",
+        arriveTime: "20:10",
+        carrier: "TAP",
+        flightNumber: "TP1235",
+        startDate: "2027-06-05",
+        endDate: "2027-06-05",
+        pvpMinor: 95000n,
+        netSupplierMinor: 50000n,
+      },
+    });
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: {
+        category: "ACCOMMODATION",
+        service: "Hotel Estrela",
+        supplier: "Hotel Estrela, Lda",
+        location: "Funchal",
+        roomType: "Duplo",
+        boardBasis: "Meia pensão",
+        startDate: "2027-06-01",
+        endDate: "2027-06-05",
+        pvpMinor: 120000n,
+        netSupplierMinor: 72000n,
+      },
+    });
+    const sent = await operations.sendQuote(editorCookie, quoteId, {
+      expectedLockVersion: quote.lockVersion,
+      expiresAt: null,
+    });
+    expect(await publicOperations.acceptPublicQuote(sent.token, "Marta Quintela")).toBe("ACCEPTED");
+
+    const first = await operations.convertToTrip(editorCookie, quoteId);
+    expect(first.created).toBe(true);
+    const counts = async () => {
+      const [row] = await queryAsOwner<{
+        items: string;
+        flights: string;
+        accommodations: string;
+        reservations: string;
+        links: string;
+        costs: string;
+        netMinor: string;
+      }>(
+        `SELECT
+           (SELECT count(*)::text FROM trip_ops.itinerary_item WHERE "tripId" = '${first.tripId}'::uuid) AS items,
+           (SELECT count(*)::text FROM trip_ops.flight_item_detail WHERE "tripId" = '${first.tripId}'::uuid) AS flights,
+           (SELECT count(*)::text FROM trip_ops.accommodation_item_detail WHERE "tripId" = '${first.tripId}'::uuid) AS accommodations,
+           (SELECT count(*)::text FROM trip_ops.reservation WHERE "tripId" = '${first.tripId}'::uuid) AS reservations,
+           (SELECT count(*)::text FROM trip_ops.reservation_item_link WHERE "tripId" = '${first.tripId}'::uuid) AS links,
+           (SELECT count(*)::text FROM finance.supplier_cost_line WHERE "tripId" = '${first.tripId}'::uuid) AS costs,
+           (SELECT COALESCE(sum("amountMinor"), 0)::text FROM finance.supplier_cost_line WHERE "tripId" = '${first.tripId}'::uuid) AS "netMinor"`,
+      );
+      return row;
+    };
+    expect(await counts()).toEqual({
+      items: "3",
+      flights: "2",
+      accommodations: "1",
+      reservations: "2",
+      links: "3",
+      costs: "2",
+      netMinor: "192000",
+    });
+    const flights = await queryAsOwner<{
+      departureAirport: string;
+      departureTimezone: string;
+      arrivalTimezone: string;
+      departureInstant: Date;
+    }>(
+      `SELECT "departureAirport", "departureTimezone", "arrivalTimezone", "departureInstant"
+         FROM trip_ops.flight_item_detail WHERE "tripId" = '${first.tripId}'::uuid
+        ORDER BY "departureInstant"`,
+    );
+    expect(
+      flights.map(({ departureAirport, departureTimezone, arrivalTimezone }) => ({
+        departureAirport,
+        departureTimezone,
+        arrivalTimezone,
+      })),
+    ).toEqual([
+      {
+        departureAirport: "LIS",
+        departureTimezone: "Europe/Lisbon",
+        arrivalTimezone: "Atlantic/Madeira",
+      },
+      {
+        departureAirport: "FNC",
+        departureTimezone: "Atlantic/Madeira",
+        arrivalTimezone: "Europe/Lisbon",
+      },
+    ]);
+    const costs = await queryAsOwner<{
+      classification: string;
+      supplierName: string;
+      amountMinor: string;
+    }>(
+      `SELECT c.classification, r."supplierName", c."amountMinor"::text AS "amountMinor"
+         FROM finance.supplier_cost_line c
+         JOIN trip_ops.reservation r ON r.id = c."reservationId"
+        WHERE c."tripId" = '${first.tripId}'::uuid
+        ORDER BY r."supplierName"`,
+    );
+    expect(costs).toEqual([
+      { classification: "INTERNAL_ONLY", supplierName: "Hotel Estrela, Lda", amountMinor: "72000" },
+      { classification: "INTERNAL_ONLY", supplierName: "TAP", amountMinor: "120000" },
+    ]);
+
+    const second = await operations.convertToTrip(editorCookie, quoteId);
+    expect(second).toEqual({ tripId: first.tripId, created: false });
+    expect(await counts()).toEqual({
+      items: "3",
+      flights: "2",
+      accommodations: "1",
+      reservations: "2",
+      links: "3",
+      costs: "2",
+      netMinor: "192000",
+    });
   });
 
   it("supersedes an older link after revision, and refuses acceptance of the old version", async () => {
