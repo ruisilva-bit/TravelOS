@@ -211,7 +211,11 @@ export const registerAdminQuoteRoutes = (
         "Referrer-Policy": "no-referrer",
         "X-Robots-Tag": "noindex, nofollow",
         "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": PROPOSAL_CONTENT_SECURITY_POLICY,
+        // The staff editor shows the preview in a same-origin iframe; the public page stays unframeable.
+        "Content-Security-Policy": PROPOSAL_CONTENT_SECURITY_POLICY.replace(
+          "frame-ancestors 'none'",
+          "frame-ancestors 'self'",
+        ),
       };
       for (const [name, value] of Object.entries(headers)) response.setHeader(name, value);
       response.status(200).end(

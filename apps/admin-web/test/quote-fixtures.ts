@@ -169,6 +169,7 @@ export class MockQuoteApi {
   quote: Json;
   lines: Line[];
   versions: Json[] = [];
+  dayOverrides = new Map<number, { title: string; description: string | null }>();
   private next = 50;
   private lock = 5;
 
@@ -242,7 +243,7 @@ export class MockQuoteApi {
     return {
       quote: { ...this.quote, lockVersion: String(this.lock) },
       lines: this.lines.map((l) => ({ ...l })),
-      days: [],
+      days: this.days(),
       totals: {
         baseNetSupplierMinor: net.toString(),
         baseRecommendedMinor: rec.toString(),
@@ -264,11 +265,41 @@ export class MockQuoteApi {
         })),
       },
       warnings,
-      included: [],
-      excluded: [],
+      included: this.included(),
+      excluded: (this.quote["excludedItems"] as string[]).length
+        ? this.quote["excludedItems"]
+        : ["Refeições não mencionadas", "Despesas pessoais", "Gorjetas"],
       versions: this.versions,
       today: "2026-11-28",
     };
+  }
+
+  private days(): Json[] {
+    const start = this.quote["startDate"] as string | null;
+    const end = this.quote["endDate"] as string | null;
+    if (start === null || end === null) return [];
+    const out: Json[] = [];
+    const first = Date.parse(`${start}T00:00:00Z`);
+    const count = Math.round((Date.parse(`${end}T00:00:00Z`) - first) / 86_400_000) + 1;
+    for (let index = 0; index < count; index += 1) {
+      const date = new Date(first + index * 86_400_000).toISOString().slice(0, 10);
+      const edited = this.dayOverrides.get(index);
+      const title =
+        index === 0 ? "Chegada a Funchal" : index === count - 1 ? "Regresso a casa" : "Dia livre";
+      out.push({
+        dayIndex: index,
+        date,
+        title: edited?.title ?? title,
+        description: edited?.description ?? null,
+      });
+    }
+    return out;
+  }
+
+  private included(): Json[] {
+    return this.sorted("BASE")
+      .filter((l) => l["customerVisible"] === true)
+      .map((l) => ({ category: l["category"], label: l["service"], lineIds: [l.id] }));
   }
 
   private bump(): Json {
@@ -344,6 +375,20 @@ export class MockQuoteApi {
       }
       return [200, this.bump()];
     }
+    const dayMatch = new RegExp(`^${quotePath}/days/(\\d+)$`, "u").exec(path);
+    if (method === "PUT" && dayMatch !== null) {
+      this.dayOverrides.set(Number(dayMatch[1]), {
+        title: b["title"] as string,
+        description: (b["description"] as string | null) ?? null,
+      });
+      return [200, this.bump()];
+    }
+    if (method === "DELETE" && path === `${quotePath}/days`) {
+      this.dayOverrides.clear();
+      return [200, this.bump()];
+    }
+    if (method === "GET" && path === `${quotePath}/preview`)
+      return [200, { html: "<p>Pré-visualização</p>" }];
     if (method === "POST" && path === `${quotePath}/send`) {
       this.quote["state"] = "SENT";
       this.versions = [

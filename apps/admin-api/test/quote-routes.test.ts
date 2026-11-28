@@ -250,6 +250,9 @@ describe("Admin Quote routes", () => {
       expect(String(response.headers.get("content-security-policy"))).toContain(
         "form-action 'self'",
       );
+      expect(String(response.headers.get("content-security-policy"))).toContain(
+        "frame-ancestors 'self'",
+      );
       expect(response.headers.get("cache-control")).toBe("no-store");
     });
 

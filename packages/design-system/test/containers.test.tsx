@@ -10,6 +10,7 @@ import {
   Dialog,
   EmptyState,
   PageHeader,
+  SectionNav,
   Table,
   Tabs,
   ToastProvider,
@@ -339,5 +340,30 @@ describe("WorkspaceFrame", () => {
     expect(screen.getByRole("link", { name: "Hoje" })).not.toHaveAttribute("aria-current");
     expect(screen.getByRole("link", { name: "Saltar para o conteúdo" })).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveTextContent("Conteúdo");
+  });
+});
+
+describe("SectionNav", () => {
+  it("marks the active item and reports a change", () => {
+    const onChange = vi.fn();
+    render(
+      <SectionNav
+        label="Secções"
+        value="b"
+        onChange={onChange}
+        items={[
+          { id: "a", label: "Capa" },
+          { id: "b", label: "Programa" },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("navigation", { name: "Secções" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Programa" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Capa" })).not.toHaveAttribute("aria-current");
+    fireEvent.click(screen.getByRole("button", { name: "Capa" }));
+    expect(onChange).toHaveBeenCalledWith("a");
   });
 });

@@ -30,6 +30,8 @@ export {
   normalizeMoneyInput,
 } from "./money.js";
 export type { MoneyFieldProps } from "./money.js";
+export { SectionNav } from "./section-nav.js";
+export type { SectionNavItem } from "./section-nav.js";
 export { StatusPill } from "./status-pill.js";
 export type { StatusTone } from "./status-pill.js";
 export { Table } from "./table.js";

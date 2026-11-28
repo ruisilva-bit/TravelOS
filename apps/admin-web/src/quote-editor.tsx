@@ -7,6 +7,7 @@ import {
   PageHeader,
   StateMessage,
   StatusPill,
+  Tabs,
   ToastProvider,
 } from "@travelos/design-system";
 import { useEffect, useRef, useState } from "react";
@@ -32,6 +33,7 @@ import { DraftTextArea } from "./quote-fields.js";
 import {
   CATEGORY_NEW_SERVICE,
   STATE_LABELS,
+  cleanLinePatch,
   headerToRequest,
   lineToRequest,
 } from "./quote-format.js";
@@ -42,6 +44,7 @@ import type {
   QuoteLine,
   QuoteSection,
 } from "./quote-format.js";
+import { ProposalEditor } from "./proposal-editor.js";
 import { QuoteStateBanner } from "./quote-banners.js";
 import { QuoteHeader } from "./quote-header.js";
 import { applyOrder } from "./quote-order.js";
@@ -123,23 +126,7 @@ function QuoteEditorBody({
   };
 
   const patchLine = (line: QuoteLine, patch: Partial<QuoteLine>): void => {
-    const cleaned: Partial<QuoteLine> = { ...patch };
-    if (patch.category !== undefined) {
-      if (patch.category !== "FLIGHT") {
-        Object.assign(cleaned, {
-          fromIata: null,
-          toIata: null,
-          departTime: null,
-          arriveTime: null,
-          carrier: null,
-          flightNumber: null,
-          baggage: null,
-        });
-      }
-      if (patch.category !== "ACCOMMODATION") {
-        Object.assign(cleaned, { roomType: null, boardBasis: null, location: null });
-      }
-    }
+    const cleaned = cleanLinePatch(patch);
     void run(
       (current) => {
         const latest = current.lines.find((entry) => entry.id === line.id);
@@ -209,6 +196,10 @@ function QuoteEditorBody({
     void run((current) => work(id, { expectedLockVersion: current.quote.lockVersion }));
   };
 
+  const revise = (): void => {
+    void run((current) => reviseAdminQuote(id, { expectedLockVersion: current.quote.lockVersion }));
+  };
+
   const more = [
     ...(quote.state === "SENT"
       ? [{ key: "decline", label: "Marcar como recusado", onSelect: () => setConfirm("decline") }]
@@ -240,14 +231,7 @@ function QuoteEditorBody({
               </Button>
             ) : null}
             {quote.state === "SENT" ? (
-              <Button
-                variant="primary"
-                onClick={() =>
-                  void run((current) =>
-                    reviseAdminQuote(id, { expectedLockVersion: current.quote.lockVersion }),
-                  )
-                }
-              >
+              <Button variant="primary" onClick={revise}>
                 Editar (nova versão)
               </Button>
             ) : null}
@@ -294,48 +278,73 @@ function QuoteEditorBody({
         saveStatus={saving ? "A guardar…" : savedOnce ? "Guardado." : ""}
         onPatchHeader={patchHeader}
       />
-      <div className="q-layout">
-        <div className="q-main">
-          <QuoteSheets
-            detail={detail}
-            editable={editable}
-            focusRequest={focusRequest}
-            onPatchLine={patchLine}
-            onAddLine={addLine}
-            onDuplicate={duplicate}
-            onDelete={remove}
-            onReorder={reorder}
-          />
-          <section className="q-notes" aria-label="Notas internas">
-            <DraftTextArea
-              label="Notas internas"
-              hint="Visível apenas à agência."
-              value={quote.internalNotes ?? ""}
-              disabled={!editable}
-              maxLength={8000}
-              onCommit={(value) =>
-                patchHeader({ internalNotes: value.trim() === "" ? null : value.trim() })
-              }
-            />
-          </section>
-          <QuoteVersions
-            versions={detail.versions}
-            onRevoke={async (link) => {
-              if (await attempt(() => revokeAdminQuoteShareLink(link.shareLinkId)))
-                await editor.reload();
-            }}
-          />
-        </div>
-        <QuoteSummary
-          detail={detail}
-          editable={editable}
-          onPatchHeader={patchHeader}
-          onApplyMargin={(rounding) =>
-            void run(() => applyAdminQuoteMargin(id, { lineIds: null, rounding }))
-          }
-          onFocusLine={(lineId) => setFocusRequest({ lineId, nonce: Date.now() })}
-        />
-      </div>
+      <Tabs
+        label="Áreas do orçamento"
+        tabs={[
+          {
+            id: "orcamento",
+            label: "Orçamento",
+            panel: (
+              <div className="q-layout">
+                <div className="q-main">
+                  <QuoteSheets
+                    detail={detail}
+                    editable={editable}
+                    focusRequest={focusRequest}
+                    onPatchLine={patchLine}
+                    onAddLine={addLine}
+                    onDuplicate={duplicate}
+                    onDelete={remove}
+                    onReorder={reorder}
+                  />
+                  <section className="q-notes" aria-label="Notas internas">
+                    <DraftTextArea
+                      label="Notas internas"
+                      hint="Visível apenas à agência."
+                      value={quote.internalNotes ?? ""}
+                      disabled={!editable}
+                      maxLength={8000}
+                      onCommit={(value) =>
+                        patchHeader({ internalNotes: value.trim() === "" ? null : value.trim() })
+                      }
+                    />
+                  </section>
+                  <QuoteVersions
+                    versions={detail.versions}
+                    onRevoke={async (link) => {
+                      if (await attempt(() => revokeAdminQuoteShareLink(link.shareLinkId)))
+                        await editor.reload();
+                    }}
+                  />
+                </div>
+                <QuoteSummary
+                  detail={detail}
+                  editable={editable}
+                  onPatchHeader={patchHeader}
+                  onApplyMargin={(rounding) =>
+                    void run(() => applyAdminQuoteMargin(id, { lineIds: null, rounding }))
+                  }
+                  onFocusLine={(lineId) => setFocusRequest({ lineId, nonce: Date.now() })}
+                />
+              </div>
+            ),
+          },
+          {
+            id: "proposta",
+            label: "Proposta ao cliente",
+            panel: (
+              <ProposalEditor
+                detail={detail}
+                editable={editable}
+                run={run}
+                onPatchHeader={patchHeader}
+                onPatchLine={patchLine}
+                onRevise={revise}
+              />
+            ),
+          },
+        ]}
+      />
       {sending ? (
         <QuoteSendDialog
           detail={detail}

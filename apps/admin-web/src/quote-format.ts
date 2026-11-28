@@ -198,3 +198,25 @@ export const withMessageText = (url: string, key: "body" | "text", text: string)
   pairs.push(`${key}=${encodeURIComponent(text)}`);
   return `${base}?${pairs.join("&")}`;
 };
+
+/** A line patch that also clears the detail fields of a category the line no longer has. */
+export const cleanLinePatch = (patch: Partial<QuoteLine>): Partial<QuoteLine> => {
+  const cleaned: Partial<QuoteLine> = { ...patch };
+  if (patch.category !== undefined) {
+    if (patch.category !== "FLIGHT") {
+      Object.assign(cleaned, {
+        fromIata: null,
+        toIata: null,
+        departTime: null,
+        arriveTime: null,
+        carrier: null,
+        flightNumber: null,
+        baggage: null,
+      });
+    }
+    if (patch.category !== "ACCOMMODATION") {
+      Object.assign(cleaned, { roomType: null, boardBasis: null, location: null });
+    }
+  }
+  return cleaned;
+};
