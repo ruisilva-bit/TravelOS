@@ -464,6 +464,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
       "0002_drop_publication_outbox",
       "0003_crm_details",
       "0004_quotes",
+      "0005_agency_profile",
     ]);
     const initialStatus = await inspectMigrationStatus(targetFor(primaryDatabase), productionChain);
     expect(initialStatus.ledger).toEqual([]);
@@ -479,13 +480,14 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     expect(status.currentVersion).toBe(names.at(-1));
   });
 
-  it("applies the squashed baseline, its 0002 follow-up, 0003 CRM details and 0004 quotes without any Agency; a rerun is a no-op; exactly these migration files exist", async () => {
+  it("applies the squashed baseline, its 0002 follow-up, 0003 CRM details, 0004 quotes and 0005 agency profile without any Agency; a rerun is a no-op; exactly these migration files exist", async () => {
     const files = (await readdir(productionChain.directory)).toSorted();
     expect(files).toEqual([
       "0001_baseline.cjs",
       "0002_drop_publication_outbox.cjs",
       "0003_crm_details.cjs",
       "0004_quotes.cjs",
+      "0005_agency_profile.cjs",
       "checksums.json",
     ]);
     expect((await readChainManifest()).migrations.map(({ file }) => file)).toEqual([
@@ -493,6 +495,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
       "0002_drop_publication_outbox.cjs",
       "0003_crm_details.cjs",
       "0004_quotes.cjs",
+      "0005_agency_profile.cjs",
     ]);
 
     await createDatabase(baselineDatabase);
@@ -502,12 +505,14 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
       "0002_drop_publication_outbox",
       "0003_crm_details",
       "0004_quotes",
+      "0005_agency_profile",
     ]);
     expect(first.ledger.map(({ name }) => name)).toEqual([
       "0001_baseline",
       "0002_drop_publication_outbox",
       "0003_crm_details",
       "0004_quotes",
+      "0005_agency_profile",
     ]);
     // One pass, no root Agency needed: nothing seeds an Agency, role or Staff row.
     const counts = await queryAs<{ agencies: string; roles: string; currencies: string }>(
@@ -520,7 +525,7 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     expect(counts).toEqual([{ agencies: "0", roles: "0", currencies: "4" }]);
     const rerun = await runMigrationChain(targetFor(baselineDatabase), productionChain);
     expect(rerun.appliedMigrations).toEqual([]);
-    expect(rerun.currentVersion).toBe("0004_quotes");
+    expect(rerun.currentVersion).toBe("0005_agency_profile");
   });
 
   it("fails verification and applies nothing when the baseline is tampered with", async () => {
@@ -543,6 +548,10 @@ describe.sequential("PostgreSQL roles, privileges and migration authority", () =
     await copyFile(
       path.join(productionChain.directory, "0004_quotes.cjs"),
       path.join(directory, "0004_quotes.cjs"),
+    );
+    await copyFile(
+      path.join(productionChain.directory, "0005_agency_profile.cjs"),
+      path.join(directory, "0005_agency_profile.cjs"),
     );
     const checksumManifestPath = path.join(directory, "checksums.json");
     await writeFile(checksumManifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
