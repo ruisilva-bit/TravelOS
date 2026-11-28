@@ -7,8 +7,11 @@ import {
   QuoteNotFoundError,
   type OpaqueId,
 } from "@travelos/backend-core";
+import { createQuoteExpiryTask } from "../../apps/worker/src/quote-expiry-task.js";
 import {
+  createPostgresPersistence,
   createPostgresPublicQuoteOperations,
+  createPostgresQuoteExpiryPort,
   createPostgresStaffQuoteOperations,
   createShareTokenCrypto,
   type PostgresPersistence,
@@ -17,6 +20,8 @@ import { createUuidV7 } from "../../packages/database/src/uuidv7.js";
 import {
   createOwnerClient,
   createStaff,
+  host,
+  port,
   registrySessionResolver,
   type StaffSessionRegistry,
 } from "./helpers/postgres.js";
@@ -472,6 +477,44 @@ describe.sequential("quotes schema, functions and privileges (0004)", () => {
       [futureQuote]: "SENT",
     });
     expect(await callText(`job_runtime.expire_quotes(now())`, WORKER)).toBe("0");
+  });
+
+  it("the worker expiry task expires a SENT quote past validity after one tick", async () => {
+    const overdueQuote = await seedQuote({
+      customerId: customerA,
+      leadId: leadA,
+      validUntil: "2020-01-02",
+    });
+    await markSent(overdueQuote);
+    const workerPersistence = createPostgresPersistence({
+      host,
+      port,
+      database: databaseName,
+      user: WORKER,
+      tls: { mode: "DISABLED_LOOPBACK_ONLY" },
+      applicationName: "worker-quote-expiry-test",
+      maxConnections: 2,
+    });
+    try {
+      const logs: unknown[] = [];
+      const task = createQuoteExpiryTask({
+        port: createPostgresQuoteExpiryPort(
+          workerPersistence as PostgresPersistence<Record<string, never>>,
+        ),
+        clock: Date.now,
+        log: (record) => logs.push(record),
+      });
+      await task.tick();
+      const [row] = await queryAsOwner<{ state: string }>(
+        `SELECT state FROM "sales"."quote" WHERE id = '${overdueQuote}'::uuid`,
+      );
+      expect(row?.state).toBe("EXPIRED");
+      expect(logs).toContainEqual(
+        expect.objectContaining({ action: "quote_expiry", outcome: "SUCCEEDED" }),
+      );
+    } finally {
+      await workerPersistence.destroy();
+    }
   });
 
   it("denies the admin runtime any direct UPDATE or DELETE on quote tables and the worker any internal column", async () => {

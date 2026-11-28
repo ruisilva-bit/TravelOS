@@ -34,6 +34,7 @@ export { createPostgresCrmRepository } from "./crm/crm-repository.js";
 export { createPostgresStaffCrmOperations } from "./crm/staff-crm-operations.js";
 export { createPostgresQuoteRepository } from "./quotes/quote-repository.js";
 export { createPostgresAgencyProfileRepository } from "./agency-profile/agency-profile-repository.js";
+export { createPostgresQuoteExpiryPort } from "./job-runtime/quote-expiry-port.js";
 export {
   createPostgresPublicQuoteOperations,
   createPostgresStaffQuoteOperations,

@@ -2,9 +2,14 @@ import { randomUUID } from "node:crypto";
 import { readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { loadDevelopmentInstanceManifest, readSystemdCredentialText } from "@travelos/config";
-import { createPostgresPersistence, createWorkerRepository } from "@travelos/database";
+import {
+  createPostgresPersistence,
+  createPostgresQuoteExpiryPort,
+  createWorkerRepository,
+} from "@travelos/database";
 import { createStructuredLogger, serializeWorkerMetrics } from "@travelos/observability";
 
+import { createQuoteExpiryTask } from "./quote-expiry-task.js";
 import { bootstrapWorkerProcess } from "./worker-process.js";
 
 const readRequiredArgument = (name: string): string => {
@@ -83,6 +88,11 @@ const main = async (): Promise<void> => {
     owner: randomUUID(),
     log,
   });
+  const quoteExpiry = createQuoteExpiryTask({
+    port: createPostgresQuoteExpiryPort(persistence),
+    clock: Date.now,
+    log,
+  });
   let stopped = false;
   let wake: (() => void) | null = null;
   const stop = (): void => {
@@ -123,6 +133,7 @@ const main = async (): Promise<void> => {
   try {
     log({ action: "process_bootstrap", outcome: "NOT_READY" });
     while (!stopped) {
+      await quoteExpiry.tick().catch(() => undefined);
       await worker.tick().catch(() => undefined);
       await publishHealth();
       await publishMetrics();
