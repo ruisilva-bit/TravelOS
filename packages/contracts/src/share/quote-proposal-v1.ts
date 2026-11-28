@@ -87,7 +87,14 @@ const IncludedGroupV1Schema = z
 export const QuoteProposalV1Schema = z
   .object({
     schemaVersion: z.literal(1),
-    agency: z.object({ displayName: z.string().min(1).max(200) }).strict(),
+    agency: z
+      .object({
+        displayName: z.string().min(1).max(200),
+        email: z.email().max(254).optional(),
+        phone: z.string().min(1).max(40).optional(),
+        website: HTTPS_URL.optional(),
+      })
+      .strict(),
     quote: z
       .object({
         number: z.string().regex(/^ORC-[0-9]{4}-[0-9]{4,}$/u),

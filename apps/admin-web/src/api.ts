@@ -1,5 +1,7 @@
 import {
   ADMIN_IDEMPOTENCY_KEY_HEADER,
+  AdminAgencyProfileV1ResponseSchema,
+  AdminAgencyProfileV1UpdateRequestSchema,
   AdminIdempotencyKeySchema,
   AdminCustomerCreateV1RequestSchema,
   AdminCustomerDetailV1ResponseSchema,
@@ -39,6 +41,8 @@ import {
   type AdminCustomerDetailV1Response,
   type AdminCustomerListV1Response,
   type AdminCustomerRolesV1Request,
+  type AdminAgencyProfileV1Response,
+  type AdminAgencyProfileV1UpdateRequest,
   type AdminCustomerUpdateV1Request,
   type AdminPersonCreateV1Request,
   type AdminPersonUpdateV1Request,
@@ -552,6 +556,20 @@ export const updateAdminCustomer = (
     return Promise.reject(error);
   }
 };
+
+export const getAdminAgencyProfile = (): Promise<AdminAgencyProfileV1Response> =>
+  getJson("/api/admin/agency/profile", AdminAgencyProfileV1ResponseSchema);
+
+export const updateAdminAgencyProfile = (
+  input: AdminAgencyProfileV1UpdateRequest,
+): Promise<AdminAgencyProfileV1Response> =>
+  sendJson(
+    "/api/admin/agency/profile",
+    "PATCH",
+    input,
+    AdminAgencyProfileV1UpdateRequestSchema,
+    AdminAgencyProfileV1ResponseSchema,
+  );
 
 export const addAdminPerson = (
   customerId: string,

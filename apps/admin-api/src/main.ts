@@ -8,6 +8,7 @@ import {
 } from "@travelos/auth-adapters";
 import {
   createPublicShareOperations,
+  createStaffAgencyProfileOperations,
   createStaffInvitationOperations,
   type TripSnapshotV1,
 } from "@travelos/backend-core";
@@ -19,6 +20,7 @@ import {
 import {
   createPostgresPublicQuoteOperations,
   createPostgresStaffQuoteOperations,
+  createPostgresAgencyProfileRepository,
   createPostgresPublicShareReader,
   createPostgresStaffShareLinkOperations,
   createPostgresStaffTripPreviewOperations,
@@ -130,10 +132,14 @@ const createAdminAuthOptions = async (
     });
     const leadOperations = createPostgresStaffLeadOperations(persistence, sessionResolver);
     const crmOperations = createPostgresStaffCrmOperations(persistence, sessionResolver);
+    const agencyProfileOperations = createStaffAgencyProfileOperations({
+      repository: createPostgresAgencyProfileRepository(persistence),
+      authorizationRepository: staffAccessRepository,
+      sessionResolver,
+    });
     const quoteOperations = createPostgresStaffQuoteOperations(persistence, {
       sessionResolver,
       shareTokens: shareTokenCrypto,
-      agencyDisplayName: "Agência",
       publicBaseUrl: `http://${manifest.hosts.admin}`,
       nowEpochMs: Date.now,
     });
@@ -177,6 +183,7 @@ const createAdminAuthOptions = async (
           shareLinkOperations,
           leadOperations,
           crmOperations,
+          agencyProfileOperations,
           quoteOperations,
           staffInvitationOperations,
           staffInvitationRateLimiter,

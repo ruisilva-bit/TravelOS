@@ -548,7 +548,6 @@ describe.sequential("quote application flow over PostgreSQL", () => {
     operations = createPostgresStaffQuoteOperations(persistenceForFlow, {
       sessionResolver,
       shareTokens,
-      agencyDisplayName: "Agência Teste",
       publicBaseUrl: "https://propostas.test",
     });
     publicOperations = createPostgresPublicQuoteOperations(persistenceForFlow, shareTokens);

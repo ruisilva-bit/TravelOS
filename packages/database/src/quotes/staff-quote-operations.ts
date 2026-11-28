@@ -12,7 +12,7 @@ import { createPostgresQuoteRepository } from "./quote-repository.js";
 
 export type PostgresStaffQuoteDependencies = Pick<
   StaffQuoteOperationsDependencies,
-  "sessionResolver" | "shareTokens" | "agencyDisplayName" | "publicBaseUrl" | "nowEpochMs"
+  "sessionResolver" | "shareTokens" | "publicBaseUrl" | "nowEpochMs"
 >;
 
 /** Authorized quote use cases over the PostgreSQL adapter. */

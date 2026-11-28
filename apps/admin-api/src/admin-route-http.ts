@@ -23,6 +23,7 @@ import {
   type StaffTripPreviewOperations,
   type StaffShareLinkOperations,
   type StaffQuoteOperations,
+  type StaffAgencyProfileOperations,
   QuoteNotFoundError,
   QuoteStaleError,
   QuoteRuleError,
@@ -76,6 +77,7 @@ export interface AdminRouteOptions {
   readonly leadOperations?: StaffLeadOperations;
   readonly crmOperations?: StaffCrmOperations;
   readonly quoteOperations?: StaffQuoteOperations;
+  readonly agencyProfileOperations?: StaffAgencyProfileOperations;
 }
 
 /** Admin route policy: URL, Host, Authorization, X-Forwarded-Host and (when required) Origin. */

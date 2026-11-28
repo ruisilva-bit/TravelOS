@@ -527,6 +527,37 @@ export const createPostgresQuoteRepository = (
       );
     },
 
+    async readAgencyProfile(agencyId, authorization) {
+      return read(agencyId, authorization, PERMISSIONS.VIEW, async (database) => {
+        const row = first(
+          (
+            await sql<{
+              agencyId: string;
+              displayName: string;
+              email: string | null;
+              phone: string | null;
+              website: string | null;
+              lockVersion: string;
+            }>`
+              SELECT agency."id"::text AS "agencyId", agency."displayName", agency."email",
+                     agency."phone", agency."website", agency."lockVersion"::text AS "lockVersion"
+                FROM "organization"."agency" AS agency
+               WHERE agency."id" = ${agencyId}::uuid
+            `.execute(database)
+          ).rows,
+        );
+        if (row === null) return null;
+        return {
+          agencyId: row.agencyId,
+          displayName: row.displayName,
+          email: row.email,
+          phone: row.phone,
+          website: row.website,
+          lockVersion: BigInt(row.lockVersion),
+        };
+      });
+    },
+
     async readLeadContext(agencyId, leadId, authorization): Promise<QuoteLeadContext | null> {
       return read(agencyId, authorization, PERMISSIONS.VIEW, async (database) => {
         const row = first(

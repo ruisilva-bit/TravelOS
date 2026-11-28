@@ -424,3 +424,14 @@ export {
   type StaffQuoteOperations,
   type StaffQuoteOperationsDependencies,
 } from "./modules/quotes/application/staff-quote-operations.js";
+
+export * from "./modules/agency-profile/domain/agency-profile.js";
+export {
+  AGENCY_PROFILE_LOCK_VERSION_MAXIMUM,
+  AGENCY_PROFILE_PERMISSION_REQUIREMENTS,
+  AgencyProfileNotFoundError,
+  createStaffAgencyProfileOperations,
+  type AgencyProfileRepository,
+  type StaffAgencyProfileOperations,
+  type StaffAgencyProfileOperationsDependencies,
+} from "./modules/agency-profile/application/staff-agency-profile-operations.js";

@@ -152,6 +152,14 @@ const makeRepository = (overrides: Partial<QuoteRepository> = {}) => {
   const repository: QuoteRepository = {
     listQuotes: vi.fn(async () => ({ items: [quoteRecord()], nextCursor: null })),
     readAggregate: vi.fn(async () => storedAggregate()),
+    readAgencyProfile: vi.fn(async () => ({
+      agencyId,
+      displayName: "Agência Exemplo",
+      email: "contacto@agencia.example.test",
+      phone: "+351 210 000 000",
+      website: null,
+      lockVersion: 1n,
+    })),
     readLeadContext: vi.fn(async (): Promise<QuoteLeadContext | null> => ({
       leadId,
       state: "QUALIFIED",
@@ -258,7 +266,6 @@ const makeOperations = (
       randomBytes: (length) => new Uint8Array(length).fill(7),
       sha256: (bytes) => new Uint8Array(32).fill(bytes.length),
     },
-    agencyDisplayName: "Agência Exemplo",
     publicBaseUrl: "https://propostas.example.test",
     nowEpochMs: () => nowEpochMs,
   });
@@ -421,7 +428,11 @@ describe("sendQuote", () => {
     const { operations, repository } = makeOperations();
     const preview = await operations.previewQuote(cookie, quoteId);
     expect(vi.mocked(repository.publish)).not.toHaveBeenCalled();
-    expect(preview.payload.agency.displayName).toBe("Agência Exemplo");
+    expect(preview.payload.agency).toEqual({
+      displayName: "Agência Exemplo",
+      email: "contacto@agencia.example.test",
+      phone: "+351 210 000 000",
+    });
     expect(preview.today).toBe(new Date(nowEpochMs).toISOString().slice(0, 10));
     const serialized = JSON.stringify(preview.payload);
     for (const forbidden of ["SEGREDO", "netSupplier", "internalNote", "agencyNet", "margin"]) {
