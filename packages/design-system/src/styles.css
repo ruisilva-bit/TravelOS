@@ -964,3 +964,56 @@ textarea.ds-control {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- SectionNav ---------- */
+
+.ds-section-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ds-section-nav__item {
+  min-height: var(--control-height);
+  padding: 6px var(--space-3);
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 500;
+  text-align: left;
+}
+
+.ds-section-nav__item:hover {
+  background: var(--surface-soft);
+  color: var(--text-primary);
+}
+
+.ds-section-nav__item[aria-current="true"] {
+  border-left-color: var(--action-primary);
+  background: var(--surface-active);
+  color: var(--text-primary);
+}
+
+@media (max-width: 900px) {
+  .ds-section-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .ds-section-nav__item {
+    min-height: var(--touch-target);
+    border-bottom: 2px solid transparent;
+    border-left: 0;
+    border-radius: 0;
+    white-space: nowrap;
+  }
+
+  .ds-section-nav__item[aria-current="true"] {
+    border-bottom-color: var(--action-primary);
+    background: transparent;
+  }
+}

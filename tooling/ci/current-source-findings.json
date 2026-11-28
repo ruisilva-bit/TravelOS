@@ -598,6 +598,13 @@
       "rationale": "Scanner self-test fixture uses a reserved .invalid example address; no real-person data."
     },
     {
+      "path": "tooling/testing/playwright/quotes-ui.spec.ts",
+      "rule": "email-address",
+      "lineSha256": "b207cbd18e30af86d9ff199dc70bec779496c4edd73e544a27bd6362d65d5a94",
+      "category": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Test fixture uses a reserved example address; no real-person data."
+    },
+    {
       "path": "tooling/testing/playwright/stage9-staff-invitations.spec.ts",
       "rule": "credential-url-query",
       "lineSha256": "c1da80e525f5fd83c486593fc0cf2e6a93b914833884ea850b049801d33e4f60",

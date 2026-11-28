@@ -1,6 +1,7 @@
 /* Screen-specific layout for the staff app. Shared controls live in @travelos/design-system. */
 
 @import "./quotes.css";
+@import "./proposal.css";
 
 /* Sign-in, MFA and invitation acceptance */
 .auth-page {
