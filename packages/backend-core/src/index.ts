@@ -361,6 +361,7 @@ export {
   type AddPersonInput,
   type CreateCustomerInput,
   type CrmCustomerDetail,
+  type CrmCustomerDetailRecord,
   type CrmCustomerListQuery,
   type CrmCustomerPage,
   type CrmCustomerPerson,

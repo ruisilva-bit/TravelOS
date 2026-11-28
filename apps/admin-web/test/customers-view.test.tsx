@@ -40,6 +40,7 @@ const summary = (id: string, displayName: string, overrides: Record<string, unkn
   email: "marta@example.test",
   phone: "+351 910 000 000",
   primaryContactName: "Marta Quintela",
+  peopleCount: 1,
   lockVersion: "1",
   updatedAt: "2026-11-27T10:30:00.000Z",
   ...overrides,
@@ -67,7 +68,8 @@ const person = (
   ...overrides,
 });
 
-const detail = (people = [person()]): AdminCustomerDetailV1Response => ({
+const detail = (people = [person()], canViewSensitive = true): AdminCustomerDetailV1Response => ({
+  canViewSensitive,
   id: customerId,
   agencyId,
   displayName: "Marta Quintela",
@@ -229,9 +231,9 @@ describe("customer record", () => {
     expect(screen.getByText("Prefere voos de manhã")).toBeInTheDocument();
   });
 
-  it("hides sensitive fields when the response does not carry them", async () => {
+  it("hides sensitive fields when the server does not grant them", async () => {
     vi.mocked(api.getAdminCustomer).mockResolvedValue(
-      detail([person({ birthDate: null, passportNumber: null, passportExpiry: null })]),
+      detail([person({ birthDate: null, passportNumber: null, passportExpiry: null })], false),
     );
     renderRecord();
     await screen.findByRole("table", { name: "Pessoas do cliente" });
@@ -243,6 +245,17 @@ describe("customer record", () => {
     expect(within(dialog).queryByLabelText("Data de nascimento")).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText("Passaporte (n.º)")).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText("Nacionalidade")).toHaveValue("PT");
+  });
+
+  it("offers sensitive inputs to an authorised viewer even when the values are empty", async () => {
+    vi.mocked(api.getAdminCustomer).mockResolvedValue(
+      detail([person({ birthDate: null, passportNumber: null, passportExpiry: null })], true),
+    );
+    renderRecord();
+    await userEvent.click(await screen.findByRole("button", { name: "Editar Marta Quintela" }));
+    const dialog = await screen.findByRole("dialog", { name: "Editar pessoa" });
+    expect(within(dialog).getByLabelText("Passaporte (n.º)")).toHaveValue("");
+    expect(screen.queryByText("Sem permissão para ver dados sensíveis")).not.toBeInTheDocument();
   });
 
   it("edits a person with sensitive fields when present and sends the lock version", async () => {

@@ -130,6 +130,7 @@ function CustomerRecordBody({
               <CustomerPeople
                 customerId={customer.id}
                 people={customer.people}
+                canViewSensitive={customer.canViewSensitive}
                 onChanged={() => {
                   notify("Guardado.", "success");
                   onChanged();

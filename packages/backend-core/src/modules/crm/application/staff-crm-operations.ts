@@ -72,6 +72,8 @@ export interface CrmCustomerSummary {
   readonly email: string | null;
   readonly phone: string | null;
   readonly primaryContactName: string | null;
+  /** Distinct people linked to the Customer, whatever their roles. */
+  readonly peopleCount: number;
   readonly lockVersion: bigint;
   readonly updatedAt: string;
 }
@@ -95,7 +97,8 @@ export interface CrmTripSummary {
   readonly state: string;
 }
 
-export interface CrmCustomerDetail {
+/** What the repository reads: a Customer detail before the caller's sensitive-view grant is applied. */
+export interface CrmCustomerDetailRecord {
   readonly id: OpaqueId;
   readonly agencyId: OpaqueId;
   readonly displayName: string;
@@ -108,6 +111,11 @@ export interface CrmCustomerDetail {
   readonly people: readonly CrmCustomerPerson[];
   readonly leads: readonly CrmLeadSummary[];
   readonly trips: readonly CrmTripSummary[];
+}
+
+export interface CrmCustomerDetail extends CrmCustomerDetailRecord {
+  /** Whether the caller may see traveller sensitive fields; empty values then mean "not recorded". */
+  readonly canViewSensitive: boolean;
 }
 
 export interface CrmCustomerPage {
@@ -163,25 +171,25 @@ export interface CrmRepository {
     agencyId: OpaqueId,
     customerId: OpaqueId,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<CrmCustomerDetail | null>;
+  ): Promise<CrmCustomerDetailRecord | null>;
   createCustomer(
     agencyId: OpaqueId,
     input: CreateCustomerInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<CrmCustomerDetail>;
+  ): Promise<CrmCustomerDetailRecord>;
   updateCustomer(
     agencyId: OpaqueId,
     customerId: OpaqueId,
     expectedLockVersion: bigint,
     customer: CustomerDetailsDraft,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<CrmCustomerDetail | null>;
+  ): Promise<CrmCustomerDetailRecord | null>;
   addPerson(
     agencyId: OpaqueId,
     customerId: OpaqueId,
     input: AddPersonInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<CrmCustomerDetail | null>;
+  ): Promise<CrmCustomerDetailRecord | null>;
   updatePerson(
     agencyId: OpaqueId,
     personId: OpaqueId,
@@ -195,7 +203,7 @@ export interface CrmRepository {
     personId: OpaqueId,
     input: SetPersonRolesInput,
     authorization: StaffAuthorizationOperationProof,
-  ): Promise<CrmCustomerDetail | null>;
+  ): Promise<CrmCustomerDetailRecord | null>;
   search(
     agencyId: OpaqueId,
     query: string,
@@ -341,9 +349,13 @@ const holds = async (
 };
 
 /** Redacts sensitive traveller fields in every person of a Customer detail. */
-const redactDetail = (detail: CrmCustomerDetail, canViewSensitive: boolean): CrmCustomerDetail => ({
+const redactDetail = (
+  detail: CrmCustomerDetailRecord,
+  canViewSensitive: boolean,
+): CrmCustomerDetail => ({
   ...detail,
   people: detail.people.map((person) => redactSensitivePerson(person, canViewSensitive)),
+  canViewSensitive,
 });
 
 const redactPerson = (person: CrmPersonRecord, canViewSensitive: boolean): CrmPersonRecord =>
