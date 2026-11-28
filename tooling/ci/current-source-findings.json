@@ -544,34 +544,6 @@
     {
       "path": "tests/integration/staff-auth.test.ts",
       "rule": "email-address",
-      "lineSha256": "ebae2ea74736ac16ee3d06c2b8d89b1210447fd070a1b1858c06e214d988e107",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "tests/integration/staff-auth.test.ts",
-      "rule": "email-address",
-      "lineSha256": "ef5bfae6ac1ed03961fdbf3a6fa4d87f9c9c81ef488af3a932b5f0dfd63ebd59",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "tests/integration/staff-auth.test.ts",
-      "rule": "email-address",
-      "lineSha256": "ef5bfae6ac1ed03961fdbf3a6fa4d87f9c9c81ef488af3a932b5f0dfd63ebd59",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "tests/integration/staff-auth.test.ts",
-      "rule": "email-address",
-      "lineSha256": "ef5bfae6ac1ed03961fdbf3a6fa4d87f9c9c81ef488af3a932b5f0dfd63ebd59",
-      "category": "SYNTHETIC_TEST_FIXTURE",
-      "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
-    },
-    {
-      "path": "tests/integration/staff-auth.test.ts",
-      "rule": "email-address",
       "lineSha256": "ef5bfae6ac1ed03961fdbf3a6fa4d87f9c9c81ef488af3a932b5f0dfd63ebd59",
       "category": "SYNTHETIC_TEST_FIXTURE",
       "rationale": "Test fixture/assertion uses placeholder or generated identity/credential; source context shows no production secret or real-person data."
