@@ -62,6 +62,7 @@ export const architecturePolicy = {
         "@travelos/backend-core",
         "@travelos/config",
         "@travelos/contracts/admin",
+        "@travelos/contracts/share",
         "@travelos/database",
         "@travelos/observability",
       ],
