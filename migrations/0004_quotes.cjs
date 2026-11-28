@@ -88,6 +88,7 @@ exports.up = (pgm) => {
       "createdAt" timestamp with time zone DEFAULT date_trunc('milliseconds'::text, clock_timestamp()) NOT NULL,
       "updatedAt" timestamp with time zone DEFAULT date_trunc('milliseconds'::text, clock_timestamp()) NOT NULL,
       "createdByStaffPrincipalId" text NOT NULL,
+      "convertedTripId" uuid NULL,
       CONSTRAINT quote_id_agency_unique UNIQUE (id, "agencyId"),
       CONSTRAINT quote_id_agency_customer_unique UNIQUE (id, "agencyId", "customerId"),
       CONSTRAINT quote_number_agency_unique UNIQUE ("agencyId", number),
@@ -96,6 +97,7 @@ exports.up = (pgm) => {
       CONSTRAINT quote_customer_agency_fk FOREIGN KEY ("customerId", "agencyId") REFERENCES crm.customer(id, "agencyId") ON DELETE RESTRICT,
       CONSTRAINT quote_lead_agency_fk FOREIGN KEY ("leadId", "agencyId") REFERENCES sales.lead(id, "agencyId") ON DELETE RESTRICT,
       CONSTRAINT quote_currency_fk FOREIGN KEY ("currencyCode") REFERENCES finance.currency_registry("currencyCode"),
+      CONSTRAINT quote_converted_trip_agency_fk FOREIGN KEY ("convertedTripId", "agencyId") REFERENCES trip_ops.trip(id, "agencyId") ON DELETE RESTRICT,
       CONSTRAINT quote_actor_agency_fk FOREIGN KEY ("agencyId", "createdByStaffPrincipalId") REFERENCES staff_access.staff_membership("agencyId", "staffPrincipalId") ON DELETE RESTRICT,
       CONSTRAINT quote_number_shape CHECK (number ~ '^ORC-[0-9]{4}-[0-9]{4,}$'),
       CONSTRAINT quote_title_shape CHECK (length(btrim(title)) BETWEEN 1 AND 200),
@@ -294,7 +296,9 @@ exports.up = (pgm) => {
       DECLARE
         lead_customer uuid;
       BEGIN
-        SELECT lead."customerId" INTO lead_customer
+        -- A qualified Lead keeps its customer in qualifiedCustomerId (its customerId is frozen with
+        -- the rest of the terminal Lead), so the quote customer is the explicit link or that one.
+        SELECT COALESCE(lead."customerId", lead."qualifiedCustomerId") INTO lead_customer
           FROM "sales"."lead" AS lead
          WHERE lead."id" = NEW."leadId" AND lead."agencyId" = NEW."agencyId";
         IF NOT FOUND OR lead_customer IS DISTINCT FROM NEW."customerId" THEN
@@ -706,13 +710,18 @@ exports.up = (pgm) => {
 
     CREATE FUNCTION sales.read_quote_share(p_token_hash bytea) RETURNS TABLE(
       "versionId" uuid, "canonicalPayload" jsonb, "expiresAt" timestamp with time zone,
-      "quoteState" text, "validUntil" date, "acceptedAt" timestamp with time zone, "acceptedName" text
+      "quoteState" text, "validUntil" date, "acceptedAt" timestamp with time zone, "acceptedName" text,
+      "isLatest" boolean, "versionNumber" integer
     )
       LANGUAGE sql STABLE SECURITY DEFINER
       SET search_path TO 'pg_catalog', 'pg_temp'
       AS $$
         SELECT version."id", version."canonicalPayload", link."expiresAt",
-               quote."state", quote."validUntil", acceptance."acceptedAt", acceptance."acceptedName"
+               quote."state", quote."validUntil", acceptance."acceptedAt", acceptance."acceptedName",
+               NOT EXISTS (
+                 SELECT 1 FROM "sales"."quote_version" AS newer
+                  WHERE newer."quoteId" = version."quoteId" AND newer."versionNumber" > version."versionNumber"
+               ) AS "isLatest", version."versionNumber"
           FROM "sales"."quote_share_link" AS link
           JOIN "sales"."quote_version" AS version
             ON version."id" = link."versionId" AND version."agencyId" = link."agencyId"
@@ -757,6 +766,12 @@ exports.up = (pgm) => {
         IF NOT FOUND THEN
           RETURN 'UNAVAILABLE';
         END IF;
+        IF EXISTS (
+          SELECT 1 FROM "sales"."quote_version" AS newer
+           WHERE newer."quoteId" = share_quote AND newer."versionNumber" > share_version_number
+        ) THEN
+          RETURN 'SUPERSEDED';
+        END IF;
         IF EXISTS (SELECT 1 FROM "sales"."quote_acceptance" AS acceptance WHERE acceptance."versionId" = share_version) THEN
           RETURN 'ALREADY_ACCEPTED';
         END IF;
@@ -765,17 +780,160 @@ exports.up = (pgm) => {
         END IF;
         INSERT INTO "sales"."quote_acceptance" ("versionId", "agencyId", "acceptedName")
         VALUES (share_version, share_agency, btrim(p_accepted_name));
-        IF NOT EXISTS (
-          SELECT 1 FROM "sales"."quote_version" AS newer
-           WHERE newer."quoteId" = share_quote AND newer."versionNumber" > share_version_number
-        ) THEN
-          UPDATE "sales"."quote" AS quote
-             SET "state" = 'ACCEPTED',
-                 "lockVersion" = quote."lockVersion" + 1,
-                 "updatedAt" = date_trunc('milliseconds', clock_timestamp())
-           WHERE quote."id" = share_quote AND quote."agencyId" = share_agency;
-        END IF;
+        UPDATE "sales"."quote" AS quote
+           SET "state" = 'ACCEPTED',
+               "lockVersion" = quote."lockVersion" + 1,
+               "updatedAt" = date_trunc('milliseconds', clock_timestamp())
+         WHERE quote."id" = share_quote AND quote."agencyId" = share_agency;
         RETURN 'ACCEPTED';
+      END
+      $$;
+
+    CREATE FUNCTION sales.upsert_quote_day(
+      p_agency_id uuid, p_quote_id uuid, p_expected_lock_version bigint,
+      p_day_index integer, p_title text, p_description text
+    ) RETURNS text
+      LANGUAGE plpgsql SECURITY DEFINER
+      SET search_path TO 'pg_catalog'
+      AS $$
+      DECLARE
+        quote_state text;
+        quote_version bigint;
+      BEGIN
+        IF p_agency_id IS NULL OR p_quote_id IS NULL OR p_expected_lock_version IS NULL OR p_expected_lock_version < 0 OR
+           p_day_index IS NULL OR p_day_index < 0 OR p_title IS NULL THEN
+          RAISE EXCEPTION 'Quote day inputs are invalid'
+            USING ERRCODE = '22023', CONSTRAINT = 'sales_quote_day_input';
+        END IF;
+        SELECT quote."state", quote."lockVersion" INTO quote_state, quote_version
+          FROM "sales"."quote" AS quote
+         WHERE quote."agencyId" = p_agency_id AND quote."id" = p_quote_id
+         FOR UPDATE;
+        IF NOT FOUND THEN
+          RETURN 'NOT_FOUND';
+        END IF;
+        IF quote_version <> p_expected_lock_version THEN
+          RETURN 'STALE';
+        END IF;
+        IF quote_state <> 'DRAFT' THEN
+          RETURN 'NOT_DRAFT';
+        END IF;
+        INSERT INTO "sales"."quote_day" ("agencyId", "quoteId", "dayIndex", title, description)
+        VALUES (p_agency_id, p_quote_id, p_day_index, p_title, p_description)
+        ON CONFLICT ("quoteId", "dayIndex")
+        DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description;
+        UPDATE "sales"."quote" AS quote
+           SET "lockVersion" = quote."lockVersion" + 1,
+               "updatedAt" = date_trunc('milliseconds', clock_timestamp())
+         WHERE quote."agencyId" = p_agency_id AND quote."id" = p_quote_id;
+        RETURN 'UPDATED';
+      END
+      $$;
+
+    CREATE FUNCTION sales.delete_quote_day(
+      p_agency_id uuid, p_quote_id uuid, p_expected_lock_version bigint, p_day_index integer
+    ) RETURNS text
+      LANGUAGE plpgsql SECURITY DEFINER
+      SET search_path TO 'pg_catalog'
+      AS $$
+      DECLARE
+        quote_state text;
+        quote_version bigint;
+      BEGIN
+        IF p_agency_id IS NULL OR p_quote_id IS NULL OR p_expected_lock_version IS NULL OR p_expected_lock_version < 0 OR
+           p_day_index IS NULL OR p_day_index < 0 THEN
+          RAISE EXCEPTION 'Quote day inputs are invalid'
+            USING ERRCODE = '22023', CONSTRAINT = 'sales_quote_day_delete_input';
+        END IF;
+        SELECT quote."state", quote."lockVersion" INTO quote_state, quote_version
+          FROM "sales"."quote" AS quote
+         WHERE quote."agencyId" = p_agency_id AND quote."id" = p_quote_id
+         FOR UPDATE;
+        IF NOT FOUND THEN
+          RETURN 'NOT_FOUND';
+        END IF;
+        IF quote_version <> p_expected_lock_version THEN
+          RETURN 'STALE';
+        END IF;
+        IF quote_state <> 'DRAFT' THEN
+          RETURN 'NOT_DRAFT';
+        END IF;
+        DELETE FROM "sales"."quote_day" AS day
+         WHERE day."agencyId" = p_agency_id AND day."quoteId" = p_quote_id AND day."dayIndex" = p_day_index;
+        UPDATE "sales"."quote" AS quote
+           SET "lockVersion" = quote."lockVersion" + 1,
+               "updatedAt" = date_trunc('milliseconds', clock_timestamp())
+         WHERE quote."agencyId" = p_agency_id AND quote."id" = p_quote_id;
+        RETURN 'DELETED';
+      END
+      $$;
+
+    CREATE FUNCTION sales.reset_quote_days(p_agency_id uuid, p_quote_id uuid, p_expected_lock_version bigint)
+      RETURNS text
+      LANGUAGE plpgsql SECURITY DEFINER
+      SET search_path TO 'pg_catalog'
+      AS $$
+      DECLARE
+        quote_state text;
+        quote_version bigint;
+      BEGIN
+        IF p_agency_id IS NULL OR p_quote_id IS NULL OR p_expected_lock_version IS NULL OR p_expected_lock_version < 0 THEN
+          RAISE EXCEPTION 'Quote day reset inputs are invalid'
+            USING ERRCODE = '22023', CONSTRAINT = 'sales_quote_day_reset_input';
+        END IF;
+        SELECT quote."state", quote."lockVersion" INTO quote_state, quote_version
+          FROM "sales"."quote" AS quote
+         WHERE quote."agencyId" = p_agency_id AND quote."id" = p_quote_id
+         FOR UPDATE;
+        IF NOT FOUND THEN
+          RETURN 'NOT_FOUND';
+        END IF;
+        IF quote_version <> p_expected_lock_version THEN
+          RETURN 'STALE';
+        END IF;
+        IF quote_state <> 'DRAFT' THEN
+          RETURN 'NOT_DRAFT';
+        END IF;
+        DELETE FROM "sales"."quote_day" AS day
+         WHERE day."agencyId" = p_agency_id AND day."quoteId" = p_quote_id;
+        UPDATE "sales"."quote" AS quote
+           SET "lockVersion" = quote."lockVersion" + 1,
+               "updatedAt" = date_trunc('milliseconds', clock_timestamp())
+         WHERE quote."agencyId" = p_agency_id AND quote."id" = p_quote_id;
+        RETURN 'UPDATED';
+      END
+      $$;
+
+    CREATE FUNCTION sales.link_quote_trip(p_agency_id uuid, p_quote_id uuid, p_trip_id uuid) RETURNS text
+      LANGUAGE plpgsql SECURITY DEFINER
+      SET search_path TO 'pg_catalog'
+      AS $$
+      DECLARE
+        quote_state text;
+        existing_trip uuid;
+      BEGIN
+        IF p_agency_id IS NULL OR p_quote_id IS NULL OR p_trip_id IS NULL THEN
+          RAISE EXCEPTION 'Quote trip link inputs are invalid'
+            USING ERRCODE = '22023', CONSTRAINT = 'sales_quote_trip_input';
+        END IF;
+        SELECT quote."state", quote."convertedTripId" INTO quote_state, existing_trip
+          FROM "sales"."quote" AS quote
+         WHERE quote."agencyId" = p_agency_id AND quote."id" = p_quote_id
+         FOR UPDATE;
+        IF NOT FOUND THEN
+          RETURN 'NOT_FOUND';
+        END IF;
+        IF existing_trip IS NOT NULL THEN
+          RETURN 'ALREADY_CONVERTED';
+        END IF;
+        IF quote_state <> 'ACCEPTED' THEN
+          RETURN 'INVALID_STATE';
+        END IF;
+        UPDATE "sales"."quote" AS quote
+           SET "convertedTripId" = p_trip_id,
+               "updatedAt" = date_trunc('milliseconds', clock_timestamp())
+         WHERE quote."agencyId" = p_agency_id AND quote."id" = p_quote_id;
+        RETURN 'UPDATED';
       END
       $$;
 
@@ -834,6 +992,10 @@ exports.up = (pgm) => {
     GRANT EXECUTE ON FUNCTION sales.delete_quote_line(uuid, uuid, bigint) TO travelos_admin_runtime;
     GRANT EXECUTE ON FUNCTION sales.reorder_quote_lines(uuid, uuid, bigint, uuid[], text[]) TO travelos_admin_runtime;
     GRANT EXECUTE ON FUNCTION sales.set_quote_state(uuid, uuid, bigint, text[], text) TO travelos_admin_runtime;
+    GRANT EXECUTE ON FUNCTION sales.upsert_quote_day(uuid, uuid, bigint, integer, text, text) TO travelos_admin_runtime;
+    GRANT EXECUTE ON FUNCTION sales.delete_quote_day(uuid, uuid, bigint, integer) TO travelos_admin_runtime;
+    GRANT EXECUTE ON FUNCTION sales.reset_quote_days(uuid, uuid, bigint) TO travelos_admin_runtime;
+    GRANT EXECUTE ON FUNCTION sales.link_quote_trip(uuid, uuid, uuid) TO travelos_admin_runtime;
     GRANT EXECUTE ON FUNCTION sales.read_quote_share(bytea) TO travelos_admin_runtime;
     GRANT EXECUTE ON FUNCTION sales.accept_quote_share(bytea, text) TO travelos_admin_runtime;
 

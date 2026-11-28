@@ -338,7 +338,7 @@ export const quoteWarnings = (
   return warnings;
 };
 
-const CATEGORY_LABELS: Readonly<Record<QuoteLineCategory, string>> = {
+export const CATEGORY_LABELS: Readonly<Record<QuoteLineCategory, string>> = {
   FLIGHT: "Voos",
   ACCOMMODATION: "Alojamento",
   TRANSFER: "Transferes",

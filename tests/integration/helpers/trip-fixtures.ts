@@ -35,7 +35,7 @@ import {
 export const agencyId = asOpaqueId("00000000-0000-7000-8000-000000000001");
 export const syntheticEmail = ["rui", "example.test"].join(String.fromCharCode(64));
 
-let databaseName = "";
+export let databaseName = "";
 export let ownerRoleId = "";
 export let persistence: PostgresPersistence<Record<string, never>> | null = null;
 export let repository: ReturnType<typeof createOperationalSliceRepository>;

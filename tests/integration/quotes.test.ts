@@ -2,7 +2,28 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  StaffAuthorizationError,
+  asOpaqueId,
+  QuoteNotFoundError,
+  type OpaqueId,
+} from "@travelos/backend-core";
+import {
+  createPostgresPublicQuoteOperations,
+  createPostgresStaffQuoteOperations,
+  createShareTokenCrypto,
+  type PostgresPersistence,
+} from "../../packages/database/src/index.js";
+import { createUuidV7 } from "../../packages/database/src/uuidv7.js";
+import {
+  createOwnerClient,
+  createStaff,
+  registrySessionResolver,
+  type StaffSessionRegistry,
+} from "./helpers/postgres.js";
+import {
   agencyId,
+  databaseName,
+  persistence as tripFixturePersistence,
   primaryStaffFixture,
   queryAs,
   queryAsOwner,
@@ -24,7 +45,7 @@ const tokenHash = (token: string) => `decode('${sha256Hex(token)}', 'hex')`;
 
 /** Owner-side seeding. The admin and worker logins are exercised separately below. */
 const seedCustomer = async (displayName: string): Promise<string> => {
-  const id = randomUUID();
+  const id = createUuidV7();
   await queryAsOwner(
     `INSERT INTO "crm"."customer" ("id", "agencyId", "displayName")
      VALUES ('${id}'::uuid, ${agency}::uuid, ${sqlLiteral(displayName)})`,
@@ -33,7 +54,7 @@ const seedCustomer = async (displayName: string): Promise<string> => {
 };
 
 const seedLead = async (customerId: string | null): Promise<string> => {
-  const id = randomUUID();
+  const id = createUuidV7();
   await queryAsOwner(
     `INSERT INTO "sales"."lead" ("id", "agencyId", "source", "contactGivenName", "contactFamilyName",
                                  "state", "lockVersion", "customerId")
@@ -51,7 +72,7 @@ interface QuoteOptions {
 
 let numberCounter = 5000;
 const seedQuote = async ({ customerId, leadId, validUntil }: QuoteOptions): Promise<string> => {
-  const id = randomUUID();
+  const id = createUuidV7();
   numberCounter += 1;
   const number = `ORC-2027-${String(numberCounter).padStart(4, "0")}`;
   await queryAsOwner(
@@ -111,6 +132,13 @@ const markSent = async (quoteId: string): Promise<void> => {
                                   ARRAY['DRAFT']::text[], 'SENT') AS result`,
   );
   expect(rows[0]?.result).toBe("UPDATED");
+};
+
+const lockOf = async (quoteId: string): Promise<string> => {
+  const [row] = await queryAsOwner<{ lockVersion: string }>(
+    `SELECT "lockVersion"::text AS "lockVersion" FROM "sales"."quote" WHERE id = '${quoteId}'::uuid`,
+  );
+  return row?.lockVersion ?? "0";
 };
 
 const callText = async (sql: string, user = ADMIN): Promise<string | undefined> =>
@@ -362,6 +390,69 @@ describe.sequential("quotes schema, functions and privileges (0004)", () => {
     expect(await accept("token-revoked")).toBe("UNAVAILABLE");
   });
 
+  it("refuses to accept a superseded version, reports isLatest, and keeps the link readable after revision", async () => {
+    const quoteId = await seedQuote({ customerId: customerA, leadId: leadA });
+    await markSent(quoteId);
+    const firstVersion = await seedVersion(quoteId, 1);
+    await seedShareLink(quoteId, firstVersion, "token-superseded");
+    const accept = (token: string) =>
+      callText(`sales.accept_quote_share(${tokenHash(token)}, 'Ana Quotes')`);
+
+    const latestBefore = await queryAs<{ isLatest: boolean }>(
+      ADMIN,
+      `SELECT "isLatest" FROM sales.read_quote_share(${tokenHash("token-superseded")})`,
+    );
+    expect(latestBefore).toEqual([{ isLatest: true }]);
+
+    // Revise: SENT -> DRAFT keeps the existing link, then a new version is sent.
+    expect(
+      await callText(
+        `sales.set_quote_state(${agency}::uuid, '${quoteId}'::uuid, ${await lockOf(quoteId)}, ARRAY['SENT'], 'DRAFT')`,
+      ),
+    ).toBe("UPDATED");
+    expect(await accept("token-superseded")).toBe("UNAVAILABLE");
+    await markSent(quoteId);
+    await seedVersion(quoteId, 2);
+
+    const latestAfter = await queryAs<{ isLatest: boolean; quoteState: string }>(
+      ADMIN,
+      `SELECT "isLatest", "quoteState" FROM sales.read_quote_share(${tokenHash("token-superseded")})`,
+    );
+    expect(latestAfter).toEqual([{ isLatest: false, quoteState: "SENT" }]);
+    expect(await accept("token-superseded")).toBe("SUPERSEDED");
+    const acceptances = await queryAsOwner<{ count: string }>(
+      `SELECT count(*)::text AS count FROM "sales"."quote_acceptance" WHERE "versionId" = '${firstVersion}'::uuid`,
+    );
+    expect(acceptances[0]?.count).toBe("0");
+  });
+
+  it("maintains quote days only while DRAFT and links a converted trip only after acceptance", async () => {
+    const quoteId = await seedQuote({ customerId: customerA, leadId: leadA });
+    const upsert = (version: string | number) =>
+      callText(
+        `sales.upsert_quote_day(${agency}::uuid, '${quoteId}'::uuid, ${version}, 0, 'Chegada', NULL)`,
+      );
+    expect(await upsert(await lockOf(quoteId))).toBe("UPDATED");
+    expect(await upsert(99)).toBe("STALE");
+    expect(
+      await callText(
+        `sales.delete_quote_day(${agency}::uuid, '${quoteId}'::uuid, ${await lockOf(quoteId)}, 0)`,
+      ),
+    ).toBe("DELETED");
+    expect(
+      await callText(
+        `sales.link_quote_trip(${agency}::uuid, '${quoteId}'::uuid, gen_random_uuid())`,
+      ),
+    ).toBe("INVALID_STATE");
+    await markSent(quoteId);
+    expect(await upsert(await lockOf(quoteId))).toBe("NOT_DRAFT");
+    expect(
+      await callText(
+        `sales.reset_quote_days(${agency}::uuid, '${quoteId}'::uuid, ${await lockOf(quoteId)})`,
+      ),
+    ).toBe("NOT_DRAFT");
+  });
+
   it("expires SENT quotes past their validity through the worker function", async () => {
     const pastQuote = await seedQuote({
       customerId: customerA,
@@ -409,5 +500,254 @@ describe.sequential("quotes schema, functions and privileges (0004)", () => {
     expect(
       await queryErrorCode(() => queryAs(WORKER, `UPDATE sales.quote SET state = 'EXPIRED'`)),
     ).toBe("42501");
+  });
+});
+
+describe.sequential("quote application flow over PostgreSQL", () => {
+  const sessions: StaffSessionRegistry = new Map();
+  const sessionResolver = registrySessionResolver(sessions);
+  let owner: Awaited<ReturnType<typeof createOwnerClient>> | null = null;
+  let operations: ReturnType<typeof createPostgresStaffQuoteOperations>;
+  let publicOperations: ReturnType<typeof createPostgresPublicQuoteOperations>;
+  let persistenceForFlow: PostgresPersistence<Record<string, never>>;
+  let editorCookie = "";
+  let viewerCookie = "";
+  let flowCustomer = "";
+  let flowLead = "";
+  let flowLeadWithoutCustomer = "";
+  const shareTokens = createShareTokenCrypto();
+
+  const seedPrimaryPerson = async (customerId: string, givenName: string): Promise<void> => {
+    const personId = createUuidV7();
+    await queryAsOwner(
+      `INSERT INTO "crm"."person" ("id", "agencyId", "givenName", "familyName", "email")
+       VALUES ('${personId}'::uuid, ${agency}::uuid, ${sqlLiteral(givenName)}, 'Quintela', 'marta@example.test')`,
+    );
+    await queryAsOwner(
+      `INSERT INTO "crm"."customer_person" ("agencyId", "customerId", "personId", "role", "isPrimary")
+       VALUES (${agency}::uuid, '${customerId}'::uuid, '${personId}'::uuid, 'PRIMARY_CONTACT', true)`,
+    );
+  };
+
+  beforeAll(async () => {
+    persistenceForFlow = tripFixturePersistence as PostgresPersistence<Record<string, never>>;
+    owner = await createOwnerClient(databaseName);
+    const editor = await createStaff(
+      owner,
+      sessions,
+      "quote-editor",
+      ["quote.view", "quote.edit", "quote.send", "customer.view", "trip.edit"],
+      { agencyId: agencyId as string },
+    );
+    editorCookie = editor.cookie;
+    const viewer = await createStaff(owner, sessions, "quote-viewer", ["quote.view"], {
+      agencyId: agencyId as string,
+    });
+    viewerCookie = viewer.cookie;
+    operations = createPostgresStaffQuoteOperations(persistenceForFlow, {
+      sessionResolver,
+      shareTokens,
+      agencyDisplayName: "Agência Teste",
+      publicBaseUrl: "https://propostas.test",
+    });
+    publicOperations = createPostgresPublicQuoteOperations(persistenceForFlow, shareTokens);
+    flowCustomer = await seedCustomer("Marta Quintela");
+    await seedPrimaryPerson(flowCustomer, "Marta");
+    flowLead = await seedLead(flowCustomer);
+    flowLeadWithoutCustomer = await seedLead(null);
+  });
+
+  afterAll(async () => {
+    await owner?.end();
+  });
+
+  const quoteIdOf = (quote: { readonly id: string }) => quote.id as OpaqueId;
+
+  it("creates, prices and sends a proposal whose customer snapshot has no internal fields", async () => {
+    await expect(
+      operations.createQuote(editorCookie, asOpaqueId(flowLeadWithoutCustomer), {}),
+    ).rejects.toMatchObject({ code: "LEAD_NOT_QUALIFIED" });
+    await expect(
+      operations.createQuote(viewerCookie, asOpaqueId(flowLead), {}),
+    ).rejects.toBeInstanceOf(StaffAuthorizationError);
+
+    const quote = await operations.createQuote(editorCookie, asOpaqueId(flowLead), {
+      destination: "Funchal",
+      startDate: "2027-03-10",
+      endDate: "2027-03-17",
+    });
+    expect(quote.number).toMatch(/^ORC-\d{4}-\d{4}$/u);
+    expect(quote.title).toBe("Funchal · Marta Quintela");
+    expect(quote.customerId).toBe(flowCustomer);
+
+    const quoteId = quoteIdOf(quote);
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: {
+        category: "FLIGHT",
+        fromIata: "LIS",
+        toIata: "FNC",
+        departTime: "08:15",
+        arriveTime: "09:30",
+        carrier: "TAP",
+        flightNumber: "TP1234",
+        startDate: "2027-03-10",
+        endDate: "2027-03-10",
+        netSupplierMinor: 70000n,
+        recommendedMinor: 95000n,
+        supplier: "SEGREDO fornecedor",
+        internalNote: "SEGREDO nota",
+      },
+    });
+    const withHotel = await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: {
+        category: "ACCOMMODATION",
+        service: "Hotel Estrela",
+        location: "Funchal",
+        roomType: "Duplo",
+        boardBasis: "Meia pensão",
+        netSupplierMinor: 72000n,
+        recommendedMinor: 92000n,
+      },
+    });
+    expect(withHotel.lines.map((line) => line.service)).toContain("Hotel Estrela");
+    const priced = await operations.applyTargetMargin(editorCookie, quoteId, {
+      lineIds: null,
+      rounding: "EURO",
+    });
+    expect(priced.lines.every((line) => line.pvpMinor > 0n)).toBe(true);
+
+    const sent = await operations.sendQuote(editorCookie, quoteId, {
+      expectedLockVersion: priced.quote.lockVersion,
+      expiresAt: null,
+    });
+    expect(sent.versionNumber).toBe(1);
+    expect(sent.messageText).toContain("Olá Marta");
+    expect(sent.whatsappUrl).toContain("wa.me/");
+
+    const shown = await publicOperations.readPublicQuote(sent.token, "2027-01-01");
+    const serialized = JSON.stringify(shown.payload);
+    expect(serialized).not.toContain("SEGREDO");
+    expect(serialized).not.toContain("netSupplier");
+    expect(serialized).not.toContain("recommended");
+    expect(shown.isLatest).toBe(true);
+    expect(shown.accepted).toBeNull();
+  });
+
+  it("accepts once, then converts the accepted quote into an idempotent trip", async () => {
+    const quote = await operations.createQuote(editorCookie, asOpaqueId(flowLead), {
+      destination: "Porto",
+      startDate: "2027-05-01",
+      endDate: "2027-05-03",
+    });
+    const quoteId = quoteIdOf(quote);
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: {
+        category: "ACCOMMODATION",
+        service: "Hotel Porto",
+        pvpMinor: 90000n,
+        netSupplierMinor: 60000n,
+      },
+    });
+    const sent = await operations.sendQuote(editorCookie, quoteId, {
+      expectedLockVersion: quote.lockVersion,
+      expiresAt: null,
+    });
+    expect(await publicOperations.acceptPublicQuote(sent.token, "Marta Quintela")).toBe("ACCEPTED");
+    expect(await publicOperations.acceptPublicQuote(sent.token, "Marta Quintela")).toBe(
+      "ALREADY_ACCEPTED",
+    );
+    const accepted = await publicOperations.readPublicQuote(sent.token, "2027-01-01");
+    expect(accepted.accepted?.name).toBe("Marta Quintela");
+
+    const first = await operations.convertToTrip(editorCookie, quoteId);
+    expect(first.created).toBe(true);
+    const second = await operations.convertToTrip(editorCookie, quoteId);
+    expect(second).toEqual({ tripId: first.tripId, created: false });
+    const trips = await queryAsOwner<{ title: string; state: string }>(
+      `SELECT title, state FROM trip_ops.trip WHERE id = '${first.tripId}'::uuid`,
+    );
+    expect(trips).toEqual([{ title: "Porto · Marta Quintela", state: "DRAFT" }]);
+    const travellers = await queryAsOwner<{ role: string }>(
+      `SELECT role FROM trip_ops.trip_traveller WHERE "tripId" = '${first.tripId}'::uuid`,
+    );
+    expect(travellers).toEqual([{ role: "PRIMARY_TRAVELLER" }]);
+
+    await expect(
+      operations.convertToTrip(editorCookie, asOpaqueId(flowLead)),
+    ).rejects.toBeInstanceOf(QuoteNotFoundError);
+  });
+
+  it("supersedes an older link after revision, and refuses acceptance of the old version", async () => {
+    const quote = await operations.createQuote(editorCookie, asOpaqueId(flowLead), {
+      destination: "Évora",
+    });
+    const quoteId = quoteIdOf(quote);
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: { category: "OTHER", service: "Visita guiada", pvpMinor: 5000n },
+    });
+    const v1 = await operations.sendQuote(editorCookie, quoteId, {
+      expectedLockVersion: quote.lockVersion,
+      expiresAt: null,
+    });
+    const revised = await operations.reviseQuote(
+      editorCookie,
+      quoteId,
+      BigInt(await lockOf(quoteId)),
+    );
+    expect(revised.quote.state).toBe("DRAFT");
+    const v2 = await operations.sendQuote(editorCookie, quoteId, {
+      expectedLockVersion: revised.quote.lockVersion,
+      expiresAt: null,
+    });
+    expect(v2.versionNumber).toBe(2);
+    expect((await publicOperations.readPublicQuote(v1.token, "2027-01-01")).isLatest).toBe(false);
+    expect(await publicOperations.acceptPublicQuote(v1.token, "Marta Quintela")).toBe("SUPERSEDED");
+    expect(await publicOperations.acceptPublicQuote(v2.token, "Marta Quintela")).toBe("ACCEPTED");
+  });
+
+  it("refuses an expired link, a revoked link and an unknown token with the same not-found answer", async () => {
+    const quote = await operations.createQuote(editorCookie, asOpaqueId(flowLead), {
+      destination: "Braga",
+    });
+    const quoteId = quoteIdOf(quote);
+    await operations.addLine(editorCookie, quoteId, {
+      section: "BASE",
+      line: { category: "OTHER", service: "Jantar", pvpMinor: 4000n },
+    });
+    const short = await operations.sendQuote(editorCookie, quoteId, {
+      expectedLockVersion: quote.lockVersion,
+      expiresAt: new Date(Date.now() + 1_500).toISOString(),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    expect(await publicOperations.acceptPublicQuote(short.token, "Marta Quintela")).toBe(
+      "UNAVAILABLE",
+    );
+
+    const second = await operations.createQuote(editorCookie, asOpaqueId(flowLead), {
+      destination: "Coimbra",
+    });
+    const secondId = quoteIdOf(second);
+    await operations.addLine(editorCookie, secondId, {
+      section: "BASE",
+      line: { category: "OTHER", service: "Visita", pvpMinor: 4000n },
+    });
+    const revocable = await operations.sendQuote(editorCookie, secondId, {
+      expectedLockVersion: second.lockVersion,
+      expiresAt: null,
+    });
+    const linkRows = await queryAsOwner<{ shareLinkId: string }>(
+      `SELECT "shareLinkId"::text AS "shareLinkId" FROM "sales"."quote_share_link" WHERE "quoteId" = '${secondId}'::uuid`,
+    );
+    await operations.revokeShareLink(editorCookie, asOpaqueId(linkRows[0]!.shareLinkId));
+    await expect(
+      publicOperations.readPublicQuote(revocable.token, "2027-01-01"),
+    ).rejects.toBeInstanceOf(QuoteNotFoundError);
+    await expect(
+      publicOperations.readPublicQuote("B".repeat(43), "2027-01-01"),
+    ).rejects.toBeInstanceOf(QuoteNotFoundError);
   });
 });

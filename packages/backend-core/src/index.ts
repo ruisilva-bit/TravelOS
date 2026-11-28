@@ -399,3 +399,28 @@ export {
   type QuoteWarning,
   type QuoteWarningCode,
 } from "./modules/quotes/domain/quote-calculations.js";
+export * from "./modules/quotes/domain/quote-model.js";
+export * from "./modules/quotes/domain/quote-proposal.js";
+export {
+  QUOTE_PERMISSION_REQUIREMENTS,
+  assertQuoteWriteOutcome,
+  createPublicQuoteOperations,
+  createStaffQuoteOperations,
+  type PublicQuoteOperations,
+  type NewQuoteRecord,
+  type PreparedQuoteVersion,
+  type QuoteCustomerContext,
+  type QuoteLeadContext,
+  type QuoteLineInsertResult,
+  type QuoteLineLockUpdate,
+  type QuoteListQuery,
+  type QuotePage,
+  type QuotePublishPlan,
+  type QuotePublishResult,
+  type QuoteRepository,
+  type QuoteSharedRecord,
+  type QuoteView,
+  type SentQuote,
+  type StaffQuoteOperations,
+  type StaffQuoteOperationsDependencies,
+} from "./modules/quotes/application/staff-quote-operations.js";

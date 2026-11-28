@@ -32,3 +32,9 @@ export { createPostgresLeadRepository } from "./sales/lead-repository.js";
 export { createPostgresStaffLeadOperations } from "./sales/staff-lead-operations.js";
 export { createPostgresCrmRepository } from "./crm/crm-repository.js";
 export { createPostgresStaffCrmOperations } from "./crm/staff-crm-operations.js";
+export { createPostgresQuoteRepository } from "./quotes/quote-repository.js";
+export {
+  createPostgresPublicQuoteOperations,
+  createPostgresStaffQuoteOperations,
+  type PostgresStaffQuoteDependencies,
+} from "./quotes/staff-quote-operations.js";
